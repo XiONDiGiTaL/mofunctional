@@ -1,0 +1,682 @@
+/** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import * as THREE from '../../vendor/three.module.js';
+import { ps1Material, box, plane } from '../render/ps1.js';
+import { tex } from '../render/textures.js';
+import { CONFIG } from '../core/config.js';
+import { countItem, inventoryList, addItem, removeItem, hasItem } from '../core/state.js';
+import { bump } from '../core/state.js';
+import { money, chance, pick, clamp, randInt, minuteOfDay, dayOf } from '../core/util.js';
+import { eat, sleep, useSubstance, soberUp } from '../systems/needs.js';
+import { visitFellowship, serviceWindow } from '../systems/fellowship.js';
+import { workShift, callOut, quitJob, applyForJob, doOddJob, oddJobsAvailable, shiftInfo } from '../systems/jobs.js';
+import { buyFood, sellToDex, buyGrabBag, billInfo } from '../systems/economy.js';
+import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
+
+const M = {
+  floor: ps1Material('floor', { map: tex('linoleum') }),
+  wall: ps1Material('wallA', { map: tex('wallpaper') }),
+  concrete: ps1Material('conc', { map: tex('concrete') }),
+  ceiling: ps1Material('ceil', { map: tex('ceiling') }),
+  wood: ps1Material('woodA', { map: tex('wood') }),
+  metal: ps1Material('metalA', { map: tex('metal') }),
+  brick: ps1Material('brickA', { map: tex('brick') }),
+  sidewalk: ps1Material('sw', { map: tex('sidewalk') }),
+  asphalt: ps1Material('asph', { map: tex('asphalt') }),
+  carpet: ps1Material('carpetA', { map: tex('carpet') }),
+  tile: ps1Material('tileA', { map: tex('tile') }),
+  door: ps1Material('doorA', { map: tex('door') }),
+  goldDoor: ps1Material('goldDoor', { color: 0xd8b063, emissive: 0.1 }),
+  fabric: ps1Material('fabricA', { color: 0x6a5a4a }),
+  mattress: ps1Material('mattress', { color: 0xb9b3a0 }),
+  white: ps1Material('whiteA', { color: 0xe8e6da }),
+  green: ps1Material('greenA', { color: 0x2f6b4a }),
+  dark: ps1Material('darkA', { color: 0x141a16 }),
+  tvStatic: ps1Material('tvstatic', { map: tex('static'), emissive: 0.55, unlit: true }),
+  neon: ps1Material('neonA', { map: tex('neon'), emissive: 1.0, unlit: true, transparent: true, alphaTest: 0.1 }),
+  window: ps1Material('windowA', { map: tex('window'), emissive: 0.35, unlit: true }),
+  poster: ps1Material('posterA', { map: tex('poster'), emissive: 0.1 }),
+  cross: ps1Material('crossA', { map: tex('cross'), emissive: 0.35, unlit: true }),
+  candle: ps1Material('candleA', { color: 0xffd9a0, emissive: 0.9, unlit: true }),
+  red: ps1Material('redA', { color: 0x7a2a26 }),
+  lamp: ps1Material('lampA', { color: 0xfff2c4, emissive: 1.0, unlit: true }),
+};
+
+const solid = (x, z, w, d) => ({ x, z, w, d });
+
+/* ------------------------------ APARTMENT ------------------------------ */
+
+export function buildApartment(g) {
+  const group = new THREE.Group();
+  const W = 7, D = 9;
+  const floor = plane(W, D, { name: 'apfloor', map: tex('linoleum'), repeat: [3, 4] }, [0, 0, 0], [-Math.PI / 2, 0, 0]);
+  group.add(floor);
+
+  // walls
+  group.add(box(W, 2.7, 0.16, { name: 'apwall', map: tex('wallpaper') }, [0, 1.35, -D / 2]));
+  group.add(box(W, 2.7, 0.16, { name: 'apwall2', map: tex('wallpaper') }, [0, 1.35, D / 2]));
+  group.add(box(0.16, 2.7, D, { name: 'apwall3', map: tex('wallpaper') }, [-W / 2, 1.35, 0]));
+  group.add(box(0.16, 2.7, D, { name: 'apwall4', map: tex('wallpaper') }, [W / 2, 1.35, 0]));
+  group.add(plane(W, D, { name: 'apceil', map: tex('ceiling'), repeat: [2, 3] }, [0, 2.7, 0], [Math.PI / 2, 0, 0]));
+
+  // window (front wall) with a view that is just a wall
+  group.add(plane(1.5, 1.2, { name: 'apwin', map: tex('window'), emissive: 0.4, unlit: true }, [1.6, 1.6, -D / 2 + 0.09]));
+
+  // bed
+  group.add(box(1.1, 0.22, 2.0, M.metal, [-2.4, 0.24, -2.4]));
+  group.add(box(1.0, 0.16, 1.9, M.mattress, [-2.4, 0.42, -2.4]));
+  group.add(box(1.0, 0.06, 0.5, M.white, [-2.4, 0.53, -3.1]));
+  group.add(box(1.0, 0.05, 1.2, ps1Material('blanket', { color: 0x4a5560 }), [-2.4, 0.52, -2.1]));
+  group.add(box(0.08, 0.5, 1.9, M.metal, [-3.0, 0.6, -2.4]));
+
+  // fridge
+  group.add(box(0.8, 1.8, 0.75, ps1Material('fridge', { color: 0xc9c9bd }), [2.7, 0.9, -3.5]));
+  group.add(box(0.02, 1.6, 0.03, M.dark, [2.7, 0.9, -3.11]));
+  group.add(box(0.06, 0.4, 0.04, M.metal, [2.5, 1.15, -3.09]));
+
+  // counter + sink
+  group.add(box(2.4, 0.85, 0.7, M.wood, [1.1, 0.43, -3.6]));
+  group.add(box(2.4, 0.06, 0.72, M.tile, [1.1, 0.87, -3.6]));
+  group.add(box(0.55, 0.12, 0.45, M.metal, [1.1, 0.9, -3.6]));
+  group.add(box(0.05, 0.3, 0.05, M.metal, [1.1, 1.05, -3.75]));
+  // stove-ish thing with two dials
+  group.add(box(0.9, 0.86, 0.68, ps1Material('stove', { color: 0xa8a89c }), [-0.8, 0.43, -3.6]));
+
+  // table + laptop
+  group.add(box(1.0, 0.06, 0.7, M.wood, [1.4, 0.72, -0.2]));
+  for (const [x, z] of [[0.95, -0.5], [1.85, -0.5], [0.95, 0.1], [1.85, 0.1]]) {
+    group.add(box(0.06, 0.72, 0.06, M.wood, [x, 0.36, z]));
+  }
+  group.add(box(0.42, 0.03, 0.3, M.dark, [1.4, 0.76, -0.2]));
+  group.add(box(0.4, 0.24, 0.02, ps1Material('laptop', { map: tex('static'), emissive: 0.5, unlit: true }), [1.4, 0.88, -0.34], [-0.5, 0, 0]));
+  // chair
+  group.add(box(0.5, 0.06, 0.5, M.fabric, [1.4, 0.45, 0.55]));
+  group.add(box(0.5, 0.55, 0.06, M.fabric, [1.4, 0.72, 0.79]));
+
+  // tv
+  group.add(box(0.8, 0.5, 0.6, M.wood, [-2.6, 0.25, 1.6]));
+  group.add(box(0.75, 0.6, 0.62, ps1Material('crt', { color: 0x3a3a38 }), [-2.6, 0.85, 1.6]));
+  group.add(plane(0.56, 0.42, { name: 'tvscreen', map: tex('static'), emissive: 0.7, unlit: true }, [-2.6, 0.88, 1.29]));
+
+  // door
+  group.add(box(1.0, 2.2, 0.12, M.door, [0, 1.1, D / 2 - 0.05]));
+  group.add(box(0.08, 0.08, 0.06, M.goldDoor, [0.35, 1.05, D / 2 - 0.12]));
+
+  // poster + stains
+  group.add(plane(0.6, 0.9, { name: 'apposter', map: tex('poster'), emissive: 0.05 }, [-3.0, 1.6, -1.0], [0, Math.PI / 2, 0]));
+  group.add(box(1.2, 0.4, 0.02, ps1Material('stainwall', { color: 0x6d5b3f, opacity: 0.55, transparent: true }), [0.6, 2.2, -D / 2 + 0.1]));
+
+  // ceiling bulb
+  group.add(box(0.24, 0.06, 0.24, M.lamp, [0, 2.62, 0.6]));
+  group.add(box(0.03, 0.1, 0.03, M.dark, [0, 2.7, 0.6]));
+
+  // trash + bag
+  group.add(box(0.45, 0.6, 0.45, M.dark, [2.9, 0.3, 2.6]));
+  group.add(box(0.5, 0.35, 0.4, ps1Material('bag', { color: 0x2a2a26 }), [-3.0, 0.18, 2.4]));
+
+  const interactables = [
+    { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
+    { id: 'fridge', label: 'Open the fridge', sub: 'eat something', x: 2.7, z: -2.9, action: (gg) => eatMenu(gg) },
+    { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
+    { id: 'tv', label: 'Turn on the TV', sub: 'waste time productively', x: -2.6, z: 1.0, action: (gg) => tvMenu(gg) },
+    { id: 'laptop', label: 'Use the laptop', sub: 'open BidBay', x: 1.4, z: 0.1, action: (gg) => gg.openPhone('bidbay') },
+    { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -3.0, z: 2.4, action: (gg) => stashMenu(gg) },
+    { id: 'door', label: 'Leave the apartment', sub: 'go outside', x: 0, z: 3.9, action: (gg) => gg.goTo('street', 'apartment') },
+  ];
+  if (g.state.flags.cat) {
+    interactables.push({ id: 'cat', label: 'Pet Chairman', sub: '+morale', x: 0.9, z: 1.9, action: (gg) => { bump(gg.state, 'morale', 6); bump(gg.state, 'stress', -4); gg.advance(5); gg.toast(npcLine('chairman'), 'good'); } });
+  }
+
+  return {
+    group,
+    bounds: { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 },
+    solids: [
+      solid(-2.4, -2.4, 1.3, 2.1), solid(2.7, -3.5, 0.9, 0.85), solid(1.1, -3.6, 2.5, 0.8),
+      solid(-0.8, -3.6, 1.0, 0.8), solid(1.4, -0.2, 1.2, 0.9), solid(-2.6, 1.6, 0.9, 0.7),
+      solid(2.9, 2.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5),
+    ],
+    spawn: { x: 0, z: 1.15, rot: Math.PI },
+    npcs: g.state.flags.cat ? [{ kind: 'cat', x: 0.9, z: 1.9, rot: -0.6 }] : [],
+    interactables,
+    ambient: 'apartment',
+  };
+}
+
+function bedMenu(g) {
+  const s = g.state;
+  const mod = minuteOfDay(s.clock.m);
+  g.openModal({
+    kicker: 'THE BED',
+    title: 'Horizontal, For A While',
+    body: `It is ${String(Math.floor(mod / 60)).padStart(2, '0')}:${String(mod % 60).padStart(2, '0')}. The mattress has a shape in it that you did not put there.\n\nSleep restores energy. It also skips the clock forward. You cannot sleep through a shift and keep the shift.`,
+    choices: [
+      { label: 'Sleep 4 hours.', sub: 'quick · partial recovery', effect: () => sleep(g, 4) },
+      { label: 'Sleep 7 hours.', sub: 'the responsible option', effect: () => sleep(g, 7) },
+      { label: 'Sleep 9 hours.', sub: 'grief nap, basically', effect: () => sleep(g, 9) },
+      { label: 'Lie down for an hour.', sub: '+energy, still awake-ish', effect: () => { g.advance(60, { sleeping: true }); bump(s, 'energy', 4); bump(s, 'stress', -3); } },
+      { label: 'Get up.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function eatMenu(g) {
+  const food = inventoryList(g.state).filter((i) => i.def.kind === 'food');
+  if (!food.length) {
+    g.toast('The fridge contains a jar of something and a light bulb.', 'bad');
+    g.openModal({
+      kicker: 'THE FRIDGE',
+      title: 'An Empty Fridge Is A Kind Of Clock',
+      body: 'You have no food. The Pantry app in your phone can order groceries — with money, or with CRP food credit if you have enrolled at the Civic Relief office.',
+      choices: [{ label: 'Open the Pantry app.', sub: 'order food', effect: () => g.openPhone('pantry') }, { label: 'Close the fridge.', sub: '', effect: () => {} }],
+    });
+    return;
+  }
+  g.openModal({
+    kicker: 'THE FRIDGE',
+    title: 'Cold Options',
+    body: 'Everything in here is either a meal or a decision.',
+    choices: [
+      ...food.map((f) => ({
+        label: `Eat ${f.def.name} (x${f.qty}).`,
+        sub: `+${f.def.hunger} hunger · 15 min`,
+        effect: () => eat(g, f.id),
+      })),
+      { label: 'Close the fridge.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function shower(g) {
+  const s = g.state;
+  if (s.flags.powerCut) {
+    g.advance(20);
+    bump(s, 'hygiene', 12);
+    bump(s, 'stress', 9);
+    bump(s, 'energy', -4);
+    g.toast('Cold shower. Every hair on your body files a separate complaint.', 'bad');
+    return;
+  }
+  g.advance(25);
+  bump(s, 'hygiene', 34);
+  bump(s, 'stress', -7);
+  bump(s, 'morale', 2);
+  g.audio.sfx('confirm');
+  g.toast('Clean. The world is 4% more negotiable.', 'good');
+}
+
+function tvMenu(g) {
+  const s = g.state;
+  g.openModal({
+    kicker: 'THE TELEVISION',
+    title: 'Whatever Is On',
+    body: 'A show about people buying storage units. A commercial for a mattress. The news, briefly, and then not the news.',
+    choices: [
+      { label: 'Watch for an hour.', sub: '-1h · +morale · -stress', effect: () => { g.advance(60); bump(s, 'morale', 6); bump(s, 'stress', -9); bump(s, 'energy', -3); g.toast('You laugh once, genuinely, at a commercial.', 'good'); } },
+      { label: 'Watch until you hate yourself.', sub: '-3h · +morale then -morale', effect: () => { g.advance(180); bump(s, 'morale', 4); bump(s, 'stress', -6); bump(s, 'energy', -9); bump(s, 'hygiene', -3); g.toast('Three hours. You could describe the plot of nothing that happened.', 'bad'); } },
+      { label: 'Turn it off.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function stashMenu(g) {
+  const s = g.state;
+  const subs = inventoryList(s).filter((i) => i.def.kind === 'substance');
+  if (!subs.length) {
+    g.toast('Nothing in the drawer but a lighter and an old receipt.', 'info');
+    bump(s, 'stress', 3);
+    return;
+  }
+  g.openModal({
+    kicker: 'THE DRAWER',
+    title: 'The Arithmetic',
+    body: `Addiction: ${Math.round(s.stats.addiction)}% · Tolerance: ${Math.round(s.stats.tolerance)}% · Risk: ${Math.round(s.stats.risk)}%\n\nEverything in this drawer raises your risk. Risk at 100 is the end of the game.`,
+    choices: [
+      ...subs.map((it) => ({
+        label: `Use ${it.def.name} (x${it.qty}).`,
+        sub: `risk +${CONFIG.substances.types[it.id]?.risk ?? '?'} · addict +${CONFIG.substances.types[it.id]?.addiction ?? '?'}`,
+        effect: () => useSubstance(g, it.id),
+      })),
+      { label: 'Drink water. Go outside. Do not.', sub: '+stress, -addiction risk later', effect: () => soberUp(g) },
+      { label: 'Close the drawer.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/* ------------------------------ STREET ------------------------------ */
+
+export function buildStreet(g) {
+  const group = new THREE.Group();
+  const L = 46, D = 16;
+  group.add(plane(L, D, { name: 'streetsw', map: tex('sidewalk'), repeat: [14, 5] }, [0, 0, -1.4], [-Math.PI / 2, 0, 0]));
+  group.add(plane(L, 8, { name: 'streetasph', map: tex('asphalt'), repeat: [16, 3] }, [0, -0.01, 5.2], [-Math.PI / 2, 0, 0]));
+  // curb
+  group.add(box(L, 0.18, 0.4, M.concrete, [0, 0.09, 1.3]));
+
+  // building facades along the back
+  const facade = (x, w, h, tint) => {
+    group.add(box(w, h, 1.2, { name: 'facade', map: tex('brick'), color: tint }, [x, h / 2, -7.2]));
+    const rows = Math.floor(h / 1.6);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < Math.max(1, Math.floor(w / 2.4)); c++) {
+        const wx = x - w / 2 + 1.0 + c * 2.4;
+        const wy = 1.2 + r * 1.6;
+        if (wx > x - w / 2 + 0.3 && wx < x + w / 2 - 0.3) {
+          group.add(plane(0.9, 1.0, { name: 'win', map: tex('window'), emissive: chance(0.35) ? 0.45 : 0.08, unlit: true }, [wx, wy, -6.58]));
+        }
+      }
+    }
+  };
+  facade(-11, 8, 7.5, 0xc8c0b4);
+  facade(1.5, 9, 6.2, 0xd8cfc0);
+  facade(11.5, 7, 8.5, 0xe4d6b0);
+  facade(-3.6, 3.0, 5.0, 0x9a9088);
+  facade(20, 8, 6.8, 0xb8b8aa);
+
+  // apartment door
+  group.add(box(1.3, 2.4, 0.2, ps1Material('aptdoor', { color: 0x4a3b2a }), [-11, 1.2, -6.55]));
+  group.add(box(0.9, 0.14, 0.04, M.white, [-11, 2.3, -6.44]));
+  group.add(box(0.34, 0.1, 0.03, M.goldDoor, [-11.4, 2.3, -6.45]));
+
+  // Quik-Stop storefront
+  group.add(box(6.2, 3.0, 0.3, ps1Material('storefront', { color: 0x2a3a30 }), [1.5, 1.5, -6.5]));
+  group.add(plane(4.6, 1.4, { name: 'storewin', map: tex('window'), emissive: 0.5, unlit: true }, [1.5, 1.6, -6.32]));
+  group.add(plane(2.4, 1.0, { name: 'storesign', map: tex('neon'), emissive: 0.9, unlit: true }, [1.5, 3.5, -6.3]));
+  group.add(box(6.4, 0.16, 1.2, M.green, [1.5, 3.1, -6.0]));
+  // awning stripes
+  for (let i = 0; i < 6; i++) {
+    group.add(box(1.05, 0.18, 1.15, i % 2 ? M.white : ps1Material('awningRed', { color: 0x8a3a32 }), [1.5 - 2.65 + i * 1.06, 3.02, -5.9]));
+  }
+
+  // Fellowship: gold doors, cross
+  group.add(box(5.4, 4.4, 0.3, ps1Material('churchfront', { color: 0xd8cba8 }), [11.5, 2.2, -6.5]));
+  group.add(box(1.8, 3.0, 0.25, M.goldDoor, [11.5, 1.5, -6.4]));
+  group.add(box(0.1, 2.4, 0.05, ps1Material('doorseam', { color: 0x7a5c1e }), [11.5, 1.5, -6.27]));
+  group.add(plane(1.2, 1.8, { name: 'churchcross', map: tex('cross'), emissive: 0.5, unlit: true }, [11.5, 4.9, -6.3]));
+  group.add(box(0.4, 0.16, 0.4, M.candle, [10.2, 0.3, -5.9]));
+  group.add(box(0.4, 0.16, 0.4, M.candle, [12.8, 0.3, -5.9]));
+
+  // alley
+  group.add(box(3.0, 0.05, 8, ps1Material('alleyfloor', { color: 0x24282a }), [-3.6, 0.02, -2.5]));
+  group.add(box(1.4, 0.9, 0.9, ps1Material('dumpster', { color: 0x2e4a34 }), [-4.2, 0.45, -5.2]));
+  group.add(box(1.45, 0.1, 0.95, ps1Material('dumpsterlid', { color: 0x253a2a }), [-4.2, 0.95, -5.2], [0, 0, 0.1]));
+  group.add(box(0.5, 0.7, 0.5, M.dark, [-2.6, 0.35, -3.6]));
+  group.add(box(0.3, 1.2, 0.3, M.metal, [-5.2, 0.6, -2.0]));
+  // puddle
+  group.add(plane(1.6, 1.2, { name: 'puddle', color: 0x3a4a52, opacity: 0.6, transparent: true, unlit: true }, [-3.6, 0.03, -1.4], [-Math.PI / 2, 0, 0]));
+
+  // street furniture
+  const lamp = (x) => {
+    group.add(box(0.14, 3.4, 0.14, M.metal, [x, 1.7, 0.6]));
+    group.add(box(0.5, 0.1, 0.3, M.lamp, [x, 3.45, 0.35]));
+    group.add(plane(0.6, 0.02, { name: 'lampglow', color: 0xfff2c4, opacity: 0.25, transparent: true, unlit: true }, [x, 0.05, 0.5], [-Math.PI / 2, 0, 0]));
+  };
+  [-8, 0, 8.5, 17].forEach(lamp);
+  // bench
+  group.add(box(1.8, 0.08, 0.5, M.wood, [-7.5, 0.5, 0.2]));
+  group.add(box(1.8, 0.5, 0.08, M.wood, [-7.5, 0.75, -0.05]));
+  group.add(box(0.08, 0.5, 0.5, M.metal, [-8.35, 0.25, 0.2]));
+  group.add(box(0.08, 0.5, 0.5, M.metal, [-6.65, 0.25, 0.2]));
+  // bus stop
+  group.add(box(2.2, 2.2, 0.08, { name: 'glass', color: 0x8fb0b8, opacity: 0.35, transparent: true, unlit: true }, [6.5, 1.2, -5.8]));
+  group.add(box(0.1, 2.4, 0.1, M.metal, [5.4, 1.2, -5.8]));
+  group.add(box(0.1, 2.4, 0.1, M.metal, [7.6, 1.2, -5.8]));
+  group.add(box(1.2, 0.5, 0.08, ps1Material('bussign', { color: 0x2a4a6a, emissive: 0.15 }), [7.6, 2.6, -5.8]));
+  // job board
+  group.add(box(1.0, 1.4, 0.1, M.wood, [5.0, 0.9, -6.2]));
+  group.add(plane(0.85, 1.2, { name: 'jobposter', map: tex('poster') }, [5.0, 0.95, -6.13]));
+  group.add(box(0.1, 0.9, 0.1, M.wood, [4.6, 0.45, -6.2]));
+  group.add(box(0.1, 0.9, 0.1, M.wood, [5.4, 0.45, -6.2]));
+  // trash cans
+  group.add(box(0.6, 0.9, 0.6, ps1Material('trash', { color: 0x39443c }), [9.5, 0.45, -5.6]));
+  group.add(box(0.6, 0.9, 0.6, ps1Material('trash2', { color: 0x39443c }), [-12.6, 0.45, -5.6]));
+  // road markings + hydrant
+  group.add(box(0.6, 0.02, 44, ps1Material('line', { color: 0xb0a262 }), [0, 0.02, 5.2]));
+  group.add(box(0.3, 0.6, 0.3, ps1Material('hydrant', { color: 0x8a3a32 }), [-5.0, 0.3, 0.9]));
+  group.add(box(0.4, 0.1, 0.4, ps1Material('hydrantTop', { color: 0x6a2a24 }), [-5.0, 0.62, 0.9]));
+
+  const npcs = [
+    { kind: 'rae', x: -10.2, z: -4.6, rot: 0.4, talk: 'rae' },
+    { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
+    { kind: 'kev', x: -1.2, z: -1.2, rot: -1.2, talk: 'kev' },
+    { kind: 'dex', x: -3.4, z: -3.4, rot: 1.4, talk: 'dex' },
+  ];
+
+  const interactables = [
+    { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: -11, z: -5.4, action: (gg) => gg.goTo('apartment', 'street') },
+    { id: 'store', label: 'Enter Quik-Stop #14', sub: 'clock in · buy snacks', x: 1.5, z: -5.6, action: (gg) => storeMenu(gg) },
+    { id: 'alley', label: 'Step into the alley', sub: 'Dex is usually here', x: -3.6, z: -2.4, action: (gg) => dexMenu(gg) },
+    { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: 11.5, z: -5.4, action: (gg) => gg.goTo('church', 'street') },
+    { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
+    { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
+    { id: 'bench', label: 'Sit on the bench', sub: 'rest · 45 min', x: -7.5, z: 0.4, action: (gg) => bench(gg) },
+    { id: 'busstop', label: 'Wait at the bus stop', sub: 'nothing will happen', x: 6.6, z: -4.8, action: (gg) => { gg.advance(20); gg.toast('The bus is late. You watch three people decide not to wait.', 'info'); } },
+    { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -10.2, z: -4.6, action: (gg) => talk(gg, 'rae') },
+    { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
+    { id: 'kev', label: 'Talk to Kev', sub: 'coworker · loud', x: -1.2, z: -1.2, action: (gg) => talk(gg, 'kev') },
+    { id: 'dex', label: 'Talk to Dex', sub: 'the corner · cash only', x: -3.4, z: -3.4, action: (gg) => dexMenu(gg) },
+  ];
+
+  return {
+    group,
+    bounds: { minX: -15, maxX: 17, minZ: -5.6, maxZ: 1.4 },
+    solids: [
+      solid(-4.2, -5.2, 1.5, 1.0), solid(-7.5, 0.2, 2.0, 0.7), solid(6.5, -5.8, 2.3, 0.4),
+      solid(9.5, -5.6, 0.7, 0.7), solid(-12.6, -5.6, 0.7, 0.7), solid(5.0, -6.2, 1.1, 0.4),
+      solid(-5.0, 0.9, 0.5, 0.5),
+    ],
+    spawn: { x: -11, z: -2.6, rot: Math.PI },
+    npcs,
+    interactables,
+    ambient: 'street',
+  };
+}
+
+function storeMenu(g) {
+  const s = g.state;
+  const info = shiftInfo(g);
+  const mod = minuteOfDay(s.clock.m);
+  const choices = [];
+  if (s.job.employed) {
+    choices.push({
+      label: info.canClockIn ? `Clock in and work (${Math.round(info.minutesLeft / 60 * 10) / 10}h).` : 'Clock in — not available right now.',
+      sub: info.canClockIn ? `+${money((info.minutesLeft / 60) * s.job.wage - CONFIG.job.transportCost)}` : (info.worked ? 'shift already worked today' : info.today ? 'shift window closed' : 'not a shift day'),
+      disabled: !info.canClockIn,
+      effect: () => workShift(g),
+    });
+    choices.push({ label: 'Call out of your shift.', sub: '+1 strike · no pay', disabled: !info.today || info.worked, effect: () => callOut(g) });
+    choices.push({ label: 'Quit. Hand over the vest.', sub: 'no job, less stress', effect: () => { quitJob(g); } });
+  } else {
+    choices.push({ label: 'Ask Dale for your job back.', sub: '35 min', effect: () => applyForJob(g) });
+  }
+  choices.push({
+    label: 'Buy something from the shelves.',
+    sub: 'convenience-store prices',
+    effect: () => {
+      g.openModal({
+        kicker: 'QUIK-STOP #14',
+        title: 'Aisle Food, Loosely',
+        body: 'Everything here costs more than the grocery store and less than a restaurant. That is the entire business model.',
+        choices: [
+          ...['ramen', 'bar', 'sandwich', 'cereal'].map((id) => ({
+            label: `${CONFIG.items[id].name} — ${money(CONFIG.items[id].price * 1.35)}`,
+            sub: `+${CONFIG.items[id].hunger} hunger`,
+            effect: () => {
+              const price = Math.round(CONFIG.items[id].price * 1.35 * 100) / 100;
+              if (g.state.money < price) { g.toast('Not enough money.', 'bad'); return; }
+              g.spendMoney(price, 'Quik-Stop');
+              addItem(g.state, id, 1);
+              g.audio.sfx('cash');
+              g.toast(`Bought ${CONFIG.items[id].name}.`, 'good');
+            },
+          })),
+          { label: 'Leave the aisle.', sub: '', effect: () => {} },
+        ],
+      });
+    },
+  });
+  choices.push({ label: 'Step back outside.', sub: '', effect: () => {} });
+  g.openModal({
+    kicker: 'QUIK-STOP #14',
+    title: `It is ${String(Math.floor(mod / 60)).padStart(2, '0')}:${String(mod % 60).padStart(2, '0')}`,
+    body: `Fluorescent light, a smell like cold hot dogs, and the specific dignity of the night shift.\n\n${s.job.employed ? `Shift: 09:00–17:00 · ${money(s.job.wage)}/hr · strikes ${s.job.strikes}/${CONFIG.job.maxStrikes}` : 'Dale is at the counter. He has already seen you.'}`,
+    choices,
+  });
+}
+
+function oddJobMenu(g) {
+  const jobs = oddJobsAvailable(g);
+  g.openModal({
+    kicker: 'JOB BOARD — CASH TODAY',
+    title: 'Odd Jobs',
+    body: 'Hand-written cards, pinned with a thumbtack through somebody else\'s card. Cash at the end. No forms.',
+    choices: [
+      ...jobs.map((j) => ({
+        label: `${j.name} — ${money(j.pay)}`,
+        sub: `${j.hours}h · ${j.blurb} · needs ${j.minEnergy} energy`,
+        disabled: g.state.stats.energy < j.minEnergy,
+        effect: () => doOddJob(g, j.id),
+      })),
+      { label: 'Stop reading the board.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function dexMenu(g) {
+  const s = g.state;
+  const mod = minuteOfDay(s.clock.m);
+  if (mod < 18 * 60 && mod > 4 * 60) {
+    g.toast('The alley is empty. Dex works nights. Obviously.', 'info');
+    return;
+  }
+  const types = CONFIG.substances.types;
+  g.openModal({
+    kicker: 'DEX — THE ALLEY',
+    title: 'Cash Only',
+    body: `"Evening."\n\nHe does not look up. He is doing something with a bag that is not your business.\n\n${CONFIG.substances.note}\n\nAll of it raises risk. Risk at 100 ends the run.`,
+    choices: [
+      ...['bliss', 'static', 'mud', 'drip'].map((id) => ({
+        label: `Buy ${types[id].name} — ${money(types[id].price)}`,
+        sub: `risk +${types[id].risk} · addiction +${types[id].addiction}`,
+        disabled: s.money < types[id].price,
+        effect: () => {
+          if (s.money < types[id].price) return;
+          g.spendMoney(types[id].price, `Dex — ${types[id].name}`);
+          addItem(s, id, 1);
+          g.toast(`${types[id].name}. It goes in the drawer with the others.`, 'event');
+          g.audio.sfx('cash');
+        },
+      })),
+      {
+        label: 'Sell him something instead.',
+        sub: 'he pays 42% of value',
+        effect: () => {
+          const valuables = inventoryList(s).filter((i) => i.def.kind === 'valuable');
+          if (!valuables.length) { g.toast('You have nothing left he wants.', 'bad'); return; }
+          g.openModal({
+            kicker: 'DEX',
+            title: 'What Have You Got',
+            body: 'He turns each object over once, like he is reading a page.',
+            choices: [
+              ...valuables.map((v) => ({ label: `${v.def.name} (x${v.qty}) — ${money(Math.round(v.def.value * 0.42))}`, sub: `BidBay might get ${money(v.def.value)}`, effect: () => sellToDex(g, v.id) })),
+              { label: 'Never mind.', sub: '', effect: () => {} },
+            ],
+          });
+        },
+      },
+      { label: 'Leave the alley.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function dumpster(g) {
+  const s = g.state;
+  g.advance(15);
+  bump(s, 'hygiene', -9);
+  bump(s, 'stress', 4);
+  const roll = Math.random();
+  if (roll < 0.34) {
+    const id = pick(['beans', 'ramen', 'cereal', 'bar']);
+    addItem(s, id, 1);
+    g.toast(`You find a sealed ${CONFIG.items[id].name}. It is fine. It is probably fine.`, 'good');
+  } else if (roll < 0.55) {
+    const amount = randInt(2, 9);
+    g.earnMoney(amount, 'Dumpster deposit');
+    g.toast(`Bottles. ${money(amount)} in deposit returns.`, 'good');
+  } else if (roll < 0.7) {
+    if (!s.flags.foundTools) {
+      addItem(s, 'tools', 1);
+      s.flags.foundTools = true;
+      g.toast('A toolbox, fully stocked. Someone moved out in a hurry.', 'good');
+    } else {
+      g.toast('A chair with one leg. You consider it. You decline.', 'info');
+    }
+  } else {
+    g.toast('A bag of something wet. You decide not to investigate further.', 'bad');
+    bump(s, 'morale', -3);
+  }
+}
+
+function bench(g) {
+  const s = g.state;
+  g.advance(45);
+  bump(s, 'energy', 5);
+  bump(s, 'stress', -6);
+  bump(s, 'hygiene', -3);
+  g.toast('You sit. The city continues without asking you anything.', 'good');
+  if (chance(0.4)) g.toast(pick(AMBIENT_LINES), 'info');
+}
+
+function talk(g, id) {
+  const s = g.state;
+  g.advance(10);
+  bump(s, 'morale', 3);
+  s.npc[id] = (s.npc[id] || 0) + 1;
+  if (id === 'rae') {
+    const info = billInfo(g, 'rent');
+    const rentLine = info.owedCycles > 0
+      ? '"Rent\'s ' + money(info.owed) + '. You\'re ' + info.owedCycles + ' cycle behind. I\'ve been patient. I\'m running out of patient."'
+      : '"Rent\'s ' + money(info.base) + ', due Day ' + info.nextDueDay + '. I\'m not chasing you. I\'m just telling you where Friday is."';
+    g.openModal({
+      kicker: 'RAE VELL — LANDLORD',
+      title: 'The Stairwell Conversation',
+      body: npcLine('rae') + '\n\n' + rentLine + '\n\nShe is holding a clipboard with your name on it. Just your name. Nothing else.',
+      choices: [
+        { label: 'Pay what you owe.', sub: `${money(info.owed)}`, disabled: info.owedCycles <= 0 || s.money < info.owed, effect: () => { g.payBill('rent'); } },
+        { label: 'Promise her Friday.', sub: '+stress, +relationship', effect: () => { bump(s, 'stress', 5); s.npc.rae++; g.toast('She writes something on the clipboard. It is not "no".', 'info'); } },
+        { label: 'Say nothing and go upstairs.', sub: '-morale', effect: () => { bump(s, 'morale', -5); s.npc.rae = Math.max(-5, s.npc.rae - 1); } },
+      ],
+    });
+  } else if (id === 'dale') {
+    g.openModal({
+      kicker: 'DALE — QUIK-STOP #14',
+      title: 'Counter Talk',
+      body: `${npcLine('dale')}\n\nHe has a coffee cup with a bite mark on the rim. It is not his bite mark. Nobody mentions it.`,
+      choices: [
+        { label: 'Ask about extra hours.', sub: 'possible overtime', effect: () => { g.advance(15); if (shiftInfo(g).today) g.toast('"Come in early. I\'ll find something."', 'good'); else g.toast('"Nothing right now. Check the board."', 'info'); } },
+        { label: 'Nod and leave.', sub: '', effect: () => {} },
+      ],
+    });
+  } else if (id === 'kev') {
+    g.openModal({
+      kicker: 'KEV',
+      title: 'Kev Has A Theory',
+      body: `${npcLine('kev')}\n\nHe is eating a sandwich he did not pay for and will not acknowledge.`,
+      choices: [
+        { label: 'Listen to the whole theory.', sub: '-15 min · +morale', effect: () => { g.advance(15); bump(s, 'morale', 7); g.toast('The theory is about the store freezer and the government. It has structure.', 'good'); } },
+        { label: 'Say you have to go.', sub: '', effect: () => { bump(s, 'morale', -1); } },
+      ],
+    });
+  }
+}
+
+/* ------------------------------ CHURCH ------------------------------ */
+
+export function buildChurch(g) {
+  const group = new THREE.Group();
+  const W = 11, D = 15;
+  group.add(plane(W, D, { name: 'chfloor', map: tex('carpet'), repeat: [4, 5] }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(box(W, 5, 0.2, { name: 'chwall', map: tex('brick') }, [0, 2.5, -D / 2]));
+  group.add(box(W, 5, 0.2, { name: 'chwall2', map: tex('brick') }, [0, 2.5, D / 2]));
+  group.add(box(0.2, 5, D, { name: 'chwall3', map: tex('brick') }, [-W / 2, 2.5, 0]));
+  group.add(box(0.2, 5, D, { name: 'chwall4', map: tex('brick') }, [W / 2, 2.5, 0]));
+  // ceiling beams
+  for (let i = -3; i <= 3; i++) group.add(box(W, 0.2, 0.3, M.wood, [0, 4.6, i * 2]));
+  group.add(plane(W, D, { name: 'chceil', color: 0x2a2620 }, [0, 4.7, 0], [Math.PI / 2, 0, 0]));
+
+  // altar
+  group.add(box(4.0, 0.9, 1.0, ps1Material('altar', { color: 0xd8cba8 }), [0, 0.45, -6.0]));
+  group.add(box(4.2, 0.1, 1.1, M.goldDoor, [0, 0.95, -6.0]));
+  group.add(box(1.6, 2.2, 0.1, { name: 'backdrop', map: tex('cross'), emissive: 0.4, unlit: true }, [0, 2.4, -6.9]));
+
+  // pews
+  for (let r = 0; r < 5; r++) {
+    for (const side of [-1, 1]) {
+      const x = side * 2.6;
+      const z = -2.4 + r * 1.8;
+      group.add(box(2.0, 0.12, 0.5, M.wood, [x, 0.46, z]));
+      group.add(box(2.0, 0.55, 0.1, M.wood, [x, 0.72, z + 0.2]));
+    }
+  }
+
+  // candles
+  for (let i = -4; i <= 4; i++) {
+    if (i === 0) continue;
+    group.add(box(0.12, 0.5, 0.12, M.candle, [i * 0.75, 0.25, -5.4]));
+    group.add(box(0.2, 0.04, 0.2, M.goldDoor, [i * 0.75, 0.02, -5.4]));
+  }
+  // donation box
+  group.add(box(0.7, 0.9, 0.5, M.goldDoor, [-2.6, 0.45, -5.0]));
+  group.add(box(0.3, 0.06, 0.1, ps1Material('slot', { color: 0x2a2118 }), [-2.6, 0.9, -5.0]));
+  // exit
+  group.add(box(1.6, 2.6, 0.16, M.door, [0, 1.3, D / 2 - 0.1]));
+  group.add(box(0.1, 0.1, 0.06, M.goldDoor, [0.6, 1.2, D / 2 - 0.2]));
+  // windows
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      group.add(plane(0.9, 2.0, { name: 'chwin', map: tex('window'), emissive: 0.35, unlit: true }, [side * (W / 2 - 0.11), 2.6, -3.5 + i * 3], [0, side * Math.PI / 2, 0]));
+    }
+  }
+
+  const interactables = [
+    { id: 'addison', label: 'Speak with Addison Octavius', sub: 'he is expecting you', x: 0, z: -4.6, action: (gg) => visitFellowship(gg) },
+    { id: 'donate', label: 'Put money in the donation box', sub: '$10 · +morale, +favour', x: -2.6, z: -4.4, action: (gg) => { if (gg.state.money < 10) { gg.toast('You cannot donate what you do not have. He would understand.', 'bad'); return; } gg.spendMoney(10, 'Fellowship donation'); bump(gg.state, 'morale', 4); gg.state.npc.addison++; gg.toast('The box makes a sound like a swallow.', 'event'); } },
+    { id: 'candle', label: 'Light a candle', sub: '10 min · +morale', x: 1.5, z: -5.0, action: (gg) => { gg.advance(10); bump(gg.state, 'morale', 4); bump(gg.state, 'stress', -5); gg.toast('You light one. You do not know who it is for. That is fine.', 'good'); } },
+    { id: 'exit', label: 'Leave the Fellowship', sub: 'back to the street', x: 0, z: 7.1, action: (gg) => gg.goTo('street', 'church') },
+  ];
+
+  const npcs = [
+    { kind: 'addison', x: 0, z: -3.6, rot: 0, special: true },
+    { kind: 'rae', x: -2.6, z: 2.4, rot: 0.4, talk: 'rae' },
+  ];
+
+  return {
+    group,
+    bounds: { minX: -5, maxX: 5, minZ: -6.6, maxZ: 7.2 },
+    solids: [
+      solid(-2.6, -2.4, 2.2, 0.7), solid(2.6, -2.4, 2.2, 0.7), solid(-2.6, 1.2, 2.2, 0.7),
+      solid(2.6, 1.2, 2.2, 0.7), solid(0, -6.0, 4.2, 1.2), solid(-2.6, -5.0, 0.9, 0.7),
+    ],
+    spawn: { x: 0, z: 3.9, rot: Math.PI },
+    npcs,
+    interactables,
+    ambient: 'church',
+  };
+}
+
+/* ------------------------------ MENU SCENE ------------------------------ */
+
+export function buildMenuWorld() {
+  const group = new THREE.Group();
+  const D = 26;
+  // corridor floor & walls, concrete, oppressive
+  group.add(plane(6, D, { name: 'mfloor', map: tex('concrete'), repeat: [2, 8] }, [0, 0, -D / 2 + 4], [-Math.PI / 2, 0, 0]));
+  group.add(plane(6, D, { name: 'mceil', map: tex('concrete'), repeat: [2, 8] }, [0, 3.2, -D / 2 + 4], [Math.PI / 2, 0, 0]));
+  group.add(box(0.2, 3.2, D, { name: 'mwallL', map: tex('concrete') }, [-3, 1.6, -D / 2 + 4]));
+  group.add(box(0.2, 3.2, D, { name: 'mwallR', map: tex('concrete') }, [3, 1.6, -D / 2 + 4]));
+  group.add(box(6, 3.2, 0.2, { name: 'mback', map: tex('concrete') }, [0, 1.6, -D + 4]));
+
+  // doorway frames receding into fog
+  for (let i = 0; i < 5; i++) {
+    const z = -2 - i * 4.4;
+    group.add(box(0.3, 3.2, 0.5, { name: 'frame', color: 0x4a4f46 }, [-2.2, 1.6, z]));
+    group.add(box(0.3, 3.2, 0.5, { name: 'frame2', color: 0x3e433c }, [2.2, 1.6, z]));
+  }
+  // flickering fluorescent tubes
+  for (let i = 0; i < 4; i++) {
+    group.add(box(1.4, 0.06, 0.24, { name: 'tube', color: 0xdfffe0, emissive: 1.0, unlit: true }, [0, 3.05, -1 - i * 5.2]));
+  }
+  // a small tv on a crate, playing static
+  group.add(box(0.8, 0.6, 0.7, M.wood, [2.0, 0.3, 1.2]));
+  group.add(box(0.7, 0.55, 0.6, ps1Material('menucrt', { color: 0x2e2e2c }), [2.0, 0.85, 1.2]));
+  group.add(plane(0.5, 0.4, { name: 'menutv', map: tex('static'), emissive: 0.8, unlit: true }, [2.0, 0.87, 0.88]));
+  // water stain on the wall
+  group.add(box(1.6, 0.9, 0.02, { name: 'mstain', color: 0x2a2a24, opacity: 0.7, transparent: true }, [1.8, 2.0, -0.8]));
+
+  return {
+    group,
+    bounds: { minX: -2.6, maxX: 2.6, minZ: -6, maxZ: 2.4 },
+    spawn: { x: 0, z: -0.4, rot: 0 },
+    solids: [solid(2.0, 1.2, 0.9, 0.8)],
+    npcs: [],
+    interactables: [],
+  };
+}
