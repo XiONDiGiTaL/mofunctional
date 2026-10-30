@@ -7,25 +7,29 @@
  * wrist, hip, knee, ankle) so the silhouette reads as a person, not a stack of cubes.
  */
 import * as THREE from '../../vendor/three.module.js';
-import { ps1Material, box, plane, taper } from '../render/ps1.js';
-import { tex, moFaceTexture } from '../render/textures.js';
+import { retroMaterial, box, plane, taper, taperMulti } from '../render/retro.js';
+import { tex, moFaceTexture, npcFaceTexture } from '../render/textures.js';
 
 const mat = {
-  skin: ps1Material('skin', { map: tex('skin'), color: 0xfff2e6 }),
-  shirt: ps1Material('shirt', { map: tex('shirt'), color: 0xffffff }),
-  denim: ps1Material('denim', { map: tex('denim'), color: 0xbfc9d6 }),
-  hair: ps1Material('hair', { color: 0x241c14 }),
-  shoe: ps1Material('shoe', { color: 0x232326 }),
-  belt: ps1Material('belt', { color: 0x2b2119 }),
-  suit: ps1Material('suit', { map: tex('suitWhite'), color: 0xfffdf4 }),
-  trouser: ps1Material('trouser', { color: 0xf1eee2 }),
-  gold: ps1Material('gold', { map: tex('gold'), color: 0xffe9a3, emissive: 0.12 }),
-  goldBand: ps1Material('goldband', { color: 0xffd24a, emissive: 0.25 }),
-  dressShirt: ps1Material('dressShirt', { color: 0xfffdf6 }),
-  faceMo: ps1Material('faceMo', { map: moFaceTexture(), unlit: true, transparent: true, alphaTest: 0.3 }),
-  faceAddison: ps1Material('faceAddison', { map: tex('faceAddison'), unlit: true, transparent: true, alphaTest: 0.3 }),
-  eye: ps1Material('eye', { color: 0x14120f }),
-  stain: ps1Material('stain', { color: 0xb3a286 }),
+  skin: retroMaterial('skin', { map: tex('skin'), color: 0xfff2e6 }),
+  // the head gets its own, flatter lighting so the cheek planes never read as black bars
+  skinHead: retroMaterial('skinHead', { map: tex('skin'), color: 0xfff2e6, ambient: 0.82 }),
+  shirt: retroMaterial('shirt', { map: tex('shirt'), color: 0xffffff }),
+  denim: retroMaterial('denim', { map: tex('denim'), color: 0xbfc9d6 }),
+  hair: retroMaterial('hair', { color: 0x241c14 }),
+  shoe: retroMaterial('shoe', { color: 0x232326 }),
+  belt: retroMaterial('belt', { color: 0x2b2119 }),
+  suit: retroMaterial('suit', { map: tex('suitWhite'), color: 0xfffdf4 }),
+  trouser: retroMaterial('trouser', { color: 0xf1eee2 }),
+  gold: retroMaterial('gold', { map: tex('gold'), color: 0xffe9a3, emissive: 0.12 }),
+  goldBand: retroMaterial('goldband', { color: 0xffd24a, emissive: 0.25 }),
+  dressShirt: retroMaterial('dressShirt', { color: 0xfffdf6 }),
+  // Faces are the front face of the skull, so they are lit like everything else —
+  // a little emissive keeps them from sinking into shadow at night.
+  faceMo: retroMaterial('faceMo', { map: moFaceTexture(), emissive: 0.16 }),
+  faceAddison: retroMaterial('faceAddison', { map: npcFaceTexture('addison'), emissive: 0.16 }),
+  eye: retroMaterial('eye', { color: 0x14120f }),
+  stain: retroMaterial('stain', { color: 0xb3a286 }),
 };
 
 function shadowBlob(r = 0.34) {
@@ -53,7 +57,7 @@ function buildBody({
   height = 1.78,
   build = 1,
   skin, shirt, pants, shoe, hair,
-  armMat, sleeveMat, handMat, headMat,
+  armMat, sleeveMat, handMat, headMat, faceMat,
 }) {
   const k = height / 1.78;
   const b = build;
@@ -65,8 +69,8 @@ function buildBody({
   const pelvisH = 0.14 * k;
   const abdomenH = 0.15 * k;
   const chestH = 0.24 * k;
-  const neckH = 0.048 * k;
-  const headH = 0.245 * k;
+  const neckH = 0.042 * k;
+  const headH = 0.238 * k;
   const hipY = footH + calfH + thighH;
   // torso-local: 0 = top of pelvis, so the pelvis height is NOT included here
   const shoulderY = abdomenH + chestH;
@@ -100,25 +104,39 @@ function buildBody({
   const legL = makeLeg(-1);
   const legR = makeLeg(1);
 
-  // ---- torso: pelvis -> waist -> ribcage -> shoulders
+  // ---- torso: pelvis -> waist -> ribcage -> shoulders, three segments so the
+  // silhouette curves in at the waist instead of being one slab
   const torso = joint(hips, 0, pelvisH, 0);
-  torso.add(taper(waistW * 1.08, waistW, 0.205 * k, 0.19 * k, abdomenH, shirt, [0, abdomenH, 0]));
-  torso.add(taper(chestW, waistW * 1.08, 0.235 * k, 0.205 * k, chestH, shirt, [0, abdomenH + chestH, 0]));
+  const ribW = (chestW + waistW) / 2;
+  torso.add(taper(waistW * 1.06, waistW, 0.202 * k, 0.188 * k, abdomenH, shirt, [0, abdomenH, 0]));
+  torso.add(taper(ribW, waistW * 1.06, 0.222 * k, 0.202 * k, chestH * 0.55, shirt, [0, abdomenH + chestH * 0.55, 0]));
+  torso.add(taper(chestW, ribW, 0.238 * k, 0.222 * k, chestH * 0.45, shirt, [0, abdomenH + chestH, 0]));
+
 
   // ---- neck + head
-  torso.add(taper(0.082 * k, 0.098 * k, 0.082 * k, 0.094 * k, neckH, headMat || skin, [0, shoulderY + neckH, 0]));
+  const skinMat = headMat || skin;
+  torso.add(taper(0.082 * k, 0.098 * k, 0.082 * k, 0.094 * k, neckH, skinMat, [0, shoulderY + neckH, 0]));
   const head = joint(torso, 0, shoulderY + neckH, 0);
-  head.add(taper(0.182 * k, 0.156 * k, 0.205 * k, 0.188 * k, headH, headMat || skin, [0, headH, 0]));
-  head.add(box(0.017 * k, 0.05 * k, 0.035 * k, headMat || skin, [-0.094 * k, headH * 0.5, 0]));
-  head.add(box(0.017 * k, 0.05 * k, 0.035 * k, headMat || skin, [0.094 * k, headH * 0.5, 0]));
 
-  const faceW = headH * 0.96 * 0.615; // supplied face art is 64x104, keep its aspect
-  const faceH = headH * 0.96;
-  head.add(plane(faceW, faceH, mat.faceMo, [0, headH * 0.5, 0.116 * k]));
-
-  // short cropped hair: cap over the crown, block at the back of the skull
-  head.add(box(0.186 * k, 0.05 * k, 0.209 * k, hair, [0, headH - 0.018 * k, -0.004 * k]));
-  head.add(box(0.176 * k, 0.12 * k, 0.042 * k, hair, [0, headH - 0.11 * k, -0.086 * k]));
+  // The head is a real volume whose FRONT FACE carries the portrait texture, so the art
+  // wraps the skull instead of hovering in front of it: no pasted-on rectangle, and the
+  // jaw and cheek planes still take the light.
+  const headW = 0.172 * k;
+  const headD = 0.205 * k;
+  const jawW = headW * 0.88;
+  const jawD = headD * 0.95;
+  if (faceMat) {
+    head.add(taperMulti(headW, jawW, headD, jawD, headH,
+      [faceMat, skinMat, skinMat, skinMat, skinMat, skinMat], [0, headH, 0]));
+  } else {
+    head.add(taper(headW, jawW, headD, jawD, headH, skinMat, [0, headH, 0]));
+  }
+  // ears sit on the cheek planes, just behind the face
+  head.add(box(0.013 * k, 0.04 * k, 0.028 * k, skinMat, [-headW * 0.5, headH * 0.48, -0.022 * k]));
+  head.add(box(0.013 * k, 0.04 * k, 0.028 * k, skinMat, [headW * 0.5, headH * 0.48, -0.022 * k]));
+  // crown and nape, offset back so they never cover the portrait
+  head.add(box(headW * 0.99, 0.034 * k, headD * 0.9, hair, [0, headH - 0.014 * k, -0.022 * k]));
+  head.add(box(headW * 0.98, headH * 0.6, 0.05 * k, hair, [0, headH * 0.46, -headD * 0.47]));
 
   // ---- arms: shoulder -> upper arm -> elbow -> forearm -> hand
   const upperH = 0.285 * k;
@@ -130,13 +148,15 @@ function buildBody({
     pivot.add(taper(0.092 * b * k, 0.106 * b * k, 0.106 * k, 0.122 * k, 0.09 * k, sleeveMat, [0, 0.022 * k, 0]));
     pivot.add(taper(0.092 * b * k, 0.076 * b * k, 0.106 * k, 0.088 * k, upperH, armMat));
     if (sleeveMat && armMat !== sleeveMat) {
-      // short sleeve hem over the top of the upper arm
-      pivot.add(taper(0.112 * b * k, 0.10 * b * k, 0.126 * k, 0.112 * k, upperH * 0.58, sleeveMat));
+      // a tee sleeve that actually covers the shoulder and half the bicep, with a hem
+      pivot.add(taper(0.118 * b * k, 0.106 * b * k, 0.134 * k, 0.118 * k, upperH * 0.62, sleeveMat));
+      pivot.add(taper(0.113 * b * k, 0.11 * b * k, 0.126 * k, 0.122 * k, 0.014 * k, sleeveMat, [0, -upperH * 0.62 + 0.014 * k, 0]));
     }
     const elbow = joint(pivot, 0, -upperH, 0);
     elbow.add(taper(0.077 * b * k, 0.064 * b * k, 0.089 * k, 0.074 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat));
-    const hand = box(0.066 * k, handH, 0.047 * k, handMat || skin, [0, -foreH - handH * 0.45, 0.004 * k]);
+    const hand = box(0.068 * k, handH, 0.05 * k, handMat || skin, [0, -foreH - handH * 0.45, 0.006 * k]);
     elbow.add(hand);
+    elbow.add(box(0.026 * k, handH * 0.55, 0.03 * k, handMat || skin, [-sx * 0.036 * k, -foreH - handH * 0.4, 0.02 * k]));
     return { pivot, elbow, hand };
   }
   const armL = makeArm(-1);
@@ -156,7 +176,8 @@ export function createMo() {
     hair: mat.hair,
     armMat: mat.skin,       // bare forearms
     sleeveMat: mat.shirt,   // white tee sleeves
-    headMat: mat.skin,
+    headMat: mat.skinHead,
+    faceMat: mat.faceMo,
   });
   rig.root.name = 'Mo';
 
@@ -164,7 +185,7 @@ export function createMo() {
   // belt
   rig.hips.add(box(0.29 * k, 0.032 * k, 0.205 * k, mat.belt, [0, 0.012 * k, 0]));
   // tee collar
-  rig.torso.add(taper(0.10 * k, 0.115 * k, 0.10 * k, 0.115 * k, 0.045 * k, mat.shirt, [0, rig.shoulderY + 0.012 * k, 0]));
+  rig.torso.add(taper(0.092 * k, 0.105 * k, 0.092 * k, 0.105 * k, 0.026 * k, mat.shirt, [0, rig.shoulderY + 0.004 * k, 0]));
   // a stain he has stopped noticing
   rig.torso.add(box(0.075 * k, 0.06 * k, 0.012 * k, mat.stain, [0.03 * k, rig.shoulderY - 0.16 * k, 0.122 * k]));
 
@@ -175,14 +196,15 @@ export function createAddison() {
   const rig = buildBody({
     height: 1.86,
     build: 1.03,
-    skin: ps1Material('skinA', { map: tex('skin'), color: 0xf1dcc2 }),
+    skin: retroMaterial('skinA', { map: tex('skin'), color: 0xf1dcc2 }),
     shirt: mat.suit,
     pants: mat.trouser,
-    shoe: ps1Material('shoeBlack', { color: 0x1c1a17 }),
-    hair: ps1Material('grey', { color: 0xb7b4ab }),
+    shoe: retroMaterial('shoeBlack', { color: 0x1c1a17 }),
+    hair: retroMaterial('grey', { color: 0xb7b4ab }),
     armMat: mat.suit,
     sleeveMat: mat.suit,
-    headMat: ps1Material('skinA', { map: tex('skin'), color: 0xf1dcc2 }),
+    headMat: retroMaterial('skinAhead', { map: tex('skin'), color: 0xf1dcc2, ambient: 0.82 }),
+    faceMat: mat.faceAddison,
   });
   rig.root.name = 'Addison';
   const { k } = rig;
@@ -192,12 +214,12 @@ export function createAddison() {
   rig.torso.add(box(0.14 * k, 0.20 * k, 0.012 * k, mat.dressShirt, [0, chestTop - 0.13 * k, 0.122 * k]));
   rig.torso.add(box(0.072 * k, 0.30 * k, 0.014 * k, mat.gold, [0, chestTop - 0.20 * k, 0.128 * k]));
   rig.torso.add(box(0.048 * k, 0.05 * k, 0.016 * k, mat.goldBand, [0, chestTop - 0.055 * k, 0.13 * k]));
-  rig.torso.add(box(0.08 * k, 0.014 * k, 0.016 * k, ps1Material('clip', { color: 0xffe08a, emissive: 0.3 }), [0, chestTop - 0.27 * k, 0.13 * k]));
+  rig.torso.add(box(0.08 * k, 0.014 * k, 0.016 * k, retroMaterial('clip', { color: 0xffe08a, emissive: 0.3 }), [0, chestTop - 0.27 * k, 0.13 * k]));
 
   // double-breasted buttons
   for (let i = 0; i < 2; i++) {
     for (let j = 0; j < 2; j++) {
-      rig.torso.add(box(0.026 * k, 0.026 * k, 0.012 * k, ps1Material('btn', { color: 0x2b2b2b }),
+      rig.torso.add(box(0.026 * k, 0.026 * k, 0.012 * k, retroMaterial('btn', { color: 0x2b2b2b }),
         [(-0.075 + i * 0.15) * k, chestTop - 0.14 * k - j * 0.16 * k, 0.124 * k]));
     }
   }
@@ -213,10 +235,6 @@ export function createAddison() {
     a.elbow.add(box(0.088 * k, 0.035 * k, 0.10 * k, mat.gold, [0, -0.235 * k, 0]));
   }
 
-  // grey hair, receding
-  rig.head.add(box(0.178 * k, 0.055 * k, 0.20 * k, ps1Material('grey', { color: 0xb7b4ab }), [0, rig.headH - 0.022 * k, -0.006 * k]));
-  // beard mass shadowing the jaw (the face art already has the moustache/goatee)
-  rig.head.add(box(0.10 * k, 0.03 * k, 0.012 * k, ps1Material('beard', { color: 0x6a6258 }), [0, rig.headH * 0.16, 0.098 * k]));
 
   return rig;
 }
@@ -231,10 +249,10 @@ const PALETTES = {
 
 export function createNPC(kind = 'kev') {
   const p = PALETTES[kind] || PALETTES.kev;
-  const matShirt = ps1Material(`npcShirt${kind}`, { color: p.shirt });
-  const matPants = ps1Material(`npcPants${kind}`, { color: p.pants });
-  const matSkin = ps1Material(`npcSkin${kind}`, { color: p.skin });
-  const matHair = ps1Material(`npcHair${kind}`, { color: p.hair });
+  const matShirt = retroMaterial(`npcShirt${kind}`, { color: p.shirt });
+  const matPants = retroMaterial(`npcPants${kind}`, { color: p.pants });
+  const matSkin = retroMaterial(`npcSkin${kind}`, { color: p.skin });
+  const matHair = retroMaterial(`npcHair${kind}`, { color: p.hair });
 
   const rig = buildBody({
     height: p.height,
@@ -242,33 +260,31 @@ export function createNPC(kind = 'kev') {
     skin: matSkin,
     shirt: matShirt,
     pants: matPants,
-    shoe: ps1Material(`npcShoe${kind}`, { color: 0x22221f }),
+    shoe: retroMaterial(`npcShoe${kind}`, { color: 0x22221f }),
     hair: matHair,
     armMat: matShirt,
     sleeveMat: matShirt,
     handMat: matSkin,
-    headMat: matSkin,
+    headMat: retroMaterial(`npcHead${kind}`, { color: p.skin, ambient: 0.82 }),
+    // built exactly like Mo: a generated portrait on the front face of the skull
+    faceMat: retroMaterial(`npcFace${kind}`, { map: npcFaceTexture(kind), emissive: 0.16 }),
   });
   rig.root.name = kind;
   const { k, headH } = rig;
 
-  // a face made of nothing but two eye slabs, PS1-style
-  rig.head.add(box(0.032 * k, 0.026 * k, 0.008 * k, mat.eye, [-0.038 * k, headH * 0.55, 0.095 * k]));
-  rig.head.add(box(0.032 * k, 0.026 * k, 0.008 * k, mat.eye, [0.038 * k, headH * 0.55, 0.095 * k]));
-
   if (kind === 'dex') {
-    rig.head.add(box(0.196 * k, 0.09 * k, 0.21 * k, ps1Material('hood', { color: 0x2a2f3a }), [0, headH * 0.92, -0.02 * k]));
+    rig.head.add(box(0.196 * k, 0.09 * k, 0.21 * k, retroMaterial('hood', { color: 0x2a2f3a }), [0, headH * 0.92, -0.02 * k]));
   }
   if (kind === 'dale') {
-    rig.head.add(box(0.182 * k, 0.05 * k, 0.205 * k, ps1Material('cap', { color: 0x1f4a34 }), [0, headH * 0.98, 0]));
-    rig.head.add(box(0.16 * k, 0.016 * k, 0.09 * k, ps1Material('brim', { color: 0x183a28 }), [0, headH * 0.94, 0.115 * k]));
+    rig.head.add(box(0.182 * k, 0.05 * k, 0.205 * k, retroMaterial('cap', { color: 0x1f4a34 }), [0, headH * 0.98, 0]));
+    rig.head.add(box(0.16 * k, 0.016 * k, 0.09 * k, retroMaterial('brim', { color: 0x183a28 }), [0, headH * 0.94, 0.115 * k]));
   }
   return rig;
 }
 
 export function createCat() {
   const root = new THREE.Group();
-  const fur = ps1Material('fur', { color: 0x3a3630 });
+  const fur = retroMaterial('fur', { color: 0x3a3630 });
   const body = box(0.22, 0.16, 0.38, fur, [0, 0.13, 0]);
   root.add(body);
   root.add(box(0.15, 0.13, 0.14, fur, [0, 0.2, 0.24]));
@@ -386,24 +402,38 @@ export function animateAddison(rig, dt) {
   rig.head.rotation.x = -0.1 + beat * 0.1;
 }
 
-export function animateNPC(rig, dt) {
-  rig.t += dt;
+export function animateNPC(rig, dt, opts = {}) {
+  const { walking = false } = opts;
+  rig.t += dt * (walking ? 6.4 : 1);
   const t = rig.t;
   if (rig.type === 'cat') {
     rig.tail.rotation.y = Math.sin(t * 2.2) * 0.5;
     rig.root.position.y = Math.abs(Math.sin(t * 0.7)) * 0.01;
     return;
   }
-  rig.hips.position.y = rig.hipY + Math.sin(t * 0.9) * 0.006;
-  rig.torso.rotation.y = Math.sin(t * 0.5) * 0.07;
-  rig.head.rotation.y = Math.sin(t * 0.37) * 0.2;
-  rig.head.rotation.z = Math.sin(t * 0.53) * 0.04;
-  rig.armL.pivot.rotation.x = Math.sin(t * 0.8) * 0.07;
-  rig.armR.pivot.rotation.x = Math.sin(t * 0.8 + 1.6) * 0.07;
-  rig.armL.elbow.rotation.x = -0.14 + Math.sin(t * 0.8) * 0.05;
-  rig.armR.elbow.rotation.x = -0.14 + Math.sin(t * 0.8 + 1.6) * 0.05;
+
+  // same joint chain, same gait as Mo — NPCs are the same kind of body, not props
+  const stride = walking ? 0.5 : 0.03;
+  const swingL = Math.sin(t);
+  const swingR = Math.sin(t + Math.PI);
+  const bob = walking ? Math.abs(Math.sin(t)) * 0.025 : Math.sin(t * 0.9) * 0.006;
+
+  rig.hips.position.y = rig.hipY + bob;
+  rig.legL.pivot.rotation.x = swingL * stride;
+  rig.legR.pivot.rotation.x = swingR * stride;
+  rig.legL.knee.rotation.x = Math.max(0, -swingL) * (walking ? 0.62 : 0.05) + 0.03;
+  rig.legR.knee.rotation.x = Math.max(0, -swingR) * (walking ? 0.62 : 0.05) + 0.03;
+  rig.legL.ankle.rotation.x = swingL * 0.09;
+  rig.legR.ankle.rotation.x = swingR * 0.09;
+  rig.armL.pivot.rotation.x = -swingL * stride * 0.9;
+  rig.armR.pivot.rotation.x = -swingR * stride * 0.9;
+  rig.armL.elbow.rotation.x = -0.16 + Math.max(0, swingL) * 0.28;
+  rig.armR.elbow.rotation.x = -0.16 + Math.max(0, swingR) * 0.28;
   rig.armL.pivot.rotation.z = -0.06;
   rig.armR.pivot.rotation.z = 0.06;
+  rig.torso.rotation.y = Math.sin(t) * (walking ? 0.04 : 0.07);
+  rig.head.rotation.y = Math.sin(t * 0.37) * (walking ? 0.04 : 0.2);
+  rig.head.rotation.z = walking ? 0 : Math.sin(t * 0.53) * 0.04;
 }
 
 export { mat as characterMaterials };

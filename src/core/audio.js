@@ -155,6 +155,48 @@ export class Audio {
     src.start();
   }
 
+  /**
+   * The grown-up voice from the cartoons: a muted, nasal mumble with no words in it.
+   * One sawtooth per syllable through a narrow bandpass, pitch drifting down — reads as
+   * speech through a wall, which is all an NPC conversation needs to be.
+   */
+  mumble(text = '', { pitch = 1, volume = 0.09 } = {}) {
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+    const raw = String(text).replace(/["“”'.,!?\n]/g, ' ').trim();
+    const words = raw ? raw.split(/\s+/).length : 4;
+    const n = Math.max(3, Math.min(16, words));
+    const t0 = this.ctx.currentTime + 0.02;
+    const base = 132 * pitch;
+    for (let i = 0; i < n; i++) {
+      const at = t0 + i * (0.075 + (i % 3) * 0.012);
+      const dur = 0.052 + (i % 2) * 0.018;
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sawtooth';
+      const f0 = base * (0.88 + ((i * 7) % 5) * 0.06);
+      osc.frequency.setValueAtTime(f0, at);
+      osc.frequency.linearRampToValueAtTime(f0 * 1.22, at + dur * 0.75);
+      osc.frequency.linearRampToValueAtTime(f0 * 0.92, at + dur);
+
+      const formant = this.ctx.createBiquadFilter();
+      formant.type = 'bandpass';
+      formant.frequency.setValueAtTime(430 + ((i * 3) % 4) * 120, at);
+      formant.Q.value = 6;
+
+      const nasal = this.ctx.createBiquadFilter();
+      nasal.type = 'lowpass';
+      nasal.frequency.value = 1250;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(volume, at + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+
+      osc.connect(formant).connect(nasal).connect(gain).connect(this.sfxGain);
+      osc.start(at);
+      osc.stop(at + dur + 0.03);
+    }
+  }
+
   sfx(name) {
     switch (name) {
       case 'ui': return this.blip(720, 0.04, 'square', 0.1);

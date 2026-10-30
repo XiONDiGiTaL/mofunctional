@@ -2,7 +2,7 @@
 
 > *You don't have to get your life together. You just have to keep it together.*
 
-A dark-comedy, PS1-inspired **life-management simulation** about rent, shifts, dependence,
+A dark-comedy, 90s-era **life-management simulation** about rent, shifts, dependence,
 and the arithmetic of a Tuesday. Built with Three.js and vanilla JavaScript. No backend, no
 build step, no install.
 
@@ -124,7 +124,7 @@ rig on ~7.5-head proportions: tapered thighs and shins, separate upper arms, for
 hands, and hip, knee, ankle, shoulder and elbow pivots — so he stands and walks like a
 person rather than a stack of cubes. His face is the supplied `assets/mo_face.png`
 (embedded as base64, so it is never CORS-tainted), cropped and nearest-filtered to a
-64×104 PS1 texture mapped onto the front of the skull. Procedural walk/idle cycle,
+64×104 90s-era texture mapped onto the front of the skull. Procedural walk/idle cycle,
 intoxication sway and stumble, sleep/sit poses, and a physics ragdoll reaction when the
 body finally files its complaint.
 
@@ -157,7 +157,7 @@ one is deliberately hard.
 
 ---
 
-## PS1 rendering
+## 90s-era 3D rendering
 
 Everything is generated at runtime — procedural canvas textures, jointed tapered low-poly
 rigs, and a single hand-written shader used by every surface:
@@ -166,7 +166,7 @@ rigs, and a single hand-written shader used by every surface:
 - **Vertex snapping** to a 120-unit NDC grid
 - **Vertex wobble** driven by a shared clock uniform
 - **Two-light retro shading** — a warm key, a cool bounce, sky/ground hemisphere ambient
-  and a camera-facing fill, so faces stay readable the way PS1 games faked it
+  and a camera-facing fill, so faces stay readable the way 90s games faked it
 - **4×4 ordered dithering** + 5-bit colour quantization
 - **Height fog** that eats the draw distance
 - **240p internal resolution**, nearest-filtered and upscaled
@@ -197,7 +197,7 @@ src/systems/fellowship.js  Addison's pipeline
 src/systems/endings.js     11 endings + triggers
 src/systems/dialogue.js    all prose
 
-src/render/ps1.js          shader material, renderer, geometry helpers
+src/render/retro.js          shader material, renderer, geometry helpers
 src/render/textures.js     procedural textures (concrete, lino, faces, neon…)
 
 src/world/characters.js    Mo / Addison / NPC / cat rigs + animation
@@ -250,7 +250,7 @@ The joke is Mo's circumstances. The systems are not jokes.
 [docs/DEVLOG.md](docs/DEVLOG.md) for the changelog, verified checks, known rough edges and
 the prioritised TODO.
 
-Implemented: PS1 renderer · three areas + menu corridor · Mo and Addison rigs with
+Implemented: 90s-era renderer · three areas + menu corridor · Mo and Addison rigs with
 animation and ragdoll · clock/needs/dependence/risk · employment with strikes · bills and
 arrears · odd jobs · BidBay · relief programs · Fellowship pipeline · 17 events · 11
 endings · phone with 11 apps · save/load · audio-reactive menu with the supplied theme.

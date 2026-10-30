@@ -33,7 +33,7 @@ export class Menu {
         <div class="menu__kicker">PUBLIC ACCESS · CH 03 · ${esc(CONFIG.meta.version)}</div>
         <h1 class="menu__title" data-text="MO: FUNCTIONAL">MO: <span class="glitch">FUNCTIONAL</span></h1>
         <div class="menu__tag"><em>You don't have to get your life together. You just have to keep it together.</em><br>
-        A PS1-era dark comedy about rent, shifts, dependence, and the arithmetic of a Tuesday.</div>
+        A 90s-era dark comedy about rent, shifts, dependence, and the arithmetic of a Tuesday.</div>
       </div>
       <div class="menu__now">
         <div class="menu__eq"></div>
@@ -254,7 +254,7 @@ export class Menu {
         <h2 class="modal__title">MO: FUNCTIONAL</h2>
         <div style="font-size:12px;line-height:1.8;color:#bcd4c1">
           <p><b>Design, code, world, writing</b><br>Built in the Freebuff coding agent for XiØN.</p>
-          <p><b>Engine</b><br>Three.js r169, hand-written PS1 shader pass (affine UVs, vertex snapping, ordered dither, fog), procedural canvas textures, procedural audio.</p>
+          <p><b>Engine</b><br>Three.js r169, hand-written 90s-era shader pass (affine UVs, vertex snapping, ordered dither, fog), procedural canvas textures, procedural audio.</p>
           <p><b>Music</b><br>"Mo Functional — Main Menu" supplied with the project, used as the menu theme.</p>
           <p><b>Character reference</b><br>Mo's face is reconstructed from the supplied reference image as a low-poly approximation. Addison Octavius is an original fictional character inspired by a wardrobe reference — no real person, organisation or affiliation.</p>
           <p><b>Content note</b><br>Addiction, poverty and housing insecurity are depicted as mechanical systems, in a dark comedy register. All substances are fictional. There are no instructions for anything.</p>

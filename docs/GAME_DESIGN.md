@@ -2,7 +2,7 @@
 
 **Tagline:** *You don't have to get your life together. You just have to keep it together.*
 
-A single-player, PS1-inspired, dark-comedy life-management simulation. One character,
+A single-player, 90s-era, dark-comedy life-management simulation. One character,
 one week-to-week grind, thirty days, eleven ways for it to end badly (two of which are
 almost good).
 
@@ -178,7 +178,7 @@ on the drawer, which is exactly what the game has been training the player to do
 
 ## 10. Art direction
 
-Late-90s PlayStation: sub-240p internal resolution, nearest-filtered procedural textures,
+Late-90s console: sub-240p internal resolution, nearest-filtered procedural textures,
 affine UV distortion, vertex snapping, wobble, ordered dithering, fog eating the draw
 distance, a handful of emissive surfaces doing all the lighting. Characters are jointed,
 tapered low-poly rigs on human proportions (about 7.5 heads) wearing the supplied face art,

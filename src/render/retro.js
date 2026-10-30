@@ -1,5 +1,5 @@
 /**
- * PS1 rendering: affine texture mapping, vertex snapping, ordered dithering,
+ * 90s-era 3D rendering: affine texture mapping, vertex snapping, ordered dithering,
  * per-vertex wobble, fog. Everything renders at a low internal resolution and
  * is upscaled with nearest filtering.
  */
@@ -23,7 +23,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   vec4 clip = projectionMatrix * mv;
 
-  // Vertex snapping: quantize screen-space position (classic PS1 jitter)
+  // Vertex snapping: quantize screen-space position (classic 90s console jitter)
   vec2 ndc = clip.xy / clip.w;
   ndc = floor(ndc * uSnap + 0.5) / uSnap;
   clip.xy = ndc * clip.w;
@@ -76,14 +76,14 @@ void main() {
   float ndl = 1.0;
   vec3 shade = vec3(1.0);
   if (uUnlit < 0.5) {
-    // PSX-style two-light model: one warm key, one cool bounce, plus a sky/ground
+    // 90s-era two-light model: one warm key, one cool bounce, plus a sky/ground
     // hemisphere so vertical faces never flatten into a single value.
     vec3 n = normalize(vN);
     float key = max(dot(n, normalize(uLightDir)), 0.0);
     float fill = max(dot(n, normalize(uFillDir)), 0.0);
     float hemi = n.y * 0.5 + 0.5;
     // cheap camera-facing fill: whatever the player is looking at stays readable,
-    // exactly like the flat "headlight" trick PS1 games leaned on
+    // exactly like the flat "headlight" trick 90s games leaned on
     float head = max(vN.z, 0.0);
     shade = mix(uGroundTint, uSkyTint, hemi) * uAmbient
           + uKeyTint * (key * key * 0.85 + key * 0.15)
@@ -106,7 +106,7 @@ void main() {
 }
 `;
 
-export const ps1Uniforms = {
+export const retroUniforms = {
   time: { value: 0 },
   lightDir: { value: new THREE.Vector3(...CONFIG.render.lightDir).normalize() },
   fillDir: { value: new THREE.Vector3(-CONFIG.render.lightDir[0], CONFIG.render.lightDir[1] * 0.4, -CONFIG.render.lightDir[2]).normalize() },
@@ -122,17 +122,17 @@ export const ps1Uniforms = {
 
 /** Re-tint the world lighting per area (called by the world on area change). */
 export function setAreaLighting({ key, fill, sky, ground, fog, ambient } = {}) {
-  if (key) ps1Uniforms.keyTint.value.setRGB(...key);
-  if (fill) ps1Uniforms.fillTint.value.setRGB(...fill);
-  if (sky) ps1Uniforms.skyTint.value.setRGB(...sky);
-  if (ground) ps1Uniforms.groundTint.value.setRGB(...ground);
-  if (fog != null) ps1Uniforms.fogColor.value.set(fog);
-  if (ambient != null) ps1Uniforms.ambientValue = ambient;
+  if (key) retroUniforms.keyTint.value.setRGB(...key);
+  if (fill) retroUniforms.fillTint.value.setRGB(...fill);
+  if (sky) retroUniforms.skyTint.value.setRGB(...sky);
+  if (ground) retroUniforms.groundTint.value.setRGB(...ground);
+  if (fog != null) retroUniforms.fogColor.value.set(fog);
+  if (ambient != null) retroUniforms.ambientValue = ambient;
 }
 
 const matCache = new Map();
 
-export function ps1Material(name, opts = {}) {
+export function retroMaterial(name, opts = {}) {
   const key = `${name}|${JSON.stringify(opts)}`;
   if (matCache.has(key)) return matCache.get(key);
   const m = new THREE.ShaderMaterial({
@@ -142,14 +142,14 @@ export function ps1Material(name, opts = {}) {
       uColor: { value: new THREE.Color(opts.color ?? 0xffffff) },
       uEmissive: { value: opts.emissive ?? 0 },
       uAmbient: { value: opts.ambient ?? 0.48 },
-      uLightDir: ps1Uniforms.lightDir,
-      uFillDir: ps1Uniforms.fillDir,
-      uKeyTint: ps1Uniforms.keyTint,
-      uFillTint: ps1Uniforms.fillTint,
-      uSkyTint: ps1Uniforms.skyTint,
-      uGroundTint: ps1Uniforms.groundTint,
-      uHeadTint: ps1Uniforms.headTint,
-      uFogColor: opts.fogColor ? { value: new THREE.Color(opts.fogColor) } : ps1Uniforms.fogColor,
+      uLightDir: retroUniforms.lightDir,
+      uFillDir: retroUniforms.fillDir,
+      uKeyTint: retroUniforms.keyTint,
+      uFillTint: retroUniforms.fillTint,
+      uSkyTint: retroUniforms.skyTint,
+      uGroundTint: retroUniforms.groundTint,
+      uHeadTint: retroUniforms.headTint,
+      uFogColor: opts.fogColor ? { value: new THREE.Color(opts.fogColor) } : retroUniforms.fogColor,
       uFogNear: { value: opts.fogNear ?? CONFIG.render.fogNear },
       uFogFar: { value: opts.fogFar ?? CONFIG.render.fogFar },
       uOpacity: { value: opts.opacity ?? 1 },
@@ -158,7 +158,7 @@ export function ps1Material(name, opts = {}) {
       uWobble: { value: opts.wobble ?? CONFIG.render.wobble },
       uSnap: { value: opts.snap ?? CONFIG.render.snapGrid },
       uUnlit: { value: opts.unlit ? 1 : 0 },
-      uTime: ps1Uniforms.time,
+      uTime: retroUniforms.time,
     },
     vertexShader: VERT,
     fragmentShader: FRAG,
@@ -183,7 +183,7 @@ export function createRenderer(container) {
 /** Box helper with a texture / colour. */
 export function box(w, h, d, matOpts, pos = [0, 0, 0], rot = [0, 0, 0]) {
   const geo = new THREE.BoxGeometry(w, h, d);
-  const mat = matOpts instanceof THREE.Material ? matOpts : ps1Material(matOpts.name || 'box', matOpts);
+  const mat = matOpts instanceof THREE.Material ? matOpts : retroMaterial(matOpts.name || 'box', matOpts);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(pos[0], pos[1], pos[2]);
   mesh.rotation.set(rot[0], rot[1], rot[2]);
@@ -193,12 +193,13 @@ export function box(w, h, d, matOpts, pos = [0, 0, 0], rot = [0, 0, 0]) {
 /**
  * A tapered box (frustum) with the origin at the TOP centre and the body hanging
  * down the -Y axis, so it can be parented to a joint pivot. Flat-shaded quads and
- * per-face UVs — the workhorse for limbs, torsos and heads in the PS1 rig style.
+ * per-face UVs — the workhorse for limbs, torsos and heads in the 90s rig style.
  */
-export function taperGeo(wTop, wBot, dTop, dBot, h, uv = 1) {
+export function taperGeo(wTop, wBot, dTop, dBot, h, uv = 1, groups = false) {
   const pos = [];
   const nor = [];
   const uvs = [];
+  const counts = [];
   const tY = 0, bY = -h;
   const tw = wTop / 2, bw = wBot / 2, td = dTop / 2, bd = dBot / 2;
 
@@ -217,11 +218,13 @@ export function taperGeo(wTop, wBot, dTop, dBot, h, uv = 1) {
       new THREE.Vector3(...c[b]), new THREE.Vector3(...c[a])
     )).normalize();
     const uvq = [[0, uvh], [uvw, uvh], [uvw, 0], [0, 0]];
+    const start = pos.length / 3;
     for (const i of [0, 2, 1, 0, 3, 2]) {
       pos.push(...p[i]);
       nor.push(n.x, n.y, n.z);
       uvs.push(uvq[i][0] * uv, uvq[i][1] * uv);
     }
+    counts.push(pos.length / 3 - start);
   }
 
   quad(3, 2, 6, 7, 1, 1); // front +Z
@@ -235,12 +238,32 @@ export function taperGeo(wTop, wBot, dTop, dBot, h, uv = 1) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  if (groups) {
+    // group order matches the quad order below: front, back, left, right, top, bottom
+    let start = 0;
+    counts.forEach((count, i) => {
+      g.addGroup(start, count, i);
+      start += count;
+    });
+  }
   return g;
+}
+
+/**
+ * One tapered box, one material per face. Used for heads: the front face carries the
+ * portrait texture, the other five carry skin, so the art wraps a volume instead of
+ * floating in front of it.
+ */
+export function taperMulti(wTop, wBot, dTop, dBot, h, materials, pos = [0, 0, 0], rot = [0, 0, 0]) {
+  const mesh = new THREE.Mesh(taperGeo(wTop, wBot, dTop, dBot, h, 1, true), materials);
+  mesh.position.set(pos[0], pos[1], pos[2]);
+  mesh.rotation.set(rot[0], rot[1], rot[2]);
+  return mesh;
 }
 
 /** Tapered box mesh hanging from its top face. */
 export function taper(wTop, wBot, dTop, dBot, h, matOpts, pos = [0, 0, 0], rot = [0, 0, 0]) {
-  const mat = matOpts instanceof THREE.Material ? matOpts : ps1Material(matOpts.name || 'taper', matOpts);
+  const mat = matOpts instanceof THREE.Material ? matOpts : retroMaterial(matOpts.name || 'taper', matOpts);
   const mesh = new THREE.Mesh(taperGeo(wTop, wBot, dTop, dBot, h), mat);
   mesh.position.set(pos[0], pos[1], pos[2]);
   mesh.rotation.set(rot[0], rot[1], rot[2]);
@@ -249,7 +272,7 @@ export function taper(wTop, wBot, dTop, dBot, h, matOpts, pos = [0, 0, 0], rot =
 
 export function plane(w, h, matOpts, pos = [0, 0, 0], rot = [0, 0, 0]) {
   const geo = new THREE.PlaneGeometry(w, h);
-  const mat = matOpts instanceof THREE.Material ? matOpts : ps1Material(matOpts.name || 'plane', { ...matOpts, doubleSide: matOpts.doubleSide ?? true });
+  const mat = matOpts instanceof THREE.Material ? matOpts : retroMaterial(matOpts.name || 'plane', { ...matOpts, doubleSide: matOpts.doubleSide ?? true });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(pos[0], pos[1], pos[2]);
   mesh.rotation.set(rot[0], rot[1], rot[2]);

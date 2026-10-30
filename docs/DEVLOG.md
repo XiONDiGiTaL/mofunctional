@@ -19,10 +19,10 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 - Modular architecture: `core/`, `systems/`, `render/`, `world/`, `ui/`. Gameplay systems
   never touch the DOM; UI never mutates stats directly (except through systems).
 
-### PS1 rendering
-- Hand-written GLSL material (`src/render/ps1.js`) implementing:
+### 90s-era 3D rendering
+- Hand-written GLSL material (`src/render/retro.js`) implementing:
   - **Affine texture mapping** (`vUvA = uv * clip.w`, divided again in the fragment shader).
-  - **Vertex snapping** to a 120-unit NDC grid (classic PS1 jitter).
+  - **Vertex snapping** to a 120-unit NDC grid (classic 90s console jitter).
   - **Vertex wobble** driven by a shared `uTime` uniform (also used by the menu).
   - **4×4 ordered dithering** (Bayer via the `bayer2` trick) + 5-bit colour quantization.
   - **Per-pixel height fog**, two-light retro shading (warm key, cool bounce, hemisphere
@@ -103,13 +103,33 @@ Every button calls a system function — there are no dead controls. The phone p
   in-game character wears the supplied reference art, not a drawn approximation.
   `MO.ASSETS.moAvatar` is the signed-in avatar in the phone.
 
+### Character rig v3 — faces on heads, NPC bodies, voices
+- **Faces are geometry now, not decals.** `taperMulti()` in `src/render/retro.js` gives one
+  tapered box a material per face, so the portrait texture *is* the front face of the skull
+  (skin on the sides, hair on crown and nape). The pasted-on rectangle and its visible border
+  are gone; heads still take the world light, with a touch of emissive so they read at night.
+- **`npcFaceTexture(kind)`** paints a 64×104 portrait per character (hair, brows, sunken eyes,
+  nose shadow, mouth, optional beard) so every NPC is built exactly like Mo.
+- **Body pass:** torso is three tapered segments (chest → ribs → waist) instead of one slab,
+  tee sleeves cover the deltoid and half the bicep with a hem, hands get a thumb block.
+- **NPCs walk.** `patrolNPC()` in `game3d.js` gives each one a home patch, a wander target and
+  the same joint gait Mo uses (`animateNPC(..., { walking })`), instead of standing and swaying.
+- **Charlie Brown voice.** `audio.mumble()` synthesises wordless syllables — sawtooth through a
+  bandpass with a drifting pitch — and `talk()` in `areas.js` calls it per NPC with a per-speaker
+  pitch (`NPC_VOICE`). The words stay in the text; the voice stays unintelligible.
+- **Naming:** all `PS1`/`PSX`/`PlayStation` references were removed in favour of "90s-era";
+  `src/render/ps1.js` is now `src/render/retro.js` and the shader API is
+  `retroMaterial` / `retroUniforms`.
+- **Film grain:** an SVG-turbulence layer on the CRT stack, stepped at 20fps, for the wet
+  tape look.
+
 ### Character rig v2 — proportions and light
 The first rig was an honest mistake: limbs were single boxes hung from the hip and shoulder,
 nothing was jointed below that, and the head was small, so Mo read as a white slab with a
 face taped on. Rebuilt in `src/world/characters.js`:
 - **~7.5-head proportions** measured from the figure, not eyeballed: 0.245 m head, 1.78 m
   body, hips at 0.915 m, shoulders 2.2 heads wide, fingertips at mid-thigh.
-- **Every part is a tapered box on a joint pivot** — new `taperGeo()` in `src/render/ps1.js`
+- **Every part is a tapered box on a joint pivot** — new `taperGeo()` in `src/render/retro.js`
   (8 corners, flat per-face normals, per-face UVs) — with hip → knee → ankle and
   shoulder → elbow → wrist chains. Thighs, shins, arms and torso all taper.
 - **Animation drives the joints**: knees flex only during the swing phase and bend one way,
@@ -119,7 +139,7 @@ face taped on. Rebuilt in `src/world/characters.js`:
   punch through it.
 - **Shading rebuilt** in the same shader: warm key + cool bounce + sky/ground hemisphere +
   a camera-facing fill (`uHeadTint`), replacing plain `0.55 + 0.45·N·L`, which had made
-  every front-facing surface read as mud. `ps1Uniforms` exposes the tints for per-area
+  every front-facing surface read as mud. `retroUniforms` exposes the tints for per-area
   grading; `setAreaLighting()` is available for that pass.
 - **Bug found while wiring it up**: `taperGeo()` wound its quads the wrong way, so every new
   face was back-face culled and unlit (the rig looked like floating slabs). Fixed the
@@ -164,8 +184,8 @@ face taped on. Rebuilt in `src/world/characters.js`:
    and calls systems. This keeps simulation testable.
 7. **Time is the only currency that matters.** Any new interaction must decide its minutes
    cost. Instant free actions erode the entire design.
-8. **Keep the PS1 look.** No PBR materials, no antialiasing, no smooth high-poly models, no
-   HDRI. New geometry should use `ps1Material`/`box`/`plane` from `src/render/ps1.js`.
+8. **Keep the 90s-era look.** No PBR materials, no antialiasing, no smooth high-poly models, no
+   HDRI. New geometry should use `retroMaterial`/`box`/`plane` from `src/render/retro.js`.
 9. **Test in a real browser** (see §6). Console errors are failures.
 
 ---
@@ -194,7 +214,7 @@ src/systems/fellowship.js  Addison's five-stage recruitment and tithe pipeline
 src/systems/endings.js     11 endings + checkEndings()
 src/systems/dialogue.js    all prose: sermons, NPC barks, intro, help
 
-src/render/ps1.js          shader material, renderer, box/plane helpers, resize
+src/render/retro.js          shader material, renderer, box/plane helpers, resize
 src/render/textures.js     procedural canvas textures (concrete, lino, faces, neon, ...)
 
 src/world/characters.js    Mo / Addison / NPC / cat rigs + procedural animation

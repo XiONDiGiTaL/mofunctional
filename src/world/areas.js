@@ -1,6 +1,6 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
 import * as THREE from '../../vendor/three.module.js';
-import { ps1Material, box, plane } from '../render/ps1.js';
+import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
 import { CONFIG } from '../core/config.js';
 import { countItem, inventoryList, addItem, removeItem, hasItem } from '../core/state.js';
@@ -13,32 +13,32 @@ import { buyFood, sellToDex, buyGrabBag, billInfo } from '../systems/economy.js'
 import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
 
 const M = {
-  floor: ps1Material('floor', { map: tex('linoleum') }),
-  wall: ps1Material('wallA', { map: tex('wallpaper') }),
-  concrete: ps1Material('conc', { map: tex('concrete') }),
-  ceiling: ps1Material('ceil', { map: tex('ceiling') }),
-  wood: ps1Material('woodA', { map: tex('wood') }),
-  metal: ps1Material('metalA', { map: tex('metal') }),
-  brick: ps1Material('brickA', { map: tex('brick') }),
-  sidewalk: ps1Material('sw', { map: tex('sidewalk') }),
-  asphalt: ps1Material('asph', { map: tex('asphalt') }),
-  carpet: ps1Material('carpetA', { map: tex('carpet') }),
-  tile: ps1Material('tileA', { map: tex('tile') }),
-  door: ps1Material('doorA', { map: tex('door') }),
-  goldDoor: ps1Material('goldDoor', { color: 0xd8b063, emissive: 0.1 }),
-  fabric: ps1Material('fabricA', { color: 0x6a5a4a }),
-  mattress: ps1Material('mattress', { color: 0xb9b3a0 }),
-  white: ps1Material('whiteA', { color: 0xe8e6da }),
-  green: ps1Material('greenA', { color: 0x2f6b4a }),
-  dark: ps1Material('darkA', { color: 0x141a16 }),
-  tvStatic: ps1Material('tvstatic', { map: tex('static'), emissive: 0.55, unlit: true }),
-  neon: ps1Material('neonA', { map: tex('neon'), emissive: 1.0, unlit: true, transparent: true, alphaTest: 0.1 }),
-  window: ps1Material('windowA', { map: tex('window'), emissive: 0.35, unlit: true }),
-  poster: ps1Material('posterA', { map: tex('poster'), emissive: 0.1 }),
-  cross: ps1Material('crossA', { map: tex('cross'), emissive: 0.35, unlit: true }),
-  candle: ps1Material('candleA', { color: 0xffd9a0, emissive: 0.9, unlit: true }),
-  red: ps1Material('redA', { color: 0x7a2a26 }),
-  lamp: ps1Material('lampA', { color: 0xfff2c4, emissive: 1.0, unlit: true }),
+  floor: retroMaterial('floor', { map: tex('linoleum') }),
+  wall: retroMaterial('wallA', { map: tex('wallpaper') }),
+  concrete: retroMaterial('conc', { map: tex('concrete') }),
+  ceiling: retroMaterial('ceil', { map: tex('ceiling') }),
+  wood: retroMaterial('woodA', { map: tex('wood') }),
+  metal: retroMaterial('metalA', { map: tex('metal') }),
+  brick: retroMaterial('brickA', { map: tex('brick') }),
+  sidewalk: retroMaterial('sw', { map: tex('sidewalk') }),
+  asphalt: retroMaterial('asph', { map: tex('asphalt') }),
+  carpet: retroMaterial('carpetA', { map: tex('carpet') }),
+  tile: retroMaterial('tileA', { map: tex('tile') }),
+  door: retroMaterial('doorA', { map: tex('door') }),
+  goldDoor: retroMaterial('goldDoor', { color: 0xd8b063, emissive: 0.1 }),
+  fabric: retroMaterial('fabricA', { color: 0x6a5a4a }),
+  mattress: retroMaterial('mattress', { color: 0xb9b3a0 }),
+  white: retroMaterial('whiteA', { color: 0xe8e6da }),
+  green: retroMaterial('greenA', { color: 0x2f6b4a }),
+  dark: retroMaterial('darkA', { color: 0x141a16 }),
+  tvStatic: retroMaterial('tvstatic', { map: tex('static'), emissive: 0.55, unlit: true }),
+  neon: retroMaterial('neonA', { map: tex('neon'), emissive: 1.0, unlit: true, transparent: true, alphaTest: 0.1 }),
+  window: retroMaterial('windowA', { map: tex('window'), emissive: 0.35, unlit: true }),
+  poster: retroMaterial('posterA', { map: tex('poster'), emissive: 0.1 }),
+  cross: retroMaterial('crossA', { map: tex('cross'), emissive: 0.35, unlit: true }),
+  candle: retroMaterial('candleA', { color: 0xffd9a0, emissive: 0.9, unlit: true }),
+  red: retroMaterial('redA', { color: 0x7a2a26 }),
+  lamp: retroMaterial('lampA', { color: 0xfff2c4, emissive: 1.0, unlit: true }),
 };
 
 const solid = (x, z, w, d) => ({ x, z, w, d });
@@ -65,11 +65,11 @@ export function buildApartment(g) {
   group.add(box(1.1, 0.22, 2.0, M.metal, [-2.4, 0.24, -2.4]));
   group.add(box(1.0, 0.16, 1.9, M.mattress, [-2.4, 0.42, -2.4]));
   group.add(box(1.0, 0.06, 0.5, M.white, [-2.4, 0.53, -3.1]));
-  group.add(box(1.0, 0.05, 1.2, ps1Material('blanket', { color: 0x4a5560 }), [-2.4, 0.52, -2.1]));
+  group.add(box(1.0, 0.05, 1.2, retroMaterial('blanket', { color: 0x4a5560 }), [-2.4, 0.52, -2.1]));
   group.add(box(0.08, 0.5, 1.9, M.metal, [-3.0, 0.6, -2.4]));
 
   // fridge
-  group.add(box(0.8, 1.8, 0.75, ps1Material('fridge', { color: 0xc9c9bd }), [2.7, 0.9, -3.5]));
+  group.add(box(0.8, 1.8, 0.75, retroMaterial('fridge', { color: 0xc9c9bd }), [2.7, 0.9, -3.5]));
   group.add(box(0.02, 1.6, 0.03, M.dark, [2.7, 0.9, -3.11]));
   group.add(box(0.06, 0.4, 0.04, M.metal, [2.5, 1.15, -3.09]));
 
@@ -79,7 +79,7 @@ export function buildApartment(g) {
   group.add(box(0.55, 0.12, 0.45, M.metal, [1.1, 0.9, -3.6]));
   group.add(box(0.05, 0.3, 0.05, M.metal, [1.1, 1.05, -3.75]));
   // stove-ish thing with two dials
-  group.add(box(0.9, 0.86, 0.68, ps1Material('stove', { color: 0xa8a89c }), [-0.8, 0.43, -3.6]));
+  group.add(box(0.9, 0.86, 0.68, retroMaterial('stove', { color: 0xa8a89c }), [-0.8, 0.43, -3.6]));
 
   // table + laptop
   group.add(box(1.0, 0.06, 0.7, M.wood, [1.4, 0.72, -0.2]));
@@ -87,14 +87,14 @@ export function buildApartment(g) {
     group.add(box(0.06, 0.72, 0.06, M.wood, [x, 0.36, z]));
   }
   group.add(box(0.42, 0.03, 0.3, M.dark, [1.4, 0.76, -0.2]));
-  group.add(box(0.4, 0.24, 0.02, ps1Material('laptop', { map: tex('static'), emissive: 0.5, unlit: true }), [1.4, 0.88, -0.34], [-0.5, 0, 0]));
+  group.add(box(0.4, 0.24, 0.02, retroMaterial('laptop', { map: tex('static'), emissive: 0.5, unlit: true }), [1.4, 0.88, -0.34], [-0.5, 0, 0]));
   // chair
   group.add(box(0.5, 0.06, 0.5, M.fabric, [1.4, 0.45, 0.55]));
   group.add(box(0.5, 0.55, 0.06, M.fabric, [1.4, 0.72, 0.79]));
 
   // tv
   group.add(box(0.8, 0.5, 0.6, M.wood, [-2.6, 0.25, 1.6]));
-  group.add(box(0.75, 0.6, 0.62, ps1Material('crt', { color: 0x3a3a38 }), [-2.6, 0.85, 1.6]));
+  group.add(box(0.75, 0.6, 0.62, retroMaterial('crt', { color: 0x3a3a38 }), [-2.6, 0.85, 1.6]));
   group.add(plane(0.56, 0.42, { name: 'tvscreen', map: tex('static'), emissive: 0.7, unlit: true }, [-2.6, 0.88, 1.29]));
 
   // door
@@ -103,7 +103,7 @@ export function buildApartment(g) {
 
   // poster + stains
   group.add(plane(0.6, 0.9, { name: 'apposter', map: tex('poster'), emissive: 0.05 }, [-3.0, 1.6, -1.0], [0, Math.PI / 2, 0]));
-  group.add(box(1.2, 0.4, 0.02, ps1Material('stainwall', { color: 0x6d5b3f, opacity: 0.55, transparent: true }), [0.6, 2.2, -D / 2 + 0.1]));
+  group.add(box(1.2, 0.4, 0.02, retroMaterial('stainwall', { color: 0x6d5b3f, opacity: 0.55, transparent: true }), [0.6, 2.2, -D / 2 + 0.1]));
 
   // ceiling bulb
   group.add(box(0.24, 0.06, 0.24, M.lamp, [0, 2.62, 0.6]));
@@ -111,7 +111,7 @@ export function buildApartment(g) {
 
   // trash + bag
   group.add(box(0.45, 0.6, 0.45, M.dark, [2.9, 0.3, 2.6]));
-  group.add(box(0.5, 0.35, 0.4, ps1Material('bag', { color: 0x2a2a26 }), [-3.0, 0.18, 2.4]));
+  group.add(box(0.5, 0.35, 0.4, retroMaterial('bag', { color: 0x2a2a26 }), [-3.0, 0.18, 2.4]));
 
   const interactables = [
     { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
@@ -272,32 +272,32 @@ export function buildStreet(g) {
   facade(20, 8, 6.8, 0xb8b8aa);
 
   // apartment door
-  group.add(box(1.3, 2.4, 0.2, ps1Material('aptdoor', { color: 0x4a3b2a }), [-11, 1.2, -6.55]));
+  group.add(box(1.3, 2.4, 0.2, retroMaterial('aptdoor', { color: 0x4a3b2a }), [-11, 1.2, -6.55]));
   group.add(box(0.9, 0.14, 0.04, M.white, [-11, 2.3, -6.44]));
   group.add(box(0.34, 0.1, 0.03, M.goldDoor, [-11.4, 2.3, -6.45]));
 
   // Quik-Stop storefront
-  group.add(box(6.2, 3.0, 0.3, ps1Material('storefront', { color: 0x2a3a30 }), [1.5, 1.5, -6.5]));
+  group.add(box(6.2, 3.0, 0.3, retroMaterial('storefront', { color: 0x2a3a30 }), [1.5, 1.5, -6.5]));
   group.add(plane(4.6, 1.4, { name: 'storewin', map: tex('window'), emissive: 0.5, unlit: true }, [1.5, 1.6, -6.32]));
   group.add(plane(2.4, 1.0, { name: 'storesign', map: tex('neon'), emissive: 0.9, unlit: true }, [1.5, 3.5, -6.3]));
   group.add(box(6.4, 0.16, 1.2, M.green, [1.5, 3.1, -6.0]));
   // awning stripes
   for (let i = 0; i < 6; i++) {
-    group.add(box(1.05, 0.18, 1.15, i % 2 ? M.white : ps1Material('awningRed', { color: 0x8a3a32 }), [1.5 - 2.65 + i * 1.06, 3.02, -5.9]));
+    group.add(box(1.05, 0.18, 1.15, i % 2 ? M.white : retroMaterial('awningRed', { color: 0x8a3a32 }), [1.5 - 2.65 + i * 1.06, 3.02, -5.9]));
   }
 
   // Fellowship: gold doors, cross
-  group.add(box(5.4, 4.4, 0.3, ps1Material('churchfront', { color: 0xd8cba8 }), [11.5, 2.2, -6.5]));
+  group.add(box(5.4, 4.4, 0.3, retroMaterial('churchfront', { color: 0xd8cba8 }), [11.5, 2.2, -6.5]));
   group.add(box(1.8, 3.0, 0.25, M.goldDoor, [11.5, 1.5, -6.4]));
-  group.add(box(0.1, 2.4, 0.05, ps1Material('doorseam', { color: 0x7a5c1e }), [11.5, 1.5, -6.27]));
+  group.add(box(0.1, 2.4, 0.05, retroMaterial('doorseam', { color: 0x7a5c1e }), [11.5, 1.5, -6.27]));
   group.add(plane(1.2, 1.8, { name: 'churchcross', map: tex('cross'), emissive: 0.5, unlit: true }, [11.5, 4.9, -6.3]));
   group.add(box(0.4, 0.16, 0.4, M.candle, [10.2, 0.3, -5.9]));
   group.add(box(0.4, 0.16, 0.4, M.candle, [12.8, 0.3, -5.9]));
 
   // alley
-  group.add(box(3.0, 0.05, 8, ps1Material('alleyfloor', { color: 0x24282a }), [-3.6, 0.02, -2.5]));
-  group.add(box(1.4, 0.9, 0.9, ps1Material('dumpster', { color: 0x2e4a34 }), [-4.2, 0.45, -5.2]));
-  group.add(box(1.45, 0.1, 0.95, ps1Material('dumpsterlid', { color: 0x253a2a }), [-4.2, 0.95, -5.2], [0, 0, 0.1]));
+  group.add(box(3.0, 0.05, 8, retroMaterial('alleyfloor', { color: 0x24282a }), [-3.6, 0.02, -2.5]));
+  group.add(box(1.4, 0.9, 0.9, retroMaterial('dumpster', { color: 0x2e4a34 }), [-4.2, 0.45, -5.2]));
+  group.add(box(1.45, 0.1, 0.95, retroMaterial('dumpsterlid', { color: 0x253a2a }), [-4.2, 0.95, -5.2], [0, 0, 0.1]));
   group.add(box(0.5, 0.7, 0.5, M.dark, [-2.6, 0.35, -3.6]));
   group.add(box(0.3, 1.2, 0.3, M.metal, [-5.2, 0.6, -2.0]));
   // puddle
@@ -319,19 +319,19 @@ export function buildStreet(g) {
   group.add(box(2.2, 2.2, 0.08, { name: 'glass', color: 0x8fb0b8, opacity: 0.35, transparent: true, unlit: true }, [6.5, 1.2, -5.8]));
   group.add(box(0.1, 2.4, 0.1, M.metal, [5.4, 1.2, -5.8]));
   group.add(box(0.1, 2.4, 0.1, M.metal, [7.6, 1.2, -5.8]));
-  group.add(box(1.2, 0.5, 0.08, ps1Material('bussign', { color: 0x2a4a6a, emissive: 0.15 }), [7.6, 2.6, -5.8]));
+  group.add(box(1.2, 0.5, 0.08, retroMaterial('bussign', { color: 0x2a4a6a, emissive: 0.15 }), [7.6, 2.6, -5.8]));
   // job board
   group.add(box(1.0, 1.4, 0.1, M.wood, [5.0, 0.9, -6.2]));
   group.add(plane(0.85, 1.2, { name: 'jobposter', map: tex('poster') }, [5.0, 0.95, -6.13]));
   group.add(box(0.1, 0.9, 0.1, M.wood, [4.6, 0.45, -6.2]));
   group.add(box(0.1, 0.9, 0.1, M.wood, [5.4, 0.45, -6.2]));
   // trash cans
-  group.add(box(0.6, 0.9, 0.6, ps1Material('trash', { color: 0x39443c }), [9.5, 0.45, -5.6]));
-  group.add(box(0.6, 0.9, 0.6, ps1Material('trash2', { color: 0x39443c }), [-12.6, 0.45, -5.6]));
+  group.add(box(0.6, 0.9, 0.6, retroMaterial('trash', { color: 0x39443c }), [9.5, 0.45, -5.6]));
+  group.add(box(0.6, 0.9, 0.6, retroMaterial('trash2', { color: 0x39443c }), [-12.6, 0.45, -5.6]));
   // road markings + hydrant
-  group.add(box(0.6, 0.02, 44, ps1Material('line', { color: 0xb0a262 }), [0, 0.02, 5.2]));
-  group.add(box(0.3, 0.6, 0.3, ps1Material('hydrant', { color: 0x8a3a32 }), [-5.0, 0.3, 0.9]));
-  group.add(box(0.4, 0.1, 0.4, ps1Material('hydrantTop', { color: 0x6a2a24 }), [-5.0, 0.62, 0.9]));
+  group.add(box(0.6, 0.02, 44, retroMaterial('line', { color: 0xb0a262 }), [0, 0.02, 5.2]));
+  group.add(box(0.3, 0.6, 0.3, retroMaterial('hydrant', { color: 0x8a3a32 }), [-5.0, 0.3, 0.9]));
+  group.add(box(0.4, 0.1, 0.4, retroMaterial('hydrantTop', { color: 0x6a2a24 }), [-5.0, 0.62, 0.9]));
 
   const npcs = [
     { kind: 'rae', x: -10.2, z: -4.6, rot: 0.4, talk: 'rae' },
@@ -525,8 +525,16 @@ function bench(g) {
   if (chance(0.4)) g.toast(pick(AMBIENT_LINES), 'info');
 }
 
+const NPC_VOICE = { rae: 1.2, dale: 0.82, dex: 0.72, kev: 1.3, nia: 1.36, addison: 0.9, chairman: 1.7 };
+
+/** Every spoken line comes out as wordless mumble — the words live in the text. */
+function speak(g, id, words = 10) {
+  g.audio?.mumble?.('word '.repeat(Math.max(3, words)), { pitch: NPC_VOICE[id] ?? 1 });
+}
+
 function talk(g, id) {
   const s = g.state;
+  speak(g, id, 8);
   g.advance(10);
   bump(s, 'morale', 3);
   s.npc[id] = (s.npc[id] || 0) + 1;
@@ -583,7 +591,7 @@ export function buildChurch(g) {
   group.add(plane(W, D, { name: 'chceil', color: 0x2a2620 }, [0, 4.7, 0], [Math.PI / 2, 0, 0]));
 
   // altar
-  group.add(box(4.0, 0.9, 1.0, ps1Material('altar', { color: 0xd8cba8 }), [0, 0.45, -6.0]));
+  group.add(box(4.0, 0.9, 1.0, retroMaterial('altar', { color: 0xd8cba8 }), [0, 0.45, -6.0]));
   group.add(box(4.2, 0.1, 1.1, M.goldDoor, [0, 0.95, -6.0]));
   group.add(box(1.6, 2.2, 0.1, { name: 'backdrop', map: tex('cross'), emissive: 0.4, unlit: true }, [0, 2.4, -6.9]));
 
@@ -605,7 +613,7 @@ export function buildChurch(g) {
   }
   // donation box
   group.add(box(0.7, 0.9, 0.5, M.goldDoor, [-2.6, 0.45, -5.0]));
-  group.add(box(0.3, 0.06, 0.1, ps1Material('slot', { color: 0x2a2118 }), [-2.6, 0.9, -5.0]));
+  group.add(box(0.3, 0.06, 0.1, retroMaterial('slot', { color: 0x2a2118 }), [-2.6, 0.9, -5.0]));
   // exit
   group.add(box(1.6, 2.6, 0.16, M.door, [0, 1.3, D / 2 - 0.1]));
   group.add(box(0.1, 0.1, 0.06, M.goldDoor, [0.6, 1.2, D / 2 - 0.2]));
@@ -666,7 +674,7 @@ export function buildMenuWorld() {
   }
   // a small tv on a crate, playing static
   group.add(box(0.8, 0.6, 0.7, M.wood, [2.0, 0.3, 1.2]));
-  group.add(box(0.7, 0.55, 0.6, ps1Material('menucrt', { color: 0x2e2e2c }), [2.0, 0.85, 1.2]));
+  group.add(box(0.7, 0.55, 0.6, retroMaterial('menucrt', { color: 0x2e2e2c }), [2.0, 0.85, 1.2]));
   group.add(plane(0.5, 0.4, { name: 'menutv', map: tex('static'), emissive: 0.8, unlit: true }, [2.0, 0.87, 0.88]));
   // water stain on the wall
   group.add(box(1.6, 0.9, 0.02, { name: 'mstain', color: 0x2a2a24, opacity: 0.7, transparent: true }, [1.8, 2.0, -0.8]));

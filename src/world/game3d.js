@@ -1,6 +1,6 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
 import * as THREE from '../../vendor/three.module.js';
-import { createRenderer, setSize, ps1Material, ps1Uniforms, box } from '../render/ps1.js';
+import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildMenuWorld } from './areas.js';
 import { CONFIG } from '../core/config.js';
@@ -163,7 +163,7 @@ export class World {
     this.ragdollParts = [];
     const colors = [0xa97c56, 0xe4e2d8, 0x3d4a5c, 0x241c14];
     for (let i = 0; i < 9; i++) {
-      const part = box(0.18 + Math.random() * 0.12, 0.16, 0.2, ps1Material(`rag${i % 4}`, { color: colors[i % 4] }), [
+      const part = box(0.18 + Math.random() * 0.12, 0.16, 0.2, retroMaterial(`rag${i % 4}`, { color: colors[i % 4] }), [
         this.mo.root.position.x + (Math.random() - 0.5) * 0.5,
         0.9 + Math.random() * 0.5,
         this.mo.root.position.z + (Math.random() - 0.5) * 0.5,
@@ -177,7 +177,7 @@ export class World {
 
   update(dt, g) {
     this.time += dt;
-    ps1Uniforms.time.value = this.time * 1.0;
+    retroUniforms.time.value = this.time * 1.0;
 
     if (this.mode === 'menu') {
       this.updateMenu(dt, g);
@@ -206,9 +206,9 @@ export class World {
     this.camera.rotation.z = Math.sin(this.menuTime * 0.31) * 0.006 + this.audioLevel * 0.01;
 
     // audio-reactive fog: the corridor closes in on the loud parts
-    const f = ps1Uniforms.fogFar;
+    const f = retroUniforms.fogFar;
     f.value = CONFIG.render.fogFar * (0.82 + this.audioLevel * 0.4);
-    ps1Uniforms.fogNear.value = CONFIG.render.fogNear * (0.8 + this.audioLevel * 1.2);
+    retroUniforms.fogNear.value = CONFIG.render.fogNear * (0.8 + this.audioLevel * 1.2);
   }
 
   updatePlay(dt, g) {
@@ -266,8 +266,9 @@ export class World {
     });
 
     for (const rig of this.npcRigs) {
-      if (rig.type === 'cat') animateNPC(rig, dt);
-      else animateNPC(rig, dt);
+      if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
+      this.patrolNPC(rig, dt);
+      animateNPC(rig, dt, { walking: !!rig.walking });
     }
     if (this.addison.root.visible) animateAddison(this.addison, dt);
 
@@ -347,6 +348,46 @@ export class World {
     if (this.promptTarget && canMove) {
       // subtle highlight: face the interaction when close, no shader tricks needed
     }
+  }
+
+  /** NPCs keep to their own patch: pick a spot near home, walk there, stand, repeat. */
+  patrolNPC(rig, dt) {
+    const def = rig.npcDef;
+    if (!def) return;
+    if (!rig.wander) {
+      rig.wander = {
+        homeX: rig.root.position.x,
+        homeZ: rig.root.position.z,
+        tx: rig.root.position.x,
+        tz: rig.root.position.z,
+        timer: 1 + Math.random() * 3,
+      };
+    }
+    const w = rig.wander;
+    w.timer -= dt;
+    if (w.timer <= 0) {
+      w.timer = 2.5 + Math.random() * 4.5;
+      const a = Math.random() * Math.PI * 2;
+      const r = 0.5 + Math.random() * (def.roam ?? 1.5);
+      w.tx = w.homeX + Math.cos(a) * r;
+      w.tz = w.homeZ + Math.sin(a) * r;
+    }
+    const dx = w.tx - rig.root.position.x;
+    const dz = w.tz - rig.root.position.z;
+    const dist = Math.hypot(dx, dz);
+    rig.walking = dist > 0.14;
+    if (!rig.walking) return;
+    const speed = 0.8;
+    const nx = rig.root.position.x + (dx / dist) * speed * dt;
+    const nz = rig.root.position.z + (dz / dist) * speed * dt;
+    const b = this.area.bounds;
+    if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz)) {
+      rig.root.position.x = nx;
+      rig.root.position.z = nz;
+    } else {
+      w.timer = 0; // something is in the way; choose another spot
+    }
+    rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
   }
 
   blocked(x, z) {
