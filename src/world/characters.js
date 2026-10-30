@@ -300,11 +300,11 @@ function buildBody(spec) {
   const foreH = 0.245 * k;
   const handH = 0.10 * k;
   function makeArm(sx) {
-    const pivot = joint(torso, sx * shoulderX, shoulderY - 0.028 * k, 0);
-    pivot.add(taper(0.088 * b * k, 0.074 * b * k, 0.100 * k, 0.082 * k, upperH, armMat));
+    const pivot = joint(torso, sx * shoulderX, shoulderY - 0.052 * k, 0);
+    pivot.add(taper(0.086 * b * k, 0.072 * b * k, 0.098 * k, 0.080 * k, upperH, armMat));
     if (sleeveMat && armMat !== sleeveMat) {
-      pivot.add(taper(0.108 * b * k, 0.098 * b * k, 0.122 * k, 0.108 * k, upperH * 0.72, sleeveMat));
-      pivot.add(taper(0.104 * b * k, 0.102 * b * k, 0.116 * k, 0.113 * k, 0.012 * k, sleeveMat, [0, -upperH * 0.72 + 0.012 * k, 0]));
+      pivot.add(taper(0.098 * b * k, 0.094 * b * k, 0.114 * k, 0.104 * k, upperH * 0.74, sleeveMat));
+      pivot.add(taper(0.096 * b * k, 0.094 * b * k, 0.108 * k, 0.105 * k, 0.012 * k, sleeveMat, [0, -upperH * 0.74 + 0.012 * k, 0]));
     }
     const elbow = joint(pivot, 0, -upperH, 0);
     elbow.add(taper(0.076 * b * k, 0.060 * b * k, 0.085 * k, 0.070 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat));
