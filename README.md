@@ -135,6 +135,9 @@ him: the halal plate is the best hunger/energy buy on the block, falafel is the 
 ![Inside the bodega](assets/img/bodega_interior.png)
 ![Inside Habib's](assets/img/habibs_interior.png)
 
+![The phone: inbox with faces](assets/img/phone.png)
+![A chat thread in the phone](assets/img/phone_chat.png)
+
 ### The rest of the loop
 
 - **Needs** — energy, hunger, hygiene, stress, morale, dependence, risk. Sleep, eat, shower, work.
