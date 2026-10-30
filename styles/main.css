@@ -304,6 +304,8 @@ html, body {
   background: #0a110c; border: 1px solid #2c4436; color: var(--gold);
 }
 .appbtn__name { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; text-align: center; }
+.avatar { width: 40px; height: 40px; object-fit: cover; image-rendering: pixelated; border: 1px solid #2c4436; background: #0a110c; flex: none; }
+.avatar--sm { width: 28px; height: 28px; }
 .appbtn__dot { position: absolute; }
 .appbtn .notif { color: var(--bad); font-size: 8px; margin-left: 3px; }
 

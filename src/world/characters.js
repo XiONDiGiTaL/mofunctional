@@ -1,7 +1,7 @@
 /** Low-poly character rigs: Mo, Addison Octavius, assorted NPCs. */
 import * as THREE from '../../vendor/three.module.js';
 import { ps1Material, box, plane } from '../render/ps1.js';
-import { tex } from '../render/textures.js';
+import { tex, moFaceTexture } from '../render/textures.js';
 
 const mat = {
   skin: ps1Material('skin', { map: tex('skin'), color: 0xf0d8c0 }),
@@ -12,7 +12,7 @@ const mat = {
   suit: ps1Material('suit', { map: tex('suitWhite'), color: 0xfffdf4 }),
   gold: ps1Material('gold', { map: tex('gold'), color: 0xffe9a3, emissive: 0.12 }),
   goldBand: ps1Material('goldband', { color: 0xffd24a, emissive: 0.25 }),
-  faceMo: ps1Material('faceMo', { map: tex('faceMo'), unlit: true, transparent: true, alphaTest: 0.3 }),
+  faceMo: ps1Material('faceMo', { map: moFaceTexture(), unlit: true, transparent: true, alphaTest: 0.3 }),
   faceAddison: ps1Material('faceAddison', { map: tex('faceAddison'), unlit: true, transparent: true, alphaTest: 0.3 }),
   eye: ps1Material('eye', { color: 0x14120f }),
 };
@@ -77,7 +77,7 @@ export function createMo() {
   torso.add(head);
   const skull = box(0.28, 0.3, 0.27, mat.skin);
   head.add(skull);
-  const face = plane(0.27, 0.29, mat.faceMo, [0, 0, 0.137]);
+  const face = plane(0.275, 0.29, mat.faceMo, [0, 0, 0.137]);
   head.add(face);
   // hair cap + sides
   head.add(box(0.295, 0.08, 0.285, mat.hair, [0, 0.135, 0]));

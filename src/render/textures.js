@@ -321,3 +321,37 @@ export function tex(name) {
   const fn = textures[name];
   return fn ? fn() : textures.concrete();
 }
+
+let moFaceTex = null;
+/**
+ * Mo's actual face, taken from the art the repo supplies in assets/assets.js
+ * (base64, so the texture is never CORS-tainted). Centre-cropped to a square and
+ * nearest-filtered so it still reads as a PS1-era face texture.
+ */
+export function moFaceTexture() {
+  if (moFaceTex) return moFaceTex;
+  const src = (typeof window !== 'undefined' && window.MO && window.MO.ASSETS && window.MO.ASSETS.moFace) || null;
+  if (!src) return tex('faceMo');
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 64;
+  const ctx = c.getContext('2d');
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  const img = new Image();
+  img.onload = () => {
+    const s = Math.min(img.width, img.height * 0.82);
+    const sx = (img.width - s) / 2;
+    const sy = img.height * 0.1;
+    ctx.drawImage(img, sx, sy, s, s, 0, 0, 64, 64);
+    t.needsUpdate = true;
+  };
+  img.src = src;
+  moFaceTex = t;
+  return t;
+}

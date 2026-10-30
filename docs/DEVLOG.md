@@ -95,6 +95,13 @@ Every button calls a system function — there are no dead controls. The phone p
 - Public-access TV framing, rolling ticker, live save metadata, "press start" audio gate.
 - Settings (CRT, 4:3, volume, default speed), save loader, help, credits.
 
+### Supplied art
+- `assets/assets.js` (base64 data URIs, added to the repo by the owner) is loaded first, and
+  `src/render/textures.js → moFaceTexture()` crops `MO.ASSETS.moFace` to a 64×64 square,
+  nearest-filters it and uses it as Mo's face — so the in-game character now wears the
+  supplied reference art rather than a hand-drawn approximation. `MO.ASSETS.moAvatar` is
+  used as the signed-in avatar in the phone.
+
 ### Audio
 - `assets/audio/menu_theme.mp3` (copy of the repo's `Music/Mo Functional_ Main Menu.mp3`)
   routed through WebAudio so an analyser can read it.

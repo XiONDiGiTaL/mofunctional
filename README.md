@@ -113,10 +113,11 @@ specific emails, sleep through the Calendar, save the game.
 
 ## People
 
-**Mo** — late thirties, white tee, grey-blue jeans, goatee, tired eyes. Reconstructed from
-the supplied character reference as a low-poly approximation, with a hand-drawn 64×64 face
-texture, procedural walk/idle, intoxication sway and stumble, sleep/sit poses, and a
-physics ragdoll reaction when the body finally files its complaint.
+**Mo** — late thirties, white tee, grey-blue jeans, goatee, tired eyes. Built as a low-poly
+box rig wearing the supplied face art (`assets/mo_face.png`, embedded as base64 so it is
+never CORS-tainted) cropped and nearest-filtered to a 64×64 PS1-style texture, with a
+procedural walk/idle cycle, intoxication sway and stumble, sleep/sit poses, and a physics
+ragdoll reaction when the body finally files its complaint.
 
 **Addison Octavius** — priest and cult leader of **The Golden Fellowship**. White
 double-breasted suit, gold tie and clip, gold pocket square and cufflinks, grey hair and

@@ -123,6 +123,13 @@ export class Phone {
       ['system', '⚙', 'System', 0],
     ];
     return `${this.header('MoPhone OS', 'v0.9')}
+      <div class="row" style="gap:9px;padding:0 2px 9px;align-items:center">
+        <img class="avatar" src="${(typeof window !== 'undefined' && window.MO && window.MO.ASSETS && window.MO.ASSETS.moAvatar) || ''}" alt="" />
+        <div>
+          <div class="tiny mono-dim">SIGNED IN AS</div>
+          <div style="font-size:12px">Mo · Unit 3B · Shale Mobile</div>
+        </div>
+      </div>
       <div class="phone__home">
         ${apps.map(([id, icon, name, badge]) => `
           <button class="appbtn" data-act="go" data-arg="${id}">
