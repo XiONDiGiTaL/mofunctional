@@ -8,7 +8,10 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane, taper, taperMulti } from '../render/retro.js';
-import { tex, moFaceTexture, npcFaceTexture } from '../render/textures.js';
+import { tex, moFaceTexture } from '../render/textures.js';
+import { npcFaceTexture, faceSkin } from '../render/faces.js';
+
+const skinHex = (kind) => parseInt(faceSkin(kind).slice(1), 16);
 
 const mat = {
   skin: retroMaterial('skin', { map: tex('skin'), color: 0xfff2e6 }),
@@ -26,8 +29,10 @@ const mat = {
   dressShirt: retroMaterial('dressShirt', { color: 0xfffdf6 }),
   // Faces are the front face of the skull, so they are lit like everything else —
   // a little emissive keeps them from sinking into shadow at night.
-  faceMo: retroMaterial('faceMo', { map: moFaceTexture(), emissive: 0.16 }),
-  faceAddison: retroMaterial('faceAddison', { map: npcFaceTexture('addison'), emissive: 0.16 }),
+  // Baked portraits carry their own shading, so a stronger emissive keeps them legible in
+  // the game's deliberately dark rooms without washing the painted planes out.
+  faceMo: retroMaterial('faceMo', { map: moFaceTexture(), emissive: 0.3 }),
+  faceAddison: retroMaterial('faceAddison', { map: npcFaceTexture('addison'), emissive: 0.34 }),
   eye: retroMaterial('eye', { color: 0x14120f }),
   stain: retroMaterial('stain', { color: 0xb3a286 }),
 };
@@ -69,7 +74,7 @@ function buildBody({
   const pelvisH = 0.14 * k;
   const abdomenH = 0.15 * k;
   const chestH = 0.24 * k;
-  const neckH = 0.042 * k;
+  const neckH = 0.056 * k;
   const headH = 0.238 * k;
   const hipY = footH + calfH + thighH;
   // torso-local: 0 = top of pelvis, so the pelvis height is NOT included here
@@ -115,7 +120,7 @@ function buildBody({
 
   // ---- neck + head
   const skinMat = headMat || skin;
-  torso.add(taper(0.082 * k, 0.098 * k, 0.082 * k, 0.094 * k, neckH, skinMat, [0, shoulderY + neckH, 0]));
+  torso.add(taper(0.092 * k, 0.106 * k, 0.09 * k, 0.102 * k, neckH, skinMat, [0, shoulderY + neckH, 0]));
   const head = joint(torso, 0, shoulderY + neckH, 0);
 
   // The head is a real volume whose FRONT FACE carries the portrait texture, so the art
@@ -203,7 +208,7 @@ export function createAddison() {
     hair: retroMaterial('grey', { color: 0xb7b4ab }),
     armMat: mat.suit,
     sleeveMat: mat.suit,
-    headMat: retroMaterial('skinAhead', { map: tex('skin'), color: 0xf1dcc2, ambient: 0.82 }),
+    headMat: retroMaterial('skinAhead', { color: skinHex('addison'), ambient: 0.86 }),
     faceMat: mat.faceAddison,
   });
   rig.root.name = 'Addison';
@@ -265,20 +270,15 @@ export function createNPC(kind = 'kev') {
     armMat: matShirt,
     sleeveMat: matShirt,
     handMat: matSkin,
-    headMat: retroMaterial(`npcHead${kind}`, { color: p.skin, ambient: 0.82 }),
+    headMat: retroMaterial(`npcHead${kind}`, { color: skinHex(kind), ambient: 0.86 }),
     // built exactly like Mo: a generated portrait on the front face of the skull
-    faceMat: retroMaterial(`npcFace${kind}`, { map: npcFaceTexture(kind), emissive: 0.16 }),
+    faceMat: retroMaterial(`npcFace${kind}`, { map: npcFaceTexture(kind), emissive: 0.34 }),
   });
   rig.root.name = kind;
   const { k, headH } = rig;
 
-  if (kind === 'dex') {
-    rig.head.add(box(0.196 * k, 0.09 * k, 0.21 * k, retroMaterial('hood', { color: 0x2a2f3a }), [0, headH * 0.92, -0.02 * k]));
-  }
-  if (kind === 'dale') {
-    rig.head.add(box(0.182 * k, 0.05 * k, 0.205 * k, retroMaterial('cap', { color: 0x1f4a34 }), [0, headH * 0.98, 0]));
-    rig.head.add(box(0.16 * k, 0.016 * k, 0.09 * k, retroMaterial('brim', { color: 0x183a28 }), [0, headH * 0.94, 0.115 * k]));
-  }
+  // hair, dreadlocks, beards and age lines are painted into the portrait, so a hat or hood
+  // would only cover the face texture; the only extra geometry is the crown/nape volume.
   return rig;
 }
 

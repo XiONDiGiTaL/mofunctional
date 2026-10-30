@@ -317,60 +317,6 @@ export const textures = {
   }),
 };
 
-/**
- * A 64x104 portrait for a head, drawn in the same framing as the supplied Mo art so every
- * character in the game shares one look: hair, brows, sunken eyes, nose shadow, mouth.
- * Nearest-filtered, four-ish colours, no gradients — it is meant to read as painted pixels.
- */
-export function npcFaceTexture(kind = 'kev', palette = {}) {
-  const P = {
-    kev:    { skin: '#c69a74', hair: '#7a5a32', brow: '#3b2a1a', mouth: '#5d3b32', beard: null },
-    rae:    { skin: '#bd9678', hair: '#8e8e8a', brow: '#3a3230', mouth: '#6a4240', beard: null },
-    dale:   { skin: '#bd9770', hair: '#4a3b2c', brow: '#2e241b', mouth: '#5a3a32', beard: '#4a3f33' },
-    dex:    { skin: '#6f4a2e', hair: '#151515', brow: '#0d0d0d', mouth: '#3a2320', beard: '#241a14' },
-    nia:    { skin: '#9d7150', hair: '#241812', brow: '#1a1210', mouth: '#5a3430', beard: null },
-    addison:{ skin: '#dcc0a4', hair: '#b3b0a7', brow: '#5c564d', mouth: '#6b4a42', beard: '#8b857a' },
-  }[kind] || { skin: '#c69a74', hair: '#7a5a32', brow: '#3b2a1a', mouth: '#5d3b32', beard: null };
-  const skin = palette.skin || P.skin;
-  const hair = palette.hair || P.hair;
-
-  return make(`npcface_${kind}`, 64, 104, (c, w, h) => {
-    c.fillStyle = skin; c.fillRect(0, 0, w, h);
-    // cheek and jaw shading, painted as flat facets
-    c.fillStyle = 'rgba(60,30,20,.16)'; c.fillRect(0, 0, 7, h); c.fillRect(w - 7, 0, 7, h);
-    c.fillStyle = 'rgba(255,235,215,.1)'; c.fillRect(24, 30, 16, 22);
-    // hair: crown band and sideburns
-    c.fillStyle = hair;
-    c.fillRect(0, 0, w, 16);
-    c.fillRect(0, 16, 6, 26); c.fillRect(w - 6, 16, 6, 26);
-    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(0, 15, w, 2);
-    // brows
-    c.fillStyle = P.brow;
-    c.fillRect(14, 36, 12, 3); c.fillRect(38, 36, 12, 3);
-    // eye sockets + eyes
-    c.fillStyle = 'rgba(40,22,14,.45)';
-    c.fillRect(14, 41, 13, 7); c.fillRect(37, 41, 13, 7);
-    c.fillStyle = '#1b1512'; c.fillRect(26, 43, 4, 4); c.fillRect(34, 43, 4, 4);
-    c.fillStyle = '#e8e2d2'; c.fillRect(27, 43, 1, 1); c.fillRect(35, 43, 1, 1);
-    // nose
-    c.fillStyle = 'rgba(70,40,28,.5)'; c.fillRect(31, 46, 3, 18);
-    c.fillStyle = 'rgba(35,18,12,.55)'; c.fillRect(27, 64, 3, 2); c.fillRect(35, 64, 3, 2);
-    // mouth
-    c.fillStyle = P.mouth; c.fillRect(23, 74, 18, 3);
-    c.fillStyle = 'rgba(30,16,12,.4)'; c.fillRect(23, 77, 18, 2);
-    // beard shadow
-    if (P.beard) {
-      c.fillStyle = P.beard;
-      c.globalAlpha = 0.5;
-      c.fillRect(14, 80, 36, 14); c.fillRect(10, 66, 5, 24); c.fillRect(49, 66, 5, 24);
-      c.globalAlpha = 1;
-    }
-    // neck/shoulder below the jaw so the crop reads as a bust
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, 96, w, 8);
-    noise(c, w, h, 0.55, 0.1);
-  });
-}
-
 export function tex(name) {
   const fn = textures[name];
   return fn ? fn() : textures.concrete();

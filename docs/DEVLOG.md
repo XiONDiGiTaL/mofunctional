@@ -103,6 +103,21 @@ Every button calls a system function — there are no dead controls. The phone p
   in-game character wears the supplied reference art, not a drawn approximation.
   `MO.ASSETS.moAvatar` is the signed-in avatar in the phone.
 
+### Portrait bank — the cast's faces
+- `src/render/faces.js` paints every character face at 128×178 (the head's real 0.72 aspect,
+  so nothing is stretched sideways) in one consistent style: light from the upper left, a
+  warm skin base with two shadow tones and one highlight, shaped hair masses, and the same
+  landmark grid for all six heads.
+- Per-character painting covers what geometry cannot: Addison's swept grey hair and full
+  beard, Kev's blond crop and square jaw, Rae's black bob and fringe, Dale's receding hair
+  and age lines, Dex's dreadlocks and heavy beard, Nia's braided hair.
+- Each portrait is blitted once with its own exposure (`brightness`), so darker complexions
+  stay readable in the game's unlit rooms instead of collapsing to a silhouette, and each
+  head's side planes use that portrait's own skin tone (`faceSkin`) so the painted face and
+  the cheek geometry meet without a visible seam.
+- The face material keeps a small emissive floor: the portraits are baked art, not surfaces
+  that should be re-lit from scratch by a streetlamp.
+
 ### Character rig v3 — faces on heads, NPC bodies, voices
 - **Faces are geometry now, not decals.** `taperMulti()` in `src/render/retro.js` gives one
   tapered box a material per face, so the portrait texture *is* the front face of the skull
