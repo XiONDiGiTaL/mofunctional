@@ -1,0 +1,625 @@
+/**
+ * Low-poly character rigs: Mo, Addison Octavius, and everyone else in the neighbourhood.
+ *
+ * Proportions follow a ~7.5-head figure (head 0.238 m on a 1.78 m body): shoulders ~2.2 heads
+ * wide, fingertips at mid-thigh, legs slightly more than half the height. Every body part is a
+ * tapered box hanging from a joint pivot (shoulder, elbow, wrist, hip, knee, ankle).
+ *
+ * Heads are real geometry: a faceted skull built from stacked rings, with a nose wedge, brow
+ * ridge, recessed eyes, ears, a beard patch and hair shells. Nothing is painted onto a flat
+ * card — the face turns, catches light and reads from three-quarter angles like the rest of the
+ * body. Faces for the HUD and phone are painted separately in render/faces.js.
+ */
+import * as THREE from '../../vendor/three.module.js';
+import { retroMaterial, box, taper } from '../render/retro.js';
+import { tex } from '../render/textures.js';
+
+/* ------------------------------- materials ------------------------------- */
+
+const mat = {
+  skin: retroMaterial('skin', { map: tex('skin'), color: 0xfff2e6 }),
+  shirt: retroMaterial('tee', { color: 0xf4f3ec }),
+  denim: retroMaterial('jeans', { color: 0x2f4568 }),
+  hair: retroMaterial('hair', { color: 0x241c14 }),
+  shoe: retroMaterial('shoe', { color: 0x232326 }),
+  belt: retroMaterial('belt', { color: 0x2b2119 }),
+  suit: retroMaterial('suit', { color: 0xf6f3e8 }),
+  trouser: retroMaterial('trouser', { color: 0xeae7dc }),
+  dressShirt: retroMaterial('dressShirt', { color: 0xfffdf6 }),
+  gold: retroMaterial('gold', { map: tex('gold'), color: 0xffe9a3, emissive: 0.12 }),
+  goldBand: retroMaterial('goldband', { color: 0xffd24a, emissive: 0.25 }),
+  eyeWhite: retroMaterial('eyeWhite', { color: 0xe8e2d4, ambient: 0.9 }),
+  iris: retroMaterial('iris', { color: 0x2a2018, ambient: 0.6 }),
+  lip: retroMaterial('lip', { color: 0x6f4238, ambient: 0.8 }),
+  navy: retroMaterial('navy', { color: 0x1e2634 }),
+};
+
+/* --------------------------------- helpers -------------------------------- */
+
+function shadowBlob(r = 0.34) {
+  const g = new THREE.CircleGeometry(r, 10);
+  const m = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false });
+  const mesh = new THREE.Mesh(g, m);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = 0.012;
+  return mesh;
+}
+
+function joint(parent, x, y, z) {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  parent.add(g);
+  return g;
+}
+
+/** Flat-shaded material for a character's skin tone (cached per colour). */
+const toneCache = new Map();
+function tone(hex, ambient = 0.7) {
+  const key = `${hex}|${ambient}`;
+  if (!toneCache.has(key)) toneCache.set(key, retroMaterial(`tone${key}`, { color: hex, ambient }));
+  return toneCache.get(key);
+}
+const hairCache = new Map();
+function hairMat(hex) {
+  if (!hairCache.has(hex)) hairCache.set(hex, retroMaterial(`hairC${hex}`, { color: hex, ambient: 0.72 }));
+  return hairCache.get(hex);
+}
+
+/* ------------------------------- head geometry ------------------------------ */
+
+/**
+ * Skull profile. Each ring is [t (0 = chin bottom, 1 = crown), width, depth, z offset],
+ * all normalised so the caller supplies real half-width / half-depth / height in metres.
+ * The chin is narrow and pushed forward; the brow and temples carry the widest ring; the
+ * back of the skull is flattened slightly so it does not read as a billiard ball.
+ */
+const SKULL_RINGS = [
+  [0.00, 0.32, 0.34, 0.034],
+  [0.07, 0.57, 0.63, 0.026],
+  [0.18, 0.75, 0.84, 0.010],
+  [0.31, 0.87, 0.93, -0.004],
+  [0.44, 0.94, 0.98, -0.012],
+  [0.57, 0.98, 1.00, -0.018],
+  [0.69, 1.00, 1.01, -0.026],
+  [0.80, 0.98, 0.99, -0.038],
+  [0.90, 0.87, 0.90, -0.050],
+  [1.00, 0.44, 0.48, -0.058],
+];
+const SEG = 12;
+const sq = (v) => Math.sign(v) * Math.pow(Math.abs(v), 0.78);
+
+function ringPoint(t, ws, ds, zOff, a, hw, hd, hh) {
+  const sx = sq(Math.sin(a));
+  const cz = sq(Math.cos(a));
+  const back = cz < 0 ? 0.93 : 1;
+  return [sx * hw * ws, t * hh, cz * hd * ds * back + zOff * hd];
+}
+
+/** Build a flat-shaded shell between a slice of the skull rings (used for skull and hair). */
+function shellGeo({ hw, hd, hh, from = 0, to = 1, grow = 1, capTop = true, capBottom = false }) {
+  const rings = SKULL_RINGS.filter((r) => r[0] >= from - 0.0001 && r[0] <= to + 0.0001);
+  const pos = [];
+  const push = (p) => pos.push(p[0], p[1], p[2]);
+  const tri = (a, b, c) => { push(a); push(b); push(c); };
+
+  for (let r = 0; r < rings.length - 1; r++) {
+    const [t0, w0, d0, z0] = rings[r];
+    const [t1, w1, d1, z1] = rings[r + 1];
+    for (let s = 0; s < SEG; s++) {
+      const a0 = (s / SEG) * Math.PI * 2 - Math.PI;
+      const a1 = ((s + 1) / SEG) * Math.PI * 2 - Math.PI;
+      const p00 = ringPoint(t0, w0 * grow, d0 * grow, z0, a0, hw, hd, hh);
+      const p01 = ringPoint(t0, w0 * grow, d0 * grow, z0, a1, hw, hd, hh);
+      const p10 = ringPoint(t1, w1 * grow, d1 * grow, z1, a0, hw, hd, hh);
+      const p11 = ringPoint(t1, w1 * grow, d1 * grow, z1, a1, hw, hd, hh);
+      tri(p00, p10, p11);
+      tri(p00, p11, p01);
+    }
+  }
+  if (capTop) {
+    const [t, w, d, z] = rings[rings.length - 1];
+    const centre = [0, t * hh + 0.004 * hh, z * hd];
+    for (let s = 0; s < SEG; s++) {
+      const a0 = (s / SEG) * Math.PI * 2 - Math.PI;
+      const a1 = ((s + 1) / SEG) * Math.PI * 2 - Math.PI;
+      tri(centre, ringPoint(t, w * grow, d * grow, z, a0, hw, hd, hh), ringPoint(t, w * grow, d * grow, z, a1, hw, hd, hh));
+    }
+  }
+  if (capBottom) {
+    const [t, w, d, z] = rings[0];
+    const centre = [0, t * hh, z * hd];
+    for (let s = 0; s < SEG; s++) {
+      const a0 = (s / SEG) * Math.PI * 2 - Math.PI;
+      const a1 = ((s + 1) / SEG) * Math.PI * 2 - Math.PI;
+      tri(centre, ringPoint(t, w * grow, d * grow, z, a1, hw, hd, hh), ringPoint(t, w * grow, d * grow, z, a0, hw, hd, hh));
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  const uv = [];
+  for (let i = 0; i < pos.length; i += 3) {
+    uv.push(pos[i] / (hw * 2) + 0.5, pos[i + 1] / hh);
+  }
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * A complete head, scaled to a given skull size, with hair and optional beard.
+ * Everything is parented to a group whose origin sits at the neck joint.
+ */
+function buildHead({ hw, hd, hh, skinMat, hairColor, style = 'short', beard = null, beardColor = null }) {
+  const g = new THREE.Group();
+  const skin = new THREE.Mesh(shellGeo({ hw, hd, hh }), skinMat);
+  g.add(skin);
+
+  // ---- facial features, all small faceted volumes sitting on the skull surface
+  const faceZ = (t, grow = 1) => {
+    const ring = SKULL_RINGS.reduce((best, r) => (Math.abs(r[0] - t) < Math.abs(best[0] - t) ? r : best), SKULL_RINGS[0]);
+    return ring[3] * hd + ring[2] * hd * grow;
+  };
+
+  // eyes: a shallow socket plate, a white, an iris and a heavy upper lid
+  for (const sx of [-1, 1]) {
+    const ex = sx * hw * 0.40;
+    const ey = hh * 0.585;
+    const ez = faceZ(0.585, 0.955);
+    g.add(box(hw * 0.30, hh * 0.085, hd * 0.03, skinMat, [ex, ey, ez - hd * 0.02]));
+    g.add(box(hw * 0.24, hh * 0.05, hd * 0.02, mat.eyeWhite, [ex, ey, ez + hd * 0.012]));
+    g.add(box(hw * 0.11, hh * 0.05, hd * 0.02, mat.iris, [ex - sx * hw * 0.02, ey, ez + hd * 0.028]));
+    // brow ridge: a wedge that overhangs the eye, which is what makes a low-poly face read
+    const brow = box(hw * 0.42, hh * 0.045, hd * 0.10, skinMat, [ex, ey + hh * 0.075, ez - hd * 0.005]);
+    brow.rotation.z = sx * 0.10;
+    g.add(brow);
+  }
+
+  // nose: bridge + tip + two nostril cuts
+  const noseZ = faceZ(0.52, 1.0);
+  g.add(box(hw * 0.16, hh * 0.20, hd * 0.10, skinMat, [0, hh * 0.535, noseZ + hd * 0.02]));
+  g.add(box(hw * 0.24, hh * 0.07, hd * 0.12, skinMat, [0, hh * 0.44, noseZ + hd * 0.025]));
+  for (const sx of [-1, 1]) {
+    g.add(box(hw * 0.07, hh * 0.03, hd * 0.02, mat.iris, [sx * hw * 0.075, hh * 0.425, noseZ + hd * 0.075]));
+  }
+
+  // mouth
+  const mouthZ = faceZ(0.34, 0.99);
+  g.add(box(hw * 0.34, hh * 0.035, hd * 0.03, mat.lip, [0, hh * 0.315, mouthZ + hd * 0.01]));
+  g.add(box(hw * 0.28, hh * 0.018, hd * 0.02, tone(0x4a2a22, 0.8), [0, hh * 0.305, mouthZ + hd * 0.025]));
+
+  // ears
+  for (const sx of [-1, 1]) {
+    g.add(box(hw * 0.10, hh * 0.16, hd * 0.13, skinMat, [sx * hw * 0.99, hh * 0.55, -hd * 0.02]));
+  }
+
+  // ---- beard: a band of facets hugging the jaw, plus a moustache for full beards
+  const bc = beardColor ?? hairColor;
+  if (beard === 'full' || beard === 'goatee') {
+    for (let i = -2; i <= 2; i++) {
+      const a = i * 0.34;
+      const y = hh * (beard === 'goatee' ? 0.20 : 0.17 + Math.abs(i) * 0.015);
+      const x = Math.sin(a) * hw * 0.72;
+      const z = Math.cos(a) * hd * 0.86;
+      const patch = box(hw * 0.34, hh * 0.14, hd * 0.16, hairMat(bc), [x, y, z]);
+      patch.rotation.y = -a;
+      g.add(patch);
+    }
+    g.add(box(hw * 0.42, hh * 0.045, hd * 0.05, hairMat(bc), [0, hh * 0.375, mouthZ + hd * 0.03]));
+    if (beard === 'full') {
+      for (const sx of [-1, 1]) {
+        g.add(box(hw * 0.12, hh * 0.34, hd * 0.12, hairMat(bc), [sx * hw * 0.66, hh * 0.34, hd * 0.28]));
+      }
+    }
+  } else if (beard === 'stubble') {
+    for (let i = -2; i <= 2; i++) {
+      const a = i * 0.3;
+      const patch = box(hw * 0.30, hh * 0.07, hd * 0.05, hairMat(bc), [Math.sin(a) * hw * 0.68, hh * 0.19, Math.cos(a) * hd * 0.83]);
+      patch.rotation.y = -a;
+      g.add(patch);
+    }
+  }
+
+  // ---- hair: one shell plus per-style extras, all in the character's hair colour
+  const hair = hairMat(hairColor);
+  const hairStart = { buzz: 0.88, short: 0.80, crop: 0.79, swept: 0.74, receding: 0.86, bob: 0.70, dread: 0.66, braids: 0.68 }[style] ?? 0.80;
+  g.add(new THREE.Mesh(shellGeo({ hw: hw * 1.05, hd: hd * 1.05, hh: hh * 1.02, from: hairStart, to: 1, grow: 1.02 }), hair));
+
+  if (style === 'swept') {
+    const quiff = box(hw * 1.1, hh * 0.14, hd * 0.42, hair, [0, hh * 0.93, hd * 0.66]);
+    quiff.rotation.x = -0.22;
+    g.add(quiff);
+  }
+  if (style === 'receding') {
+    g.add(box(hw * 0.34, hh * 0.10, hd * 0.16, hair, [0, hh * 0.82, hd * 0.78]));
+  }
+  if (style === 'bob') {
+    for (const sx of [-1, 1]) {
+      g.add(box(hw * 0.22, hh * 0.62, hd * 1.05, hair, [sx * hw * 0.98, hh * 0.52, -hd * 0.02]));
+    }
+    g.add(box(hw * 1.9, hh * 0.18, hd * 0.6, hair, [0, hh * 0.86, hd * 0.55]));
+  }
+  if (style === 'dread' || style === 'braids') {
+    const count = style === 'dread' ? 7 : 4;
+    for (let i = 0; i < count; i++) {
+      const a = -0.9 + (i / (count - 1)) * 1.8;
+      const strand = box(hw * 0.16, hh * (0.9 + (i % 3) * 0.12), hd * 0.16, hair,
+        [Math.sin(a) * hw * 0.92, hh * 0.36, -hd * 0.72 + Math.cos(a) * hd * 0.12]);
+      strand.rotation.z = Math.sin(a) * 0.12;
+      g.add(strand);
+    }
+  }
+  if (style === 'crop' || style === 'short') {
+    for (const sx of [-1, 1]) {
+      g.add(box(hw * 0.10, hh * 0.22, hd * 0.30, hair, [sx * hw * 0.97, hh * 0.72, -hd * 0.12]));
+    }
+  }
+
+  return g;
+}
+
+/* --------------------------------- bodies --------------------------------- */
+
+/**
+ * Build a jointed body. `spec` carries every appearance value so Mo and the NPCs run through
+ * exactly the same rig: same proportions, same joint chain, same head construction.
+ */
+function buildBody(spec) {
+  const {
+    height = 1.78, build = 1,
+    skinColor = 0x8f6446, hairColor = 0x231a14,
+    shirtMat, pantsMat, shoeMat,
+    armMat, sleeveMat, handMat,
+    suit = false,
+    hairStyle = 'short', beard = null, beardColor = null,
+  } = spec;
+
+  const k = height / 1.78;
+  const b = build;
+  const skin = tone(skinColor);
+  const headSkin = tone(skinColor, 0.86);
+
+  const footH = 0.075 * k;
+  const calfH = 0.415 * k;
+  const thighH = 0.425 * k;
+  const pelvisH = 0.14 * k;
+  const abdomenH = 0.15 * k;
+  const chestH = 0.24 * k;
+  const neckH = 0.056 * k;
+  const headH = 0.238 * k;
+  const hipY = footH + calfH + thighH;
+  const shoulderY = abdomenH + chestH;
+
+  const hipW = 0.285 * b * k;
+  const waistW = 0.245 * b * k;
+  const chestW = 0.345 * b * k;
+  const shoulderX = chestW / 2 + 0.018 * k;
+
+  const root = new THREE.Group();
+  root.add(shadowBlob(0.26 + 0.06 * k));
+
+  const hips = joint(root, 0, hipY, 0);
+  hips.add(taper(waistW, hipW, 0.20 * k, 0.205 * k, pelvisH, pantsMat, [0, pelvisH, 0]));
+
+  function makeLeg(sx) {
+    const pivot = joint(hips, sx * 0.082 * b * k, 0, 0);
+    pivot.add(taper(0.148 * b * k, 0.113 * b * k, 0.168 * k, 0.132 * k, thighH, pantsMat));
+    const knee = joint(pivot, 0, -thighH, 0);
+    knee.add(taper(0.113 * b * k, 0.076 * b * k, 0.132 * k, 0.09 * k, calfH, pantsMat));
+    const ankle = joint(knee, 0, -calfH, 0);
+    ankle.add(taper(0.098 * k, 0.104 * k, 0.115 * k, 0.195 * k, footH, shoeMat, [0, 0, 0.028 * k]));
+    ankle.add(box(0.102 * k, 0.022 * k, 0.205 * k, shoeMat, [0, -footH, 0.05 * k]));
+    return { pivot, knee, ankle };
+  }
+  const legL = makeLeg(-1);
+  const legR = makeLeg(1);
+
+  const torso = joint(hips, 0, pelvisH, 0);
+  torso.add(taper(waistW * 1.06, waistW, 0.202 * k, 0.188 * k, abdomenH, shirtMat, [0, abdomenH, 0]));
+  torso.add(taper((chestW + waistW) / 2, waistW * 1.06, 0.222 * k, 0.202 * k, chestH * 0.55, shirtMat, [0, abdomenH + chestH * 0.55, 0]));
+  torso.add(taper(chestW, (chestW + waistW) / 2, 0.238 * k, 0.222 * k, chestH * 0.45, shirtMat, [0, abdomenH + chestH, 0]));
+
+  // neck + head
+  torso.add(taper(0.092 * k, 0.106 * k, 0.09 * k, 0.102 * k, neckH, skin, [0, shoulderY + neckH, 0]));
+  const head = joint(torso, 0, shoulderY + neckH, 0);
+  head.add(buildHead({
+    hw: 0.086 * k, hd: 0.1025 * k, hh: headH,
+    skinMat: headSkin, hairColor, style: hairStyle, beard, beardColor,
+  }));
+
+  const upperH = 0.285 * k;
+  const foreH = 0.245 * k;
+  const handH = 0.09 * k;
+  function makeArm(sx) {
+    const pivot = joint(torso, sx * shoulderX, shoulderY - 0.028 * k, 0);
+    pivot.add(taper(0.092 * b * k, 0.106 * b * k, 0.106 * k, 0.122 * k, 0.09 * k, sleeveMat, [0, 0.022 * k, 0]));
+    pivot.add(taper(0.092 * b * k, 0.076 * b * k, 0.106 * k, 0.088 * k, upperH, armMat));
+    if (sleeveMat && armMat !== sleeveMat) {
+      pivot.add(taper(0.118 * b * k, 0.106 * b * k, 0.134 * k, 0.118 * k, upperH * 0.62, sleeveMat));
+      pivot.add(taper(0.113 * b * k, 0.11 * b * k, 0.126 * k, 0.122 * k, 0.014 * k, sleeveMat, [0, -upperH * 0.62 + 0.014 * k, 0]));
+    }
+    const elbow = joint(pivot, 0, -upperH, 0);
+    elbow.add(taper(0.077 * b * k, 0.064 * b * k, 0.089 * k, 0.074 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat));
+    const hand = box(0.068 * k, handH, 0.05 * k, handMat || skin, [0, -foreH - handH * 0.45, 0.006 * k]);
+    elbow.add(hand);
+    elbow.add(box(0.026 * k, handH * 0.55, 0.03 * k, handMat || skin, [-sx * 0.036 * k, -foreH - handH * 0.4, 0.02 * k]));
+    return { pivot, elbow, hand };
+  }
+  const armL = makeArm(-1);
+  const armR = makeArm(1);
+
+  return { root, hips, torso, head, legL, legR, armL, armR, hipY, shoulderY, headH, k, t: 0, suit };
+}
+
+/* ---------------------------------- cast ---------------------------------- */
+
+const CAST = {
+  mo: { height: 1.78, skin: 0x8f6446, hair: 0x201812, style: 'short', beard: 'goatee' },
+  addison: { height: 1.86, build: 1.03, skin: 0xdcbb95, hair: 0xb9b6ad, style: 'swept', beard: 'full' },
+  rae: { height: 1.66, skin: 0xe0c0a2, hair: 0x201a20, style: 'bob', shirt: 0x6d5a74, pants: 0x3a3442 },
+  dale: { height: 1.72, skin: 0xbf9d80, hair: 0x9d9c96, style: 'receding', beard: 'stubble', shirt: 0x2f6b4a, pants: 0x26302a },
+  dex: { height: 1.69, build: 1.05, skin: 0x784f34, hair: 0x241812, style: 'dread', beard: 'full', shirt: 0x2a2f3a, pants: 0x20242c },
+  kev: { height: 1.75, skin: 0xc79e74, hair: 0xc49a52, style: 'crop', shirt: 0xa05a3a, pants: 0x33405a },
+  nia: { height: 1.63, skin: 0xa97a52, hair: 0x2a1a12, style: 'braids', shirt: 0x4a6a8a, pants: 0x2f3a46 },
+  miguel: { height: 1.70, skin: 0xb07f54, hair: 0x2b2118, style: 'short', beard: 'full', shirt: 0x7d5a3a, pants: 0x333230 },
+  habib: { height: 1.74, skin: 0xa87c52, hair: 0x241a12, style: 'short', beard: 'full', shirt: 0xd6d0c2, pants: 0x2a2a30 },
+  homeless: { height: 1.71, skin: 0x87603f, hair: 0x3a302a, style: 'receding', beard: 'full', shirt: 0x4a463e, pants: 0x35322c },
+  junkie: { height: 1.68, skin: 0xa8835f, hair: 0x2f2620, style: 'crop', beard: 'stubble', shirt: 0x3c3a34, pants: 0x2c2a26 },
+  clerk: { height: 1.73, skin: 0xc49b74, hair: 0x342a20, style: 'crop', shirt: 0x3b5a44, pants: 0x2e3238 },
+};
+
+export function createMo() {
+  const rig = buildBody({
+    ...CAST.mo,
+    // plain white tee, plain blue jeans: no patches, no stains, nothing stuck to the shirt
+    shirtMat: mat.shirt,
+    pantsMat: mat.denim,
+    shoeMat: mat.shoe,
+    armMat: mat.skin,
+    sleeveMat: mat.shirt,
+    handMat: mat.skin,
+  });
+  rig.root.name = 'Mo';
+  const { k } = rig;
+
+  rig.hips.add(box(0.285 * k, 0.03 * k, 0.2 * k, mat.belt, [0, 0.012 * k, 0]));
+  rig.torso.add(box(0.03 * k, 0.03 * k, 0.03 * k, mat.belt, [0, 0.012 * k, 0.1 * k]));
+  // tee collar: a thin ring of fabric at the base of the neck
+  rig.torso.add(taper(0.098 * k, 0.108 * k, 0.098 * k, 0.108 * k, 0.024 * k, mat.shirt, [0, rig.shoulderY + 0.012 * k, 0]));
+  return rig;
+}
+
+export function createAddison() {
+  const rig = buildBody({
+    ...CAST.addison,
+    shirtMat: mat.suit,
+    pantsMat: mat.trouser,
+    shoeMat: mat.navy,
+    armMat: mat.suit,
+    sleeveMat: mat.suit,
+    handMat: tone(0xdcbb95),
+    suit: true,
+  });
+  rig.root.name = 'Addison';
+  const { k } = rig;
+  const chestTop = rig.shoulderY;
+
+  rig.torso.add(box(0.14 * k, 0.20 * k, 0.012 * k, mat.dressShirt, [0, chestTop - 0.13 * k, 0.122 * k]));
+  rig.torso.add(box(0.072 * k, 0.30 * k, 0.014 * k, mat.gold, [0, chestTop - 0.20 * k, 0.128 * k]));
+  rig.torso.add(box(0.048 * k, 0.05 * k, 0.016 * k, mat.goldBand, [0, chestTop - 0.055 * k, 0.13 * k]));
+  rig.torso.add(box(0.08 * k, 0.014 * k, 0.016 * k, mat.goldBand, [0, chestTop - 0.27 * k, 0.13 * k]));
+
+  for (let i = 0; i < 2; i++) {
+    for (let j = 0; j < 2; j++) {
+      rig.torso.add(box(0.026 * k, 0.026 * k, 0.012 * k, mat.navy,
+        [(-0.075 + i * 0.15) * k, chestTop - 0.14 * k - j * 0.16 * k, 0.124 * k]));
+    }
+  }
+  rig.torso.add(box(0.105 * k, 0.22 * k, 0.014 * k, mat.suit, [-0.10 * k, chestTop - 0.11 * k, 0.124 * k], [0, 0, 0.16]));
+  rig.torso.add(box(0.105 * k, 0.22 * k, 0.014 * k, mat.suit, [0.10 * k, chestTop - 0.11 * k, 0.124 * k], [0, 0, -0.16]));
+  rig.torso.add(box(0.06 * k, 0.05 * k, 0.014 * k, mat.gold, [0.13 * k, chestTop - 0.30 * k, 0.122 * k], [0, 0, 0.3]));
+
+  for (const a of [rig.armL, rig.armR]) {
+    a.elbow.add(box(0.088 * k, 0.035 * k, 0.10 * k, mat.gold, [0, -0.235 * k, 0]));
+  }
+  return rig;
+}
+
+export const NPC_KINDS = Object.keys(CAST).filter((k) => k !== 'mo' && k !== 'addison');
+
+export function createNPC(kind = 'kev') {
+  const spec = CAST[kind] || CAST.kev;
+  const rig = buildBody({
+    ...spec,
+    shirtMat: retroMaterial(`npcShirt${kind}`, { color: spec.shirt ?? 0x555a52 }),
+    pantsMat: retroMaterial(`npcPants${kind}`, { color: spec.pants ?? 0x2c3038 }),
+    shoeMat: retroMaterial(`npcShoe${kind}`, { color: 0x22221f }),
+    armMat: retroMaterial(`npcArm${kind}`, { color: spec.shirt ?? 0x555a52 }),
+    sleeveMat: retroMaterial(`npcShirtS${kind}`, { color: spec.shirt ?? 0x555a52 }),
+    handMat: tone(spec.skin ?? 0xc9a078),
+    beardColor: spec.hair,
+  });
+  rig.root.name = kind;
+  if (kind === 'miguel' || kind === 'habib' || kind === 'clerk') {
+    // shop apron
+    const { k } = rig;
+    rig.torso.add(box(0.30 * k, 0.34 * k, 0.02 * k, retroMaterial(`apron${kind}`, { color: kind === 'habib' ? 0x4a5a44 : 0x5a4a38 }), [0, rig.shoulderY - 0.20 * k, 0.120 * k]));
+  }
+  return rig;
+}
+
+export function createCat() {
+  const root = new THREE.Group();
+  const fur = retroMaterial('fur', { color: 0x3a3630 });
+  root.add(box(0.22, 0.16, 0.38, fur, [0, 0.13, 0]));
+  root.add(box(0.15, 0.13, 0.14, fur, [0, 0.2, 0.24]));
+  root.add(box(0.04, 0.07, 0.03, fur, [-0.05, 0.28, 0.24]));
+  root.add(box(0.04, 0.07, 0.03, fur, [0.05, 0.28, 0.24]));
+  root.add(box(0.03, 0.02, 0.02, mat.iris, [-0.04, 0.22, 0.315]));
+  root.add(box(0.03, 0.02, 0.02, mat.iris, [0.04, 0.22, 0.315]));
+  root.add(box(0.04, 0.04, 0.28, fur, [0, 0.18, -0.26]));
+  const rig = { root, tail: root.children[root.children.length - 1], t: 0, type: 'cat' };
+  root.add(shadowBlob(0.18));
+  return rig;
+}
+
+/* ------------------------------- animation ------------------------------- */
+
+export function animateMo(rig, dt, opts = {}) {
+  const { walking = false, high = 0, withdrawal = 0, sitting = false, sleeping = false } = opts;
+  rig.t += dt * (walking ? 7.2 : 1.4);
+  const t = rig.t;
+  const drunk = Math.min(1, (high / 100) * 1.1 + (withdrawal / 380));
+  const sway = Math.sin(t * 0.9) * drunk * 0.22;
+  const { hipY } = rig;
+
+  if (sleeping) {
+    rig.root.rotation.z = 0;
+    rig.root.rotation.x = 0;
+    rig.hips.rotation.x = 0;
+    rig.legL.pivot.rotation.x = -0.1;
+    rig.legR.pivot.rotation.x = -0.1;
+    rig.legL.knee.rotation.x = 0.12;
+    rig.legR.knee.rotation.x = 0.12;
+    rig.armL.pivot.rotation.x = Math.sin(t * 0.6) * 0.04;
+    rig.armR.pivot.rotation.x = Math.sin(t * 0.6 + 1) * 0.04;
+    rig.head.rotation.x = 0.16;
+    return;
+  }
+
+  if (sitting) {
+    rig.hips.position.y = hipY - 0.44;
+    rig.legL.pivot.rotation.x = -1.35;
+    rig.legR.pivot.rotation.x = -1.35;
+    rig.legL.knee.rotation.x = 1.35;
+    rig.legR.knee.rotation.x = 1.35;
+    rig.armL.pivot.rotation.x = -0.5;
+    rig.armR.pivot.rotation.x = -0.5;
+    rig.armL.elbow.rotation.x = -0.5;
+    rig.armR.elbow.rotation.x = -0.5;
+    rig.head.rotation.x = 0.1;
+    rig.root.rotation.z = sway * 0.3;
+    return;
+  }
+
+  const stride = walking ? 0.62 : 0.04;
+  const bob = walking ? Math.abs(Math.sin(t)) * 0.035 : Math.sin(t * 0.8) * 0.01;
+  const swingL = Math.sin(t);
+  const swingR = Math.sin(t + Math.PI);
+
+  rig.hips.position.y = hipY + bob;
+  rig.legL.pivot.rotation.x = swingL * stride;
+  rig.legR.pivot.rotation.x = swingR * stride;
+  rig.legL.knee.rotation.x = Math.max(0, -swingL) * 0.75 + 0.04;
+  rig.legR.knee.rotation.x = Math.max(0, -swingR) * 0.75 + 0.04;
+  rig.legL.ankle.rotation.x = swingL * 0.12;
+  rig.legR.ankle.rotation.x = swingR * 0.12;
+
+  rig.armL.pivot.rotation.x = swingR * stride * 1.1;
+  rig.armR.pivot.rotation.x = swingL * stride * 1.1;
+  rig.armL.elbow.rotation.x = -0.12 - Math.max(0, swingR) * 0.45;
+  rig.armR.elbow.rotation.x = -0.12 - Math.max(0, swingL) * 0.45;
+  rig.armL.pivot.rotation.z = -0.05 - Math.sin(t * 0.7) * 0.035;
+  rig.armR.pivot.rotation.z = 0.05 + Math.sin(t * 0.7) * 0.035;
+
+  rig.torso.rotation.y = Math.sin(t) * (walking ? 0.05 : 0.02) + sway * 0.5;
+  rig.torso.rotation.z = sway * 0.7;
+  rig.head.rotation.y = Math.sin(t * 0.5) * 0.07 * (1 + drunk * 2) - sway * 0.7;
+  rig.head.rotation.z = sway * 0.8;
+  rig.root.rotation.z = sway * 0.34;
+  rig.root.position.y = Math.sin(t * 0.6) * drunk * 0.02;
+
+  if (walking && drunk > 0.55) {
+    const st = Math.sin(t * 0.41);
+    if (st > 0.985) {
+      rig.root.rotation.z += 0.22;
+      rig.root.position.y -= 0.04;
+    }
+  }
+}
+
+export function animateAddison(rig, dt) {
+  rig.t += dt;
+  const t = rig.t;
+  const beat = Math.sin(t * 3.1);
+  const beat2 = Math.sin(t * 3.1 + Math.PI);
+  rig.hips.position.y = rig.hipY + Math.abs(beat) * 0.05;
+  rig.hips.rotation.z = beat * 0.12;
+  rig.hips.rotation.y = Math.sin(t * 1.55) * 0.26;
+  rig.torso.rotation.z = beat2 * 0.1;
+  rig.torso.rotation.y = Math.sin(t * 3.1) * 0.2;
+  rig.armL.pivot.rotation.z = 1.5 + beat * 1.0;
+  rig.armL.pivot.rotation.x = -0.5 + Math.sin(t * 6.2) * 0.5;
+  rig.armL.elbow.rotation.x = -0.8 - beat * 0.5;
+  rig.armR.pivot.rotation.z = -1.5 - beat2 * 1.0;
+  rig.armR.pivot.rotation.x = -0.5 + Math.sin(t * 6.2 + 1) * 0.5;
+  rig.armR.elbow.rotation.x = -0.8 - beat2 * 0.5;
+  rig.legL.pivot.rotation.x = Math.max(0, beat) * 0.35;
+  rig.legR.pivot.rotation.x = Math.max(0, beat2) * 0.35;
+  rig.legL.knee.rotation.x = Math.max(0, beat) * 0.5;
+  rig.legR.knee.rotation.x = Math.max(0, beat2) * 0.5;
+  rig.head.rotation.z = beat * 0.22;
+  rig.head.rotation.y = Math.sin(t * 3.1 + 0.7) * 0.28;
+  rig.head.rotation.x = -0.1 + beat * 0.1;
+}
+
+export function animateNPC(rig, dt, opts = {}) {
+  const { walking = false, sitting = false, sleeping = false } = opts;
+  rig.t += dt * (walking ? 6.4 : 1);
+  const t = rig.t;
+  if (rig.type === 'cat') {
+    rig.tail.rotation.y = Math.sin(t * 2.2) * 0.5;
+    rig.root.position.y = Math.abs(Math.sin(t * 0.7)) * 0.01;
+    return;
+  }
+  if (sleeping) {
+    rig.hips.position.y = 0.16;
+    rig.hips.rotation.x = -1.45;
+    rig.legL.pivot.rotation.x = -0.3;
+    rig.legR.pivot.rotation.x = -0.2;
+    rig.legL.knee.rotation.x = 0.9;
+    rig.legR.knee.rotation.x = 0.7;
+    rig.armL.pivot.rotation.x = -0.5;
+    rig.armR.pivot.rotation.x = -0.4;
+    rig.head.rotation.x = 0.2;
+    return;
+  }
+  if (sitting) {
+    rig.hips.position.y = rig.hipY - 0.42;
+    rig.legL.pivot.rotation.x = -1.3;
+    rig.legR.pivot.rotation.x = -1.3;
+    rig.legL.knee.rotation.x = 1.3;
+    rig.legR.knee.rotation.x = 1.3;
+    rig.armL.pivot.rotation.x = -0.45;
+    rig.armR.pivot.rotation.x = -0.45;
+    rig.armL.elbow.rotation.x = -0.55;
+    rig.armR.elbow.rotation.x = -0.55;
+    rig.head.rotation.x = 0.12;
+    rig.head.rotation.z = 0.05;
+    return;
+  }
+
+  const stride = walking ? 0.5 : 0.03;
+  const swingL = Math.sin(t);
+  const swingR = Math.sin(t + Math.PI);
+  const bob = walking ? Math.abs(Math.sin(t)) * 0.025 : Math.sin(t * 0.9) * 0.006;
+
+  rig.hips.position.y = rig.hipY + bob;
+  rig.legL.pivot.rotation.x = swingL * stride;
+  rig.legR.pivot.rotation.x = swingR * stride;
+  rig.legL.knee.rotation.x = Math.max(0, -swingL) * (walking ? 0.62 : 0.05) + 0.03;
+  rig.legR.knee.rotation.x = Math.max(0, -swingR) * (walking ? 0.62 : 0.05) + 0.03;
+  rig.legL.ankle.rotation.x = swingL * 0.09;
+  rig.legR.ankle.rotation.x = swingR * 0.09;
+  rig.armL.pivot.rotation.x = -swingL * stride * 0.9;
+  rig.armR.pivot.rotation.x = -swingR * stride * 0.9;
+  rig.armL.elbow.rotation.x = -0.16 + Math.max(0, swingL) * 0.28;
+  rig.armR.elbow.rotation.x = -0.16 + Math.max(0, swingR) * 0.28;
+  rig.armL.pivot.rotation.z = -0.06;
+  rig.armR.pivot.rotation.z = 0.06;
+  rig.torso.rotation.y = Math.sin(t) * (walking ? 0.04 : 0.07);
+  rig.head.rotation.y = Math.sin(t * 0.37) * (walking ? 0.04 : 0.2);
+  rig.head.rotation.z = walking ? 0 : Math.sin(t * 0.53) * 0.04;
+}
+
+export { mat as characterMaterials };
