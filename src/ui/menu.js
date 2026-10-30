@@ -258,6 +258,7 @@ export class Menu {
           <p><b>Music</b><br>"Mo Functional — Main Menu" supplied with the project, used as the menu theme.</p>
           <p><b>Character reference</b><br>Mo's face is reconstructed from the supplied reference image as a low-poly approximation. Addison Octavius is an original fictional character inspired by a wardrobe reference — no real person, organisation or affiliation.</p>
           <p><b>Content note</b><br>Addiction, poverty and housing insecurity are depicted as mechanical systems, in a dark comedy register. All substances are fictional. There are no instructions for anything.</p>
+          <p><b>Home</b><br><a href="https://xiondigital.net" target="_blank" rel="noopener">xiondigital.net</a> &middot; <a href="https://xiondigital.net/arcade/" target="_blank" rel="noopener">the arcade</a></p>
           <p class="tiny mono-dim">${esc(CONFIG.meta.repo)}</p>
         </div>
         <button class="btn" data-close>BACK</button>
