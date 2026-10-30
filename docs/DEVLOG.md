@@ -117,7 +117,7 @@ Every button calls a system function — there are no dead controls. The phone p
 - **Charlie Brown voice.** `audio.mumble()` synthesises wordless syllables — sawtooth through a
   bandpass with a drifting pitch — and `talk()` in `areas.js` calls it per NPC with a per-speaker
   pitch (`NPC_VOICE`). The words stay in the text; the voice stays unintelligible.
-- **Naming:** all `PS1`/`PSX`/`PlayStation` references were removed in favour of "90s-era";
+- **Naming:** every platform-name reference was removed in favour of "90s-era";
   `src/render/ps1.js` is now `src/render/retro.js` and the shader API is
   `retroMaterial` / `retroUniforms`.
 - **Film grain:** an SVG-turbulence layer on the CRT stack, stepped at 20fps, for the wet
