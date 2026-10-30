@@ -334,7 +334,7 @@ export function moFaceTexture() {
   if (!src) return tex('faceMo');
   const c = document.createElement('canvas');
   c.width = 64;
-  c.height = 64;
+  c.height = 104; // the supplied art is a head-and-jaw crop; keep its native aspect
   const ctx = c.getContext('2d');
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
@@ -345,10 +345,9 @@ export function moFaceTexture() {
   t.colorSpace = THREE.SRGBColorSpace;
   const img = new Image();
   img.onload = () => {
-    const s = Math.min(img.width, img.height * 0.82);
-    const sx = (img.width - s) / 2;
-    const sy = img.height * 0.1;
-    ctx.drawImage(img, sx, sy, s, s, 0, 0, 64, 64);
+    ctx.clearRect(0, 0, 64, 104);
+    // trim the wall behind the head so the plane reads as a face, not a photo
+    ctx.drawImage(img, 6, 2, img.width - 12, img.height - 4, 0, 0, 64, 104);
     t.needsUpdate = true;
   };
   img.src = src;

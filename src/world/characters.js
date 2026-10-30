@@ -1,207 +1,269 @@
-/** Low-poly character rigs: Mo, Addison Octavius, assorted NPCs. */
+/**
+ * Low-poly character rigs: Mo, Addison Octavius, assorted NPCs.
+ *
+ * Proportions follow a ~7.5-head figure (head 0.235 m on a 1.78 m body): shoulders
+ * ~2.2 heads wide, fingertips at mid-thigh, legs slightly more than half the height.
+ * Every body part is a tapered box hanging from a joint pivot (shoulder, elbow,
+ * wrist, hip, knee, ankle) so the silhouette reads as a person, not a stack of cubes.
+ */
 import * as THREE from '../../vendor/three.module.js';
-import { ps1Material, box, plane } from '../render/ps1.js';
+import { ps1Material, box, plane, taper } from '../render/ps1.js';
 import { tex, moFaceTexture } from '../render/textures.js';
 
 const mat = {
-  skin: ps1Material('skin', { map: tex('skin'), color: 0xf0d8c0 }),
+  skin: ps1Material('skin', { map: tex('skin'), color: 0xfff2e6 }),
   shirt: ps1Material('shirt', { map: tex('shirt'), color: 0xffffff }),
-  denim: ps1Material('denim', { map: tex('denim'), color: 0xdfe6f0 }),
+  denim: ps1Material('denim', { map: tex('denim'), color: 0xbfc9d6 }),
   hair: ps1Material('hair', { color: 0x241c14 }),
-  shoe: ps1Material('shoe', { color: 0x2a2a2e }),
+  shoe: ps1Material('shoe', { color: 0x232326 }),
+  belt: ps1Material('belt', { color: 0x2b2119 }),
   suit: ps1Material('suit', { map: tex('suitWhite'), color: 0xfffdf4 }),
+  trouser: ps1Material('trouser', { color: 0xf1eee2 }),
   gold: ps1Material('gold', { map: tex('gold'), color: 0xffe9a3, emissive: 0.12 }),
   goldBand: ps1Material('goldband', { color: 0xffd24a, emissive: 0.25 }),
+  dressShirt: ps1Material('dressShirt', { color: 0xfffdf6 }),
   faceMo: ps1Material('faceMo', { map: moFaceTexture(), unlit: true, transparent: true, alphaTest: 0.3 }),
   faceAddison: ps1Material('faceAddison', { map: tex('faceAddison'), unlit: true, transparent: true, alphaTest: 0.3 }),
   eye: ps1Material('eye', { color: 0x14120f }),
+  stain: ps1Material('stain', { color: 0xb3a286 }),
 };
 
-function shadowBlob(r = 0.42) {
+function shadowBlob(r = 0.34) {
   const g = new THREE.CircleGeometry(r, 10);
-  const m = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.36, depthWrite: false });
+  const m = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false });
   const mesh = new THREE.Mesh(g, m);
   mesh.rotation.x = -Math.PI / 2;
   mesh.position.y = 0.012;
   return mesh;
 }
 
-/** A box limb on a pivot so we can rotate it from the joint. */
-function limb(w, h, d, material, x, y, z) {
-  const pivot = new THREE.Group();
-  pivot.position.set(x, y, z);
-  const m = box(w, h, d, material, [0, -h / 2, 0]);
-  pivot.add(m);
-  return { pivot, mesh: m };
+/** Joint pivot: an empty group we rotate to animate the part below it. */
+function joint(parent, x, y, z) {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  parent.add(g);
+  return g;
+}
+
+/**
+ * Build a complete jointed body. Returns the pivots the animator drives plus the
+ * measurements it needs (hip height, shoulder height) so nothing is hard-coded twice.
+ */
+function buildBody({
+  height = 1.78,
+  build = 1,
+  skin, shirt, pants, shoe, hair,
+  armMat, sleeveMat, handMat, headMat,
+}) {
+  const k = height / 1.78;
+  const b = build;
+
+  // vertical proportions (metres, scaled)
+  const footH = 0.075 * k;
+  const calfH = 0.415 * k;
+  const thighH = 0.425 * k;
+  const pelvisH = 0.14 * k;
+  const abdomenH = 0.15 * k;
+  const chestH = 0.24 * k;
+  const neckH = 0.048 * k;
+  const headH = 0.245 * k;
+  const hipY = footH + calfH + thighH;
+  // torso-local: 0 = top of pelvis, so the pelvis height is NOT included here
+  const shoulderY = abdomenH + chestH;
+
+  const hipW = 0.285 * b * k;
+  const waistW = 0.245 * b * k;
+  const chestW = 0.345 * b * k;
+  const shoulderX = chestW / 2 + 0.018 * k;
+
+  const root = new THREE.Group();
+  root.add(shadowBlob(0.26 + 0.06 * k));
+
+  const hips = joint(root, 0, hipY, 0);
+
+  // pelvis — a short taper so the waist narrows into the hips
+  hips.add(taper(waistW, hipW, 0.20 * k, 0.205 * k, pelvisH, pants, [0, pelvisH, 0]));
+
+  // ---- legs: hip -> thigh -> knee -> calf -> ankle -> shoe
+  const upperLegH = thighH;
+  const lowerLegH = calfH;
+  function makeLeg(sx) {
+    const pivot = joint(hips, sx * 0.082 * b * k, 0, 0);
+    pivot.add(taper(0.148 * b * k, 0.113 * b * k, 0.168 * k, 0.132 * k, upperLegH, pants));
+    const knee = joint(pivot, 0, -upperLegH, 0);
+    knee.add(taper(0.113 * b * k, 0.076 * b * k, 0.132 * k, 0.09 * k, lowerLegH, pants));
+    const ankle = joint(knee, 0, -lowerLegH, 0);
+    ankle.add(taper(0.098 * k, 0.104 * k, 0.115 * k, 0.195 * k, footH, shoe, [0, 0, 0.028 * k]));
+    ankle.add(box(0.102 * k, 0.022 * k, 0.205 * k, shoe, [0, -footH, 0.05 * k]));
+    return { pivot, knee, ankle };
+  }
+  const legL = makeLeg(-1);
+  const legR = makeLeg(1);
+
+  // ---- torso: pelvis -> waist -> ribcage -> shoulders
+  const torso = joint(hips, 0, pelvisH, 0);
+  torso.add(taper(waistW * 1.08, waistW, 0.205 * k, 0.19 * k, abdomenH, shirt, [0, abdomenH, 0]));
+  torso.add(taper(chestW, waistW * 1.08, 0.235 * k, 0.205 * k, chestH, shirt, [0, abdomenH + chestH, 0]));
+
+  // ---- neck + head
+  torso.add(taper(0.082 * k, 0.098 * k, 0.082 * k, 0.094 * k, neckH, headMat || skin, [0, shoulderY + neckH, 0]));
+  const head = joint(torso, 0, shoulderY + neckH, 0);
+  head.add(taper(0.182 * k, 0.156 * k, 0.205 * k, 0.188 * k, headH, headMat || skin, [0, headH, 0]));
+  head.add(box(0.017 * k, 0.05 * k, 0.035 * k, headMat || skin, [-0.094 * k, headH * 0.5, 0]));
+  head.add(box(0.017 * k, 0.05 * k, 0.035 * k, headMat || skin, [0.094 * k, headH * 0.5, 0]));
+
+  const faceW = headH * 0.96 * 0.615; // supplied face art is 64x104, keep its aspect
+  const faceH = headH * 0.96;
+  head.add(plane(faceW, faceH, mat.faceMo, [0, headH * 0.5, 0.116 * k]));
+
+  // short cropped hair: cap over the crown, block at the back of the skull
+  head.add(box(0.186 * k, 0.05 * k, 0.209 * k, hair, [0, headH - 0.018 * k, -0.004 * k]));
+  head.add(box(0.176 * k, 0.12 * k, 0.042 * k, hair, [0, headH - 0.11 * k, -0.086 * k]));
+
+  // ---- arms: shoulder -> upper arm -> elbow -> forearm -> hand
+  const upperH = 0.285 * k;
+  const foreH = 0.245 * k;
+  const handH = 0.09 * k;
+  function makeArm(sx) {
+    const pivot = joint(torso, sx * shoulderX, shoulderY - 0.028 * k, 0);
+    // deltoid cap rounds off the shoulder line
+    pivot.add(taper(0.092 * b * k, 0.106 * b * k, 0.106 * k, 0.122 * k, 0.09 * k, sleeveMat, [0, 0.022 * k, 0]));
+    pivot.add(taper(0.092 * b * k, 0.076 * b * k, 0.106 * k, 0.088 * k, upperH, armMat));
+    if (sleeveMat && armMat !== sleeveMat) {
+      // short sleeve hem over the top of the upper arm
+      pivot.add(taper(0.112 * b * k, 0.10 * b * k, 0.126 * k, 0.112 * k, upperH * 0.58, sleeveMat));
+    }
+    const elbow = joint(pivot, 0, -upperH, 0);
+    elbow.add(taper(0.077 * b * k, 0.064 * b * k, 0.089 * k, 0.074 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat));
+    const hand = box(0.066 * k, handH, 0.047 * k, handMat || skin, [0, -foreH - handH * 0.45, 0.004 * k]);
+    elbow.add(hand);
+    return { pivot, elbow, hand };
+  }
+  const armL = makeArm(-1);
+  const armR = makeArm(1);
+
+  return { root, hips, torso, head, legL, legR, armL, armR, hipY, shoulderY, headH, k, t: 0 };
 }
 
 export function createMo() {
-  const root = new THREE.Group();
-  root.name = 'Mo';
-  root.add(shadowBlob(0.4));
+  const rig = buildBody({
+    height: 1.78,
+    build: 1,
+    skin: mat.skin,
+    shirt: mat.shirt,
+    pants: mat.denim,
+    shoe: mat.shoe,
+    hair: mat.hair,
+    armMat: mat.skin,       // bare forearms
+    sleeveMat: mat.shirt,   // white tee sleeves
+    headMat: mat.skin,
+  });
+  rig.root.name = 'Mo';
 
-  const hips = new THREE.Group();
-  hips.position.y = 0.74;
-  root.add(hips);
+  const { k } = rig;
+  // belt
+  rig.hips.add(box(0.29 * k, 0.032 * k, 0.205 * k, mat.belt, [0, 0.012 * k, 0]));
+  // tee collar
+  rig.torso.add(taper(0.10 * k, 0.115 * k, 0.10 * k, 0.115 * k, 0.045 * k, mat.shirt, [0, rig.shoulderY + 0.012 * k, 0]));
+  // a stain he has stopped noticing
+  rig.torso.add(box(0.075 * k, 0.06 * k, 0.012 * k, mat.stain, [0.03 * k, rig.shoulderY - 0.16 * k, 0.122 * k]));
 
-  // legs
-  const legL = limb(0.155, 0.72, 0.18, mat.denim, -0.115, 0, 0);
-  const legR = limb(0.155, 0.72, 0.18, mat.denim, 0.115, 0, 0);
-  hips.add(legL.pivot, legR.pivot);
-  for (const l of [legL, legR]) {
-    const shoe = box(0.17, 0.1, 0.26, mat.shoe, [0, -0.7, 0.03]);
-    l.pivot.add(shoe);
-  }
-
-  // torso
-  const torso = new THREE.Group();
-  torso.position.y = 0.36;
-  hips.add(torso);
-  const chest = box(0.46, 0.6, 0.26, mat.shirt, [0, 0.2, 0]);
-  torso.add(chest);
-  // shirt wrinkles / stale stain
-  const stain = box(0.1, 0.08, 0.02, ps1Material('stain', { color: 0xb9a888 }), [0.03, 0.1, 0.135]);
-  torso.add(stain);
-
-  // arms
-  const armL = limb(0.13, 0.56, 0.15, mat.skin, -0.29, 0.44, 0);
-  const armR = limb(0.13, 0.56, 0.15, mat.skin, 0.29, 0.44, 0);
-  torso.add(armL.pivot, armR.pivot);
-  // sleeves
-  armL.pivot.add(box(0.16, 0.2, 0.17, mat.shirt, [0, -0.08, 0]));
-  armR.pivot.add(box(0.16, 0.2, 0.17, mat.shirt, [0, -0.08, 0]));
-
-  // head
-  const head = new THREE.Group();
-  head.position.y = 0.5;
-  torso.add(head);
-  const skull = box(0.28, 0.3, 0.27, mat.skin);
-  head.add(skull);
-  const face = plane(0.275, 0.29, mat.faceMo, [0, 0, 0.137]);
-  head.add(face);
-  // hair cap + sides
-  head.add(box(0.295, 0.08, 0.285, mat.hair, [0, 0.135, 0]));
-  head.add(box(0.035, 0.11, 0.26, mat.hair, [-0.135, 0.06, -0.01]));
-  head.add(box(0.035, 0.11, 0.26, mat.hair, [0.135, 0.06, -0.01]));
-  // ears
-  head.add(box(0.03, 0.07, 0.05, mat.skin, [-0.15, -0.01, 0]));
-  head.add(box(0.03, 0.07, 0.05, mat.skin, [0.15, -0.01, 0]));
-
-  const rig = { root, hips, torso, head, legL, legR, armL, armR, t: 0, fall: 0 };
   return rig;
 }
 
 export function createAddison() {
-  const root = new THREE.Group();
-  root.name = 'Addison';
-  root.add(shadowBlob(0.44));
+  const rig = buildBody({
+    height: 1.86,
+    build: 1.03,
+    skin: ps1Material('skinA', { map: tex('skin'), color: 0xf1dcc2 }),
+    shirt: mat.suit,
+    pants: mat.trouser,
+    shoe: ps1Material('shoeBlack', { color: 0x1c1a17 }),
+    hair: ps1Material('grey', { color: 0xb7b4ab }),
+    armMat: mat.suit,
+    sleeveMat: mat.suit,
+    headMat: ps1Material('skinA', { map: tex('skin'), color: 0xf1dcc2 }),
+  });
+  rig.root.name = 'Addison';
+  const { k } = rig;
+  const chestTop = rig.shoulderY;
 
-  const hips = new THREE.Group();
-  hips.position.y = 0.88;
-  root.add(hips);
+  // shirt V + gold tie down the centre of the jacket
+  rig.torso.add(box(0.14 * k, 0.20 * k, 0.012 * k, mat.dressShirt, [0, chestTop - 0.13 * k, 0.122 * k]));
+  rig.torso.add(box(0.072 * k, 0.30 * k, 0.014 * k, mat.gold, [0, chestTop - 0.20 * k, 0.128 * k]));
+  rig.torso.add(box(0.048 * k, 0.05 * k, 0.016 * k, mat.goldBand, [0, chestTop - 0.055 * k, 0.13 * k]));
+  rig.torso.add(box(0.08 * k, 0.014 * k, 0.016 * k, ps1Material('clip', { color: 0xffe08a, emissive: 0.3 }), [0, chestTop - 0.27 * k, 0.13 * k]));
 
-  const legL = limb(0.18, 0.84, 0.2, ps1Material('trouser', { color: 0xf4f1e6 }), -0.13, 0, 0);
-  const legR = limb(0.18, 0.84, 0.2, ps1Material('trouser', { color: 0xf4f1e6 }), 0.13, 0, 0);
-  hips.add(legL.pivot, legR.pivot);
-  for (const l of [legL, legR]) l.pivot.add(box(0.2, 0.09, 0.3, ps1Material('shoeBlack', { color: 0x1c1a17 }), [0, -0.8, 0.03]));
-
-  const torso = new THREE.Group();
-  torso.position.y = 0.4;
-  hips.add(torso);
-  const jacket = box(0.56, 0.72, 0.3, mat.suit, [0, 0.26, 0]);
-  torso.add(jacket);
   // double-breasted buttons
   for (let i = 0; i < 2; i++) {
     for (let j = 0; j < 2; j++) {
-      torso.add(box(0.03, 0.03, 0.02, ps1Material('btn', { color: 0x2b2b2b }), [-0.09 + i * 0.18, 0.34 - j * 0.2, 0.152]));
+      rig.torso.add(box(0.026 * k, 0.026 * k, 0.012 * k, ps1Material('btn', { color: 0x2b2b2b }),
+        [(-0.075 + i * 0.15) * k, chestTop - 0.14 * k - j * 0.16 * k, 0.124 * k]));
     }
   }
-  // lapels
-  torso.add(box(0.14, 0.3, 0.03, ps1Material('lapel', { map: tex('suitWhite'), color: 0xfffdf4 }), [-0.14, 0.44, 0.152], [0, 0, 0.2]));
-  torso.add(box(0.14, 0.3, 0.03, ps1Material('lapel2', { map: tex('suitWhite'), color: 0xfffdf4 }), [0.14, 0.44, 0.152], [0, 0, -0.2]));
-  // gold tie
-  torso.add(box(0.075, 0.38, 0.02, mat.gold, [0, 0.32, 0.157]));
-  torso.add(box(0.05, 0.05, 0.021, mat.goldBand, [0, 0.42, 0.159]));
-  // shirt V
-  torso.add(box(0.16, 0.3, 0.01, ps1Material('dressShirt', { color: 0xfffdf6 }), [0, 0.42, 0.153]));
-  // pocket square
-  torso.add(box(0.07, 0.06, 0.02, mat.gold, [0.17, 0.3, 0.156], [0, 0, 0.3]));
-  // gold tie clip
-  torso.add(box(0.09, 0.015, 0.022, ps1Material('clip', { color: 0xffe08a, emissive: 0.3 }), [0, 0.24, 0.159]));
 
-  const armL = limb(0.15, 0.64, 0.17, mat.suit, -0.36, 0.5, 0);
-  const armR = limb(0.15, 0.64, 0.17, mat.suit, 0.36, 0.5, 0);
-  torso.add(armL.pivot, armR.pivot);
-  // gold cuffs + hands
-  for (const a of [armL, armR]) {
-    a.pivot.add(box(0.16, 0.05, 0.18, mat.gold, [0, -0.56, 0]));
-    a.pivot.add(box(0.12, 0.1, 0.12, mat.skin, [0, -0.64, 0]));
+  // lapels
+  rig.torso.add(box(0.105 * k, 0.22 * k, 0.014 * k, mat.suit, [-0.10 * k, chestTop - 0.11 * k, 0.124 * k], [0, 0, 0.16]));
+  rig.torso.add(box(0.105 * k, 0.22 * k, 0.014 * k, mat.suit, [0.10 * k, chestTop - 0.11 * k, 0.124 * k], [0, 0, -0.16]));
+  // pocket square
+  rig.torso.add(box(0.06 * k, 0.05 * k, 0.014 * k, mat.gold, [0.13 * k, chestTop - 0.30 * k, 0.122 * k], [0, 0, 0.3]));
+
+  // gold cuffs
+  for (const a of [rig.armL, rig.armR]) {
+    a.elbow.add(box(0.088 * k, 0.035 * k, 0.10 * k, mat.gold, [0, -0.235 * k, 0]));
   }
 
-  const head = new THREE.Group();
-  head.position.y = 0.72;
-  torso.add(head);
-  head.add(box(0.3, 0.32, 0.29, ps1Material('skinA', { map: tex('skin'), color: 0xf2dfc6 })));
-  head.add(plane(0.29, 0.31, mat.faceAddison, [0, 0, 0.147]));
-  // grey hair
-  const grey = ps1Material('grey', { color: 0xb9b6ad });
-  head.add(box(0.32, 0.09, 0.3, grey, [0, 0.15, -0.01]));
-  head.add(box(0.05, 0.13, 0.26, grey, [-0.15, 0.06, -0.02]));
-  head.add(box(0.05, 0.13, 0.26, grey, [0.15, 0.06, -0.02]));
+  // grey hair, receding
+  rig.head.add(box(0.178 * k, 0.055 * k, 0.20 * k, ps1Material('grey', { color: 0xb7b4ab }), [0, rig.headH - 0.022 * k, -0.006 * k]));
+  // beard mass shadowing the jaw (the face art already has the moustache/goatee)
+  rig.head.add(box(0.10 * k, 0.03 * k, 0.012 * k, ps1Material('beard', { color: 0x6a6258 }), [0, rig.headH * 0.16, 0.098 * k]));
 
-  const rig = { root, hips, torso, head, legL, legR, armL, armR, t: 0 };
   return rig;
 }
 
 const PALETTES = {
-  rae: { shirt: 0x6d5a74, pants: 0x3a3442, skin: 0xd6b291, hair: 0x9a9a96 },
-  dale: { shirt: 0x2f6b4a, pants: 0x26302a, skin: 0xd8b48f, hair: 0x5a4a3a },
-  dex: { shirt: 0x2a2f3a, pants: 0x20242c, skin: 0x8a6244, hair: 0x171717 },
-  kev: { shirt: 0xa05a3a, pants: 0x33405a, skin: 0xe0b48a, hair: 0xc9a05a },
-  nia: { shirt: 0x4a6a8a, pants: 0x2f3a46, skin: 0xb98a63, hair: 0x2a1a14 },
+  rae: { shirt: 0x6d5a74, pants: 0x3a3442, skin: 0xc9a184, hair: 0x9a9a96, height: 1.66 },
+  dale: { shirt: 0x2f6b4a, pants: 0x26302a, skin: 0xc9a37c, hair: 0x4f4132, height: 1.72 },
+  dex: { shirt: 0x2a2f3a, pants: 0x20242c, skin: 0x7d5638, hair: 0x141414, height: 1.69 },
+  kev: { shirt: 0xa05a3a, pants: 0x33405a, skin: 0xd2a67c, hair: 0xc9a05a, height: 1.75 },
+  nia: { shirt: 0x4a6a8a, pants: 0x2f3a46, skin: 0xa87e58, hair: 0x2a1a14, height: 1.63 },
 };
 
 export function createNPC(kind = 'kev') {
   const p = PALETTES[kind] || PALETTES.kev;
-  const root = new THREE.Group();
-  root.add(shadowBlob(0.34));
   const matShirt = ps1Material(`npcShirt${kind}`, { color: p.shirt });
   const matPants = ps1Material(`npcPants${kind}`, { color: p.pants });
   const matSkin = ps1Material(`npcSkin${kind}`, { color: p.skin });
   const matHair = ps1Material(`npcHair${kind}`, { color: p.hair });
 
-  const hips = new THREE.Group();
-  hips.position.y = 0.7;
-  root.add(hips);
-  const legL = limb(0.15, 0.68, 0.17, matPants, -0.11, 0, 0);
-  const legR = limb(0.15, 0.68, 0.17, matPants, 0.11, 0, 0);
-  hips.add(legL.pivot, legR.pivot);
+  const rig = buildBody({
+    height: p.height,
+    build: kind === 'dex' ? 1.06 : 1,
+    skin: matSkin,
+    shirt: matShirt,
+    pants: matPants,
+    shoe: ps1Material(`npcShoe${kind}`, { color: 0x22221f }),
+    hair: matHair,
+    armMat: matShirt,
+    sleeveMat: matShirt,
+    handMat: matSkin,
+    headMat: matSkin,
+  });
+  rig.root.name = kind;
+  const { k, headH } = rig;
 
-  const torso = new THREE.Group();
-  torso.position.y = 0.34;
-  hips.add(torso);
-  torso.add(box(0.43, 0.56, 0.24, matShirt, [0, 0.19, 0]));
-  const armL = limb(0.115, 0.5, 0.13, matShirt, -0.27, 0.4, 0);
-  const armR = limb(0.115, 0.5, 0.13, matShirt, 0.27, 0.4, 0);
-  torso.add(armL.pivot, armR.pivot);
-  for (const a of [armL, armR]) a.pivot.add(box(0.11, 0.1, 0.11, matSkin, [0, -0.5, 0]));
+  // a face made of nothing but two eye slabs, PS1-style
+  rig.head.add(box(0.032 * k, 0.026 * k, 0.008 * k, mat.eye, [-0.038 * k, headH * 0.55, 0.095 * k]));
+  rig.head.add(box(0.032 * k, 0.026 * k, 0.008 * k, mat.eye, [0.038 * k, headH * 0.55, 0.095 * k]));
 
-  const head = new THREE.Group();
-  head.position.y = 0.46;
-  torso.add(head);
-  head.add(box(0.25, 0.27, 0.24, matSkin));
-  head.add(box(0.265, 0.07, 0.255, matHair, [0, 0.12, 0]));
-  // eyes
-  head.add(box(0.04, 0.035, 0.01, mat.eye, [-0.06, 0.02, 0.122]));
-  head.add(box(0.04, 0.035, 0.01, mat.eye, [0.06, 0.02, 0.122]));
   if (kind === 'dex') {
-    head.add(box(0.3, 0.13, 0.3, ps1Material('hood', { color: 0x2a2f3a }), [0, 0.06, -0.02]));
+    rig.head.add(box(0.196 * k, 0.09 * k, 0.21 * k, ps1Material('hood', { color: 0x2a2f3a }), [0, headH * 0.92, -0.02 * k]));
   }
   if (kind === 'dale') {
-    head.add(box(0.29, 0.06, 0.28, ps1Material('cap', { color: 0x1f4a34 }), [0, 0.16, 0]));
-    head.add(box(0.24, 0.02, 0.12, ps1Material('brim', { color: 0x183a28 }), [0, 0.14, 0.16]));
+    rig.head.add(box(0.182 * k, 0.05 * k, 0.205 * k, ps1Material('cap', { color: 0x1f4a34 }), [0, headH * 0.98, 0]));
+    rig.head.add(box(0.16 * k, 0.016 * k, 0.09 * k, ps1Material('brim', { color: 0x183a28 }), [0, headH * 0.94, 0.115 * k]));
   }
-  return { root, hips, torso, head, legL, legR, armL, armR, t: Math.random() * 10 };
+  return rig;
 }
 
 export function createCat() {
@@ -224,11 +286,12 @@ export function createCat() {
 /* ------------------------------ animation ------------------------------ */
 
 export function animateMo(rig, dt, opts = {}) {
-  const { walking = false, high = 0, withdrawal = 0, sitting = false, sleeping = false, speed = 1 } = opts;
+  const { walking = false, high = 0, withdrawal = 0, sitting = false, sleeping = false } = opts;
   rig.t += dt * (walking ? 7.2 : 1.4);
   const t = rig.t;
   const drunk = Math.min(1, (high / 100) * 1.1 + (withdrawal / 380));
   const sway = Math.sin(t * 0.9) * drunk * 0.22;
+  const { hipY } = rig;
 
   if (sleeping) {
     rig.root.rotation.z = 0;
@@ -236,6 +299,8 @@ export function animateMo(rig, dt, opts = {}) {
     rig.hips.rotation.x = 0;
     rig.legL.pivot.rotation.x = -0.1;
     rig.legR.pivot.rotation.x = -0.1;
+    rig.legL.knee.rotation.x = 0.12;
+    rig.legR.knee.rotation.x = 0.12;
     rig.armL.pivot.rotation.x = Math.sin(t * 0.6) * 0.04;
     rig.armR.pivot.rotation.x = Math.sin(t * 0.6 + 1) * 0.04;
     rig.head.rotation.x = 0.16;
@@ -243,34 +308,49 @@ export function animateMo(rig, dt, opts = {}) {
   }
 
   if (sitting) {
-    rig.hips.position.y = 0.48;
+    rig.hips.position.y = hipY - 0.44;
     rig.legL.pivot.rotation.x = -1.35;
     rig.legR.pivot.rotation.x = -1.35;
+    rig.legL.knee.rotation.x = 1.35;
+    rig.legR.knee.rotation.x = 1.35;
     rig.armL.pivot.rotation.x = -0.5;
     rig.armR.pivot.rotation.x = -0.5;
+    rig.armL.elbow.rotation.x = -0.5;
+    rig.armR.elbow.rotation.x = -0.5;
     rig.head.rotation.x = 0.1;
     rig.root.rotation.z = sway * 0.3;
     return;
   }
-  rig.hips.position.y = 0.74;
 
-  const stride = walking ? 0.85 : 0.05;
-  const bob = walking ? Math.abs(Math.sin(t)) * 0.05 : Math.sin(t * 0.8) * 0.012;
-  rig.hips.position.y = 0.74 + bob;
-  rig.legL.pivot.rotation.x = Math.sin(t) * stride;
-  rig.legR.pivot.rotation.x = Math.sin(t + Math.PI) * stride;
-  rig.armL.pivot.rotation.x = Math.sin(t + Math.PI) * stride * 0.8;
-  rig.armR.pivot.rotation.x = Math.sin(t) * stride * 0.8;
-  rig.armL.pivot.rotation.z = 0.05 + Math.sin(t * 0.7) * 0.05;
-  rig.armR.pivot.rotation.z = -0.05 - Math.sin(t * 0.7) * 0.05;
-  rig.torso.rotation.y = Math.sin(t) * (walking ? 0.06 : 0.02) + sway * 0.5;
+  const stride = walking ? 0.62 : 0.04;
+  const bob = walking ? Math.abs(Math.sin(t)) * 0.035 : Math.sin(t * 0.8) * 0.01;
+  const swingL = Math.sin(t);
+  const swingR = Math.sin(t + Math.PI);
+
+  rig.hips.position.y = hipY + bob;
+  rig.legL.pivot.rotation.x = swingL * stride;
+  rig.legR.pivot.rotation.x = swingR * stride;
+  // knees only bend one way, and mostly during the swing phase
+  rig.legL.knee.rotation.x = Math.max(0, -swingL) * 0.75 + 0.04;
+  rig.legR.knee.rotation.x = Math.max(0, -swingR) * 0.75 + 0.04;
+  rig.legL.ankle.rotation.x = swingL * 0.12;
+  rig.legR.ankle.rotation.x = swingR * 0.12;
+
+  rig.armL.pivot.rotation.x = swingR * stride * 1.1;
+  rig.armR.pivot.rotation.x = swingL * stride * 1.1;
+  rig.armL.elbow.rotation.x = -0.12 - Math.max(0, swingR) * 0.45;
+  rig.armR.elbow.rotation.x = -0.12 - Math.max(0, swingL) * 0.45;
+  rig.armL.pivot.rotation.z = -0.05 - Math.sin(t * 0.7) * 0.035;
+  rig.armR.pivot.rotation.z = 0.05 + Math.sin(t * 0.7) * 0.035;
+
+  rig.torso.rotation.y = Math.sin(t) * (walking ? 0.05 : 0.02) + sway * 0.5;
   rig.torso.rotation.z = sway * 0.7;
-  rig.head.rotation.y = Math.sin(t * 0.5) * 0.08 * (1 + drunk * 2) - sway * 0.8;
-  rig.head.rotation.z = sway * 0.9;
+  rig.head.rotation.y = Math.sin(t * 0.5) * 0.07 * (1 + drunk * 2) - sway * 0.7;
+  rig.head.rotation.z = sway * 0.8;
   rig.root.rotation.z = sway * 0.34;
   rig.root.position.y = Math.sin(t * 0.6) * drunk * 0.02;
 
-  // stumble: brief whole-body lurch
+  // stumble: a brief whole-body lurch
   if (walking && drunk > 0.55) {
     const st = Math.sin(t * 0.41);
     if (st > 0.985) {
@@ -286,19 +366,23 @@ export function animateAddison(rig, dt) {
   // Exaggerated, theatrical, deeply embarrassing dance
   const beat = Math.sin(t * 3.1);
   const beat2 = Math.sin(t * 3.1 + Math.PI);
-  rig.hips.position.y = 0.88 + Math.abs(beat) * 0.06;
-  rig.hips.rotation.z = beat * 0.14;
-  rig.hips.rotation.y = Math.sin(t * 1.55) * 0.3;
+  rig.hips.position.y = rig.hipY + Math.abs(beat) * 0.05;
+  rig.hips.rotation.z = beat * 0.12;
+  rig.hips.rotation.y = Math.sin(t * 1.55) * 0.26;
   rig.torso.rotation.z = beat2 * 0.1;
-  rig.torso.rotation.y = Math.sin(t * 3.1) * 0.22;
-  rig.armL.pivot.rotation.z = 1.4 + beat * 1.0;
+  rig.torso.rotation.y = Math.sin(t * 3.1) * 0.2;
+  rig.armL.pivot.rotation.z = 1.5 + beat * 1.0;
   rig.armL.pivot.rotation.x = -0.5 + Math.sin(t * 6.2) * 0.5;
-  rig.armR.pivot.rotation.z = -1.4 - beat2 * 1.0;
+  rig.armL.elbow.rotation.x = -0.8 - beat * 0.5;
+  rig.armR.pivot.rotation.z = -1.5 - beat2 * 1.0;
   rig.armR.pivot.rotation.x = -0.5 + Math.sin(t * 6.2 + 1) * 0.5;
-  rig.legL.pivot.rotation.x = Math.max(0, beat) * 0.4;
-  rig.legR.pivot.rotation.x = Math.max(0, beat2) * 0.4;
-  rig.head.rotation.z = beat * 0.24;
-  rig.head.rotation.y = Math.sin(t * 3.1 + 0.7) * 0.3;
+  rig.armR.elbow.rotation.x = -0.8 - beat2 * 0.5;
+  rig.legL.pivot.rotation.x = Math.max(0, beat) * 0.35;
+  rig.legR.pivot.rotation.x = Math.max(0, beat2) * 0.35;
+  rig.legL.knee.rotation.x = Math.max(0, beat) * 0.5;
+  rig.legR.knee.rotation.x = Math.max(0, beat2) * 0.5;
+  rig.head.rotation.z = beat * 0.22;
+  rig.head.rotation.y = Math.sin(t * 3.1 + 0.7) * 0.28;
   rig.head.rotation.x = -0.1 + beat * 0.1;
 }
 
@@ -310,14 +394,16 @@ export function animateNPC(rig, dt) {
     rig.root.position.y = Math.abs(Math.sin(t * 0.7)) * 0.01;
     return;
   }
-  rig.hips.position.y = 0.7 + Math.sin(t * 0.9) * 0.008;
-  rig.torso.rotation.y = Math.sin(t * 0.5) * 0.08;
-  rig.head.rotation.y = Math.sin(t * 0.37) * 0.22;
-  rig.head.rotation.z = Math.sin(t * 0.53) * 0.05;
-  rig.armL.pivot.rotation.x = Math.sin(t * 0.8) * 0.08;
-  rig.armR.pivot.rotation.x = Math.sin(t * 0.8 + 1.6) * 0.08;
-  rig.armL.pivot.rotation.z = 0.08;
-  rig.armR.pivot.rotation.z = -0.08;
+  rig.hips.position.y = rig.hipY + Math.sin(t * 0.9) * 0.006;
+  rig.torso.rotation.y = Math.sin(t * 0.5) * 0.07;
+  rig.head.rotation.y = Math.sin(t * 0.37) * 0.2;
+  rig.head.rotation.z = Math.sin(t * 0.53) * 0.04;
+  rig.armL.pivot.rotation.x = Math.sin(t * 0.8) * 0.07;
+  rig.armR.pivot.rotation.x = Math.sin(t * 0.8 + 1.6) * 0.07;
+  rig.armL.elbow.rotation.x = -0.14 + Math.sin(t * 0.8) * 0.05;
+  rig.armR.elbow.rotation.x = -0.14 + Math.sin(t * 0.8 + 1.6) * 0.05;
+  rig.armL.pivot.rotation.z = -0.06;
+  rig.armR.pivot.rotation.z = 0.06;
 }
 
 export { mat as characterMaterials };

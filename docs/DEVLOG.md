@@ -25,7 +25,8 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
   - **Vertex snapping** to a 120-unit NDC grid (classic PS1 jitter).
   - **Vertex wobble** driven by a shared `uTime` uniform (also used by the menu).
   - **4×4 ordered dithering** (Bayer via the `bayer2` trick) + 5-bit colour quantization.
-  - **Per-pixel height fog**, softened retro Lambert, emissive flag for unlit signage.
+  - **Per-pixel height fog**, two-light retro shading (warm key, cool bounce, hemisphere
+    ambient, camera-facing fill), emissive flag for unlit signage.
 - Low internal resolution (`240p` by default) upscaled with `image-rendering: pixelated`.
 - All textures are generated procedurally at runtime on `<canvas>` with nearest filtering
   — the repo contains no binary art except the supplied music.
@@ -97,10 +98,32 @@ Every button calls a system function — there are no dead controls. The phone p
 
 ### Supplied art
 - `assets/assets.js` (base64 data URIs, added to the repo by the owner) is loaded first, and
-  `src/render/textures.js → moFaceTexture()` crops `MO.ASSETS.moFace` to a 64×64 square,
-  nearest-filters it and uses it as Mo's face — so the in-game character now wears the
-  supplied reference art rather than a hand-drawn approximation. `MO.ASSETS.moAvatar` is
-  used as the signed-in avatar in the phone.
+  `src/render/textures.js → moFaceTexture()` trims the wall behind the head, keeps the art's
+  native 64×104 aspect, nearest-filters it and maps it to the front of Mo's skull — so the
+  in-game character wears the supplied reference art, not a drawn approximation.
+  `MO.ASSETS.moAvatar` is the signed-in avatar in the phone.
+
+### Character rig v2 — proportions and light
+The first rig was an honest mistake: limbs were single boxes hung from the hip and shoulder,
+nothing was jointed below that, and the head was small, so Mo read as a white slab with a
+face taped on. Rebuilt in `src/world/characters.js`:
+- **~7.5-head proportions** measured from the figure, not eyeballed: 0.245 m head, 1.78 m
+  body, hips at 0.915 m, shoulders 2.2 heads wide, fingertips at mid-thigh.
+- **Every part is a tapered box on a joint pivot** — new `taperGeo()` in `src/render/ps1.js`
+  (8 corners, flat per-face normals, per-face UVs) — with hip → knee → ankle and
+  shoulder → elbow → wrist chains. Thighs, shins, arms and torso all taper.
+- **Animation drives the joints**: knees flex only during the swing phase and bend one way,
+  elbows carry the arm swing, ankles roll; sitting folds thigh and knee together properly.
+- **Face mapping**: the supplied 64×104 art is mapped at its native aspect instead of being
+  squashed into a square, and pushed clear of the head vertices so vertex wobble cannot
+  punch through it.
+- **Shading rebuilt** in the same shader: warm key + cool bounce + sky/ground hemisphere +
+  a camera-facing fill (`uHeadTint`), replacing plain `0.55 + 0.45·N·L`, which had made
+  every front-facing surface read as mud. `ps1Uniforms` exposes the tints for per-area
+  grading; `setAreaLighting()` is available for that pass.
+- **Bug found while wiring it up**: `taperGeo()` wound its quads the wrong way, so every new
+  face was back-face culled and unlit (the rig looked like floating slabs). Fixed the
+  winding and the normal cross-product direction together.
 
 ### Audio
 - `assets/audio/menu_theme.mp3` (copy of the repo's `Music/Mo Functional_ Main Menu.mp3`)

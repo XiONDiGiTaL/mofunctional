@@ -180,8 +180,11 @@ on the drawer, which is exactly what the game has been training the player to do
 
 Late-90s PlayStation: sub-240p internal resolution, nearest-filtered procedural textures,
 affine UV distortion, vertex snapping, wobble, ordered dithering, fog eating the draw
-distance, a handful of emissive surfaces doing all the lighting. Characters are box-limbed
-rigs with hand-drawn face textures. Animation is exaggerated and slightly wrong on purpose.
+distance, a handful of emissive surfaces doing all the lighting. Characters are jointed,
+tapered low-poly rigs on human proportions (about 7.5 heads) wearing the supplied face art,
+lit by a warm key plus a cool bounce so silhouettes stay readable in fog. Animation is
+exaggerated and slightly wrong on purpose, but never anatomically broken: knees bend one
+way, elbows carry the swing, and nobody's shoulders sit at their ears.
 
 **Forbidden:** PBR, bloom, antialiasing, smooth normals, modern UI gradients, photorealism,
 mobile-game iconography.

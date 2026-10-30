@@ -113,11 +113,16 @@ specific emails, sleep through the Calendar, save the game.
 
 ## People
 
-**Mo** — late thirties, white tee, grey-blue jeans, goatee, tired eyes. Built as a low-poly
-box rig wearing the supplied face art (`assets/mo_face.png`, embedded as base64 so it is
-never CORS-tainted) cropped and nearest-filtered to a 64×64 PS1-style texture, with a
-procedural walk/idle cycle, intoxication sway and stumble, sleep/sit poses, and a physics
-ragdoll reaction when the body finally files its complaint.
+**Mo** — late thirties, white tee, grey-blue jeans, goatee, tired eyes. A jointed low-poly
+rig on ~7.5-head proportions: tapered thighs and shins, separate upper arms, forearms and
+hands, and hip, knee, ankle, shoulder and elbow pivots — so he stands and walks like a
+person rather than a stack of cubes. His face is the supplied `assets/mo_face.png`
+(embedded as base64, so it is never CORS-tainted), cropped and nearest-filtered to a
+64×104 PS1 texture mapped onto the front of the skull. Procedural walk/idle cycle,
+intoxication sway and stumble, sleep/sit poses, and a physics ragdoll reaction when the
+body finally files its complaint.
+
+![Mo, in-engine](assets/img/mo_character.png)
 
 **Addison Octavius** — priest and cult leader of **The Golden Fellowship**. White
 double-breasted suit, gold tie and clip, gold pocket square and cufflinks, grey hair and
@@ -148,12 +153,14 @@ one is deliberately hard.
 
 ## PS1 rendering
 
-Everything is generated at runtime — procedural canvas textures, low-poly box rigs, and a
-single hand-written shader used by every surface:
+Everything is generated at runtime — procedural canvas textures, jointed tapered low-poly
+rigs, and a single hand-written shader used by every surface:
 
 - **Affine texture mapping** (`uv * w` in the vertex shader, divided back in the fragment)
 - **Vertex snapping** to a 120-unit NDC grid
 - **Vertex wobble** driven by a shared clock uniform
+- **Two-light retro shading** — a warm key, a cool bounce, sky/ground hemisphere ambient
+  and a camera-facing fill, so faces stay readable the way PS1 games faked it
 - **4×4 ordered dithering** + 5-bit colour quantization
 - **Height fog** that eats the draw distance
 - **240p internal resolution**, nearest-filtered and upscaled
