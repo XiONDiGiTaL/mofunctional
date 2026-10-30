@@ -135,6 +135,36 @@ const SPECS = {
 
 const FALLBACK = SPECS.kev;
 
+function mix(a, b, t) {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (s) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
+  return `#${[16, 8, 0].map((s) => ch(s).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** A full palette from four values, for the walk-on characters. Keeps one art direction. */
+function derived({ skin, hair, hairStyle = 'crop', beard = null, age = 0.35, jaw = 1 }) {
+  return {
+    skin, light: mix(skin, '#ffffff', 0.22), shadow: mix(skin, '#000000', 0.34),
+    deep: mix(skin, '#000000', 0.55), hair, hairLight: mix(hair, '#ffffff', 0.26),
+    hairDark: mix(hair, '#000000', 0.30), hairStyle,
+    brow: mix(hair, '#000000', 0.20), eye: '#2f2318',
+    lips: mix(skin, '#7a3a30', 0.5), lipsLight: mix(skin, '#a05a48', 0.4),
+    beard: beard
+      ? { color: mix(hair, skin, 0.25), light: mix(hair, skin, 0.45), dark: mix(hair, '#000000', 0.30), style: beard }
+      : null,
+    age, jaw,
+  };
+}
+
+Object.assign(SPECS, {
+  miguel: derived({ skin: '#b07f54', hair: '#2b2118', hairStyle: 'short', beard: 'full', age: 0.5 }),
+  habib: derived({ skin: '#a87c52', hair: '#241a12', hairStyle: 'short', beard: 'full', age: 0.45 }),
+  homeless: derived({ skin: '#87603f', hair: '#3a302a', hairStyle: 'receding', beard: 'full', age: 0.9 }),
+  junkie: derived({ skin: '#a8835f', hair: '#2f2620', hairStyle: 'crop', beard: 'stubble', age: 0.6 }),
+  clerk: derived({ skin: '#c49b74', hair: '#342a20', hairStyle: 'crop', age: 0.25 }),
+});
+
 function spec(kind, palette = {}) {
   const base = SPECS[kind] || FALLBACK;
   return {
@@ -372,12 +402,18 @@ export function npcFaceTexture(kind = 'kev', palette = {}) {
   paintBeard(p, S);
   grain(p);
 
+  // Pale complexions blow out under the game's head light, so exposure is normalised by the
+  // skin's own luminance: dark faces are lifted, light faces are pulled back.
+  const n = parseInt(S.skin.slice(1), 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  const exposure = (S.exposure || 1.04) * (lum > 0.62 ? 0.84 : 1);
+
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
   const ctx = c.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  ctx.filter = `brightness(${S.exposure || 1.04}) contrast(1.04)`;
+  ctx.filter = `brightness(${exposure}) contrast(1.04)`;
   ctx.drawImage(tmp, 0, 0, W, GH, 0, 0, W, H);
   ctx.filter = 'none';
 
