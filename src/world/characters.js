@@ -139,8 +139,10 @@ function buildBody({
   // ears sit on the cheek planes, just behind the face
   head.add(box(0.013 * k, 0.04 * k, 0.028 * k, skinMat, [-headW * 0.5, headH * 0.48, -0.022 * k]));
   head.add(box(0.013 * k, 0.04 * k, 0.028 * k, skinMat, [headW * 0.5, headH * 0.48, -0.022 * k]));
-  // crown and nape, offset back so they never cover the portrait
-  head.add(box(headW * 0.99, 0.034 * k, headD * 0.9, hair, [0, headH - 0.014 * k, -0.022 * k]));
+  // Hair shelf: overhangs the top of the portrait so the head silhouette starts with a
+  // hairline instead of running straight into a rectangle of face, and the crown reads as
+  // a volume from the side. The nape box closes the back of the skull.
+  head.add(box(headW * 1.04, 0.052 * k, headD * 0.99, hair, [0, headH - 0.004 * k, -0.008 * k]));
   head.add(box(headW * 0.98, headH * 0.6, 0.05 * k, hair, [0, headH * 0.46, -headD * 0.47]));
 
   // ---- arms: shoulder -> upper arm -> elbow -> forearm -> hand
@@ -245,11 +247,13 @@ export function createAddison() {
 }
 
 const PALETTES = {
-  rae: { shirt: 0x6d5a74, pants: 0x3a3442, skin: 0xc9a184, hair: 0x9a9a96, height: 1.66 },
-  dale: { shirt: 0x2f6b4a, pants: 0x26302a, skin: 0xc9a37c, hair: 0x4f4132, height: 1.72 },
-  dex: { shirt: 0x2a2f3a, pants: 0x20242c, skin: 0x7d5638, hair: 0x141414, height: 1.69 },
-  kev: { shirt: 0xa05a3a, pants: 0x33405a, skin: 0xd2a67c, hair: 0xc9a05a, height: 1.75 },
-  nia: { shirt: 0x4a6a8a, pants: 0x2f3a46, skin: 0xa87e58, hair: 0x2a1a14, height: 1.63 },
+  // hair values match the painted portraits in render/faces.js so the geometry and the
+  // texture read as one hairstyle rather than two different ones
+  rae: { shirt: 0x6d5a74, pants: 0x3a3442, skin: 0xe2c4a7, hair: 0x221d22, height: 1.66 },
+  dale: { shirt: 0x2f6b4a, pants: 0x26302a, skin: 0xc1a184, hair: 0x9d9c96, height: 1.72 },
+  dex: { shirt: 0x2a2f3a, pants: 0x20242c, skin: 0x8a6142, hair: 0x241812, height: 1.69 },
+  kev: { shirt: 0xa05a3a, pants: 0x33405a, skin: 0xc9a078, hair: 0xc49a52, height: 1.75 },
+  nia: { shirt: 0x4a6a8a, pants: 0x2f3a46, skin: 0xac805a, hair: 0x2a1a12, height: 1.63 },
 };
 
 export function createNPC(kind = 'kev') {
