@@ -8,6 +8,15 @@ import { eat, useSubstance, sleep, soberUp } from '../systems/needs.js';
 import { shiftInfo, doOddJob, oddJobsAvailable, applyForJob, quitJob, callOut, workShift } from '../systems/jobs.js';
 import { fellowshipStage, serviceWindow } from '../systems/fellowship.js';
 import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js';
+import { portraitURL } from '../render/faces.js';
+import { kindForName } from './threads.js';
+
+const DEFAULT_REPLIES = [
+  "ok",
+  "yeah. i know.",
+  "can we not do this right now",
+  "i'll call you later",
+];
 
 const T = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -124,7 +133,7 @@ export class Phone {
     ];
     return `${this.header('MoPhone OS', 'v0.9')}
       <div class="row" style="gap:9px;padding:0 2px 9px;align-items:center">
-        <img class="avatar" src="${(typeof window !== 'undefined' && window.MO && window.MO.ASSETS && window.MO.ASSETS.moAvatar) || ''}" alt="" />
+        <img class="avatar" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" />
         <div>
           <div class="tiny mono-dim">SIGNED IN AS</div>
           <div style="font-size:12px">Mo · Unit 3B · Shale Mobile</div>
@@ -331,24 +340,33 @@ export class Phone {
       const m = s.messages.find((x) => x.id === this.msgId);
       if (!m) { this.msgId = null; return this.messagesView(); }
       m.read = true;
+      const kind = kindForName(m.from);
+      const bubbles = [
+        `<div class="chat__row"><img class="chat__face" src="${portraitURL(kind, 'content')}" alt="" /><div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`,
+        ...(m.replies || []).map((r) => `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div><img class="chat__face" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></div>`),
+      ].join('');
+      const quick = (m.choices && m.choices.length ? m.choices.map((c) => c.label) : DEFAULT_REPLIES);
       return `${this.header(m.from, `D${m.day}`)}
-        <div class="app__h">${T(m.subject)}</div>
-        <div style="white-space:pre-line;font-size:12px;line-height:1.7">${T(m.body)}</div>
-        <div class="hr"></div>
-        <button class="btn btn--ghost" data-act="msgback">◀ BACK TO INBOX</button>
+        <div class="chat">${bubbles}</div>
+        <div class="chat__quick">
+          ${quick.map((q, i) => `<button class="chat__chip" data-act="reply" data-arg="${m.id}" data-num="${i}">${T(q)}</button>`).join('')}
+        </div>
+        <button class="btn btn--ghost" data-act="msgback">◀ INBOX</button>
         ${this.footer()}`;
     }
     const unread = unreadMessages(s);
     return `${this.header('Messages', `${unread} NEW`)}
       <div class="list">
         ${s.messages.length ? s.messages.map((m) => `
-          <button class="listitem" data-act="msgopen" data-arg="${m.id}" style="text-align:left;cursor:pointer;width:100%">
+          <button class="listitem chatlist" data-act="msgopen" data-arg="${m.id}" style="text-align:left;cursor:pointer;width:100%">
+            <img class="chat__face" src="${portraitURL(kindForName(m.from), 'content')}" alt="" />
             <div class="grow">
               <div class="name">${m.read ? '' : '<span class="bad">● </span>'}${T(m.from)}</div>
-              <div class="meta">${T(m.subject)} · D${m.day}</div>
+              <div class="meta">${T((m.replies && m.replies.length ? m.replies[m.replies.length - 1].text : m.body)).slice(0, 54)}</div>
             </div>
           </button>`).join('') : '<div class="empty">No messages. Everyone is giving you space. That is what that is.</div>'}
       </div>
+      <div class="tiny mono-dim">Replies you send from the HUD thread show up here too.</div>
       ${this.footer()}`;
   }
 
@@ -548,7 +566,17 @@ export class Phone {
       applycrp() { applyForCRP(g); },
       recert() { recertCRP(g); },
       utility() { claimUtilityGrant(g); },
-      msgopen(arg) { this.msgId = arg; const m = s.messages.find((x) => x.id === arg); if (m) m.read = true; },
+      msgopen(arg) { this.msgId = arg; const m = s.messages.find((x) => x.id === arg); if (m) m.read = true; this.g.audio.sfx('ui'); },
+      reply(arg, num) {
+        const m = s.messages.find((x) => x.id === arg);
+        if (!m) return;
+        const pool = m.choices && m.choices.length ? m.choices.map((c) => c.label) : DEFAULT_REPLIES;
+        const text = pool[num] ?? pool[0];
+        m.replies = m.replies || [];
+        m.replies.push({ text, day: dayOf(s.clock.m) });
+        g.recordReply?.(m.from, text);
+        g.audio.sfx('phone');
+      },
       msgback() { this.msgId = null; },
       eatitem(arg) { eat(g, arg); },
       useitem(arg) {

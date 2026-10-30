@@ -86,6 +86,14 @@ const SPECS = {
     beard: { color: '#b3b0a7', light: '#d2cfc6', dark: '#8a8679', style: 'full' },
     age: 0.75, jaw: 1.04,
   },
+  // Mo — medium-dark skin, short black hair, goatee; the HUD portrait is painted from this
+  mo: {
+    skin: '#8f6446', light: '#ac8060', shadow: '#5f3f28', deep: '#3f2817',
+    hair: '#201812', hairLight: '#3a2c22', hairDark: '#120c09', hairStyle: 'crop',
+    brow: '#1d1410', eye: '#33241a', lips: '#6b4234', lipsLight: '#8d5744',
+    beard: { color: '#241a12', light: '#3d2c20', dark: '#140d09', style: 'full' },
+    age: 0.4, jaw: 1.02, exposure: 1.28,
+  },
   // the neighbour — short blond crop, square jaw, clean shaven
   kev: {
     skin: '#c9a078', light: '#e3c39c', shadow: '#9c7350', deep: '#6f4e34',
@@ -383,3 +391,116 @@ export function npcFaceTexture(kind = 'kev', palette = {}) {
   cache.set(key, t);
   return t;
 }
+
+/* ----------------------------- HUD portraits ----------------------------- */
+
+const urlCache = new Map();
+
+/**
+ * How Mo looks, drawn over the neutral portrait. The HUD, the phone and text threads all read
+ * from this, so the face in the corner is the same face that answers the phone.
+ */
+const MOOD_DRAW = {
+  content() {},
+  tired(ctx, w, h) {
+    ctx.fillStyle = 'rgba(30,20,14,.34)';
+    ctx.fillRect(w * 0.22, h * 0.395, w * 0.56, h * 0.035);
+    ctx.fillStyle = 'rgba(40,26,18,.22)';
+    ctx.fillRect(w * 0.24, h * 0.47, w * 0.2, h * 0.02);
+    ctx.fillRect(w * 0.56, h * 0.47, w * 0.2, h * 0.02);
+    ctx.fillStyle = 'rgba(30,18,12,.5)';
+    ctx.fillRect(w * 0.42, h * 0.705, w * 0.18, h * 0.012);
+  },
+  stressed(ctx, w, h) {
+    ctx.strokeStyle = 'rgba(28,18,12,.75)';
+    ctx.lineWidth = Math.max(1.5, w * 0.016);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.26, h * 0.385); ctx.lineTo(w * 0.46, h * 0.415);
+    ctx.moveTo(w * 0.74, h * 0.385); ctx.lineTo(w * 0.54, h * 0.415);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(40,26,18,.85)';
+    ctx.beginPath();
+    ctx.moveTo(w * 0.38, h * 0.715); ctx.lineTo(w * 0.62, h * 0.715);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(120,200,255,.5)';
+    ctx.fillRect(w * 0.755, h * 0.44, w * 0.035, h * 0.06);
+  },
+  high(ctx, w, h) {
+    // bloodshot: red wash over the eye band, veins, small pupils
+    ctx.fillStyle = 'rgba(190,40,30,.4)';
+    ctx.fillRect(w * 0.22, h * 0.425, w * 0.24, h * 0.045);
+    ctx.fillRect(w * 0.54, h * 0.425, w * 0.24, h * 0.045);
+    ctx.strokeStyle = 'rgba(150,20,20,.85)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 7; i++) {
+      const x = w * (0.23 + i * 0.078);
+      const y = h * (0.43 + (i % 3) * 0.012);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w * 0.03, y + h * 0.018); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    for (const cx of [0.32, 0.68]) ctx.fillRect(w * (cx - 0.012), h * 0.437, w * 0.024, h * 0.022);
+    ctx.fillStyle = 'rgba(16,10,8,.95)';
+    for (const cx of [0.32, 0.68]) ctx.fillRect(w * (cx - 0.006), h * 0.441, w * 0.012, h * 0.014);
+    // smirk: one corner up, the other flat
+    ctx.strokeStyle = 'rgba(48,28,20,.9)';
+    ctx.lineWidth = Math.max(1.5, w * 0.015);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.38, h * 0.715);
+    ctx.quadraticCurveTo(w * 0.5, h * 0.70, w * 0.63, h * 0.695);
+    ctx.stroke();
+  },
+  sick(ctx, w, h) {
+    ctx.fillStyle = 'rgba(150,170,160,.20)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(24,16,12,.4)';
+    ctx.fillRect(w * 0.2, h * 0.4, w * 0.22, h * 0.05);
+    ctx.fillRect(w * 0.58, h * 0.4, w * 0.22, h * 0.05);
+    ctx.fillStyle = 'rgba(26,18,14,.28)';
+    ctx.beginPath(); ctx.ellipse(w * 0.28, h * 0.63, w * 0.08, h * 0.075, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(w * 0.72, h * 0.63, w * 0.08, h * 0.075, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(50,30,22,.8)';
+    ctx.lineWidth = Math.max(1.5, w * 0.015);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.38, h * 0.72);
+    ctx.quadraticCurveTo(w * 0.5, h * 0.735, w * 0.62, h * 0.72);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(120,200,255,.45)';
+    ctx.fillRect(w * 0.24, h * 0.45, w * 0.03, h * 0.075);
+    ctx.fillRect(w * 0.72, h * 0.42, w * 0.03, h * 0.06);
+  },
+  angry(ctx, w, h) {
+    ctx.strokeStyle = 'rgba(24,14,10,.9)';
+    ctx.lineWidth = Math.max(2, w * 0.02);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.24, h * 0.37); ctx.lineTo(w * 0.46, h * 0.425);
+    ctx.moveTo(w * 0.76, h * 0.37); ctx.lineTo(w * 0.54, h * 0.425);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(48,26,18,.9)';
+    ctx.lineWidth = Math.max(1.5, w * 0.016);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.36, h * 0.725); ctx.lineTo(w * 0.64, h * 0.72);
+    ctx.stroke();
+  },
+};
+
+/** A portrait canvas (128x178) with a mood painted over the neutral face. */
+export function portraitCanvas(kind = 'mo', mood = 'content') {
+  const base = npcFaceTexture(kind).image;
+  const c = document.createElement('canvas');
+  c.width = base.width;
+  c.height = base.height;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(base, 0, 0);
+  (MOOD_DRAW[mood] || MOOD_DRAW.content)(ctx, c.width, c.height);
+  return c;
+}
+
+/** Cached data URL, safe to drop straight into an <img> or a CSS background. */
+export function portraitURL(kind = 'mo', mood = 'content') {
+  const key = `${kind}|${mood}`;
+  if (!urlCache.has(key)) urlCache.set(key, portraitCanvas(kind, mood).toDataURL());
+  return urlCache.get(key);
+}
+
+export const MOODS = Object.keys(MOOD_DRAW);

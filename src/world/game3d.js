@@ -2,11 +2,16 @@
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
-import { buildApartment, buildStreet, buildChurch, buildMenuWorld } from './areas.js';
+import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildMenuWorld } from './areas.js';
 import { CONFIG } from '../core/config.js';
-import { clamp, lerp } from '../core/util.js';
+import { clamp, lerp, minuteOfDay } from '../core/util.js';
+import { scheduleTarget } from './schedules.js';
+import { maybeStreetEvent } from '../systems/street.js';
 
-const BUILDERS = { apartment: buildApartment, street: buildStreet, church: buildChurch };
+const BUILDERS = {
+  apartment: buildApartment, street: buildStreet, church: buildChurch,
+  bodega: buildBodega, habibs: buildHabibs,
+};
 
 export class World {
   constructor(container) {
@@ -213,26 +218,31 @@ export class World {
 
   updatePlay(dt, g) {
     const s = g.state;
-    const keys = g.input?.keys || new Set();
     const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play';
 
-    let dx = 0, dz = 0;
-    if (canMove) {
-      if (keys.has('KeyW') || keys.has('ArrowUp')) dz -= 1;
-      if (keys.has('KeyS') || keys.has('ArrowDown')) dz += 1;
-      if (keys.has('KeyA') || keys.has('ArrowLeft')) dx -= 1;
-      if (keys.has('KeyD') || keys.has('ArrowRight')) dx += 1;
-    }
-    const len = Math.hypot(dx, dz);
-    this.walking = len > 0;
+    // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
+    const orbit = g.input?.orbitDelta || 0;
+    if (orbit) this.camYaw += orbit;
+
+    // Camera-relative movement. Forward is always away from the camera, so W walks into
+    // the screen and the character turns to face wherever the stick points.
+    const mx = canMove ? (g.input?.move?.x || 0) : 0;
+    const my = canMove ? (g.input?.move?.y || 0) : 0;
+    const len = Math.hypot(mx, my);
+    this.walking = len > 0.08;
     const impairment = Math.min(1, (s.stats.withdrawal / 140) + (s.high.level / 240));
     if (this.walking) {
-      dx /= len; dz /= len;
-      // camera-relative movement: camera looks along -z from behind the player
+      const nxm = mx / len;
+      const nym = my / len;
       const cYaw = this.camYaw;
-      const wx = dx * Math.cos(cYaw) + dz * Math.sin(cYaw);
-      const wz = -dx * Math.sin(cYaw) + dz * Math.cos(cYaw);
+      const fwdX = Math.sin(cYaw);
+      const fwdZ = Math.cos(cYaw);
+      const rightX = Math.cos(cYaw);
+      const rightZ = -Math.sin(cYaw);
+      const wx = fwdX * nym + rightX * nxm;
+      const wz = fwdZ * nym + rightZ * nxm;
       let speed = 2.45;
+      if (g.input?.lastDevice === 'pad') speed *= 1.05;
       if (impairment > 0.5) speed *= 0.78;
       if (s.stats.energy < 15) speed *= 0.72;
       let nx = this.mo.root.position.x + wx * speed * dt;
@@ -249,6 +259,7 @@ export class World {
       if (!this.blocked(this.mo.root.position.x, nz)) this.mo.root.position.z = nz;
 
       const targetRot = Math.atan2(wx, wz);
+      void targetRot;
       this.mo.root.rotation.y += angleDelta(this.mo.root.rotation.y, targetRot) * Math.min(1, dt * 12);
       this.stepTimer -= dt;
       if (this.stepTimer <= 0) {
@@ -265,10 +276,23 @@ export class World {
       speed: 1,
     });
 
+    const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
-      this.patrolNPC(rig, dt);
-      animateNPC(rig, dt, { walking: !!rig.walking });
+      this.patrolNPC(rig, dt, g);
+      const settled = !rig.walking && !!rig.npcDef?.sit;
+      animateNPC(rig, dt, {
+        walking: !!rig.walking,
+        sitting: settled && mod < 22 * 60 && mod >= 7 * 60,
+        sleeping: settled && (mod >= 22 * 60 || mod < 7 * 60),
+      });
+    }
+
+    // street encounters, on a slow clock so they are events rather than background noise
+    this.streetTimer = (this.streetTimer ?? 10) - dt;
+    if (this.streetTimer <= 0) {
+      this.streetTimer = 16;
+      if (canMove && this.areaId === 'street') maybeStreetEvent(g);
     }
     if (this.addison.root.visible) animateAddison(this.addison, dt);
 
@@ -351,9 +375,31 @@ export class World {
   }
 
   /** NPCs keep to their own patch: pick a spot near home, walk there, stand, repeat. */
-  patrolNPC(rig, dt) {
+  patrolNPC(rig, dt, g) {
     const def = rig.npcDef;
     if (!def) return;
+
+    // A scheduled character walks to wherever they are supposed to be right now and stays
+    // there until the window changes; unscheduled ones keep to a small patch near home.
+    const target = g ? scheduleTarget(def.kind, minuteOfDay(g.state.clock.m)) : null;
+    if (target) {
+      const dx = target.x - rig.root.position.x;
+      const dz = target.z - rig.root.position.z;
+      const dist = Math.hypot(dx, dz);
+      rig.walking = dist > 0.22;
+      if (!rig.walking) return;
+      const speed = 0.95;
+      const nx = rig.root.position.x + (dx / dist) * speed * dt;
+      const nz = rig.root.position.z + (dz / dist) * speed * dt;
+      const b = this.area.bounds;
+      if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz)) {
+        rig.root.position.x = nx;
+        rig.root.position.z = nz;
+      }
+      rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 5);
+      return;
+    }
+
     if (!rig.wander) {
       rig.wander = {
         homeX: rig.root.position.x,

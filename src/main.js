@@ -4,7 +4,7 @@
  */
 import { CONFIG } from './core/config.js';
 import { Audio } from './core/audio.js';
-import { createState, clock, logLine, bump, spend, earn } from './core/state.js';
+import { createState, clock, logLine, bump, spend, earn, pushMessage } from './core/state.js';
 import { saveGame, loadGame, slotInfo, autosave as doAutosave } from './core/save.js';
 import { money, dayOf, clamp, hhmm, minuteOfDay } from './core/util.js';
 import { simulate } from './systems/needs.js';
@@ -15,7 +15,9 @@ import { HUD } from './ui/hud.js';
 import { Modal } from './ui/modal.js';
 import { Phone } from './ui/phone.js';
 import { Menu } from './ui/menu.js';
+import { Threads } from './ui/threads.js';
 import { ENDINGS } from './systems/endings.js';
+import { InputSystem } from './core/input.js';
 
 class Bus {
   constructor() { this.map = new Map(); }
@@ -37,7 +39,7 @@ class Game {
   constructor() {
     this.bus = new Bus();
     this.audio = new Audio();
-    this.input = { keys: new Set() };
+    this.input = new InputSystem(this);
     this.state = createState();
     this.mode = 'menu';
     this.paused = false;
@@ -53,6 +55,7 @@ class Game {
     this.hud.show(false);
     this.modal = new Modal(this.uiEl, this);
     this.phone = new Phone(this.uiEl, this);
+    this.threads = new Threads(this.uiEl, this);
     this.menu = new Menu(this.uiEl, this);
 
     this.world.showMenu();
@@ -60,7 +63,10 @@ class Game {
     this.applyPresentation();
 
     this.bus.on('log', ({ text }) => this.hud.pushLog(`D${dayOf(this.state.clock.m)} · ${text}`));
-    this.bindInput();
+    // every incoming message also surfaces as a HUD thread, with the sender's face on it
+    this.bus.on('message', ({ from, body }) => {
+      if (this.mode === 'play') this.threads.push(from, body);
+    });
 
     this.lastT = performance.now();
     this.loop = this.loop.bind(this);
@@ -79,38 +85,22 @@ class Game {
     await this.audio.playMusic('assets/audio/menu_theme.mp3');
   }
 
-  bindInput() {
-    window.addEventListener('keydown', (e) => {
-      const code = e.code;
-      if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) e.preventDefault();
-      if (code === 'Tab') { this.togglePhone(); return; }
-      if (code === 'Escape') {
-        if (this.phone.isOpen) { this.phone.close(); return; }
-        if (this.modal.isOpen) { this.modal.close(); return; }
-        if (this.mode === 'play') this.togglePause();
-        return;
-      }
-      if (this.mode === 'play' && !this.phoneOpen && !this.modalOpen) {
-        if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
-          this.input.keys.add(code);
-        }
-        if (code === 'KeyE') { this.world.tryInteract(this); return; }
-        if (code === 'KeyF') this.toggle43();
-        if (code === 'KeyC') this.toggleCRT();
-        if (code === 'Digit1') this.setSpeed(1);
-        if (code === 'Digit2') this.setSpeed(2);
-        if (code === 'Digit3') this.setSpeed(3);
-      }
-      if (this.mode === 'menu' && code === 'Enter') {
-        const gate = document.querySelector('.screen');
-        if (gate) gate.click();
-      }
-    });
-    window.addEventListener('keyup', (e) => this.input.keys.delete(e.code));
-    window.addEventListener('blur', () => this.input.keys.clear());
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) this.input.keys.clear();
-    });
+  /** One-shot actions queued by the keyboard or a gamepad button, drained once per frame. */
+  handleInputEvents() {
+    const inp = this.input;
+    if (inp.take('phone')) { this.togglePhone(); }
+    if (inp.take('pause')) {
+      if (this.phone.isOpen) this.phone.close();
+      else if (this.modal.isOpen) this.modal.close();
+      else if (this.mode === 'play') this.togglePause();
+    }
+    if (this.mode !== 'play' || this.phoneOpen || this.modalOpen) return;
+    if (inp.take('interact')) this.world.tryInteract(this);
+    if (inp.take('crt')) this.toggleCRT();
+    if (inp.take('ratio')) this.toggle43();
+    if (inp.take('speed1')) this.setSpeed(1);
+    if (inp.take('speed2')) this.setSpeed(2);
+    if (inp.take('speed3')) this.setSpeed(3);
   }
 
   /* ------------------------------ main loop ------------------------------ */
@@ -118,6 +108,9 @@ class Game {
   loop(t) {
     const dt = Math.min(0.05, Math.max(0, (t - this.lastT) / 1000));
     this.lastT = t;
+
+    this.input.poll(dt);
+    this.handleInputEvents();
 
     if (this.mode === 'play' && !this.paused && !this.phoneOpen && !this.modalOpen) {
       const perSecond = CONFIG.time.speeds[this.state.settings.speed] ?? 0;
@@ -215,7 +208,7 @@ class Game {
     this.mode = 'ending';
     this.phone.close();
     this.modal.close();
-    this.input.keys.clear();
+    this.input.clear();
     this.hud.show(false);
     this.audio.sfx('sting');
     this.audio.setVolume(Math.max(0, this.state.settings.volume * 0.25));
@@ -276,13 +269,13 @@ class Game {
         this.state.flags.tutorial = 1;
         this.bus.emit('tutorial');
       }
-      this.input.keys.clear();
+      this.input.clear();
     }
     this.hud.update();
   }
 
   onModalOpenChange(open) {
-    if (open) this.input.keys.clear();
+    if (open) this.input.clear();
     this.hud.update();
   }
 
@@ -297,6 +290,8 @@ class Game {
     if (area === 'street') this.toast('1120 Kestrel St. The neon is doing its best.', 'info');
     if (area === 'church') this.toast('The Fellowship. It smells expensive in here.', 'gold');
     if (area === 'apartment') this.toast('Unit 3B. Home, in the legal sense.', 'info');
+    if (area === 'bodega') this.toast('Kestrel Bodega. It smells like a grill and lottery tickets.', 'info');
+    if (area === 'habibs') this.toast("Habib's Corner. Warm, clean, and he is already asking if you ate.", 'info');
   }
 
   /* ------------------------------ helpers used by systems ------------------------------ */
@@ -305,8 +300,34 @@ class Game {
     this.hud.toast(text, kind);
   }
 
+  /** A line of dialogue from a character, posted into the HUD thread with their face on it. */
+  broadcast({ from, text }) {
+    if (this.mode === 'play') this.threads.push(from, text);
+  }
+
   openModal(opts) {
+    // sms: true renders the same choice list as a phone thread instead of a panel
+    if (opts.sms) {
+      this.threads.ask({ from: opts.from || 'KEV', text: opts.body || '', choices: opts.choices || [], subtitle: opts.subtitle });
+      return;
+    }
     this.modal.open(opts);
+  }
+
+  /** Store Mo's side of a thread so it is still there when he opens Messages. */
+  recordReply(from, text, subject = null) {
+    const s = this.state;
+    const key = String(from).toUpperCase();
+    const last = s.messages.find((m) => String(m.from).toUpperCase() === key || m.subject === subject);
+    if (last) {
+      last.replies = last.replies || [];
+      last.replies.push({ text, day: dayOf(s.clock.m) });
+    } else {
+      pushMessage(this, { from: key, subject: 'Sent', body: text });
+      const m = s.messages[0];
+      m.read = true;
+      m.outgoing = true;
+    }
   }
 
   spendMoney(amount, label) {

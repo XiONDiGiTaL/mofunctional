@@ -383,3 +383,80 @@ html, body {
   .hud__log { display: none; }
   .phone { width: 92vw; height: 84vh; }
 }
+
+/* ---------- HUD portrait: Mo's face, by mood ---------- */
+.hud__face {
+  display: flex; gap: 9px; align-items: center;
+  border-bottom: 1px solid #20342a; padding-bottom: 7px;
+}
+.hud__faceimg {
+  width: 44px; height: 61px; display: block; image-rendering: pixelated;
+  border: 1px solid #2c4436; background: #0a110c; flex: none;
+}
+.hud__facemeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.hud__mood { font-size: 13px; letter-spacing: .16em; color: #eef7ee; }
+.hud__moodsub { font-size: 8.5px; letter-spacing: .16em; color: #7e9986; text-transform: uppercase; }
+.hud__moodnote { font-size: 9px; color: #68826f; line-height: 1.35; }
+.hud__face[data-mood="high"] .hud__mood { color: var(--gold); }
+.hud__face[data-mood="stressed"] .hud__mood { color: #ff8f7a; }
+.hud__face[data-mood="sick"] .hud__mood { color: #9fd8c0; }
+.hud__face[data-mood="angry"] .hud__mood { color: #ff5e5e; }
+.hud__face[data-mood="tired"] .hud__mood { color: #9fb6c8; }
+.hud__face[data-mood="high"] .hud__faceimg { border-color: var(--gold-deep); }
+
+/* ---------- HUD text threads ---------- */
+.thread {
+  position: absolute; left: 14px; bottom: 78px; width: 316px;
+  background: rgba(8,12,10,.95); border: 1px solid #2c4436;
+  box-shadow: 0 12px 34px rgba(0,0,0,.55); pointer-events: auto;
+  animation: threadin .2s ease;
+}
+.thread.out { animation: threadout .22s forwards; }
+@keyframes threadin { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes threadout { to { opacity: 0; transform: translateY(10px); } }
+.thread__head {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px;
+  border-bottom: 1px solid #1c2a20; background: #0a110c;
+}
+.thread__face { width: 30px; height: 41px; image-rendering: pixelated; border: 1px solid #2c4436; }
+.thread__who { display: flex; flex-direction: column; line-height: 1.15; }
+.thread__name { font-size: 10.5px; letter-spacing: .16em; color: #e6f2e7; }
+.thread__sub { font-size: 8.5px; letter-spacing: .12em; color: #6d8877; }
+.thread__close {
+  margin-left: auto; background: none; border: 1px solid #22362a; color: #8aa895;
+  font-family: var(--mono); font-size: 13px; line-height: 1; width: 20px; height: 20px; cursor: pointer;
+}
+.thread__close:hover { color: #fff; border-color: var(--gold); }
+.thread__body { max-height: 190px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.bubble { display: flex; gap: 6px; align-items: flex-end; }
+.bubble--out { flex-direction: row; justify-content: flex-end; }
+.bubble__face { width: 20px; height: 27px; image-rendering: pixelated; border: 1px solid #24382c; flex: none; }
+.bubble__text {
+  font-size: 10.5px; line-height: 1.45; padding: 5px 7px; max-width: 224px;
+  background: #16241b; border: 1px solid #24382c; color: #dcf0dd; white-space: pre-line;
+}
+.bubble--out .bubble__text { background: #1d2f22; border-color: #3c6a4c; color: #eaffee; }
+.thread__choices { display: flex; flex-direction: column; gap: 4px; padding: 0 8px 8px; }
+.thread__choice {
+  text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .03em;
+  background: #101a13; border: 1px solid #2c4436; color: #cfe3cf; padding: 6px 8px; cursor: pointer;
+}
+.thread__choice:hover { background: #1c2c22; border-color: var(--gold-deep); color: #fff; }
+
+/* ---------- phone: chat bubbles + inbox ---------- */
+.chat { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 10px; }
+.chat__row { display: flex; gap: 6px; align-items: flex-end; }
+.chat__row--out { justify-content: flex-end; }
+.chat__face { width: 26px; height: 36px; image-rendering: pixelated; border: 1px solid #24382c; flex: none; }
+.chat__bubble {
+  font-size: 11.5px; line-height: 1.55; padding: 7px 9px; max-width: 74%; white-space: pre-line;
+  background: #16241b; border: 1px solid #24382c; color: #dcf0dd;
+}
+.chat__bubble--out { background: #1d2f22; border-color: #3c6a4c; color: #eaffee; }
+.chat__quick { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 8px; }
+.chat__chip {
+  font-family: var(--mono); font-size: 10px; padding: 5px 8px; cursor: pointer;
+  background: #101a13; border: 1px solid #2c4436; color: #cfe3cf;
+}
+.chat__chip:hover { border-color: var(--gold-deep); color: #fff; }
+.chatlist { display: flex; align-items: center; gap: 8px; }

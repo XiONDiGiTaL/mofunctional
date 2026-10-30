@@ -6,6 +6,7 @@ import { billInfo } from '../systems/economy.js';
 import { shiftInfo } from '../systems/jobs.js';
 import { TUTORIAL_HINTS } from '../systems/dialogue.js';
 import { el } from '../core/util.js';
+import { portraitURL } from '../render/faces.js';
 
 export class HUD {
   constructor(root, game) {
@@ -20,6 +21,14 @@ export class HUD {
   build() {
     this.el = el(`<div class="hud">
       <div class="hud__top">
+        <div class="hud__face" data-mood="content">
+          <img class="hud__faceimg" alt="Mo" />
+          <div class="hud__facemeta">
+            <span class="hud__mood">CONTENT</span>
+            <span class="hud__moodsub">Mo · Unit 3B</span>
+            <span class="hud__moodnote"></span>
+          </div>
+        </div>
         <div class="hud__clockrow">
           <span class="hud__time">07:00</span>
           <span class="hud__day">MON · DAY 1</span>
@@ -42,11 +51,16 @@ export class HUD {
         <div class="hud__objective"></div>
       </div>
       <div class="hud__prompt"></div>
-      <div class="hud__hint">WASD move · E interact · TAB phone · 1/2/3 speed · ESC pause</div>
+      <div class="hud__hint">WASD move · Q/E orbit · F interact · TAB phone · 1/2/3 speed · ESC pause · pad supported</div>
       <div class="hud__log"></div>
       <div class="hud__toasts"></div>
     </div>`);
     this.root.appendChild(this.el);
+    this.faceEl = this.el.querySelector('.hud__face');
+    this.faceImg = this.el.querySelector('.hud__faceimg');
+    this.moodEl = this.el.querySelector('.hud__mood');
+    this.moodNoteEl = this.el.querySelector('.hud__moodnote');
+    this.mood = null;
     this.timeEl = this.el.querySelector('.hud__time');
     this.dayEl = this.el.querySelector('.hud__day');
     this.moneyEl = this.el.querySelector('.hud__money');
@@ -92,6 +106,20 @@ export class HUD {
     this.logLines = [];
   }
 
+  /**
+   * Mo's face, driven by the same stats as everything else. The portrait is repainted only when
+   * the mood changes, so this is cheap to call every frame.
+   */
+  updateFace(s) {
+    const mood = moodFor(s);
+    if (mood === this.mood) return;
+    this.mood = mood;
+    this.faceEl.dataset.mood = mood.id;
+    this.faceImg.src = portraitURL('mo', mood.id);
+    this.moodEl.textContent = mood.label;
+    this.moodNoteEl.textContent = mood.note;
+  }
+
   update() {
     const g = this.g;
     const s = g.state;
@@ -105,6 +133,7 @@ export class HUD {
     const rentWarn = rent.owedCycles > 0 ? ' debt' : '';
     this.moneyEl.textContent = money(s.money);
     this.moneyEl.className = `hud__money ${s.money < 20 ? 'bad' : ''}`;
+    this.updateFace(s);
 
     for (const [k] of this.statDefs) {
       const v = clamp(s.stats[k] ?? 0);
@@ -139,7 +168,7 @@ export class HUD {
       this.promptEl.classList.remove('show');
       return;
     }
-    this.promptEl.innerHTML = `<kbd>E</kbd>${escapeHtml(prompt.label)}${prompt.sub ? `<small>${escapeHtml(prompt.sub)}</small>` : ''}`;
+    this.promptEl.innerHTML = `<kbd>F</kbd>${escapeHtml(prompt.label)}${prompt.sub ? `<small>${escapeHtml(prompt.sub)}</small>` : ''}`;
     this.promptEl.classList.add('show');
   }
 
@@ -163,6 +192,16 @@ export class HUD {
   show(visible) {
     this.el.style.display = visible ? '' : 'none';
   }
+}
+
+function moodFor(s) {
+  const st = s.stats;
+  if (st.risk > 72 || st.withdrawal > 62) return { id: 'sick', label: 'SICK', note: 'shaking, sweating, jaw tight' };
+  if (s.high.level > 12) return { id: 'high', label: 'HIGH', note: 'eyes red, mouth doing that thing' };
+  if (st.stress > 72) return { id: 'stressed', label: 'STRESSED', note: 'shoulders up around his ears' };
+  if (st.morale < 25) return { id: 'angry', label: 'SEETHING', note: 'quiet in the wrong way' };
+  if (st.energy < 26) return { id: 'tired', label: 'WRECKED', note: 'running on fumes and tap water' };
+  return { id: 'content', label: 'CONTENT', note: 'holding, more or less' };
 }
 
 function escapeHtml(s) {

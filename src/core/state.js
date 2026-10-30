@@ -191,7 +191,7 @@ export function pushMessage(g, { from, subject, body, choices = null, id = uid()
     choices,
   });
   if (g.state.messages.length > 40) g.state.messages.pop();
-  g.bus.emit('message', { from, subject });
+  g.bus.emit('message', { from, subject, body, id });
   return id;
 }
 
