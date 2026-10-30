@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>xiondigital.net/arcade</title>
+  <meta name="description" content="Six original browser games by XiØN, playable straight from xiondigital.net/arcade. No installs, no accounts." />
+  <meta name="theme-color" content="#050607" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="xiondigital.net/arcade" />
+  <meta property="og:description" content="Six original browser games by XiØN, playable straight from the arcade." />
+  <meta property="og:image" content="assets/img/meldra.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css?v=8" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23090a0c'/%3E%3Cpath d='M9 23V9h14' stroke='%233f80ff' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient__glow ambient__glow--top"></span>
+    <span class="ambient__glow ambient__glow--side"></span>
+    <span class="ambient__grid"></span>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="#games" aria-label="xiondigital.net/arcade, back to the game wall">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M5 19V5h14" />
+        </svg>
+      </span>
+      <span class="brand__word">
+        <span class="brand__domain">xiondigital.net</span><span class="brand__path">/arcade</span>
+      </span>
+    </a>
+
+    <nav class="topbar__nav" aria-label="Site">
+      <a class="topbar__link" href="#games">Games</a>
+      <a class="topbar__link" href="#about">About</a>
+      <a class="topbar__link" href="https://xiondigital.net/" target="_blank" rel="noopener">xiondigital.net<span class="ext" aria-hidden="true">↗</span></a>
+    </nav>
+
+    <div class="topbar__tools">
+      <span class="status" title="All games reachable">
+        <i class="status__dot"></i><span class="status__text">online</span>
+      </span>
+      <button class="sfx" id="sfxToggle" type="button" aria-pressed="true" title="Toggle interface sound">
+        <span class="sfx__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="sfx__label">SFX</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero__inner">
+        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>Central hub · 6 titles online</p>
+
+        <h1 class="hero__title">
+          <span class="hero__domain">xiondigital.net</span><span class="hero__slug">/arcade</span>
+        </h1>
+
+        <p class="hero__lede">
+          Six original games that run straight in your browser. Pick a window, hit launch,
+          and play. No downloads, no accounts, no fuss.
+        </p>
+
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#games">
+            Browse the wall
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </a>
+          <ul class="hero__meta">
+            <li>06 titles</li>
+            <li>Online co-op</li>
+            <li>No installs</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="wall" id="games" aria-labelledby="wallTitle">
+      <div class="wall__head">
+        <div>
+          <h2 class="wall__title" id="wallTitle">Game wall</h2>
+          <p class="wall__sub">Every title opens on its own dedicated site.</p>
+        </div>
+        <div class="filters" role="group" aria-label="Filter games by genre">
+          <button class="filter is-active" type="button" data-filter="all" aria-pressed="true">All</button>
+          <button class="filter" type="button" data-filter="beat-em-up" aria-pressed="false">Beat 'em up</button>
+          <button class="filter" type="button" data-filter="puzzle" aria-pressed="false">Puzzle</button>
+          <button class="filter" type="button" data-filter="platformer" aria-pressed="false">Platformer</button>
+          <button class="filter" type="button" data-filter="co-op" aria-pressed="false">Co-op</button>
+          <button class="filter" type="button" data-filter="life-sim" aria-pressed="false">Life sim</button>
+        </div>
+      </div>
+
+      <div class="grid" id="grid">
+        <a class="game" href="https://xiondigital.net/meldra/" data-tags="puzzle co-op">
+          <span class="game__screen">
+            <img src="assets/img/meldra.jpg?v=3" width="1200" height="675" alt="Meldra gameplay: rows of pastel blocks stacked in the falling-block arena" />
+            <span class="game__shade" aria-hidden="true"></span>
+            <span class="game__tag">Puzzle</span>
+            <span class="game__live"><i aria-hidden="true"></i>Online</span>
+            <span class="game__go" aria-hidden="true">Launch<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg></span>
+          </span>
+          <span class="game__body">
+            <span class="game__text">
+              <span class="game__title">Meldra</span>
+              <span class="game__meta">Falling-block puzzle · solo &amp; co-op</span>
+              <span class="game__credit">by XiØN</span>
+            </span>
+            <span class="game__arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          </span>
+        </a>
+
+        <a class="game" href="https://xiondigital.net/voxelrage/" data-tags="beat-em-up co-op">
+          <span class="game__screen">
+            <img src="assets/img/voxelrage.jpg?v=2" width="1200" height="675" alt="Voxel Rage gameplay: voxel Janissaries fighting in an Ottoman street" loading="lazy" />
+            <span class="game__shade" aria-hidden="true"></span>
+            <span class="game__tag">Beat 'em up</span>
+            <span class="game__live"><i aria-hidden="true"></i>Online</span>
+            <span class="game__go" aria-hidden="true">Launch<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg></span>
+          </span>
+          <span class="game__body">
+            <span class="game__text">
+              <span class="game__title">Voxel Rage<span class="game__title-sub">Janitscharen</span></span>
+              <span class="game__meta">Voxel art · co-op</span>
+              <span class="game__credit">by Player529</span>
+            </span>
+            <span class="game__arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          </span>
+        </a>
+
+        <a class="game" href="https://xiondigital.net/kankakombat/" data-tags="beat-em-up co-op">
+          <span class="game__screen">
+            <img src="assets/img/kankakombat.jpg?v=2" width="1200" height="675" alt="Kanka Kombat gameplay: fighters brawling through an Istanbul bazaar" loading="lazy" />
+            <span class="game__shade" aria-hidden="true"></span>
+            <span class="game__tag">Beat 'em up</span>
+            <span class="game__live"><i aria-hidden="true"></i>Online</span>
+            <span class="game__go" aria-hidden="true">Launch<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg></span>
+          </span>
+          <span class="game__body">
+            <span class="game__text">
+              <span class="game__title">Kanka Kombat<span class="game__title-sub">Nutella Nights</span></span>
+              <span class="game__meta">Pixel art · co-op</span>
+              <span class="game__credit">by XiØN</span>
+            </span>
+            <span class="game__arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          </span>
+        </a>
+
+        <a class="game" href="https://xiondigital.net/leapbuddies/" data-tags="platformer co-op">
+          <span class="game__screen">
+            <img src="assets/img/leapbuddies.jpg?v=2" width="1200" height="675" alt="Leap Buddies gameplay: a voxel platformer stage above a midnight city skyline" loading="lazy" />
+            <span class="game__shade" aria-hidden="true"></span>
+            <span class="game__tag">Platformer</span>
+            <span class="game__live"><i aria-hidden="true"></i>Online</span>
+            <span class="game__go" aria-hidden="true">Launch<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg></span>
+          </span>
+          <span class="game__body">
+            <span class="game__text">
+              <span class="game__title">Leap Buddies</span>
+              <span class="game__meta">Voxel platformer · two-player co-op</span>
+              <span class="game__credit">by XiØN</span>
+            </span>
+            <span class="game__arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          </span>
+        </a>
+
+        <a class="game" href="https://xiondigital.net/grease-and-gold-world-tour/" data-tags="beat-em-up">
+          <span class="game__screen">
+            <img src="assets/img/grease-and-gold.jpg?v=2" width="1200" height="675" alt="Grease and Gold gameplay: Ricky B facing two suited brawlers on a city street" loading="lazy" />
+            <span class="game__shade" aria-hidden="true"></span>
+            <span class="game__tag">Beat 'em up</span>
+            <span class="game__live"><i aria-hidden="true"></i>Online</span>
+            <span class="game__go" aria-hidden="true">Launch<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg></span>
+          </span>
+          <span class="game__body">
+            <span class="game__text">
+              <span class="game__title">Grease &amp; Gold<span class="game__title-sub">World Tour</span></span>
+              <span class="game__meta">Pixel art · single player</span>
+              <span class="game__credit">by XiØN &amp; Player529</span>
+            </span>
+            <span class="game__arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          </span>
+        </a>
+        <a class="game" href="https://xiondigital.net/mofunctional/" data-tags="life-sim">
+          <span class="game__screen">
+            <img src="https://xiondigital.net/mofunctional/assets/img/arcade_tile.jpg?v=1" width="1200" height="675" alt="MO: FUNCTIONAL gameplay: Mo standing in his apartment with need, money and clock meters across the top of the screen" loading="lazy" />
+            <span class="game__shade" aria-hidden="true"></span>
+            <span class="game__tag">Life sim</span>
+            <span class="game__live"><i aria-hidden="true"></i>Online</span>
+            <span class="game__go" aria-hidden="true">Launch<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg></span>
+          </span>
+          <span class="game__body">
+            <span class="game__text">
+              <span class="game__title">MO: Functional</span>
+              <span class="game__meta">PS1-era life sim &middot; single player</span>
+              <span class="game__credit">by XiØN</span>
+            </span>
+            <span class="game__arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          </span>
+        </a>
+      </div>
+
+      <p class="wall__empty" id="wallEmpty" hidden>No games in that channel yet.</p>
+    </section>
+
+    <section class="about" id="about">
+      <div class="about__copy">
+        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>About</p>
+        <h2 class="about__title">Original games, made to be<br />played with someone.</h2>
+        <p>
+          Every title on this wall is a hand-built browser game by XiØN, made for
+          shared boards, split-screen brawls and room codes instead of installers.
+          Voxel Rage and Grease &amp; Gold are collaborations with Player529.
+          Each game lives on its own page and opens right from here.
+        </p>
+      </div>
+      <div class="about__panel">
+        <div class="about__row"><span>Developer</span><strong>XiØN</strong></div>
+        <div class="about__row"><span>Collaborator</span><strong>Player529</strong></div>
+        <div class="about__row"><span>Platform</span><strong>Browser · HTML5 / WebGL</strong></div>
+        <div class="about__row"><span>Where to play</span><strong>xiondigital.net</strong></div>
+        <a class="about__link" href="https://xiondigital.net/" target="_blank" rel="noopener">Visit xiondigital.net<span class="ext" aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__side">
+      <span class="footer__brand">xiondigital.net<span class="footer__brand-path">/arcade</span></span>
+      <span class="footer__copy">© <span id="year">2026</span> XiØN</span>
+    </div>
+
+    <div class="footer__clock">
+      <span class="footer__time" id="clock">--:--:--</span>
+      <span class="footer__date" id="date">SYSTEM TIME</span>
+    </div>
+
+    <div class="footer__side footer__side--right">
+      <span class="footer__status"><i aria-hidden="true"></i>All systems nominal</span>
+      <a class="footer__link" href="#games">Back to top ↑</a>
+    </div>
+  </footer>
+
+  <script src="assets/js/arcade.js?v=6" defer></script>
+</body>
+</html>
