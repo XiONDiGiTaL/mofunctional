@@ -18,7 +18,10 @@ varying float vDepth;
 void main() {
   vec3 p = position;
   float sway = sin(uTime * 1.9 + position.x * 3.1 + position.y * 2.3 + position.z * 2.7);
-  p += normal * sway * uWobble * 0.012;
+  // displacement depends only on position, so vertices shared by flat-shaded facets move
+  // together and the mesh never cracks open along its hard edges
+  float sway2 = cos(uTime * 1.3 + position.z * 3.7 + position.x * 1.9);
+  p += vec3(sway, sway2, sway * sway2) * uWobble * 0.006;
 
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   vec4 clip = projectionMatrix * mv;
@@ -97,6 +100,10 @@ void main() {
   float fogF = clamp((vDepth - uFogNear) / (uFogFar - uFogNear), 0.0, 1.0);
   fogF = pow(fogF, 0.85);
   lit = mix(lit, uFogColor, fogF);
+
+  // colours and textures arrive linear (three's colour management); encode for display so
+  // the palette reads as authored instead of crushed into the shadows
+  lit = pow(max(lit, vec3(0.0)), vec3(1.0 / 2.2));
 
   // 4x4 ordered dithering + 5-bit color quantization
   float d = bayer4(gl_FragCoord.xy) - 0.5;

@@ -10,6 +10,23 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Art direction pass — PS1 character redesign (owner priority)
+- **Owner directive overrides the earlier "no painted face" rule.** Target look is the owner's
+  reference sheets in `assets/ref/` (late-90s console NPC: faceted limbs, textured face).
+- `src/render/heads.js`: one skull shape (`HEAD`, `headPoint`) shared by geometry and texture.
+  Each character has a FRONTAL portrait in a 160x200 frame (Mo = his reference photo baked into
+  `mo_face_data.js` by `scripts/bake-mo-face.py`; everyone else painted from `FACE_SPECS`),
+  projected through the skull into a 256x256 cylindrical wrap texture.
+- `src/world/characters.js`: bodies use faceted 6–8-sided prisms (flat normals); heads are the
+  textured skull + ears + optional hair shells. Rig contract and exports unchanged. Skin/hair now
+  come from `FACE_SPECS` (the old `CAST.skin/hair/style` keys were never read by `buildBody`).
+- `src/render/faces.js`: HUD/phone/thread portraits are rendered from the actual 3D head with a
+  studio light, then mood overlays at projected eye positions. Same exports as before.
+- `src/render/retro.js`: output is gamma-encoded (colours/textures were being displayed linear,
+  crushing everything dark); vertex wobble is position-based so flat-shaded facets never crack.
+- `CONFIG.render.dither` 0.8 → 0.55. Portrait CSS sizes match the 4:5 render.
+- `scripts/shot.mjs`: repeatable Playwright screenshots (faces, cast, HUD moods, street).
+
 ### Foundation
 - `index.html` + `styles/main.css` shell with CRT overlay (scanlines, vignette, rolling
   tracking bar), 4:3 toggle, and a pixel-art UI theme in sickly green / nicotine amber /
@@ -200,7 +217,8 @@ face taped on. Rebuilt in `src/world/characters.js`:
 7. **Time is the only currency that matters.** Any new interaction must decide its minutes
    cost. Instant free actions erode the entire design.
 8. **Keep the 90s-era look.** No PBR materials, no antialiasing, no smooth high-poly models, no
-   HDRI. New geometry should use `retroMaterial`/`box`/`plane` from `src/render/retro.js`.
+   HDRI. Characters follow `assets/ref/`: faceted limbs, one wrap face texture per head
+   (render/heads.js); add new cast members as a `FACE_SPECS` entry, not new geometry. New geometry should use `retroMaterial`/`box`/`plane` from `src/render/retro.js`.
 9. **Test in a real browser** (see §6). Console errors are failures.
 
 ---

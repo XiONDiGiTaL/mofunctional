@@ -78,20 +78,27 @@ The HUD has the same controls as buttons. The phone has its own bottom navigatio
 ### A cast with one design language
 
 Every character — Mo, Addison, the neighbours, both shopkeepers, the men on the street — is
-built from the same rig: a ~7.5-head figure with tapered box limbs on real joint pivots, and a
-**sculpted low-poly head** (stacked rings for the skull, a nose wedge, brow ridge, recessed eyes,
-ears, a beard patch and per-character hair shells). Mo wears a plain white tee and plain jeans.
-Nothing is a painted card stuck on a box, so the faces hold up when the camera orbits.
+built the late-90s console way: a ~7.5-head figure with **faceted 6–8-sided limbs** (flat
+shading, hard normal breaks) on real joint pivots, and a **low-poly skull wearing one
+wrap-around face texture**. Mo's texture is projected from his reference portrait; everyone
+else's is painted in the same frame, with the same landmarks and light direction, then wrapped
+onto the identical skull. Volume hair (Addison's pompadour, Rae's bob, Dex's locks, Nia's
+braids) is shell geometry over the same skull. Mo wears a plain white tee and plain blue jeans.
 
-![Mo, three-quarter view](assets/img/mo_character.png)
+![Mo, full body](assets/img/mo_character.png)
+
+![Mo's head in game: front, three-quarter](assets/img/face_check.png)
+
+![The cast](assets/img/faces_cast.png)
 
 ### Mo's face on the HUD, in his current state
 
-The panel top-left is Mo, painted by the same portrait code that draws the phone avatars and
-re-skinned when his state changes: **CONTENT**, **STRESSED**, **HIGH** (red eyes, smirk),
-**SEIZED** (withdrawal: pale, sweating, hollow), **WRECKED**, **SEETHING**.
+The panel top-left is a close-up **render of Mo's actual 3D head** — the same model walking
+around the street — re-shot when his state changes: **CONTENT**, **WRECKED**, **STRESSED**,
+**HIGH** (red, half-lidded eyes), **SICK** (pale, sweating), **SEETHING**. Phone avatars and
+text-thread faces are rendered the same way for every character.
 
-![HUD faces: content, stressed, high, sick](assets/img/hud_state_faces.png)
+![HUD faces by mood](assets/img/hud_state_faces.png)
 
 ### Text threads that answer back
 
@@ -157,11 +164,14 @@ index.html            page shell, CRT overlay, UI root
 styles/main.css       all UI: HUD, phone, threads, menus
 src/main.js           game orchestrator: loop, state, flow
 src/core/             config (all balance values), state, input, audio, save, util
-src/render/           retro renderer (affine UVs, vertex snap, dither), textures, faces
+src/render/           retro renderer (affine UVs, vertex snap, dither), textures,
+                      heads (skull + wrap face textures), faces (rendered portraits)
 src/world/            characters, areas, shops, schedules, 3D world/camera
 src/systems/          needs, economy, jobs, events, street, fellowship, dialogue, endings
 src/ui/               hud, phone, threads, modal, menu
-scripts/              check-syntax.mjs (parses every module)
+scripts/              check-syntax.mjs (parses every module), shot.mjs (Playwright
+                      screenshots of the cast/HUD), bake-mo-face.py (reference -> texture)
+assets/ref/           Mo's reference sheets (face + full body) — the art-direction anchor
 docs/DEVLOG.md        design notes and changelog
 ```
 
