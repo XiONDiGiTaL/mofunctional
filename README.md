@@ -18,7 +18,13 @@ Rent is due on Friday. It is Monday. He does not have it.
 
 ## Play it
 
-The game is a static site. ES modules can't load over `file://`, so serve the folder:
+**Live:** <https://xiondigital.net/mofunctional/> — GitHub Pages, straight from `main`.
+**Arcade:** <https://xiondigital.net/arcade/> — the hub tile that launches it.
+
+No install, no account, no backend. Click **PRESS START**, headphones recommended.
+
+The game is a static site. ES modules can't load over `file://`, so to run it from a
+checkout, serve the folder:
 
 ```bash
 # any one of these
@@ -32,7 +38,7 @@ Then open **http://localhost:8080** and click **PRESS START**.
 - Desktop Chrome / Firefox / Safari. Keyboard required.
 - Audio starts on the first click (browser autoplay policy). The supplied track is the
   menu theme; it is routed through WebAudio for the reactive menu.
-- Saves live in `localStorage` (3 slots + autosave).
+- Saves live in `localStorage` (3 slots + autosave), scoped to the origin it is served from.
 
 ---
 

@@ -125,6 +125,20 @@ face taped on. Rebuilt in `src/world/characters.js`:
   face was back-face culled and unlit (the rig looked like floating slabs). Fixed the
   winding and the normal cross-product direction together.
 
+### Deployment — GitHub Pages + arcade hub
+- The game is published straight from this repo: **https://xiondigital.net/mofunctional/**
+  (Pages, `main` / `/`). `xiondigital.net` is the custom domain on the
+  `xiondigital.github.io` user site, so project sites inherit it — a `CNAME` file must NOT
+  be added here, it would fight the user site.
+- `.nojekyll` at the repo root keeps Jekyll from processing the vendored module tree.
+- Pages for this repo needed a public repo (the free plan has no private Pages), so the
+  repo was made public at publish time. No secrets, env files or keys were ever tracked.
+- Listed on the arcade wall (`XiONDiGiTaL/arcade`) as the sixth title, tile
+  `assets/img/mofunctional.jpg` (1200×675, captured from the live build), filter tag
+  `life-sim`, link `https://xiondigital.net/mofunctional/`.
+- Relative paths only, so the same build works at `/mofunctional/`, at the arcade, or from
+  any local static server.
+
 ### Audio
 - `assets/audio/menu_theme.mp3` (copy of the repo's `Music/Mo Functional_ Main Menu.mp3`)
   routed through WebAudio so an analyser can read it.
