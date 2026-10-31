@@ -41,6 +41,8 @@ export class InputSystem {
     this.events = [];
     this.clicks = [];
     this.lastDevice = 'keyboard';
+    // resting value of every gamepad axis, learned the first time the pad is seen (see poll)
+    this.axisRest = new Map();
     this.bind();
   }
 
@@ -52,6 +54,9 @@ export class InputSystem {
       if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) e.preventDefault();
       if (e.repeat) return;
       this.lastDevice = 'keyboard';
+      // a chord with Ctrl/Cmd/Alt can swallow the matching keyup (browser shortcuts), which
+      // used to leave a movement key "held" forever; those chords are not movement
+      if (e.ctrlKey || e.metaKey || e.altKey) { this.keys.clear(); return; }
       this.keys.add(code);
       const g = this.g;
       if (code === 'Tab') { this.events.push('phone'); return; }
@@ -71,7 +76,12 @@ export class InputSystem {
       if (code === 'KeyM') this.events.push('map');
     });
 
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    window.addEventListener('keyup', (e) => {
+      this.keys.delete(e.code);
+      // releasing a modifier can hide the keyup of the key pressed with it: start clean
+      if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt') this.keys.clear();
+    });
+    window.addEventListener('contextmenu', () => this.keys.clear());
     window.addEventListener('blur', () => { this.keys.clear(); this.move.x = 0; this.move.y = 0; });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.keys.clear();
@@ -156,10 +166,29 @@ export class InputSystem {
     // ---- gamepad
     const pad = this.gamepad();
     if (pad) {
-      const ax = (i) => (Math.abs(pad.axes[i] ?? 0) > 0.16 ? pad.axes[i] : 0);
-      const lx = ax(0);
-      const ly = ax(1);
-      const rx = ax(2);
+      // Sticks are only trusted on a pad the browser maps to the standard layout; on anything
+      // else axes 0-3 can be triggers, pedals or a hat that rest at -1, and reading them as a
+      // stick walked Mo off in one direction with nothing the player could do about it. Each axis
+      // is also measured against where it rests, with a radial deadzone, so a worn stick that
+      // never quite centres does not drift him either.
+      let lx = 0, ly = 0, rx = 0;
+      if (pad.mapping === 'standard') {
+        const raw = (i) => {
+          const v = pad.axes[i] ?? 0;
+          const key = `${pad.index}:${i}`;
+          if (!this.axisRest.has(key)) this.axisRest.set(key, Math.abs(v) < 0.35 ? v : 0);
+          return v - this.axisRest.get(key);
+        };
+        const stick = (ix, iy) => {
+          const x = raw(ix), y = raw(iy);
+          const m = Math.hypot(x, y);
+          if (m < 0.24) return [0, 0];
+          const k = Math.min(1, (m - 0.24) / 0.76) / m;
+          return [x * k, y * k];
+        };
+        [lx, ly] = stick(0, 1);
+        [rx] = stick(2, 3);
+      }
       if (lx || ly) { mx += lx; my -= ly; this.lastDevice = 'pad'; }
       if (rx) { cam += rx; this.lastDevice = 'pad'; }
 
@@ -226,6 +255,7 @@ export class InputSystem {
 
   clear() {
     this.keys.clear();
+    this.dragAxis = 0;
     this.move.x = 0;
     this.move.y = 0;
     this.events.length = 0;

@@ -148,8 +148,11 @@ export class World {
     this.camera.position.set(this.mo.root.position.x + behind.x, 2.9, this.mo.root.position.z + behind.z);
     this.camPos.copy(this.camera.position);
     this.camFocus.set(this.mo.root.position.x, 0, this.mo.root.position.z);
-    this.camBoom = id === 'apartment' || id === 'church' ? 2.45 : 4.1;
-    this.boomHeight = id === 'apartment' || id === 'church' ? 1.98 : 2.62;
+    this.camBoom = this.roomBoom(id !== 'street');
+    this.boomHeight = id !== 'street' ? 1.98 : 2.62;
+    this.swingGoal = 0;
+    this.prevCamYaw = this.camYaw;
+    this.walking = false;
     this.camTarget.set(this.mo.root.position.x, 1.15, this.mo.root.position.z);
     this.camera.lookAt(this.camTarget);
 
@@ -246,7 +249,7 @@ export class World {
   }
 
   setMoveTarget(spot) {
-    this.moveTarget = { x: spot.x, z: spot.z };
+    this.moveTarget = { x: spot.x, z: spot.z, best: Infinity, stall: 0 };
     if (!this.marker) {
       const ring = new THREE.RingGeometry(0.17, 0.235, 20);
       const m = new THREE.MeshBasicMaterial({ color: 0xf4e7b0, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false });
@@ -336,13 +339,23 @@ export class World {
     if (this.moveTarget) {
       const rest = Math.hypot(this.moveTarget.x - this.mo.root.position.x, this.moveTarget.z - this.mo.root.position.z);
       if (rest < 0.16) this.moveTarget = null;
+      // A walk that stops getting closer is over. The old check only gave up when he could not
+      // move at all, so a target behind a counter had him sliding along it, still walking,
+      // until the player took over. Measure progress instead: 5 cm closer every 0.7 s or stop.
+      else if (canMove) {
+        if (rest < this.moveTarget.best - 0.05) { this.moveTarget.best = rest; this.moveTarget.stall = 0; }
+        else if ((this.moveTarget.stall += dt) > 0.7) this.moveTarget = null;
+      }
     }
 
     const impairment = Math.min(1, (s.stats.withdrawal / 140) + (s.high.level / 240));
-    // Take the basis from the camera that is actually on screen rather than from camYaw: walls
-    // clamp the follow camera and it lags behind Mo, so the two can disagree by a few degrees,
-    // and steering by camYaw then fights the picture.
-    const basis = this.cameraBasis();
+    // Steer by the yaw the camera arm is on (the player's orbit plus any wall swing), not by the
+    // rendered camera's matrix. In a tight room the arm shortens until the eye is almost over
+    // his head, and the matrix's horizontal forward then swings wildly as he takes a step —
+    // which turned W into whatever direction the last frame happened to point, and could leave
+    // him walking off one way with no stable way back. The arm's yaw is what the view is
+    // pointing along anyway, and it only moves when the player (or a swing) moves it.
+    const basis = this.armBasis();
     const fwdX = basis.fx;
     const fwdZ = basis.fz;
     const rightX = basis.rx;
@@ -354,7 +367,8 @@ export class World {
       const nym = my / len;
       dirX = fwdX * nym + rightX * nxm;
       dirZ = fwdZ * nym + rightZ * nxm;
-    } else if (this.moveTarget) {
+    } else if (this.moveTarget && canMove) {
+      // a tap target only steers while he is free to move: a menu, a meal or a handoff holds him
       const tx = this.moveTarget.x - this.mo.root.position.x;
       const tz = this.moveTarget.z - this.mo.root.position.z;
       const tl = Math.hypot(tx, tz) || 1;
@@ -389,16 +403,30 @@ export class World {
       const nz = clamp(beforeZ + vz * dt, b.minZ, b.maxZ);
       if (!this.blocked(nx, beforeZ)) this.mo.root.position.x = nx;
       if (!this.blocked(this.mo.root.position.x, nz)) this.mo.root.position.z = nz;
-      // a target behind a wall is dropped instead of shoving him against it forever
-      const stuck = Math.abs(this.mo.root.position.x - beforeX) < 1e-5 && Math.abs(this.mo.root.position.z - beforeZ) < 1e-5;
-      if (stuck && this.moveTarget) this.moveTarget = null;
+      // What actually happened, not what was asked for. A wall (or the room's edge) takes the
+      // blocked component out of the velocity, so he slides along it instead of building up
+      // speed into it, and the walk cycle and footsteps follow the real motion: pressing
+      // straight into a wall is standing still, not walking on the spot forever.
+      const movedX = this.mo.root.position.x - beforeX;
+      const movedZ = this.mo.root.position.z - beforeZ;
+      if (Math.abs(movedX) < Math.abs(vx * dt) * 0.5) this.vel.x = 0;
+      if (Math.abs(movedZ) < Math.abs(vz * dt) * 0.5) this.vel.z = 0;
+      const realSpeed = Math.hypot(movedX, movedZ) / Math.max(dt, 1e-4);
+      this.walking = realSpeed > 0.22;
+      if (!this.walking && this.moveTarget) this.moveTarget = null;
 
-      const targetRot = Math.atan2(vx, vz);
+      // face where he is trying to go (the stick or the target), so turning away from a wall
+      // reads at once even while he is pressed against it
+      const faceX = dirX || vx;
+      const faceZ = dirZ || vz;
+      const targetRot = Math.atan2(faceX, faceZ);
       this.mo.root.rotation.y += angleDelta(this.mo.root.rotation.y, targetRot) * Math.min(1, dt * 10);
-      this.stepTimer -= dt;
-      if (this.stepTimer <= 0) {
-        this.stepTimer = 0.40 * (2.45 / Math.max(1.2, speedNow));
-        g.audio?.sfx?.('step');
+      if (this.walking) {
+        this.stepTimer -= dt;
+        if (this.stepTimer <= 0) {
+          this.stepTimer = 0.40 * (2.45 / Math.max(1.2, realSpeed));
+          g.audio?.sfx?.('step');
+        }
       }
     }
 
@@ -446,11 +474,15 @@ export class World {
     // camera follow — a spring arm. The orbit is applied to the arm instantly, so turning the
     // view is crisp; only the boom length eases, sampled outward from Mo until something solid
     // stops it. That replaces the old clamp-then-shove-to-85% step, which snapped in corners.
-    const interior = this.areaId === 'apartment' || this.areaId === 'church';
+    // Every room is an interior. Only the apartment and the church used to be, so the bodega and
+    // Habib's (rooms under 7 m across) got the street's 4.1 m arm: longer than the room, it hit
+    // a wall every frame, shortened, clamped and swung, which is the camera that thrashed about
+    // in the shops. The arm is now sized to the room it is in.
+    const interior = this.areaId !== 'street';
     const camSet = s.settings || {};
     const distMul = clamp(Number(camSet.camDist) || 1, 0.7, 1.4);
     const heightMul = clamp(Number(camSet.camHeight) || 1, 0.8, 1.35);
-    const boomMax = (interior ? 2.45 : 4.1) * distMul;
+    const boomMax = this.roomBoom(interior) * distMul;
     // the eye rides up with the distance, so pulling the camera back still reads as a wider shot
     // in a room where the arm itself has nowhere longer to go
     const restHeight = (interior ? 1.98 : 2.62) * heightMul * distMul;
@@ -472,8 +504,16 @@ export class World {
     // A corner leaves the arm under a metre long at best: a close, steep shot. Swing it sideways
     // along the wall instead — 15° steps either way, stopping as soon as one gives a real side
     // view, so it leans out of the corner rather than going top-down or spinning off at random.
+    // Hysteresis: a swing starts when the arm is cramped (< 1.1 m) and is only let go once the
+    // straight view has real room again (> 1.6 m). One threshold both ways flipped the camera
+    // back and forth every frame he stood near it.
     let swingTarget = orbiting ? this.camSwing : 0;
-    if (!orbiting && room < 1.1) {
+    const holdSwing = !orbiting && Math.abs(this.swingGoal || 0) > 0.001 && room < 1.6;
+    if (holdSwing) swingTarget = this.swingGoal;
+    // after a swing lets go it gets a moment to come home before another may start, or the
+    // release and a fresh search hand the view back and forth around the zero line
+    this.swingRest = Math.max(0, (this.swingRest || 0) - dt);
+    if (!orbiting && !holdSwing && room < 1.1 && this.swingRest <= 0) {
       let bestRoom = 0;
       let bestOff = 0;
       for (let step = 1; step <= 9 && bestRoom < 1.2; step++) {
@@ -486,6 +526,9 @@ export class World {
       // only turn the view if the side angle is clearly better than standing still
       if (bestRoom > room + 0.35) { room = bestRoom; swingTarget = bestOff; }
     }
+    if (Math.abs(this.swingGoal || 0) > 0.001 && Math.abs(swingTarget) <= 0.001) this.swingRest = 0.8;
+    this.swingGoal = swingTarget;
+    if (holdSwing) room = Math.max(room, this.armRoom(this.camYaw + this.camSwing, boomMax, 0.2));
     // The swing is a slow scan along the wall, and it lets go at its own pace once the corner
     // opens up, so walking past a doorframe does not whip the view around.
     const swinging = Math.abs(swingTarget) > 0.001 || Math.abs(this.camSwing) > 0.001;
@@ -493,7 +536,17 @@ export class World {
     this.camSwing += (swingTarget - this.camSwing) * (1 - Math.exp(-swingRate * dt));
     // Mid-swing the arm still points at the blocked angle. Hold a workable length and let the
     // bounds clamp carry the eye along the wall, instead of collapsing to 0.3 m for half a second.
-    if (!room) room = Math.max(0.55, this.camBoom * 0.9);
+    // When even that finds nothing, shorten to an over-the-shoulder arm rather than holding a
+    // length the room never agreed to: that held length is what put the eye inside shelves.
+    if (!room) {
+      room = this.armRoom(this.camYaw + this.camSwing, boomMax, 0);
+      // pressed against something tall and looking into it: over his head is the one place left
+      if (!room) {
+        const yaw = this.camYaw + this.camSwing;
+        const clear35 = !this.camBlocked(this.camFocus.x - Math.sin(yaw) * 0.35, this.camFocus.z - Math.cos(yaw) * 0.35);
+        room = clear35 ? 0.35 : 0.1;
+      }
+    }
 
     const armYaw = this.camYaw + this.camSwing;
     const backX = -Math.sin(armYaw);
@@ -503,6 +556,13 @@ export class World {
     // both ways at one rate made the camera pump in and out as he clipped past a corner
     const boomRate = room < this.camBoom ? 16 : 4.5;
     this.camBoom += (room - this.camBoom) * (1 - Math.exp(-boomRate * dt));
+    // the ease is for comfort, not for passing through things: if the eased length would put the
+    // eye inside furniture this frame, take the clear length now (out stays eased)
+    if (this.camBoom > room) {
+      const ex = this.camFocus.x - Math.sin(this.camYaw + this.camSwing) * this.camBoom;
+      const ez = this.camFocus.z - Math.cos(this.camYaw + this.camSwing) * this.camBoom;
+      if (this.camBlocked(ex, ez)) this.camBoom = room;
+    }
     // a shortened arm lifts a little to look over his shoulder; while swinging there is a side
     // view coming, so do not climb into a top-down in the meantime
     const liftPerMetre = swinging ? 0.1 : 0.28;
@@ -571,20 +631,49 @@ export class World {
     }
   }
 
+  /** Stop him where he stands: no momentum, no tap target, no walk cycle (menus, doors, meals). */
+  haltMo() {
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    this.walking = false;
+  }
+
+  /** The arm length a place wants: the street's long lens, or most of a room's short side. */
+  roomBoom(interior) {
+    if (!interior) return 4.1;
+    const b = this.area?.bounds;
+    if (!b) return 2.45;
+    const short = Math.min(b.maxX - b.minX, b.maxZ - b.minZ);
+    return clamp(short * 0.42, 1.8, 2.45);
+  }
+
   /** Longest arm, in metres, that fits along `yaw` without leaving the room or hitting something. */
   armRoom(yaw, boomMax, clearance) {
     if (!this.area) return boomMax;
     const b = this.area.bounds;
     const bx = -Math.sin(yaw);
     const bz = -Math.cos(yaw);
-    for (let room = boomMax; room > 0.3; room -= 0.1) {
+    // March out from Mo and stop at the first thing in the way, like a ray. Searching inward from
+    // the longest length instead accepted any clear endpoint, including the far side of a shelf,
+    // and the camera then eased out through the shelf to look at the back of it.
+    let clear = 0;
+    for (let room = 0.3; room <= boomMax + 1e-6; room += 0.1) {
       const px = this.camFocus.x + bx * room;
       const pz = this.camFocus.z + bz * room;
-      if (px > b.minX + clearance && px < b.maxX - clearance &&
-          pz > b.minZ + clearance && pz < b.maxZ - clearance &&
-          !this.blocked(px, pz)) return room;
+      const inRoom = px > b.minX + clearance && px < b.maxX - clearance &&
+        pz > b.minZ + clearance && pz < b.maxZ - clearance;
+      if (!inRoom || this.camBlocked(px, pz)) break;
+      clear = room;
     }
-    return 0;
+    return clear > 0.3 ? Math.min(clear, boomMax) : 0;
+  }
+
+  /** Screen-relative axes in world space from the camera arm's yaw: stable at any boom length. */
+  armBasis() {
+    const yaw = (this.camYaw || 0) + (this.camSwing || 0);
+    const c = Math.cos(yaw);
+    const sn = Math.sin(yaw);
+    return { rx: -c, rz: sn, fx: sn, fz: c };
   }
 
   /** Screen-relative axes in world space, straight off the live camera. */
@@ -668,6 +757,20 @@ export class World {
       w.timer = 0; // something is in the way; choose another spot
     }
     rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
+  }
+
+  /**
+   * The camera's own collision test: outside the furniture itself (plus 8 cm), not outside
+   * Mo's padded footprint. Using Mo's 22 cm body margin for the eye rejected perfectly good arm
+   * lengths next to every counter and shelf, and pushed the arm into the fallbacks.
+   */
+  camBlocked(x, z) {
+    if (!this.area?.solids) return false;
+    for (const b of this.area.solids) {
+      if ((b.h ?? 2.4) < 1.5) continue; // below the eye: the camera looks over it
+      if (Math.abs(x - b.x) < b.w / 2 + 0.08 && Math.abs(z - b.z) < b.d / 2 + 0.08) return true;
+    }
+    return false;
   }
 
   blocked(x, z) {

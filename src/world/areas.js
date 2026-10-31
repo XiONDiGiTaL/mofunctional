@@ -45,7 +45,9 @@ const M = {
   lamp: retroMaterial('lampA', { color: 0xfff2c4, emissive: 1.0, unlit: true }),
 };
 
-const solid = (x, z, w, d) => ({ x, z, w, d });
+// h: how tall it stands. Anything under ~1.5 m is below the camera's eye and does not stop the
+// follow camera (a bed, a counter, a bench); taller things (shelves, the fridge, trees) do.
+const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 
 /* ------------------------------ APARTMENT ------------------------------ */
 
@@ -134,9 +136,9 @@ export function buildApartment(g) {
     group,
     bounds: { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 },
     solids: [
-      solid(-2.4, -2.4, 1.3, 2.1), solid(2.7, -3.5, 0.9, 0.85), solid(1.1, -3.6, 2.5, 0.8),
-      solid(-0.8, -3.6, 1.0, 0.8), solid(1.4, -0.2, 1.2, 0.9), solid(-2.6, 1.6, 0.9, 0.7),
-      solid(2.9, 2.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5),
+      solid(-2.4, -2.4, 1.3, 2.1, 0.6), solid(2.7, -3.5, 0.9, 0.85, 1.8), solid(1.1, -3.6, 2.5, 0.8, 0.9),
+      solid(-0.8, -3.6, 1.0, 0.8, 0.9), solid(1.4, -0.2, 1.2, 0.9, 0.9), solid(-2.6, 1.6, 0.9, 0.7, 1.15),
+      solid(2.9, 2.6, 0.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5, 0.35),
     ],
     spawn: { x: 0, z: 1.15, rot: Math.PI },
     npcs: g.state.flags.cat ? [{ kind: 'cat', x: 0.9, z: 1.9, rot: -0.6 }] : [],
@@ -521,11 +523,11 @@ export function buildStreet(g) {
     group,
     bounds: { ...STREET.bounds },
     solids: [
-      solid(-4.2, -5.2, 1.5, 1.0), solid(-7.5, 0.2, 2.0, 0.7), solid(6.5, -5.8, 2.3, 0.4),
-      solid(9.5, -5.6, 0.7, 0.7), solid(-13.5, -5.7, 0.7, 0.7), solid(5.0, -6.2, 1.1, 0.4), solid(-12.6, -5.0, 0.8, 0.6),
-      solid(-5.0, 0.9, 0.5, 0.5),
+      solid(-4.2, -5.2, 1.5, 1.0, 1.0), solid(-7.5, 0.2, 2.0, 0.7, 0.9), solid(6.5, -5.8, 2.3, 0.4),
+      solid(9.5, -5.6, 0.7, 0.7, 0.9), solid(-13.5, -5.7, 0.7, 0.7, 0.9), solid(5.0, -6.2, 1.1, 0.4), solid(-12.6, -5.0, 0.8, 0.6, 0.95),
+      solid(-5.0, 0.9, 0.5, 0.5, 0.65),
       solid(-6.2, -4.7, 0.9, 0.9), solid(8.8, -4.7, 0.9, 0.9), solid(17.6, -4.7, 0.9, 0.9),
-      solid(7.2, -4.9, 0.5, 0.5), solid(-6.6, -4.9, 0.5, 0.5), solid(4.2, 1.1, 0.3, 0.3),
+      solid(7.2, -4.9, 0.5, 0.5, 0.9), solid(-6.6, -4.9, 0.5, 0.5, 0.9), solid(4.2, 1.1, 0.3, 0.3),
     ],
     spawn: streetSpawn('apartment'),
     // out of whichever door he came through, a step clear of its prompt
@@ -807,8 +809,8 @@ export function buildChurch(g) {
     group,
     bounds: { minX: -5, maxX: 5, minZ: -6.6, maxZ: 7.2 },
     solids: [
-      solid(-2.6, -2.4, 2.2, 0.7), solid(2.6, -2.4, 2.2, 0.7), solid(-2.6, 1.2, 2.2, 0.7),
-      solid(2.6, 1.2, 2.2, 0.7), solid(0, -6.0, 4.2, 1.2), solid(-2.6, -5.0, 0.9, 0.7),
+      solid(-2.6, -2.4, 2.2, 0.7, 1.0), solid(2.6, -2.4, 2.2, 0.7, 1.0), solid(-2.6, 1.2, 2.2, 0.7, 1.0),
+      solid(2.6, 1.2, 2.2, 0.7, 1.0), solid(0, -6.0, 4.2, 1.2, 1.2), solid(-2.6, -5.0, 0.9, 0.7, 0.9),
     ],
     spawn: { x: 0, z: 3.9, rot: Math.PI },
     npcs,
@@ -912,10 +914,10 @@ export function buildBodega(g) {
     bounds: { minX: -3.4, maxX: 3.4, minZ: -3.4, maxZ: 3.4 },
     solids: [
       solid(-3.1, -0.6, 0.7, 5.6), solid(1.9, -3.6, 2.6, 0.7),
-      solid(2.5, 0.2, 1.0, 3.1), solid(3.55, -2.0, 0.8, 1.3),
+      solid(2.5, 0.2, 1.0, 3.1, 1.25), solid(3.55, -2.0, 0.8, 1.3, 0.75),
     ],
     // just inside the door, facing the shop, a step outside the exit's prompt
-    spawn: { x: 0.6, z: 2.0, rot: Math.PI },
+    spawn: { x: 0.6, z: 1.6, rot: Math.PI },
     npcs: [
       { kind: 'miguel', x: 3.15, z: 0.2, rot: -Math.PI / 2, talk: 'miguel' },
       { kind: 'cat', x: -1.6, z: 1.2, rot: 0.4 },
@@ -975,9 +977,9 @@ export function buildHabibs(g) {
     group,
     bounds: { minX: -3.2, maxX: 3.2, minZ: -3.2, maxZ: 3.2 },
     solids: [
-      solid(-0.4, -0.8, 3.6, 1.0), solid(2.2, -2.4, 2.4, 0.7),
+      solid(-0.4, -0.8, 3.6, 1.0, 1.55), solid(2.2, -2.4, 2.4, 0.7),
     ],
-    spawn: { x: -1.2, z: 1.8, rot: Math.PI },
+    spawn: { x: -1.2, z: 1.4, rot: Math.PI },
     npcs: [{ kind: 'habib', x: -0.4, z: -1.65, rot: 0, talk: 'habib' }],
     interactables,
     ambient: 'street',

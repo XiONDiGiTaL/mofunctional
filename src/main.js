@@ -282,12 +282,13 @@ class Game {
         this.bus.emit('tutorial');
       }
       this.input.clear();
+      this.world.haltMo?.();
     }
     this.hud.update();
   }
 
   onModalOpenChange(open) {
-    if (open) this.input.clear();
+    if (open) { this.input.clear(); this.world.haltMo?.(); }
     this.hud.update();
   }
 
