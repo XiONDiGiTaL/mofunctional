@@ -93,6 +93,7 @@ await page.evaluate(() => {
     }
   });
   if (w.addison) { w.addison.root.visible = true; w.addison.root.position.set(m.x - 2.5, 0, m.z - 3); w.addison.root.rotation.set(0, 0, 0); }
+  w.mo.root.visible = false;
 });
 await pin(`const m = w.mo.root.position; w.camera.position.set(m.x, 1.5, m.z + 0.6); w.camera.lookAt(m.x, 1.25, m.z - 3); w.camera.fov = 62;`);
 await page.screenshot({ path: `${out}/cast_lineup.png` });

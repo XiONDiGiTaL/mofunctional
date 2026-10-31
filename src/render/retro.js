@@ -14,6 +14,8 @@ varying vec2 vUvA;
 varying float vW;
 varying vec3 vN;
 varying float vDepth;
+varying float vWorldY;
+varying float vWorldNY;
 
 void main() {
   vec3 p = position;
@@ -35,6 +37,8 @@ void main() {
   vW = clip.w;
   vN = normalize(normalMatrix * normal);
   vDepth = -mv.z;
+  vWorldY = (modelMatrix * vec4(p, 1.0)).y;
+  vWorldNY = normalize(mat3(modelMatrix) * normal).y;
   gl_Position = clip;
 }
 `;
@@ -64,6 +68,8 @@ varying vec2 vUvA;
 varying float vW;
 varying vec3 vN;
 varying float vDepth;
+varying float vWorldY;
+varying float vWorldNY;
 
 float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
 float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
@@ -95,6 +101,11 @@ void main() {
     ndl = clamp(dot(n, normalize(uLightDir)), 0.0, 1.0);
   }
   vec3 lit = base * shade;
+  // contact shadow: walls, props and legs darken as they meet the floor (floors themselves don't)
+  if (uUnlit < 0.5) {
+    float vertical = 1.0 - abs(vWorldNY);
+    lit *= mix(1.0, mix(0.62, 1.0, smoothstep(0.0, 0.85, vWorldY)), vertical * 0.85);
+  }
   lit += base * uEmissive;
 
   float fogF = clamp((vDepth - uFogNear) / (uFogFar - uFogNear), 0.0, 1.0);
@@ -121,7 +132,7 @@ export const retroUniforms = {
   fillTint: { value: new THREE.Color(0.20, 0.25, 0.36) },
   skyTint: { value: new THREE.Color(0.6, 0.55, 0.47) },
   groundTint: { value: new THREE.Color(0.22, 0.19, 0.16) },
-  headTint: { value: new THREE.Color(0.5, 0.47, 0.42) },
+  headTint: { value: new THREE.Color(0.36, 0.34, 0.31) },
   fogColor: { value: new THREE.Color(CONFIG.render.colors.fog) },
   fogNear: { value: CONFIG.render.fogNear },
   fogFar: { value: CONFIG.render.fogFar },
@@ -188,8 +199,64 @@ export function createRenderer(container) {
 }
 
 /** Box helper with a texture / colour. */
+/**
+ * Chamfered box: the 6 faces are inset by a small bevel and joined by 12 edge strips and 8
+ * corner facets, each with its own flat normal. Edges catch the light like a modelled prop
+ * instead of a raw cube, while UVs follow BoxGeometry's per-face layout exactly so every
+ * existing texture and repeat lands where it did before.
+ */
+const bevelCache = new Map();
+function bevelBoxGeo(w, h, d) {
+  const key = `${w.toFixed(4)}|${h.toFixed(4)}|${d.toFixed(4)}`;
+  if (bevelCache.has(key)) return bevelCache.get(key);
+  const b = Math.min(0.025, Math.min(w, h, d) * 0.12);
+  if (b < 0.002) { const g0 = new THREE.BoxGeometry(w, h, d); bevelCache.set(key, g0); return g0; }
+  const W = w / 2, H = h / 2, D = d / 2;
+  // corner (sx,sy,sz) -> three points, one on each adjoining face
+  const P = (sx, sy, sz, f) => (f === 0 ? [sx * W, sy * (H - b), sz * (D - b)] : f === 1 ? [sx * (W - b), sy * H, sz * (D - b)] : [sx * (W - b), sy * (H - b), sz * D]);
+  const tris = [];
+  const quad = (a, b2, c, e) => { tris.push([a, b2, c], [a, c, e]); };
+  const S = [-1, 1];
+  for (const s of S) {
+    quad(P(s, -1, -1, 0), P(s, 1, -1, 0), P(s, 1, 1, 0), P(s, -1, 1, 0));
+    quad(P(-1, s, -1, 1), P(1, s, -1, 1), P(1, s, 1, 1), P(-1, s, 1, 1));
+    quad(P(-1, -1, s, 2), P(1, -1, s, 2), P(1, 1, s, 2), P(-1, 1, s, 2));
+  }
+  for (const s1 of S) for (const s2 of S) {
+    quad(P(s1, s2, -1, 0), P(s1, s2, 1, 0), P(s1, s2, 1, 1), P(s1, s2, -1, 1));   // x-y edges (along z)
+    quad(P(s1, -1, s2, 0), P(s1, 1, s2, 0), P(s1, 1, s2, 2), P(s1, -1, s2, 2));   // x-z edges (along y)
+    quad(P(-1, s1, s2, 1), P(1, s1, s2, 1), P(1, s1, s2, 2), P(-1, s1, s2, 2));   // y-z edges (along x)
+  }
+  for (const sx of S) for (const sy of S) for (const sz of S) tris.push([P(sx, sy, sz, 0), P(sx, sy, sz, 1), P(sx, sy, sz, 2)]);
+
+  const pos = [], uv = [];
+  const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+  for (let [A, B, C] of tris) {
+    const n = new THREE.Vector3().subVectors(v3(B), v3(A)).cross(new THREE.Vector3().subVectors(v3(C), v3(A)));
+    const centre = v3(A).add(v3(B)).add(v3(C));
+    if (n.dot(centre) < 0) { const tmp = B; B = C; C = tmp; n.negate(); }
+    const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+    const face = ax >= ay && ax >= az ? (n.x > 0 ? 'px' : 'nx') : ay >= az ? (n.y > 0 ? 'py' : 'ny') : (n.z > 0 ? 'pz' : 'nz');
+    for (const q of [A, B, C]) {
+      const [x, y, z] = q;
+      const ux = (x + W) / w, uy = (y + H) / h, uz = (z + D) / d;
+      let u, v;
+      if (face === 'px') { u = 1 - uz; v = uy; } else if (face === 'nx') { u = uz; v = uy; }
+      else if (face === 'py') { u = ux; v = 1 - uz; } else if (face === 'ny') { u = ux; v = uz; }
+      else if (face === 'pz') { u = ux; v = uy; } else { u = 1 - ux; v = uy; }
+      pos.push(x, y, z); uv.push(u, v);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  bevelCache.set(key, g);
+  return g;
+}
+
 export function box(w, h, d, matOpts, pos = [0, 0, 0], rot = [0, 0, 0]) {
-  const geo = new THREE.BoxGeometry(w, h, d);
+  const geo = bevelBoxGeo(w, h, d);
   const mat = matOpts instanceof THREE.Material ? matOpts : retroMaterial(matOpts.name || 'box', matOpts);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(pos[0], pos[1], pos[2]);

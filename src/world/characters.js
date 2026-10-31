@@ -19,7 +19,7 @@ import { HEAD, headGeometry, headPoint, shellGeometry, headTexture, faceSpec } f
 
 const mat = {
   skin: retroMaterial('skin', { color: 0x8c6043, ambient: 0.8 }),
-  shirt: retroMaterial('tee', { color: 0xe6e5e0, ambient: 0.62 }),
+  shirt: retroMaterial('tee', { color: 0xe9e8e3, ambient: 0.66 }),
   denim: retroMaterial('jeans', { color: 0x3a5682, ambient: 0.6 }),
   hair: retroMaterial('hair', { color: 0x241c14 }),
   shoe: retroMaterial('shoe', { color: 0x232326 }),
@@ -121,7 +121,7 @@ function prism(wTop, wBot, dTop, dBot, h, material, p = [0, 0, 0], sides = 8, ro
 /** Head material: the character's wrap texture, lit brighter than the body so faces read. */
 const headMatCache = new Map();
 function headMat(kind) {
-  if (!headMatCache.has(kind)) headMatCache.set(kind, retroMaterial(`head_${kind}`, { map: headTexture(kind), ambient: 1.0, dither: 0.35 }));
+  if (!headMatCache.has(kind)) headMatCache.set(kind, retroMaterial(`head_${kind}`, { map: headTexture(kind), ambient: 0.85, dither: 0.3 }));
   return headMatCache.get(kind);
 }
 
@@ -175,98 +175,158 @@ function buildHead({ hh, kind, style = 'short', skinMat, hairColor }) {
 /* --------------------------------- bodies --------------------------------- */
 
 /**
- * Build a jointed body. `spec` carries every appearance value so Mo and the NPCs run through
- * exactly the same rig: same proportions, same joint chain, same head construction.
- *
- * Volumes follow assets/ref/mo_body_reference.png: sloped shoulders that grow out of the neck,
- * one sleeve volume per arm ending at mid-bicep, the forearm a touch thinner than the upper arm,
- * hips wider than the waist, thighs that taper into the knee, and a belt where the tee meets the
- * jeans. The head is deliberately smaller than the torso's width so the painted face reads as a
- * face on a person rather than a mask on a slab.
+ * Lofted limb: a faceted tube through a list of rings [y, width, depth, zOffset?] (metres,
+ * relative to the joint, +Y up). Non-indexed, so every quad keeps a hard normal — the flat,
+ * chunky planes of the reference model — but with as many rings as the shape needs (calf,
+ * bicep, chest, the hang of a tee) instead of one straight taper per bone.
+ */
+const loftCache = new Map();
+function loftGeo(rings, sides = 8, caps = true) {
+  const key = sides + '|' + rings.map((r) => r.map((v) => (+v).toFixed(4)).join(',')).join(';');
+  if (loftCache.has(key)) return loftCache.get(key);
+  const pos = [], uv = [];
+  const ringPts = rings.map(([y, w, d, z = 0]) => {
+    const pts = [];
+    for (let i = 0; i < sides; i++) {
+      const a = ((i + 0.5) / sides) * Math.PI * 2;
+      const sx = Math.sign(Math.sin(a)) * Math.pow(Math.abs(Math.sin(a)), 0.82);
+      const cz = Math.sign(Math.cos(a)) * Math.pow(Math.abs(Math.cos(a)), 0.82);
+      pts.push([sx * w / 2, y, cz * d / 2 + z]);
+    }
+    return pts;
+  });
+  const push = (p, u, v) => { pos.push(p[0], p[1], p[2]); uv.push(u, v); };
+  for (let r = 0; r < ringPts.length - 1; r++) {
+    const A = ringPts[r], B = ringPts[r + 1];
+    // rings may be listed top-down or bottom-up; keep the winding facing outward
+    const down = rings[r + 1][0] < rings[r][0];
+    for (let i = 0; i < sides; i++) {
+      const j = (i + 1) % sides;
+      const [T, Bt] = down ? [A, B] : [B, A];
+      const u0 = i / sides, u1 = (i + 1) / sides;
+      push(T[i], u0, 1); push(Bt[i], u0, 0); push(Bt[j], u1, 0);
+      push(T[i], u0, 1); push(Bt[j], u1, 0); push(T[j], u1, 1);
+    }
+  }
+  if (caps) {
+    const first = ringPts[0], last = ringPts[ringPts.length - 1];
+    const firstIsTop = rings[0][0] > rings[rings.length - 1][0];
+    const [top, bot] = firstIsTop ? [first, last] : [last, first];
+    for (let i = 1; i < sides - 1; i++) {
+      push(top[0], 0.5, 0.5); push(top[i + 1], 0.5, 0.5); push(top[i], 0.5, 0.5);
+      push(bot[0], 0.5, 0.5); push(bot[i], 0.5, 0.5); push(bot[i + 1], 0.5, 0.5);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  loftCache.set(key, g);
+  return g;
+}
+
+function loft(rings, material, sides = 8, p = [0, 0, 0]) {
+  const m = new THREE.Mesh(loftGeo(rings, sides), material);
+  m.position.set(p[0], p[1], p[2]);
+  return m;
+}
+
+/** Scale a ring list (y, w, d, z) by k and widths by b. */
+const R = (rings, k, b = 1) => rings.map(([y, w, d, z = 0]) => [y * k, w * b * k, d * k, z * k]);
+
+/**
+ * Build a jointed body. Proportions are measured off the Mo reference model (a ~6.4-head,
+ * broad-shouldered late-90s console figure): short thick neck, sloped traps into the sleeves,
+ * a tee that hangs over the waistband, straight-leg jeans with a slight flare, chunky fists.
+ * Every joint has a cap so knees and elbows never open a gap when they bend.
  */
 function buildBody(spec) {
   const {
     kind = 'kev', height = 1.78, build = 1,
     shirtMat, pantsMat, shoeMat,
     armMat, sleeveMat, handMat,
-    suit = false,
+    suit = false, longSleeves = false,
   } = spec;
-  // skin / hair come from the face spec so the body matches the painted head exactly
   const fs = faceSpec(kind);
   const skinColor = parseInt(fs.skin.slice(1), 16);
   const hairColor = parseInt(fs.hair.slice(1), 16);
   const hairStyle = fs.style || spec.style || 'short';
+  const fem = !!fs.fem;
 
   const k = height / 1.78;
-  const b = build;
+  const b = build * (fem ? 0.9 : 1);
+  const sh = fem ? 0.86 : 1;           // shoulder breadth
+  const hp = fem ? 1.06 : 1;           // hip breadth
   const skin = tone(skinColor);
+  const hand = handMat || skin;
 
-  // vertical stack of a 1.78 m figure: crotch at 0.53, shoulder line at 0.83, crown at 1.78
-  const footH = 0.075 * k;
-  const calfH = 0.445 * k;
-  const thighH = 0.435 * k;
-  const pelvisH = 0.125 * k;
-  const abdomenH = 0.145 * k;
-  const chestH = 0.265 * k;
-  const neckH = 0.058 * k;
-  const headH = 0.222 * k;
+  // vertical layout of a 1.78 m figure (metres): ankle 0.08, knee 0.46, hip joint 0.86,
+  // waist 0.98, shoulder 1.40, neck base 1.43, chin ~1.50, crown 1.78
+  const footH = 0.08 * k;
+  const calfH = 0.38 * k;
+  const thighH = 0.40 * k;
+  const pelvisH = 0.12 * k;
+  const headH = 0.272 * k;
   const hipY = footH + calfH + thighH;
-  const shoulderY = abdomenH + chestH;
-
-  const hipW = 0.352 * b * k;       // pelvis, wider than the waist
-  const waistW = 0.318 * b * k;
-  const chestW = 0.428 * b * k;
-  const shoulderW = 0.492 * b * k;  // deltoid to deltoid
-  const shoulderX = shoulderW / 2 - 0.094 * k;  // the arm hangs inside the deltoid
+  const shoulderY = 0.42 * k;          // relative to the torso joint (waist)
 
   const root = new THREE.Group();
-  root.add(shadowBlob(0.26 + 0.06 * k));
+  root.add(shadowBlob(0.28 + 0.06 * k));
 
+  /* ---- hips / pelvis (jeans) ---- */
   const hips = joint(root, 0, hipY, 0);
-  hips.add(prism(waistW, hipW, 0.205 * k, 0.222 * k, pelvisH, pantsMat, [0, pelvisH, 0], 8));
+  hips.add(loft(R([[0.1, 0.32 * hp, 0.19], [0.02, 0.385 * hp, 0.225], [-0.07, 0.385 * hp, 0.225], [-0.13, 0.30 * hp, 0.19]], k, b), pantsMat, 8));
 
   function makeLeg(sx) {
-    const pivot = joint(hips, sx * hipW * 0.28, -0.01 * k, 0);
-    pivot.add(prism(0.196 * b * k, 0.150 * b * k, 0.198 * k, 0.158 * k, thighH, pantsMat, [0, 0.012 * k, 0], 7));
+    const pivot = joint(hips, sx * 0.098 * hp * b * k, -0.02 * k, 0);
+    pivot.add(loft(R([[0.06, 0.19, 0.2], [-0.04, 0.205, 0.215], [-0.22, 0.185, 0.195, 0.005], [-0.42, 0.165, 0.172]], k, b), pantsMat, 8));
     const knee = joint(pivot, 0, -thighH, 0);
-    knee.add(prism(0.146 * b * k, 0.116 * b * k, 0.152 * k, 0.110 * k, calfH, pantsMat, [0, 0.004 * k, 0], 7));
+    // knee cap: a short faceted drum that fills the joint when the leg bends
+    knee.add(loft(R([[0.05, 0.164, 0.17], [-0.05, 0.164, 0.172]], k, b), pantsMat, 8));
+    knee.add(loft(R([[0.03, 0.165, 0.172], [-0.12, 0.172, 0.178], [-0.3, 0.168, 0.176], [-0.37, 0.178, 0.186]], k, b), pantsMat, 8));
     const ankle = joint(knee, 0, -calfH, 0);
-    ankle.add(prism(0.120 * k, 0.128 * k, 0.132 * k, 0.272 * k, footH, shoeMat, [0, 0, 0.048 * k], 6));
+    // shoe: heel to toe, flat sole
+    ankle.add(loft(R([[0.03, 0.10, 0.12, -0.005], [-0.035, 0.118, 0.25, 0.05], [-0.08, 0.122, 0.28, 0.055]], k), shoeMat, 8));
     return { pivot, knee, ankle };
   }
   const legL = makeLeg(-1);
   const legR = makeLeg(1);
 
+  /* ---- torso: tee hem over the waistband, chest, sloped traps ---- */
   const torso = joint(hips, 0, pelvisH, 0);
-  // abdomen narrows into the waist ...
-  torso.add(prism(waistW * 1.16, waistW, 0.196 * k, 0.206 * k, abdomenH, shirtMat, [0, abdomenH, 0], 8));
-  // ... the chest widens and deepens above it ...
-  // ... and the chest runs all the way to the shoulder line, so its own top edge is the shoulder
-  torso.add(prism(chestW, waistW * 1.16, 0.245 * k, 0.200 * k, chestH, shirtMat, [0, shoulderY, 0], 8));
+  const hem = suit ? -0.2 : -0.085;
+  torso.add(loft(R([
+    [hem, 0.395 * hp, 0.235], [0.0, 0.37, 0.218], [0.12, 0.36, 0.222, 0.005],
+    [0.25, 0.40 * sh, 0.25, 0.012], [0.34, 0.44 * sh, 0.25, 0.004], [0.395, 0.45 * sh, 0.22, -0.006], [0.43, 0.34 * sh, 0.17, -0.012], [0.452, 0.19, 0.13, -0.015],
+  ], k, b), shirtMat, 10));
+  // neck: short and thick, running up inside the skull
+  torso.add(loft(R([[0.40, 0.135, 0.135, -0.012], [0.47, 0.128, 0.128, -0.006], [0.53, 0.12, 0.12, 0]], k), skin, 8));
+  // collar band
+  if (!suit) torso.add(loft(R([[0.425, 0.172, 0.165, -0.01], [0.452, 0.15, 0.142, -0.01]], k), shirtMat, 10));
 
-  // neck: visible above the collar, running up inside the skull so there is no step
-  torso.add(prism(0.116 * k, 0.132 * k, 0.104 * k, 0.120 * k, neckH + 0.05 * k, skin, [0, shoulderY + neckH + 0.035 * k, -0.006 * k], 8));
-  const head = joint(torso, 0, shoulderY + neckH + 0.012 * k, 0);
+  const head = joint(torso, 0, 0.50 * k, 0);
   const headGroup = buildHead({ hh: headH, kind, style: hairStyle, skinMat: tone(skinColor, 0.95), hairColor });
-  headGroup.position.set(0, -0.02 * k, 0.0);
+  headGroup.position.set(0, -0.03 * k, 0.004 * k);
+  headGroup.scale.set(1.12, 1, 1.04);
   head.add(headGroup);
 
-  const upperH = 0.300 * k;
-  const foreH = 0.248 * k;
-  const handH = 0.098 * k;
-
+  /* ---- arms ---- */
   function makeArm(sx) {
-    const pivot = joint(torso, sx * shoulderX, shoulderY - 0.020 * k, 0);
-    // deltoid and sleeve are one volume: full over the shoulder, ending at mid-bicep
-    pivot.add(prism(0.108 * b * k, 0.134 * b * k, 0.126 * k, 0.152 * k, upperH * 0.55, sleeveMat, [0, -0.008 * k, 0.004 * k], 8));
-    pivot.add(prism(0.106 * b * k, 0.088 * b * k, 0.112 * k, 0.096 * k, upperH, armMat, [0, 0, 0.004 * k], 8));
-    const elbow = joint(pivot, 0, -upperH, 0);
-    elbow.add(prism(0.096 * b * k, 0.072 * k, 0.100 * k, 0.078 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat, [0, 0.006 * k, 0.004 * k], 8));
-    // fist: a small faceted block with a thumb, no wrist ball
-    const hand = prism(0.086 * b * k, 0.078 * b * k, 0.062 * k, 0.056 * k, handH, handMat || skin, [0, -foreH - 0.004 * k, 0.012 * k], 6);
-    elbow.add(hand);
-    elbow.add(prism(0.026 * k, 0.022 * k, 0.030 * k, 0.026 * k, handH * 0.52, handMat || skin, [sx * -0.028 * k, -foreH + 0.006 * k, 0.026 * k], 5));
-    return { pivot, elbow, hand };
+    const pivot = joint(torso, sx * 0.205 * sh * b * k, 0.385 * k, 0);
+    const upper = longSleeves ? sleeveMat : armMat;
+    // sleeve: bell-shaped, from the shoulder seam to mid-bicep
+    pivot.add(loft(R([[0.035, 0.1, 0.11, -0.005], [-0.01, 0.148, 0.15], [-0.12, 0.158, 0.152], [-0.165, 0.154, 0.148]], k, b), sleeveMat, 8));
+    pivot.add(loft(R([[-0.08, 0.108, 0.108], [-0.16, 0.112, 0.112, 0.004], [-0.27, 0.088, 0.092]], k, b), upper, 7));
+    const elbow = joint(pivot, 0, -0.27 * k, 0);
+    elbow.add(loft(R([[0.035, 0.088, 0.092], [-0.035, 0.088, 0.09]], k, b), upper, 7));
+    const fore = longSleeves ? sleeveMat : armMat;
+    elbow.add(loft(R([[0.02, 0.088, 0.092], [-0.07, 0.098, 0.1, 0.004], [-0.24, 0.072, 0.074]], k, b), fore, 7));
+    if (longSleeves) elbow.add(loft(R([[-0.2, 0.084, 0.086], [-0.245, 0.084, 0.086]], k, b), sleeveMat, 7));
+    // fist: knuckles forward, thumb wrapped over the front
+    const handMesh = loft(R([[-0.225, 0.07, 0.072], [-0.255, 0.092, 0.1, 0.008], [-0.33, 0.094, 0.104, 0.012], [-0.36, 0.074, 0.084, 0.008]], k), hand, 7);
+    elbow.add(handMesh);
+    elbow.add(loft(R([[-0.25, 0.034, 0.034, 0.045], [-0.3, 0.03, 0.03, 0.052]], k), hand, 5, [-sx * 0.022 * k, 0, 0]));
+    return { pivot, elbow, hand: handMesh };
   }
   const armL = makeArm(-1);
   const armR = makeArm(1);
@@ -277,18 +337,18 @@ function buildBody(spec) {
 /* ---------------------------------- cast ---------------------------------- */
 
 const CAST = {
-  mo: { height: 1.78, build: 1.04, skin: 0x8f6446, hair: 0x201812, style: 'short', beard: 'goatee' },
-  addison: { height: 1.86, build: 1.03, skin: 0xdcbb95, hair: 0xb9b6ad, style: 'swept', beard: 'full' },
-  rae: { height: 1.66, skin: 0xe0c0a2, hair: 0x201a20, style: 'bob', shirt: 0x6d5a74, pants: 0x3a3442 },
-  dale: { height: 1.72, skin: 0xbf9d80, hair: 0x9d9c96, style: 'receding', beard: 'stubble', shirt: 0x2f6b4a, pants: 0x26302a },
-  dex: { height: 1.69, build: 1.05, skin: 0x784f34, hair: 0x241812, style: 'dread', beard: 'full', shirt: 0x2a2f3a, pants: 0x20242c },
-  kev: { height: 1.75, skin: 0xc79e74, hair: 0xc49a52, style: 'crop', shirt: 0xa05a3a, pants: 0x33405a },
-  nia: { height: 1.63, skin: 0xa97a52, hair: 0x2a1a12, style: 'braids', shirt: 0x4a6a8a, pants: 0x2f3a46 },
-  miguel: { height: 1.70, skin: 0xb07f54, hair: 0x2b2118, style: 'short', beard: 'full', shirt: 0x7d5a3a, pants: 0x333230 },
-  habib: { height: 1.74, skin: 0xa87c52, hair: 0x241a12, style: 'short', beard: 'full', shirt: 0xd6d0c2, pants: 0x2a2a30 },
-  homeless: { height: 1.71, skin: 0x87603f, hair: 0x3a302a, style: 'receding', beard: 'full', shirt: 0x4a463e, pants: 0x35322c },
-  junkie: { height: 1.68, skin: 0xa8835f, hair: 0x2f2620, style: 'crop', beard: 'stubble', shirt: 0x3c3a34, pants: 0x2c2a26 },
-  clerk: { height: 1.73, skin: 0xc49b74, hair: 0x342a20, style: 'crop', shirt: 0x3b5a44, pants: 0x2e3238 },
+  mo: { height: 1.78, build: 1.04 },
+  addison: { height: 1.86, build: 1.05, longSleeves: true },
+  rae: { height: 1.66, shirt: 0x6d5a74, pants: 0x3a3442, longSleeves: true },
+  dale: { height: 1.72, build: 0.96, shirt: 0x2f6b4a, pants: 0x4a4436, longSleeves: true },
+  dex: { height: 1.74, build: 1.06, shirt: 0x2a2f3a, pants: 0x20242c, longSleeves: true },
+  kev: { height: 1.76, shirt: 0xa05a3a, pants: 0x33405a },
+  nia: { height: 1.63, shirt: 0x4a6a8a, pants: 0x2f3a46 },
+  miguel: { height: 1.70, build: 1.08, shirt: 0x7d5a3a, pants: 0x333230 },
+  habib: { height: 1.74, build: 1.02, shirt: 0xd6d0c2, pants: 0x2a2a30, longSleeves: true },
+  homeless: { height: 1.71, build: 0.95, shirt: 0x4a463e, pants: 0x35322c, longSleeves: true },
+  junkie: { height: 1.70, build: 0.88, shirt: 0x3c3a34, pants: 0x2c2a26, longSleeves: true },
+  clerk: { height: 1.73, shirt: 0x3b5a44, pants: 0x2e3238 },
 };
 
 export function createMo() {
@@ -299,15 +359,11 @@ export function createMo() {
     shirtMat: mat.shirt,
     pantsMat: mat.denim,
     shoeMat: mat.shoe,
-    armMat: mat.skin,
+    armMat: tone(parseInt(faceSpec('mo').skin.slice(1), 16)),
     sleeveMat: mat.shirt,
-    handMat: mat.skin,
+    handMat: tone(parseInt(faceSpec('mo').skin.slice(1), 16)),
   });
   rig.root.name = 'Mo';
-  const { k } = rig;
-
-  // tee collar: a thin ring of fabric at the base of the neck
-  rig.torso.add(prism(0.118 * k, 0.134 * k, 0.112 * k, 0.132 * k, 0.03 * k, mat.shirt, [0, rig.shoulderY + 0.014 * k, -0.004 * k], 8));
   return rig;
 }
 
@@ -325,48 +381,51 @@ export function createAddison() {
   });
   rig.root.name = 'Addison';
   const { k } = rig;
-  const chestTop = rig.shoulderY;
-
-  rig.torso.add(box(0.14 * k, 0.20 * k, 0.012 * k, mat.dressShirt, [0, chestTop - 0.13 * k, 0.122 * k]));
-  rig.torso.add(box(0.072 * k, 0.30 * k, 0.014 * k, mat.gold, [0, chestTop - 0.20 * k, 0.128 * k]));
-  rig.torso.add(box(0.048 * k, 0.05 * k, 0.016 * k, mat.goldBand, [0, chestTop - 0.055 * k, 0.13 * k]));
-  rig.torso.add(box(0.08 * k, 0.014 * k, 0.016 * k, mat.goldBand, [0, chestTop - 0.27 * k, 0.13 * k]));
-
-  for (let i = 0; i < 2; i++) {
-    for (let j = 0; j < 2; j++) {
-      rig.torso.add(box(0.026 * k, 0.026 * k, 0.012 * k, mat.navy,
-        [(-0.075 + i * 0.15) * k, chestTop - 0.14 * k - j * 0.16 * k, 0.124 * k]));
-    }
-  }
-  rig.torso.add(box(0.105 * k, 0.22 * k, 0.014 * k, mat.suit, [-0.10 * k, chestTop - 0.11 * k, 0.124 * k], [0, 0, 0.16]));
-  rig.torso.add(box(0.105 * k, 0.22 * k, 0.014 * k, mat.suit, [0.10 * k, chestTop - 0.11 * k, 0.124 * k], [0, 0, -0.16]));
-  rig.torso.add(box(0.06 * k, 0.05 * k, 0.014 * k, mat.gold, [0.13 * k, chestTop - 0.30 * k, 0.122 * k], [0, 0, 0.3]));
-
-  for (const a of [rig.armL, rig.armR]) {
-    a.elbow.add(box(0.088 * k, 0.035 * k, 0.10 * k, mat.gold, [0, -0.235 * k, 0]));
-  }
+  const z = 0.128 * k; // front of the chest
+  // shirt V, gold tie, tie bar, lapels, buttons, pocket square
+  const front = (w, h, d, m, x, y, rz = 0) => rig.torso.add(box(w * k, h * k, d * k, m, [x * k, y * k, z + (d * k) / 2], [0, 0, rz]));
+  front(0.13, 0.17, 0.008, mat.dressShirt, 0, 0.34);
+  front(0.06, 0.30, 0.012, mat.gold, 0, 0.24);
+  front(0.05, 0.045, 0.014, mat.goldBand, 0, 0.405);
+  front(0.075, 0.012, 0.016, mat.goldBand, 0, 0.22);
+  front(0.095, 0.24, 0.01, mat.suit, -0.09, 0.32, 0.22);
+  front(0.095, 0.24, 0.01, mat.suit, 0.09, 0.32, -0.22);
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) front(0.024, 0.024, 0.012, mat.navy, -0.07 + i * 0.14, 0.12 - j * 0.12);
+  front(0.055, 0.04, 0.012, mat.gold, 0.13, 0.31, 0.3);
+  for (const a of [rig.armL, rig.armR]) a.elbow.add(box(0.09 * k, 0.03 * k, 0.095 * k, mat.gold, [0, -0.215 * k, 0]));
   return rig;
+}
+
+/** Shirt colour of a cast member as a CSS hex string (for painted portraits). */
+export function castShirt(kind) {
+  if (kind === 'mo') return '#e9e8e3';
+  if (kind === 'addison') return '#f2efe4';
+  const s = (CAST[kind] || CAST.kev).shirt ?? 0x555a52;
+  return '#' + s.toString(16).padStart(6, '0');
 }
 
 export const NPC_KINDS = Object.keys(CAST).filter((k) => k !== 'mo' && k !== 'addison');
 
 export function createNPC(kind = 'kev') {
+  const known = !!CAST[kind];
   const spec = CAST[kind] || CAST.kev;
+  const skinTone = tone(parseInt(faceSpec(known ? kind : 'kev').skin.slice(1), 16));
+  const shirt = retroMaterial(`npcShirt${kind}`, { color: spec.shirt ?? 0x555a52, ambient: 0.6 });
   const rig = buildBody({
     ...spec,
-    kind: CAST[kind] ? kind : 'kev',
-    shirtMat: retroMaterial(`npcShirt${kind}`, { color: spec.shirt ?? 0x555a52 }),
-    pantsMat: retroMaterial(`npcPants${kind}`, { color: spec.pants ?? 0x2c3038 }),
-    shoeMat: retroMaterial(`npcShoe${kind}`, { color: 0x22221f }),
-    armMat: retroMaterial(`npcArm${kind}`, { color: spec.shirt ?? 0x555a52 }),
-    sleeveMat: retroMaterial(`npcShirtS${kind}`, { color: spec.shirt ?? 0x555a52 }),
-    handMat: tone(parseInt(faceSpec(CAST[kind] ? kind : 'kev').skin.slice(1), 16)),
+    kind: known ? kind : 'kev',
+    shirtMat: shirt,
+    pantsMat: retroMaterial(`npcPants${kind}`, { color: spec.pants ?? 0x2c3038, ambient: 0.6 }),
+    shoeMat: retroMaterial(`npcShoe${kind}`, { color: 0x2a2622 }),
+    armMat: spec.longSleeves ? shirt : skinTone,
+    sleeveMat: shirt,
+    handMat: skinTone,
   });
   rig.root.name = kind;
   if (kind === 'miguel' || kind === 'habib' || kind === 'clerk') {
-    // shop apron
+    // shop apron, hanging from the chest
     const { k } = rig;
-    rig.torso.add(box(0.30 * k, 0.34 * k, 0.02 * k, retroMaterial(`apron${kind}`, { color: kind === 'habib' ? 0x4a5a44 : 0x5a4a38 }), [0, rig.shoulderY - 0.20 * k, 0.120 * k]));
+    rig.torso.add(loft(R([[0.34, 0.3, 0.02, 0.13], [-0.16, 0.36, 0.02, 0.14]], k), retroMaterial(`apron${kind}`, { color: kind === 'habib' ? 0x4a5a44 : 0x5a4a38 }), 4));
   }
   return rig;
 }

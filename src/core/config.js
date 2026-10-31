@@ -211,14 +211,14 @@ export const CONFIG = {
   },
 
   render: {
-    internalHeight: 240,
+    internalHeight: 336,
     fogNear: 4.5,
     fogFar: 30,
-    wobble: 1.0,
-    snapGrid: 120,
-    dither: 0.55,
+    wobble: 0.6,
+    snapGrid: 170,
+    dither: 0.4,
     ambient: 0.88,
-    lightDir: [-0.3, 0.92, 0.42],
+    lightDir: [-0.55, 0.72, 0.46],
     colors: { fog: 0x121d18, sky: 0x141d19 },
   },
 
