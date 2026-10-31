@@ -181,6 +181,8 @@ export const FACE_SPECS = {
   mo: {
     source: 'reference', skin: '#8c5f40', shadow: '#5e3c26', hair: '#1c140e', hairLight: '#33261c', hairDark: '#0f0a07',
     style: 'short', sideT: 0.60, backT: 0.40,
+    // the photo's features sit off the painted grid: wrap px, measured off his texture
+    wrapFace: { eyes: [[83, 120], [161, 120]], mouth: [128, 190, 26] },
   },
   // NPCs follow the owner's face bank (assets/ref/npc_face_bank.png); skins sampled from it.
   addison: {
@@ -672,11 +674,117 @@ export function hairColors(kind) { const S = faceSpec(kind); return { hair: S.ha
 export function landmark(name) {
   const t = { eyeL: HEAD.eyeT, eyeR: HEAD.eyeT, mouth: HEAD.mouthT, brow: HEAD.browT, nose: HEAD.noseT }[name] ?? 0.5;
   let a = 0;
-  if (name === 'eyeL' || name === 'eyeR') {
-    const r = Math.min(1, (19.5 / FRAME.halfW) / ringAt(t).w); // frame px -> fraction of ring width
-    a = Math.asin(Math.pow(r, 1 / 0.8)) * (name === 'eyeL' ? -1 : 1);
-  }
+  if (name === 'eyeL' || name === 'eyeR') a = eyeAngle(t) * (name === 'eyeL' ? -1 : 1);
   return headPoint(a, t);
+}
+
+/** Angle round the skull of an eye centre (frame px -> fraction of ring width -> angle). */
+function eyeAngle(t) {
+  const r = Math.min(1, (19.5 / FRAME.halfW) / ringAt(t).w);
+  return Math.asin(Math.pow(r, 1 / 0.8));
+}
+
+/**
+ * Fade a kind's head texture toward its "high" face: bloodshot whites, lids at half mast and
+ * one corner of the mouth lifted into a smirk. level 0 puts the clean face back exactly. The
+ * high face is painted once from the clean wrap; each call only blends the two and re-uploads
+ * when the level has moved by a visible step.
+ */
+const highCache = new Map();
+export function setFaceHigh(kind, level) {
+  const c = wrapCache.get(kind);
+  if (!c) return;
+  let h = highCache.get(kind);
+  if (!h) {
+    const ctx = c.getContext('2d');
+    const base = ctx.getImageData(0, 0, WRAP, WRAP);
+    h = { ctx, base, high: paintHigh(base, faceSpec(kind)), out: ctx.createImageData(WRAP, WRAP), step: 0 };
+    highCache.set(kind, h);
+  }
+  const step = Math.round(Math.max(0, Math.min(1, level)) * 48);
+  if (step === h.step) return;
+  h.step = step;
+  const k = step / 48;
+  const b = h.base.data, g = h.high.data, o = h.out.data;
+  for (let i = 0; i < b.length; i++) o[i] = b[i] + (g[i] - b[i]) * k;
+  h.ctx.putImageData(step ? h.out : h.base, 0, 0);
+  const tx = texCache.get(kind);
+  if (tx) tx.needsUpdate = true;
+}
+
+function paintHigh(base, S) {
+  const src = base.data;
+  const out = new ImageData(new Uint8ClampedArray(src), WRAP, WRAP);
+  const d = out.data;
+  const at = (x, y) => ((Math.min(WRAP - 1, Math.max(0, y | 0)) * WRAP) + Math.min(WRAP - 1, Math.max(0, x | 0))) * 4;
+  const wx = (a) => uFromAngle(a) * WRAP;
+  const wy = (t) => (1 - t) * WRAP;
+  const ea = eyeAngle(HEAD.eyeT);
+  const F = S.wrapFace || {
+    eyes: [[wx(-ea), wy(HEAD.eyeT)], [wx(ea), wy(HEAD.eyeT)]],
+    mouth: [wx(0), wy(HEAD.mouthT), 22],
+  };
+
+  // ---- eyes: red whites, a sore rim under them, the upper lid dropped to half mast
+  const rx = 11, ry = 4.6;
+  for (const [ex, ey] of F.eyes) {
+    const lidRow = at(ex, ey - ry - 5);
+    const lid = [src[lidRow] * 0.86, src[lidRow + 1] * 0.82, src[lidRow + 2] * 0.8];
+    const lidEdge = ey - ry * 0.05; // the lid comes down to about the pupil's top
+    for (let y = Math.floor(ey - ry - 2); y <= Math.ceil(ey + ry + 4); y++) {
+      for (let x = Math.floor(ex - rx - 2); x <= Math.ceil(ex + rx + 2); x++) {
+        const nx = (x - ex) / rx, ny = (y - ey) / ry;
+        const r2 = nx * nx + ny * ny;
+        const o = at(x, y);
+        if (r2 <= 1) {
+          if (y < lidEdge) {
+            // heavy lid: skin from just above the eye, a touch darker toward the lash line
+            const k = smooth(ey - ry - 1, lidEdge, y);
+            for (let c = 0; c < 3; c++) d[o + c] = lid[c] * (1 - 0.35 * k);
+            continue;
+          }
+          if (y < lidEdge + 1.2) { d[o] = 26; d[o + 1] = 14; d[o + 2] = 10; continue; } // lash line
+          // whites go pink-red; the darker iris keeps its colour, just warmer
+          const lum = (src[o] + src[o + 1] + src[o + 2]) / 3;
+          const white = smooth(70, 150, lum);
+          const vein = hash(x * 3, y * 7) > 0.72 && Math.abs(nx) > 0.35 ? 0.35 : 0;
+          const k = Math.min(0.9, 0.18 + 0.66 * white + vein);
+          d[o] = Math.min(255, src[o] * (1 - k) + 214 * k);
+          d[o + 1] = src[o + 1] * (1 - k) + 72 * k;
+          d[o + 2] = src[o + 2] * (1 - k) + 70 * k;
+        } else if (ny > 0 && r2 < 1.9) {
+          // sore lower rim
+          const k = 0.5 * (1 - (r2 - 1) / 0.9);
+          d[o] = Math.min(255, src[o] * (1 - k) + 168 * k);
+          d[o + 1] = src[o + 1] * (1 - k) + 70 * k;
+          d[o + 2] = src[o + 2] * (1 - k) + 64 * k;
+        }
+      }
+    }
+  }
+
+  // ---- smirk: the mouth's right-hand side (Mo's left) bends up toward the corner
+  const [mx, my, hw] = F.mouth;
+  const lift = 4.2;
+  for (let x = Math.floor(mx); x <= Math.ceil(mx + hw + 7); x++) {
+    const along = (x - mx) / hw;
+    const l = lift * (along <= 1 ? Math.pow(smooth(0, 1, along), 1.4) : 1 - smooth(1, 1.3, along));
+    for (let y = Math.floor(my - 9); y <= Math.ceil(my + 9); y++) {
+      const w = 1 - Math.abs(y - my) / 9.5;
+      const sy = y + l * w;
+      const y0 = Math.floor(sy), f = sy - y0;
+      const a = at(x, y0), b = at(x, y0 + 1), o = at(x, y);
+      for (let c = 0; c < 3; c++) d[o + c] = src[a + c] * (1 - f) + src[b + c] * f;
+    }
+  }
+  // the dimple the lifted corner pushes into the cheek
+  const cx = mx + hw + 2.5, cy = my - lift - 0.5;
+  for (let y = -3; y <= 2; y++) {
+    const o = at(cx + y * -0.4, cy + y);
+    const k = 0.45 * (1 - Math.abs(y + 0.5) / 3.5);
+    for (let c = 0; c < 3; c++) d[o + c] *= 1 - k;
+  }
+  return out;
 }
 
 /**
