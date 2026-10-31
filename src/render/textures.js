@@ -10,10 +10,23 @@ const rnd = () => {
 
 function make(name, w, h, draw, opts = {}) {
   if (cache.has(name)) return cache.get(name);
+  // painted at 2x the design size: same patterns and palette, cleaner edges and a fine grain
+  // layer, so surfaces hold up at the higher internal resolution without losing the 90s look
+  const S = opts.scale ?? 2;
   const c = document.createElement('canvas');
-  c.width = w; c.height = h;
+  c.width = w * S; c.height = h * S;
   const ctx = c.getContext('2d');
+  ctx.save();
+  ctx.scale(S, S);
   draw(ctx, w, h);
+  ctx.restore();
+  if (S > 1 && !opts.flat) {
+    for (let i = 0; i < w * h * S * 0.9; i++) {
+      const v = rnd() > 0.5 ? 255 : 0;
+      ctx.fillStyle = `rgba(${v},${v},${v},0.045)`;
+      ctx.fillRect(Math.floor(rnd() * w * S), Math.floor(rnd() * h * S), 1, 1);
+    }
+  }
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestFilter;

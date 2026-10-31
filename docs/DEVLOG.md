@@ -10,6 +10,31 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Art pass 3 — NPC face bank (owner priority)
+- NPC portraits and 3D head textures come from `assets/ref/npc_face_bank.png`, baked by
+  `scripts/bake-npc-faces.py` into `src/render/npc_faces_data.js` (JPEG data URLs: a 3:4 portrait
+  plus a head-frame frontal per NPC, with landmarks measured per panel). Mo is unchanged.
+- Head wraps for NPCs paint a fallback first and swap in the bank face when the JPEG decodes
+  (`headCanvas` → `fillWrap`, texture `needsUpdate`).
+- Looks follow the bank: Rae wears a purple durag (tails modelled), Habib a kufi, the homeless man a
+  beanie, Nia long hair, Kev a blond quiff, Dex a fade + full beard, Miguel a fade + goatee, the
+  clerk a side part + glasses. Shirt colours re-matched. Addison keeps the white suit (game lore).
+
+### Art pass 2 — cast, HUD sheet, environment finish (owner priority)
+- HUD: Mo's six moods come straight from the owner's sheet (`assets/ref/mo_mood_sheet.png`,
+  baked by `scripts/bake-mo-moods.py` into `src/render/mo_moods_data.js`). Mo's 3D head texture
+  is the sheet's CONTENT face (`scripts/bake-mo-face.py`).
+- NPC portraits are painted (`paintPortrait` in `render/heads.js`) in the sheet's framing and
+  planar style instead of rendered; the painter (`paintFrontal`) now builds faces from hard-edged
+  light/shadow planes and a ramp derived from one skin colour.
+- Bodies (`world/characters.js`): `loftGeo` multi-ring faceted limbs measured off the Mo model,
+  knee/elbow caps (fixes the "chopped kneecaps"), sloped shoulders, short thick neck, tee hem over
+  the waistband, straight-leg jeans, shaped fists, sleeves per NPC (`longSleeves`).
+- Environment: `box()` is now a chamfered box (bevel strips + corner facets, BoxGeometry UVs);
+  shader adds a contact shadow on vertical surfaces near the floor; textures paint at 2x with a
+  fine grain layer; key light moved to the upper left-front; headlight fill reduced.
+- Render config: internal height 240 → 336, dither 0.4, snap 170, wobble 0.6.
+
 ### Art direction pass — PS1 character redesign (owner priority)
 - **Owner directive overrides the earlier "no painted face" rule.** Target look is the owner's
   reference sheets in `assets/ref/` (late-90s console NPC: faceted limbs, textured face).

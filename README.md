@@ -114,12 +114,12 @@ The HUD has the same controls as buttons. The phone has its own bottom navigatio
 ### A cast with one design language
 
 Every character — Mo, Addison, the neighbours, both shopkeepers, the men on the street — is
-built the late-90s console way: a ~7.5-head figure with **faceted 6–8-sided limbs** (flat
-shading, hard normal breaks) on real joint pivots, and a **low-poly skull wearing one
-wrap-around face texture**. Mo's texture is projected from his reference portrait; everyone
-else's is painted in the same frame, with the same landmarks and light direction, then wrapped
-onto the identical skull. Volume hair (Addison's pompadour, Rae's bob, Dex's locks, Nia's
-braids) is shell geometry over the same skull. Mo wears a plain white tee and plain blue jeans.
+built the late-90s console way, measured off Mo's reference model (`assets/ref/`): a ~6.4-head,
+broad-shouldered figure whose limbs are **lofted faceted tubes** (calf, bicep, chest and the hang
+of the tee are shaped by extra rings; every facet keeps a hard normal), with **joint caps** at
+knees and elbows so nothing opens up when a leg bends, and a **low-poly skull wearing one
+wrap-around face texture**. Mo's head texture is the CONTENT face from his mood sheet; everyone
+else's is painted in the same planar style and framing, then wrapped onto the identical skull.
 
 ![Mo, full body](assets/img/mo_character.png)
 
@@ -129,12 +129,14 @@ braids) is shell geometry over the same skull. Mo wears a plain white tee and pl
 
 ### Mo's face on the HUD, in his current state
 
-The panel top-left is a close-up **render of Mo's actual 3D head** — the same model walking
-around the street — re-shot when his state changes: **CONTENT**, **WRECKED**, **STRESSED**,
-**HIGH** (red, half-lidded eyes), **SICK** (pale, sweating), **SEETHING**. Phone avatars and
-text-thread faces are rendered the same way for every character.
+The panel top-left is Mo's face from the owner's **mood sheet** (`assets/ref/mo_mood_sheet.png`):
+**CONTENT**, **WRECKED** (tired), **STRESSED**, **HIGH**, **SICK**, **SEETHING** (angry), swapped
+when his state changes. NPC avatars in the phone and text threads come from the owner's **NPC face reference bank**
+(`assets/ref/npc_face_bank.png`), and the same faces are projected onto each NPC's 3D head.
 
 ![HUD faces by mood](assets/img/hud_state_faces.png)
+
+![NPC heads in 3D, textured from the face bank](assets/img/npc_heads_3d.png)
 
 ### Text threads that answer back
 
