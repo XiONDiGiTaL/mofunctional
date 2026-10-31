@@ -16,6 +16,22 @@ Rent is due on Friday. It is Monday. He does not have it.
 
 ---
 
+## The phone and the interface
+
+The phone is the management screen: a chamfered brushed-metal shell with a warm, glowing glass
+panel, speaker slots, side buttons and a five-app dock. Everything on it is reachable with the
+mouse or the keyboard.
+
+![The phone](assets/img/ui_phone.png)
+
+**Themes and scale** live in two places: `SETTINGS` on the main menu, and `SYSTEM` inside the
+phone (so you can change them mid-run). Four skins — Functional (CRT green), Amber (warm glass),
+Ice (clinic blue) and VHS (magenta bleed) — recolour the phone, the HUD, the menus and every
+modal from one set of CSS variables. The interface scale is S / M / L, applied to the in-game UI
+layers only, so the 3D stage never shifts. Both are saved with your run.
+
+![Themes](assets/img/ui_themes.png)
+
 ## Play it
 
 **Live:** <https://xiondigital.net/mofunctional/> — GitHub Pages, straight from `main`.

@@ -491,3 +491,255 @@ html, body {
 .phone__body { background: #060a08; }
 .appbtn { border-radius: 10px; }
 .app__header { border-radius: 10px 10px 0 0; }
+
+/* ============================================================================
+   UI THEMES — one set of variables, four skins. Everything below is expressed
+   in these so the phone, HUD, menus and modals recolour together.
+   ============================================================================ */
+:root {
+  --screen: #08110c;
+  --screen-2: #102018;
+  --glow: rgba(120, 255, 170, .5);
+  --ui-scale: 1;
+  --bezel-a: #767d86;
+  --bezel-b: #23272b;
+  --bezel-c: #808894;
+  --bezel-line: rgba(255, 255, 255, .16);
+}
+:root[data-theme="amber"] {
+  --ink: #0b0805; --ink-2: #130e08; --ink-3: #1b140c;
+  --line: #4a3a20; --line-hot: #c79a4e;
+  --text: #f2e4c8; --dim: #a38d6a; --paper: #f8efdb;
+  --gold: #ffcf7a; --gold-deep: #b8863a;
+  --bad: #ff8a6a; --good: #b8e08a; --warn: #ffc06a; --violet: #d8a8ff;
+  --screen: #120c06; --screen-2: #1d130a; --glow: rgba(255, 180, 80, .55);
+}
+:root[data-theme="ice"] {
+  --ink: #050a0e; --ink-2: #08121a; --ink-3: #0b1a24;
+  --line: #254a5e; --line-hot: #69c6ef;
+  --text: #d8f1ff; --dim: #7ea2b5; --paper: #eaf7ff;
+  --gold: #8ce0ff; --gold-deep: #3f8fae;
+  --bad: #ff7f9e; --good: #7ef0c0; --warn: #ffd08a; --violet: #b9a8ff;
+  --screen: #061016; --screen-2: #0a1b24; --glow: rgba(110, 210, 255, .5);
+  --bezel-a: #6d7d8a; --bezel-b: #1d262d; --bezel-c: #7d8f9d;
+}
+:root[data-theme="vhs"] {
+  --ink: #0b060c; --ink-2: #150a18; --ink-3: #1d0e21;
+  --line: #4a2540; --line-hot: #e070b8;
+  --text: #f3d9ec; --dim: #a4789a; --paper: #fff0fa;
+  --gold: #ff9ede; --gold-deep: #a84486;
+  --bad: #ff6f8f; --good: #9ef0d8; --warn: #ffbf8f; --violet: #c39bff;
+  --screen: #0d0610; --screen-2: #1a0b1e; --glow: rgba(255, 120, 220, .5);
+  --bezel-a: #6f6270; --bezel-b: #241a26; --bezel-c: #85748a;
+}
+
+/* scale: the in-game UI layers only, so the 3D stage never moves */
+.phone, .hud__top, .hud__right, .hud__log, .hud__toasts, .hud__prompt, .hud__hint, .thread {
+  zoom: var(--ui-scale, 1);
+}
+
+/* ---------------- phone chassis: brushed metal, chamfered, warm screen ---------------- */
+.phone-wrap {
+  background: radial-gradient(circle at 50% 45%, rgba(6, 9, 7, .55), rgba(2, 3, 3, .92));
+}
+.phone {
+  width: 352px; height: min(648px, 92vh);
+  position: relative; display: block; overflow: visible;
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .7)) drop-shadow(0 0 26px var(--glow));
+  animation: phonein .22s cubic-bezier(.2, .9, .2, 1);
+}
+.phone::after { display: none; }
+.phone__shell {
+  position: absolute; inset: 0; padding: 9px 10px 7px;
+  display: flex; flex-direction: column;
+  clip-path: polygon(30px 0, calc(100% - 30px) 0, 100% 30px, 100% calc(100% - 30px), calc(100% - 30px) 100%, 30px 100%, 0 calc(100% - 30px), 0 30px);
+  background:
+    linear-gradient(152deg, var(--bezel-a) 0%, #4a5058 9%, var(--bezel-b) 34%, #2b3036 58%, #4c525a 82%, var(--bezel-c) 100%);
+  box-shadow: inset 0 0 0 1px var(--bezel-line);
+}
+.phone__shell::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, 0) 16%, rgba(0, 0, 0, .28) 86%, rgba(255, 255, 255, .1)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 3px);
+}
+.phone__speaker { height: 15px; display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 5px; flex: none; }
+.phone__speaker i {
+  width: 22px; height: 3px; border-radius: 2px; display: block;
+  background: #0b0d0f; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.phone__chin { height: 16px; display: flex; align-items: center; justify-content: center; flex: none; }
+.phone__chin i { width: 78px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, #262b30, #4c545c, #262b30); }
+.phone__side {
+  position: absolute; right: -4px; width: 5px; border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--bezel-c), #31363b 55%, var(--bezel-a));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.phone__side--1 { top: 21%; height: 52px; }
+.phone__side--2 { top: 35%; height: 32px; }
+
+.phone__screen {
+  position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;
+  clip-path: polygon(21px 0, calc(100% - 21px) 0, 100% 21px, 100% calc(100% - 21px), calc(100% - 21px) 100%, 21px 100%, 0 calc(100% - 21px), 0 21px);
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--screen-2), var(--screen) 72%),
+    var(--screen);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .85), inset 0 0 34px rgba(0, 0, 0, .9);
+  overflow: hidden;
+}
+.phone__screen::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .22) 0 1px, transparent 1px 3px);
+  opacity: .55;
+}
+.phone__screen::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: linear-gradient(118deg, rgba(255, 255, 255, .07), transparent 34%);
+}
+
+.phone__bar {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 7px 14px 6px; font-size: 9.5px; letter-spacing: .18em;
+  color: var(--dim); background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+.phone__sig { display: inline-flex; align-items: flex-end; gap: 2px; height: 8px; }
+.phone__sig i { width: 2px; background: var(--gold); display: block; opacity: .85; }
+.phone__sig i:nth-child(1) { height: 3px; }
+.phone__sig i:nth-child(2) { height: 5px; }
+.phone__sig i:nth-child(3) { height: 8px; opacity: .3; }
+.phone__carrier { color: var(--gold); opacity: .9; }
+.phone__body { flex: 1; overflow: auto; background: transparent; position: relative; z-index: 2; }
+.phone__body::-webkit-scrollbar { width: 4px; }
+.phone__body::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--line) 80%, transparent); border-radius: 4px; }
+.phone__nav {
+  flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+  padding: 8px 10px 9px; border-top: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .35));
+  border-radius: 0; position: relative; z-index: 2;
+}
+.phone__nav button {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .1em; padding: 8px 2px;
+  background: color-mix(in srgb, var(--screen-2) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  border-radius: 8px; color: var(--text); cursor: pointer; transition: all .1s ease;
+}
+.phone__nav button:hover { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, transparent); }
+.phone__nav button[data-nav="close"] { color: color-mix(in srgb, var(--bad) 80%, var(--text)); }
+
+/* phone home: glass tiles */
+.phone__home { padding: 13px 13px 10px; gap: 9px; }
+.appbtn {
+  border-radius: 12px; padding: 12px 5px 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .012));
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  transition: transform .1s ease, border-color .1s ease, background .1s ease;
+}
+.appbtn:hover { border-color: var(--line-hot); background: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03)); transform: translateY(-1px); }
+.appbtn__icon {
+  width: 36px; height: 36px; border-radius: 10px; font-size: 15px;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, .1), rgba(0, 0, 0, .5));
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  color: var(--gold); text-shadow: 0 0 10px var(--glow);
+}
+.appbtn__name { font-size: 8.5px; letter-spacing: .08em; color: var(--text); }
+.app__header { background: linear-gradient(180deg, color-mix(in srgb, var(--screen-2) 90%, #000), transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent); }
+.app__title { color: var(--text); }
+.card, .listitem { background: color-mix(in srgb, var(--screen-2) 55%, transparent); border-color: color-mix(in srgb, var(--line) 45%, transparent); }
+.kv { border-bottom-color: color-mix(in srgb, var(--line) 35%, transparent); }
+
+/* ---------------- HUD: sleeker panel, segmented LED bars ---------------- */
+.hud__top {
+  border-radius: 14px; padding: 10px 12px 11px; gap: 8px;
+  background: linear-gradient(180deg, rgba(10, 15, 12, .84), rgba(5, 8, 7, .74));
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .07);
+  backdrop-filter: blur(7px) saturate(1.1);
+}
+.hud__face { border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); padding-bottom: 8px; }
+.hud__faceimg {
+  width: 56px; height: 70px; border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .5), 0 0 0 1px rgba(0, 0, 0, .6);
+}
+.hud__mood { font-size: 12.5px; letter-spacing: .2em; }
+.hud__moodsub { color: var(--dim); }
+.hud__clockrow { gap: 9px; padding-top: 1px; }
+.hud__time { font-size: 23px; text-shadow: 0 0 10px var(--glow); font-variant-numeric: tabular-nums; }
+.hud__day { color: var(--gold); }
+.hud__money { font-variant-numeric: tabular-nums; text-shadow: 0 0 10px var(--glow); }
+.hud__stats { gap: 5px 12px; }
+.stat { gap: 7px; font-size: 9px; letter-spacing: .1em; }
+.stat__label { width: 44px; color: var(--dim); }
+.stat__bar {
+  height: 8px; border-radius: 3px; overflow: hidden; position: relative;
+  background: linear-gradient(180deg, #070b09, #121a14);
+  border: 1px solid color-mix(in srgb, var(--line) 60%, #000);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, .8);
+}
+.stat__bar::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 5px, rgba(0, 0, 0, .82) 5px 7px);
+}
+.stat__fill {
+  background: var(--c, var(--line-hot));
+  box-shadow: 0 0 8px -1px var(--c, var(--line-hot)), inset 0 1px 0 rgba(255, 255, 255, .3);
+  transition: width .24s cubic-bezier(.2, .8, .2, 1), background .2s linear;
+}
+.stat__num { color: var(--text); font-variant-numeric: tabular-nums; width: 22px; }
+.stat.flash .stat__bar { outline: 1px solid color-mix(in srgb, var(--bad) 80%, transparent); animation: statflash 1.1s steps(2) infinite; }
+@keyframes statflash { 50% { outline-color: transparent; } }
+.hud__objective { border-radius: 0 10px 10px 0; background: linear-gradient(90deg, rgba(8, 12, 10, .85), rgba(8, 12, 10, .55)); backdrop-filter: blur(6px); }
+.hud__btn { border-radius: 8px; background: rgba(9, 15, 11, .8); transition: all .1s ease; }
+.hud__btn:hover { border-color: var(--line-hot); }
+.hud__prompt { border-radius: 10px; backdrop-filter: blur(6px); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.toast { border-radius: 0 8px 8px 0; backdrop-filter: blur(6px); }
+
+/* ---------------- theme swatches (settings) ---------------- */
+.theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.theme-swatch {
+  display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer;
+  padding: 7px 9px; border-radius: 9px; font-family: var(--mono);
+  background: color-mix(in srgb, var(--screen-2) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  color: var(--text);
+}
+.theme-swatch i { width: 18px; height: 18px; border-radius: 50%; flex: none; box-shadow: 0 0 10px -1px currentColor, inset 0 0 0 1px rgba(0, 0, 0, .5); }
+.theme-swatch span { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.theme-swatch b { font-weight: normal; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; }
+.theme-swatch em { font-style: normal; font-size: 8.5px; color: var(--dim); letter-spacing: .04em; }
+.theme-swatch:hover { border-color: var(--line-hot); }
+.theme-swatch.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold), 0 0 16px -6px var(--gold); }
+
+/* ---------------- polish pass: controls, spacing, HUD legibility ---------------- */
+input[type="range"] {
+  accent-color: var(--gold);
+  height: 22px; background: transparent; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 55%, transparent), color-mix(in srgb, var(--line) 70%, transparent));
+  border: 1px solid color-mix(in srgb, var(--line) 60%, #000);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: -5px;
+  border-radius: 50%; background: var(--gold); border: 1px solid #000;
+  box-shadow: 0 0 10px -1px var(--gold);
+}
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 3px; background: color-mix(in srgb, var(--line) 70%, transparent); }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border: 1px solid #000; border-radius: 50%; background: var(--gold); }
+
+.hud__top { min-width: 306px; }
+.hud__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+.stat { font-size: 9.5px; }
+.stat__label { width: 42px; }
+.stat__bar { min-width: 62px; }
+
+/* modal + menu panels pick up the theme bezel instead of the old fixed greens */
+.modal, .panel { border-radius: 12px; }
+.panel { backdrop-filter: blur(6px); }
+.menu__item { border-radius: 10px; }
+.menu__item:hover, .menu__item:focus-visible { border-radius: 10px; }
+.app__h { color: color-mix(in srgb, var(--dim) 90%, var(--gold)); }
+.phone__screen { box-shadow: inset 0 0 0 2px rgba(0,0,0,.85), inset 0 0 30px rgba(0,0,0,.5), inset 0 0 24px -8px var(--glow); }

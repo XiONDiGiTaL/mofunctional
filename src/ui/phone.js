@@ -10,6 +10,7 @@ import { fellowshipStage, serviceWindow } from '../systems/fellowship.js';
 import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
 import { kindForName } from './threads.js';
+import { THEMES, SCALES, themeLabel } from './themes.js';
 
 const DEFAULT_REPLIES = [
   "ok",
@@ -43,15 +44,28 @@ export class Phone {
     if (this.wrap) return;
     this.app = appId || 'home';
     this.wrap = el(`<div class="phone-wrap"><div class="phone">
-      <div class="phone__notch"><i></i></div>
-      <div class="phone__bar"><span data-live="clock">--:--</span><span class="spacer"></span><span data-live="money">$0</span></div>
-      <div class="phone__body"></div>
-      <div class="phone__nav">
-        <button data-nav="home">HOME</button>
-        <button data-nav="bank">BANK</button>
-        <button data-nav="messages">MSGS</button>
-        <button data-nav="pantry">FOOD</button>
-        <button data-nav="close">CLOSE</button>
+      <span class="phone__side phone__side--1"></span>
+      <span class="phone__side phone__side--2"></span>
+      <div class="phone__shell">
+        <div class="phone__speaker"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="phone__screen">
+          <div class="phone__bar">
+            <span class="phone__sig"><i></i><i></i><i></i></span>
+            <span data-live="clock">--:--</span>
+            <span class="spacer"></span>
+            <span class="phone__carrier">SHALE</span>
+            <span data-live="money">$0</span>
+          </div>
+          <div class="phone__body"></div>
+          <div class="phone__nav">
+            <button data-nav="home">HOME</button>
+            <button data-nav="bank">BANK</button>
+            <button data-nav="messages">MSGS</button>
+            <button data-nav="pantry">FOOD</button>
+            <button data-nav="close">CLOSE</button>
+          </div>
+        </div>
+        <div class="phone__chin"><i></i></div>
       </div>
     </div></div>`);
     this.body = this.wrap.querySelector('.phone__body');
@@ -517,6 +531,18 @@ export class Phone {
         <button class="btn btn--sm ${s.settings.crt ? 'on btn--primary' : ''}" data-act="togglecrt">CRT: ${s.settings.crt ? 'ON' : 'OFF'}</button>
         <button class="btn btn--sm ${s.settings.ratio43 ? 'btn--primary' : ''}" data-act="toggle43">4:3: ${s.settings.ratio43 ? 'ON' : 'OFF'}</button>
       </div>
+      <div class="app__h">Theme</div>
+      <div class="theme-grid">
+        ${THEMES.map((t) => `<button class="theme-swatch ${s.settings.theme === t.id ? 'on' : ''}" data-act="theme" data-arg="${t.id}">
+          <i style="background:${t.dot}"></i>
+          <span><b>${T(t.label)}</b><em>${T(t.note)}</em></span>
+        </button>`).join('')}
+      </div>
+      <div class="app__h">Interface scale</div>
+      <div class="row">
+        ${SCALES.map((sc) => `<button class="btn btn--sm ${Math.abs((s.settings.scale ?? 1) - sc.value) < 0.01 ? 'btn--primary' : ''}" data-act="scale" data-num="${sc.value}">${sc.label}</button>`).join('')}
+        <span class="tiny mono-dim">${Math.round((s.settings.scale ?? 1) * 100)}% · ${T(themeLabel(s.settings.theme))}</span>
+      </div>
       <div class="app__h">Volume</div>
       <input type="range" min="0" max="100" value="${Math.round(s.settings.volume * 100)}" data-act="volume" style="width:100%" />
       <div class="app__h">Save / Load</div>
@@ -643,6 +669,8 @@ export class Phone {
         });
         g.toast('Addison replies within a minute. Always a minute.', 'event');
       },
+      theme(arg) { g.setTheme?.(arg); },
+      scale(arg, num) { g.setScale?.(num); },
       togglecrt() { g.toggleCRT(); },
       toggle43() { g.toggle43(); },
       volume(arg, num, elem) { s.settings.volume = Number(elem.value) / 100; g.audio.setVolume(s.settings.volume); },

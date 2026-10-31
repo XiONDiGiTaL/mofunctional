@@ -409,6 +409,29 @@ class Game {
     this.crtEl.classList.toggle('hidden', !s.crt);
     document.getElementById('app').classList.toggle('ratio43', !!s.ratio43);
     this.audio.setVolume(s.muted ? 0 : s.volume);
+    this.applyTheme();
+  }
+
+  /** Themes are pure CSS variables on :root; the scale zooms the in-game UI layers. */
+  applyTheme() {
+    const s = this.state.settings;
+    document.documentElement.dataset.theme = s.theme || 'functional';
+    const scale = clamp(Number(s.scale) || 1, 0.85, 1.3);
+    document.documentElement.style.setProperty('--ui-scale', String(scale));
+  }
+
+  setTheme(id) {
+    this.state.settings.theme = id;
+    this.applyTheme();
+    this.audio.sfx?.('ui');
+    this.autosave();
+  }
+
+  setScale(v) {
+    this.state.settings.scale = clamp(Number(v) || 1, 0.85, 1.3);
+    this.applyTheme();
+    this.audio.sfx?.('ui');
+    this.autosave();
   }
 
   toggleCRT() {

@@ -143,7 +143,7 @@ export class HUD {
       const danger = (k === 'stress' || k === 'risk' || k === 'addiction') ? v > 70 : v < 25;
       st.node.classList.toggle('flash', danger);
       const colors = { energy: '#8fd8ff', hunger: '#ffc46b', stress: '#ff8f7a', morale: '#b992ff', addiction: '#d8d8a0', risk: '#ff5e5e' };
-      st.fill.style.background = danger ? '#ff5e5e' : colors[k];
+      st.node.style.setProperty('--c', danger ? 'var(--bad)' : colors[k]);
     }
 
     const hint = TUTORIAL_HINTS[Math.min(5, s.flags.tutorial)] || TUTORIAL_HINTS[5];

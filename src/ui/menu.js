@@ -4,6 +4,7 @@ import { money, dayOf, el, esc } from '../core/util.js';
 import { loadGame, allSlots } from '../core/save.js';
 import { INTRO_TEXT, HELP_TEXT } from '../systems/dialogue.js';
 import { ENDINGS } from '../systems/endings.js';
+import { THEMES, SCALES } from './themes.js';
 
 const TICKER = [
   'you don\'t have to get your life together. you just have to keep it together.',
@@ -221,6 +222,18 @@ export class Menu {
           </span>
         </div>
         <div class="hr"></div>
+        <div class="app__h">Theme</div>
+        <div class="theme-grid">
+          ${THEMES.map((t) => `<button class="theme-swatch ${(s.settings.theme || 'functional') === t.id ? 'on' : ''}" data-set="theme" data-arg="${t.id}">
+            <i style="background:${t.dot}"></i>
+            <span><b>${t.label}</b><em>${t.note}</em></span>
+          </button>`).join('')}
+        </div>
+        <div class="app__h">Interface scale</div>
+        <div class="row">
+          ${SCALES.map((sc) => `<button class="btn btn--sm ${Math.abs((s.settings.scale ?? 1) - sc.value) < 0.01 ? 'btn--primary' : ''}" data-set="scale" data-arg="${sc.value}">${sc.label}</button>`).join('')}
+        </div>
+        <div class="hr"></div>
         <div class="tiny mono-dim">Pixel height ${CONFIG.render.internalHeight}p · fog ${CONFIG.render.fogNear}–${CONFIG.render.fogFar} · affine mapping on</div>
         <button class="btn" data-close style="margin-top:12px">BACK</button>
       </div>
@@ -234,6 +247,8 @@ export class Menu {
       if (key === 'crt') { this.g.toggleCRT(); }
       if (key === 'ratio') { this.g.toggle43(); }
       if (key === 'speed') { this.g.state.settings.speed = Number(btn.dataset.arg); }
+      if (key === 'theme') { this.g.setTheme?.(btn.dataset.arg); }
+      if (key === 'scale') { this.g.setScale?.(Number(btn.dataset.arg)); }
       this.g.audio.sfx('ui');
       overlay.remove();
       this.showSettings();
