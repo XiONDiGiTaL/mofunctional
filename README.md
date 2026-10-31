@@ -117,10 +117,12 @@ else's is painted in the same planar style and framing, then wrapped onto the id
 
 The panel top-left is Mo's face from the owner's **mood sheet** (`assets/ref/mo_mood_sheet.png`):
 **CONTENT**, **WRECKED** (tired), **STRESSED**, **HIGH**, **SICK**, **SEETHING** (angry), swapped
-when his state changes. NPC avatars in the phone and text threads are painted in the same style
-and framing (dark backdrop, shirt-coloured shoulders, planar shading).
+when his state changes. NPC avatars in the phone and text threads come from the owner's **NPC face reference bank**
+(`assets/ref/npc_face_bank.png`), and the same faces are projected onto each NPC's 3D head.
 
 ![HUD faces by mood](assets/img/hud_state_faces.png)
+
+![NPC heads in 3D, textured from the face bank](assets/img/npc_heads_3d.png)
 
 ### Text threads that answer back
 

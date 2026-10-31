@@ -11,6 +11,7 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import { MO_FACE } from './mo_face_data.js';
+import { NPC_FACES } from './npc_faces_data.js';
 
 /* --------------------------------- shape --------------------------------- */
 
@@ -181,76 +182,73 @@ export const FACE_SPECS = {
     source: 'reference', skin: '#8c5f40', shadow: '#5e3c26', hair: '#1c140e', hairLight: '#33261c', hairDark: '#0f0a07',
     style: 'short', sideT: 0.60, backT: 0.40,
   },
+  // NPCs follow the owner's face bank (assets/ref/npc_face_bank.png); skins sampled from it.
   addison: {
-    skin: '#d9b896', light: '#f0d6ba', shadow: '#a98666', deep: '#7a5c44',
-    hair: '#bdbab2', hairLight: '#e2dfd8', hairDark: '#87847c', style: 'swept',
+    skin: '#bd8a6e', hair: '#bdbab2', hairLight: '#e2dfd8', hairDark: '#87847c', style: 'swept',
     brow: '#8b877e', eye: '#4b3f2c', lips: '#9a6455', lipsLight: '#bd8270',
-    beard: 'full', beardColor: '#b6b3aa', age: 0.75, browTilt: -0.12, smile: 0.5,
+    beard: 'full', beardColor: '#b6b3aa', age: 0.75, browTilt: -0.12,
   },
   kev: {
-    skin: '#d2a77e', light: '#ecc8a2', shadow: '#a27652', deep: '#74513a',
-    hair: '#c69a52', hairLight: '#e6c27c', hairDark: '#8e6832', style: 'crop',
-    brow: '#8a6a36', eye: '#4a5a3a', lips: '#a06654', lipsLight: '#bf8068', age: 0.2, jaw: 1.06,
+    skin: '#b98a6c', hair: '#c49a52', hairLight: '#e6c27c', hairDark: '#8e6832', style: 'quiff',
+    brow: '#8a6a36', eye: '#4a5a3a', lips: '#a06654', lipsLight: '#bf8068', age: 0.3, jaw: 1.06,
   },
   rae: {
-    skin: '#e6c9ad', light: '#f7e2cc', shadow: '#b8957a', deep: '#8a6a52',
-    hair: '#1f1a20', hairLight: '#3b3340', hairDark: '#0f0c10', style: 'bob',
-    brow: '#2e2426', eye: '#3e3530', lips: '#a8545a', lipsLight: '#cf7a7e', age: 0.25, fem: true, jaw: 0.92,
+    skin: '#c09276', hair: '#4b2a86', hairLight: '#7a55b8', hairDark: '#2a1650', style: 'durag',
+    brow: '#2a2020', eye: '#3e3530', lips: '#9c6458', lipsLight: '#b8806e', age: 0.2,
   },
   dale: {
-    skin: '#c4a386', light: '#dfc4a6', shadow: '#94765c', deep: '#6a5040',
-    hair: '#a3a29c', hairLight: '#c8c7c0', hairDark: '#787771', style: 'receding',
-    brow: '#86847c', eye: '#4a463a', lips: '#8e6456', lipsLight: '#a97c6a',
-    beard: 'stubble', beardColor: '#8f8e88', age: 0.95, browTilt: 0.1,
+    skin: '#c4927e', hair: '#c9c8c2', hairLight: '#ecebe6', hairDark: '#8f8e88', style: 'swept',
+    brow: '#9a988f', eye: '#4a463a', lips: '#8e6456', lipsLight: '#a97c6a', age: 1.0, browTilt: 0.1,
   },
   dex: {
-    skin: '#7d5538', light: '#9c7050', shadow: '#553520', deep: '#3a2312',
-    hair: '#22170f', hairLight: '#3f2c1f', hairDark: '#120b06', style: 'dread',
+    skin: '#8f5a3a', hair: '#1a120c', hairLight: '#33261c', hairDark: '#0c0805', style: 'short',
     brow: '#1c120c', eye: '#2c2016', lips: '#6a3e30', lipsLight: '#8a5644',
-    beard: 'full', beardColor: '#221710', age: 0.45, browTilt: -0.05,
+    beard: 'full', beardColor: '#1a120c', age: 0.4,
   },
   nia: {
-    skin: '#a97a52', light: '#c79870', shadow: '#7c5232', deep: '#56371f',
-    hair: '#24170f', hairLight: '#44301f', hairDark: '#130c07', style: 'braids',
-    brow: '#24170f', eye: '#2f2218', lips: '#7d4436', lipsLight: '#a6604e', age: 0.3, fem: true, jaw: 0.94,
+    skin: '#bb8f74', hair: '#3a281c', hairLight: '#5c4230', hairDark: '#1e140d', style: 'long',
+    brow: '#2e2018', eye: '#3a2a1e', lips: '#9a5a50', lipsLight: '#bf7a6c', age: 0.25, fem: true, jaw: 0.94,
   },
   miguel: {
-    skin: '#b38158', light: '#cf9d72', shadow: '#845a38', deep: '#5c3d24',
-    hair: '#2a2018', hairLight: '#463628', hairDark: '#16100b', style: 'short',
-    brow: '#2a2018', eye: '#3a2a1c', lips: '#7f4d3c', lipsLight: '#a06450',
-    beard: 'full', beardColor: '#2c2219', age: 0.55,
+    skin: '#ad7a5a', hair: '#1a1410', hairLight: '#352a20', hairDark: '#0c0906', style: 'short',
+    brow: '#1a1410', eye: '#3a2a1c', lips: '#7f4d3c', lipsLight: '#a06450', beard: 'goatee', beardColor: '#1a1410', age: 0.35,
   },
   habib: {
-    skin: '#a87c54', light: '#c49870', shadow: '#7c5634', deep: '#563a22',
-    hair: '#231a12', hairLight: '#3c2e22', hairDark: '#120d09', style: 'short',
+    skin: '#946646', hair: '#b8a27e', hairLight: '#d6c4a0', hairDark: '#8a7656', style: 'kufi',
     brow: '#20160e', eye: '#33241a', lips: '#7a4a3a', lipsLight: '#9a6250',
-    beard: 'full', beardColor: '#2a2018', age: 0.5, browTilt: -0.04,
+    beard: 'full', beardColor: '#1c140e', age: 0.5,
   },
   homeless: {
-    skin: '#8a6141', light: '#a67a58', shadow: '#5f3f28', deep: '#422a18',
-    hair: '#4a4038', hairLight: '#6a5e54', hairDark: '#2c2620', style: 'receding',
+    skin: '#835a48', hair: '#55585a', hairLight: '#76797a', hairDark: '#36383a', style: 'beanie',
     brow: '#3a302a', eye: '#3a2c20', lips: '#6e4434', lipsLight: '#8c5a46',
-    beard: 'full', beardColor: '#5a5048', age: 0.85, browTilt: 0.12,
+    beard: 'stubble', beardColor: '#4a4038', age: 0.85, browTilt: 0.12,
   },
   junkie: {
-    skin: '#b0906e', light: '#c8a886', shadow: '#84684e', deep: '#5c4836',
-    hair: '#33291f', hairLight: '#4e4032', hairDark: '#1c1610', style: 'crop',
-    brow: '#30261c', eye: '#3a3226', lips: '#86605a', lipsLight: '#a07a70',
-    beard: 'stubble', beardColor: '#3a3024', age: 0.5, gaunt: true, browTilt: 0.15,
+    skin: '#af806c', hair: '#3a2a1e', hairLight: '#56402e', hairDark: '#1e150e', style: 'crop',
+    brow: '#30261c', eye: '#3a3226', lips: '#86605a', lipsLight: '#a07a70', beard: 'stubble', beardColor: '#3a3024', age: 0.5, gaunt: true,
   },
   clerk: {
-    skin: '#c79e76', light: '#e1bb92', shadow: '#987252', deep: '#6c4e36',
-    hair: '#362b20', hairLight: '#524234', hairDark: '#1e1711', style: 'crop',
+    skin: '#ae7f6e', hair: '#3a281c', hairLight: '#5a4230', hairDark: '#1e150e', style: 'side',
     brow: '#30251a', eye: '#3a2c1e', lips: '#93604c', lipsLight: '#b07a62', age: 0.3, glasses: true,
   },
 };
 
-export function faceSpec(kind) { return FACE_SPECS[kind] || FACE_SPECS.kev; }
+const toHex = (c) => '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+export function faceSpec(kind) {
+  const S = FACE_SPECS[kind] || FACE_SPECS.kev;
+  if (!S.shadow) {
+    const c = hex(S.skin);
+    S.shadow = toHex(c.map((v) => v * 0.68));
+    S.deep = toHex(c.map((v) => v * 0.45));
+    S.light = toHex(c.map((v) => v + (255 - v) * 0.18));
+  }
+  return S;
+}
 
 /** Where hair starts (t) at a given angle, for the back/side fill. */
 function hairStartT(a, S) {
-  const side = S.sideT ?? { bob: 0.2, dread: 0.5, braids: 0.56, receding: 0.6, swept: 0.6 }[S.style] ?? 0.6;
-  const back = S.backT ?? { bob: 0.16, dread: 0.26, braids: 0.34, receding: 0.4, swept: 0.38 }[S.style] ?? 0.4;
+  const side = S.sideT ?? { bob: 0.2, long: 0.2, dread: 0.5, braids: 0.56, receding: 0.6, swept: 0.6, durag: 0.62, kufi: 0.62, beanie: 0.56, quiff: 0.6 }[S.style] ?? 0.6;
+  const back = S.backT ?? { bob: 0.16, long: 0.06, dread: 0.26, braids: 0.34, receding: 0.4, swept: 0.38, durag: 0.4, kufi: 0.45, beanie: 0.46, quiff: 0.38 }[S.style] ?? 0.4;
   const k = smooth(Math.PI / 2, Math.PI, Math.abs(a));
   return side + (back - side) * k;
 }
@@ -573,16 +571,15 @@ const WRAP = 256;
 const wrapCache = new Map();
 
 /** Wrap-around head texture for a character kind (256x256 canvas). */
-export function headCanvas(kind) {
-  if (wrapCache.has(kind)) return wrapCache.get(kind);
-  const S = faceSpec(kind);
-  const src = S.source === 'reference' ? referenceFrontal() : paintFrontal(S);
+/** Project a frontal source through the skull into the wrap canvas c. */
+function fillWrap(c, S, src) {
   const fr = src.frame;
-  const c = document.createElement('canvas');
-  c.width = WRAP; c.height = WRAP;
   const ctx = c.getContext('2d');
   const img = ctx.createImageData(WRAP, WRAP);
-  const skin = S.source === 'reference' ? sample(src, fr.cx - 30, fr.chinY - 0.42 * (fr.chinY - fr.crownY)) : hex(S.skin);
+  // side/back skin is sampled from the face itself so the wrap has no colour seam
+  const sk1 = sample(src, fr.cx - fr.halfW * 0.5, fr.chinY - 0.38 * (fr.chinY - fr.crownY));
+  const sk2 = sample(src, fr.cx + fr.halfW * 0.5, fr.chinY - 0.38 * (fr.chinY - fr.crownY));
+  const skin = mix(mix(sk1, sk2, 0.5), hex(S.skin), 0.35);
   const skinDark = mix(skin, hex(S.shadow), 0.55);
   const hairC = hex(S.hair), hairL = hex(S.hairLight), hairD = hex(S.hairDark);
   for (let py = 0; py < WRAP; py++) {
@@ -611,7 +608,42 @@ export function headCanvas(kind) {
     }
   }
   ctx.putImageData(img, 0, 0);
+}
+
+/** Decode a JPEG data URL into a frontal source (async). */
+function loadFrontal(url, halfW, done) {
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = FW; cv.height = FH;
+    const cx = cv.getContext('2d');
+    cx.drawImage(img, 0, 0, FW, FH);
+    done({ w: FW, h: FH, data: cx.getImageData(0, 0, FW, FH).data, frame: { cx: 80, crownY: 10, chinY: 190, halfW } });
+  };
+  img.src = url;
+}
+
+/**
+ * Wrap-around head texture for a character kind (256x256 canvas). Mo uses his sheet face (raw,
+ * synchronous); NPCs use their face-bank crop, which decodes asynchronously — until it arrives the
+ * painted fallback is shown, then the canvas and its texture are refreshed in place.
+ */
+export function headCanvas(kind) {
+  if (wrapCache.has(kind)) return wrapCache.get(kind);
+  const S = faceSpec(kind);
+  const c = document.createElement('canvas');
+  c.width = WRAP; c.height = WRAP;
   wrapCache.set(kind, c);
+  if (S.source === 'reference') { fillWrap(c, S, referenceFrontal()); return c; }
+  fillWrap(c, S, paintFrontal(S));
+  const bank = NPC_FACES[kind];
+  if (bank && typeof Image !== 'undefined') {
+    loadFrontal(bank.frontal, bank.halfW, (src) => {
+      fillWrap(c, S, src);
+      const tx = texCache.get(kind);
+      if (tx) tx.needsUpdate = true;
+    });
+  }
   return c;
 }
 

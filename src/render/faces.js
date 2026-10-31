@@ -13,6 +13,7 @@ import { retroUniforms } from './retro.js';
 import { headTexture, faceSpec, landmark, paintPortrait } from './heads.js';
 import { createMo, createAddison, createNPC, castShirt } from '../world/characters.js';
 import { MO_MOODS } from './mo_moods_data.js';
+import { NPC_FACES } from './npc_faces_data.js';
 
 const PW = 96;
 const PH = 128;
@@ -194,7 +195,20 @@ export function portraitCanvas(kind = 'mo', mood = 'content') {
     img.src = MO_MOODS[mood] || MO_MOODS.content;
     return c;
   }
-  // everyone else: a painted portrait in the same style and framing as Mo's sheet
+  if (NPC_FACES[kind]) {
+    const c = document.createElement('canvas');
+    c.width = 180; c.height = 240;
+    const img = new Image();
+    img.onload = () => {
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const ey = 240 * 0.47; // bank portraits put the eye line just below the middle
+      (MOOD_DRAW[mood] || MOOD_DRAW.content)(ctx, { eyes: [{ x: 66, y: ey }, { x: 114, y: ey }], scale: 12 });
+    };
+    img.src = NPC_FACES[kind].portrait;
+    return c;
+  }
+  // fallback: a painted portrait in the same style and framing as Mo's sheet
   if (!baseCache.has(kind)) baseCache.set(kind, paintPortrait(kind, castShirt(kind)));
   const f = baseCache.get(kind);
   const c = document.createElement('canvas');
@@ -208,6 +222,8 @@ export function portraitCanvas(kind = 'mo', mood = 'content') {
 /** Cached data URL, safe to drop straight into an <img> or a CSS background. */
 export function portraitURL(kind = 'mo', mood = 'content') {
   if (kind === 'mo') return MO_MOODS[mood] || MO_MOODS.content;
+  // the cast's faces come straight from the owner's reference bank
+  if (NPC_FACES[kind] && (mood === 'content' || !MOOD_DRAW[mood])) return NPC_FACES[kind].portrait;
   const key = `${kind}|${mood}`;
   if (!urlCache.has(key)) urlCache.set(key, portraitCanvas(kind, mood).toDataURL());
   return urlCache.get(key);

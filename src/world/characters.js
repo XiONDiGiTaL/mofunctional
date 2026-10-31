@@ -128,9 +128,15 @@ function headMat(kind) {
 /** Hair volume per style, as shells over the skull (short styles live in the texture). */
 const HAIR_SHELLS = {
   swept: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.84 : 0.6 - 0.18 * Math.min(1, (Math.abs(a) - 1.1) / 2)), grow: 1.07 },
+  side: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.84 : 0.6 - 0.18 * Math.min(1, (Math.abs(a) - 1.1) / 2)), grow: 1.05 },
+  quiff: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.86 : 0.62 - 0.2 * Math.min(1, (Math.abs(a) - 1.1) / 2)), grow: 1.06 },
   bob: { tMin: (a) => (Math.abs(a) < 0.95 ? 0.7 : 0.18), grow: 1.09 },
+  long: { tMin: (a) => (Math.abs(a) < 0.9 ? 0.82 : Math.abs(a) < 1.3 ? 0.3 : 0.02), grow: 1.08 },
   dread: { tMin: (a) => (Math.abs(a) < 1.05 ? 0.8 : 0.45), grow: 1.08 },
   braids: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.82 : 0.4), grow: 1.04 },
+  durag: { tMin: (a) => (Math.abs(a) < 1.0 ? 0.8 : 0.5), grow: 1.04 },
+  kufi: { tMin: () => 0.78, grow: 1.06 },
+  beanie: { tMin: (a) => (Math.abs(a) < 1.0 ? 0.76 : 0.56), grow: 1.11 },
 };
 
 /**
@@ -154,10 +160,24 @@ function buildHead({ hh, kind, style = 'short', skinMat, hairColor }) {
   const shell = HAIR_SHELLS[style];
   if (shell) g.add(new THREE.Mesh(shellGeometry(hh, shell.tMin, shell.grow), hm));
   const hair = hairMat(hairColor);
-  if (style === 'swept') {
+  if (style === 'swept' && kind === 'addison') {
     // the Reverend's pompadour
     const q = prism(0.5 * hh, 0.62 * hh, 0.28 * hh, 0.36 * hh, 0.14 * hh, hair, [0, 1.07 * hh, 0.12 * hh], 8, [-0.35, 0, 0]);
     g.add(q);
+  }
+  if (style === 'quiff') {
+    // a low forelock swept up off the brow, sitting on the shell rather than floating above it
+    g.add(prism(0.42 * hh, 0.5 * hh, 0.2 * hh, 0.26 * hh, 0.09 * hh, hair, [0, 1.0 * hh, 0.17 * hh], 8, [-0.2, 0, 0]));
+  }
+  if (style === 'durag') {
+    // the tails hanging down the back
+    for (const sx of [-1, 1]) {
+      const p = headPoint(Math.PI - sx * 0.35, 0.55);
+      g.add(prism(0.12 * hh, 0.1 * hh, 0.03 * hh, 0.03 * hh, 0.75 * hh, hair, [p[0] * 1.05 * hh, 0.6 * hh, p[2] * 1.05 * hh], 4, [0.15, 0, sx * 0.08]));
+    }
+  }
+  if (style === 'beanie') {
+    g.add(prism(0.63 * hh, 0.65 * hh, 0.82 * hh, 0.84 * hh, 0.09 * hh, hair, [0, 0.83 * hh, -0.03 * hh], 10));
   }
   if (style === 'dread' || style === 'braids') {
     const count = style === 'dread' ? 9 : 2;
@@ -339,16 +359,16 @@ function buildBody(spec) {
 const CAST = {
   mo: { height: 1.78, build: 1.04 },
   addison: { height: 1.86, build: 1.05, longSleeves: true },
-  rae: { height: 1.66, shirt: 0x6d5a74, pants: 0x3a3442, longSleeves: true },
-  dale: { height: 1.72, build: 0.96, shirt: 0x2f6b4a, pants: 0x4a4436, longSleeves: true },
-  dex: { height: 1.74, build: 1.06, shirt: 0x2a2f3a, pants: 0x20242c, longSleeves: true },
-  kev: { height: 1.76, shirt: 0xa05a3a, pants: 0x33405a },
-  nia: { height: 1.63, shirt: 0x4a6a8a, pants: 0x2f3a46 },
-  miguel: { height: 1.70, build: 1.08, shirt: 0x7d5a3a, pants: 0x333230 },
-  habib: { height: 1.74, build: 1.02, shirt: 0xd6d0c2, pants: 0x2a2a30, longSleeves: true },
-  homeless: { height: 1.71, build: 0.95, shirt: 0x4a463e, pants: 0x35322c, longSleeves: true },
-  junkie: { height: 1.70, build: 0.88, shirt: 0x3c3a34, pants: 0x2c2a26, longSleeves: true },
-  clerk: { height: 1.73, shirt: 0x3b5a44, pants: 0x2e3238 },
+  kev: { height: 1.78, build: 1.02, shirt: 0x4a4e44, pants: 0x34405a },
+  rae: { height: 1.72, build: 0.98, shirt: 0x5a4a78, pants: 0x2c2c34 },
+  dale: { height: 1.70, build: 0.95, shirt: 0x4a5040, pants: 0x4a4436, longSleeves: true },
+  dex: { height: 1.80, build: 1.1, shirt: 0x4a3a2e, pants: 0x22252c },
+  nia: { height: 1.65, shirt: 0x26252a, pants: 0x30343e, longSleeves: true },
+  miguel: { height: 1.74, build: 1.04, shirt: 0x5a6048, pants: 0x2e2e30 },
+  habib: { height: 1.74, build: 1.02, shirt: 0xc8bc9e, pants: 0x3a3630, longSleeves: true },
+  homeless: { height: 1.72, build: 1.0, shirt: 0x4e5038, pants: 0x3a362c, longSleeves: true },
+  junkie: { height: 1.71, build: 0.88, shirt: 0x5a5a56, pants: 0x2c2a26, longSleeves: true },
+  clerk: { height: 1.75, shirt: 0xb8c6d4, pants: 0x2e3238, longSleeves: true },
 };
 
 export function createMo() {
