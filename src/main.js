@@ -434,6 +434,15 @@ class Game {
     this.autosave();
   }
 
+  /** Follow-camera rig, set from the phone's System app. Values are multipliers on the arm. */
+  setCamera(key, value) {
+    const s = this.state.settings;
+    if (key === 'reset') { s.camDist = 1; s.camHeight = 1; return; }
+    const pct = clamp(Number(value) || 100, 50, 160) / 100;
+    if (key === 'dist') s.camDist = clamp(pct, 0.7, 1.4);
+    if (key === 'height') s.camHeight = clamp(pct, 0.8, 1.35);
+  }
+
   toggleCRT() {
     this.state.settings.crt = !this.state.settings.crt;
     this.crtEl.classList.toggle('hidden', !this.state.settings.crt);

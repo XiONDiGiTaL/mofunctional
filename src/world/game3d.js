@@ -44,6 +44,7 @@ export class World {
     this.camBoom = 4.1;
     this.boomHeight = 2.62;
     this.camYaw = 0;
+    this.camSwing = 0;
     this.tilt = 0;
     this.ragdollTimer = 0;
     this.ragdollParts = [];
@@ -126,6 +127,7 @@ export class World {
     this.mo.root.position.set(spawnId === 'street' ? spawn.x + 0.6 : spawn.x, 0, spawn.z);
     this.mo.root.rotation.set(0, spawn.rot, 0);
     this.camYaw = spawn.rot;
+    this.camSwing = 0;
     this.tilt = 0;
 
     // camera snap
@@ -404,35 +406,66 @@ export class World {
     // view is crisp; only the boom length eases, sampled outward from Mo until something solid
     // stops it. That replaces the old clamp-then-shove-to-85% step, which snapped in corners.
     const interior = this.areaId === 'apartment' || this.areaId === 'church';
-    const boomMax = interior ? 2.45 : 4.1;
-    const restHeight = interior ? 1.98 : 2.62;
+    const camSet = s.settings || {};
+    const distMul = clamp(Number(camSet.camDist) || 1, 0.7, 1.4);
+    const heightMul = clamp(Number(camSet.camHeight) || 1, 0.8, 1.35);
+    const boomMax = (interior ? 2.45 : 4.1) * distMul;
+    // the eye rides up with the distance, so pulling the camera back still reads as a wider shot
+    // in a room where the arm itself has nowhere longer to go
+    const restHeight = (interior ? 1.98 : 2.62) * heightMul * distMul;
     const follow = 1 - Math.exp(-9 * dt);
     this.camFocus.x += (this.mo.root.position.x - this.camFocus.x) * follow;
     this.camFocus.z += (this.mo.root.position.z - this.camFocus.z) * follow;
 
-    const backX = -Math.sin(this.camYaw);
-    const backZ = -Math.cos(this.camYaw);
-    const b = this.area.bounds;
-    const margin = 0.42;
-    let room = boomMax;
-    let clear = false;
-    // try a comfortable clearance first, then accept hugging the wall before giving up the angle
-    for (const clearance of [margin, 0.2]) {
-      for (room = boomMax; room > 0.3; room -= 0.1) {
-        const px = this.camFocus.x + backX * room;
-        const pz = this.camFocus.z + backZ * room;
-        if (px > b.minX + clearance && px < b.maxX - clearance && pz > b.minZ + clearance && pz < b.maxZ - clearance && !this.blocked(px, pz)) { clear = true; break; }
+    // What is there along the angle the arm is on right now (a comfortable clearance first, then
+    // accept hugging the wall)?
+    // A swing is a background correction, so it never argues with the player's own orbit: while
+    // the view is being turned by hand the offset is held as it is (the picture then rotates
+    // rigidly with the input) and only re-evaluated once the hand stops.
+    const orbiting = Math.abs(angleDelta(this.prevCamYaw ?? this.camYaw, this.camYaw)) > 1e-4;
+    this.prevCamYaw = this.camYaw;
+
+    let room = this.armRoom(this.camYaw + this.camSwing, boomMax, 0.42);
+    if (!room) room = this.armRoom(this.camYaw + this.camSwing, boomMax, 0.2);
+
+    // A corner leaves the arm under a metre long at best: a close, steep shot. Swing it sideways
+    // along the wall instead — 15° steps either way, stopping as soon as one gives a real side
+    // view, so it leans out of the corner rather than going top-down or spinning off at random.
+    let swingTarget = orbiting ? this.camSwing : 0;
+    if (!orbiting && room < 1.1) {
+      let bestRoom = 0;
+      let bestOff = 0;
+      for (let step = 1; step <= 9 && bestRoom < 1.2; step++) {
+        for (const dir of [1, -1]) {
+          const off = dir * step * (Math.PI / 12);
+          const r = this.armRoom(this.camYaw + off, boomMax, 0.2);
+          if (r > bestRoom) { bestRoom = r; bestOff = off; }
+        }
       }
-      if (clear) break;
-      room = boomMax;
+      // only turn the view if the side angle is clearly better than standing still
+      if (bestRoom > room + 0.35) { room = bestRoom; swingTarget = bestOff; }
     }
-    // backed into a corner with nowhere to stand: go close and high rather than through the wall
-    if (!clear) room = 0.3;
+    // The swing is a slow scan along the wall, and it lets go at its own pace once the corner
+    // opens up, so walking past a doorframe does not whip the view around.
+    const swinging = Math.abs(swingTarget) > 0.001 || Math.abs(this.camSwing) > 0.001;
+    const swingRate = Math.abs(swingTarget) > Math.abs(this.camSwing) ? 4.5 : 3;
+    this.camSwing += (swingTarget - this.camSwing) * (1 - Math.exp(-swingRate * dt));
+    // Mid-swing the arm still points at the blocked angle. Hold a workable length and let the
+    // bounds clamp carry the eye along the wall, instead of collapsing to 0.3 m for half a second.
+    if (!room) room = Math.max(0.55, this.camBoom * 0.9);
+
+    const armYaw = this.camYaw + this.camSwing;
+    const backX = -Math.sin(armYaw);
+    const backZ = -Math.cos(armYaw);
+    const b = this.area.bounds;
     // in fast, out slow: a wall shortening the arm is urgent, opening back up is not, and easing
     // both ways at one rate made the camera pump in and out as he clipped past a corner
     const boomRate = room < this.camBoom ? 16 : 4.5;
     this.camBoom += (room - this.camBoom) * (1 - Math.exp(-boomRate * dt));
-    const targetHeight = restHeight + impairment * 0.06 + (boomMax - this.camBoom) * 0.28;
+    // a shortened arm lifts a little to look over his shoulder; while swinging there is a side
+    // view coming, so do not climb into a top-down in the meantime
+    const liftPerMetre = swinging ? 0.1 : 0.28;
+    const targetHeight = restHeight + impairment * 0.06 + (boomMax - this.camBoom) * liftPerMetre;
     this.boomHeight += (targetHeight - this.boomHeight) * (1 - Math.exp(-6 * dt));
 
     // last resort: never let the arm place the eye outside the room, whatever the corner does
@@ -495,6 +528,22 @@ export class World {
     if (this.promptTarget && canMove) {
       // subtle highlight: face the interaction when close, no shader tricks needed
     }
+  }
+
+  /** Longest arm, in metres, that fits along `yaw` without leaving the room or hitting something. */
+  armRoom(yaw, boomMax, clearance) {
+    if (!this.area) return boomMax;
+    const b = this.area.bounds;
+    const bx = -Math.sin(yaw);
+    const bz = -Math.cos(yaw);
+    for (let room = boomMax; room > 0.3; room -= 0.1) {
+      const px = this.camFocus.x + bx * room;
+      const pz = this.camFocus.z + bz * room;
+      if (px > b.minX + clearance && px < b.maxX - clearance &&
+          pz > b.minZ + clearance && pz < b.maxZ - clearance &&
+          !this.blocked(px, pz)) return room;
+    }
+    return 0;
   }
 
   /** Screen-relative axes in world space, straight off the live camera. */

@@ -70,6 +70,20 @@ export class Phone {
     </div></div>`);
     this.body = this.wrap.querySelector('.phone__body');
     this.wrap.addEventListener('click', (e) => this.onClick(e));
+    // sliders apply as they are dragged; re-rendering here would drop the handle mid-drag
+    this.wrap.addEventListener('input', (e) => {
+      const input = e.target.closest('input[data-act]');
+      if (!input) return;
+      const fn = this.actions[input.dataset.act];
+      if (!fn) return;
+      fn.call(this, input.dataset.arg, undefined, input);
+      this.syncLive();
+      // settings are part of the saved state; debounce so a drag is one write, not sixty
+      if (input.dataset.act.startsWith('cam')) {
+        clearTimeout(this.camSaveTimer);
+        this.camSaveTimer = setTimeout(() => this.g.autosave?.(), 500);
+      }
+    });
     this.root.appendChild(this.wrap);
     this.render();
     this.g.audio?.sfx?.('phone');
@@ -96,6 +110,7 @@ export class Phone {
     }
     const action = e.target.closest('[data-act]');
     if (!action) return;
+    if (action.tagName === 'INPUT') { return; } // sliders are handled by the input listener
     const act = action.dataset.act;
     const arg = action.dataset.arg;
     const num = action.dataset.num !== undefined ? Number(action.dataset.num) : undefined;
@@ -103,6 +118,7 @@ export class Phone {
     if (!fn) { console.warn('[phone] no action', act); return; }
     this.g.audio.sfx('ui');
     fn.call(this, arg, num, action);
+    if (act.startsWith('cam')) this.g.autosave?.();
     if (this.wrap) this.render();
   }
 
@@ -115,6 +131,18 @@ export class Phone {
     const view = this.apps[this.app] ? this.apps[this.app].call(this) : this.homeView();
     this.body.innerHTML = view;
     this.body.scrollTop = 0;
+  }
+
+  /** Live read-outs under sliders, updated while dragging. */
+  syncLive() {
+    if (!this.wrap) return;
+    const s = this.g.state.settings;
+    const set = (key, value) => {
+      const node = this.wrap.querySelector(`[data-live="${key}"]`);
+      if (node) node.textContent = value;
+    };
+    if (s.camDist !== undefined) set('camdist', `${Math.round(s.camDist * 100)}%`);
+    if (s.camHeight !== undefined) set('camheight', `${Math.round(s.camHeight * 100)}%`);
   }
 
   header(title, kicker = '') {
@@ -543,6 +571,15 @@ export class Phone {
         ${SCALES.map((sc) => `<button class="btn btn--sm ${Math.abs((s.settings.scale ?? 1) - sc.value) < 0.01 ? 'btn--primary' : ''}" data-act="scale" data-num="${sc.value}">${sc.label}</button>`).join('')}
         <span class="tiny mono-dim">${Math.round((s.settings.scale ?? 1) * 100)}% · ${T(themeLabel(s.settings.theme))}</span>
       </div>
+      <div class="app__h">Camera</div>
+      <div class="kv"><span class="mono-dim">Distance</span><b data-live="camdist">${Math.round((s.settings.camDist ?? 1) * 100)}%</b></div>
+      <input type="range" min="70" max="140" step="1" value="${Math.round((s.settings.camDist ?? 1) * 100)}" data-act="camdist" style="width:100%" />
+      <div class="kv"><span class="mono-dim">Height</span><b data-live="camheight">${Math.round((s.settings.camHeight ?? 1) * 100)}%</b></div>
+      <input type="range" min="80" max="135" step="1" value="${Math.round((s.settings.camHeight ?? 1) * 100)}" data-act="camheight" style="width:100%" />
+      <div class="row" style="margin-top:4px">
+        <button class="btn btn--sm btn--ghost" data-act="camreset">RESET</button>
+        <span class="tiny mono-dim">Distance pulls the arm back; height raises the eye on it.</span>
+      </div>
       <div class="app__h">Volume</div>
       <input type="range" min="0" max="100" value="${Math.round(s.settings.volume * 100)}" data-act="volume" style="width:100%" />
       <div class="app__h">Save / Load</div>
@@ -671,6 +708,9 @@ export class Phone {
       },
       theme(arg) { g.setTheme?.(arg); },
       scale(arg, num) { g.setScale?.(num); },
+      camdist(arg, num, elem) { g.setCamera?.('dist', elem ? elem.value : 100); },
+      camheight(arg, num, elem) { g.setCamera?.('height', elem ? elem.value : 100); },
+      camreset() { g.setCamera?.('reset'); },
       togglecrt() { g.toggleCRT(); },
       toggle43() { g.toggle43(); },
       volume(arg, num, elem) { s.settings.volume = Number(elem.value) / 100; g.audio.setVolume(s.settings.volume); },

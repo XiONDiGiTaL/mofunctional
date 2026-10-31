@@ -30,6 +30,11 @@ Ice (clinic blue) and VHS (magenta bleed) — recolour the phone, the HUD, the m
 modal from one set of CSS variables. The interface scale is S / M / L, applied to the in-game UI
 layers only, so the 3D stage never shifts. Both are saved with your run.
 
+**The camera** is adjustable in `SYSTEM` as well: distance (70–140%) and height (80–135%), plus a
+reset, saved with the run. The follow camera is a spring arm — it shortens against walls, and when
+Mo backs into a corner it swings sideways along the wall instead of tipping the view to a
+top-down.
+
 ![Themes](assets/img/ui_themes.png)
 
 ## Play it

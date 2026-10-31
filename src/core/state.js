@@ -83,7 +83,7 @@ export function createState() {
     seenEvents: [],
     ending: null,
     pendingSummary: null,
-    settings: { speed: 1, crt: true, ratio43: false, volume: 0.7, muted: false, theme: 'functional', scale: 1 },
+    settings: { speed: 1, crt: true, ratio43: false, volume: 0.7, muted: false, theme: 'functional', scale: 1, camDist: 1, camHeight: 1 },
     dayStart: { money: CONFIG.economy.startMoney, stats: null, day: 1 },
     deliverySeq: 0,
     idleStrikes: 0,
