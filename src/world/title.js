@@ -13,7 +13,8 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import { box, retroMaterial } from '../render/retro.js';
-import { setFaceHigh } from '../render/heads.js';
+// a namespace import, so a cached heads.js from before setFaceHigh existed can't stop the game booting
+import * as heads from '../render/heads.js';
 import { createNPC, animateNPC } from './characters.js';
 
 const CYCLE = 26;
@@ -198,7 +199,7 @@ export class TitleScene {
     const exhaling = t > 15.0 && t < 17.6;
     // the high: red eyes and the smirk come up after the exhale and hold until the loop wraps
     this.high = range(t, 15.4, 18.4) * (1 - range(t, 24.6, 25.9));
-    setFaceHigh('mo', this.high);
+    heads.setFaceHigh?.('mo', this.high);
 
     mo.head.rotation.x = mix(0, 0.12, raised) - inhale * 0.24 + this.high * 0.05;
     mo.head.rotation.z = this.high * 0.05;
@@ -266,7 +267,7 @@ export class TitleScene {
     for (const c of this.crowd) this.world.root.remove(c.rig.root);
     for (const p of this.puffs) this.world.root.remove(p.mesh);
     if (this.pipe && this.pipe.parent) this.pipe.parent.remove(this.pipe);
-    setFaceHigh('mo', 0);
+    heads.setFaceHigh?.('mo', 0);
     // animateMo never writes these, so hand the arm back square
     const arm = this.world.mo.armR;
     arm.pivot.rotation.y = 0;
