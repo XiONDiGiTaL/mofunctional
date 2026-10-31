@@ -3,6 +3,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildMenuWorld } from './areas.js';
+import { TitleScene } from './title.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay } from '../core/util.js';
 import { scheduleTarget } from './schedules.js';
@@ -53,6 +54,7 @@ export class World {
     this.stepTimer = 0;
     this.menuGroup = null;
     this.menuTime = 0;
+    this.titleScene = null;
     this.walking = false;
     this.vel = new THREE.Vector3();
     this.moveTarget = null;
@@ -76,6 +78,10 @@ export class World {
   }
 
   clearArea() {
+    if (this.titleScene) {
+      this.titleScene.dispose();
+      this.titleScene = null;
+    }
     if (this.areaGroup) {
       this.root.remove(this.areaGroup);
       this.areaGroup.traverse((o) => {
@@ -108,6 +114,7 @@ export class World {
     this.addison.root.rotation.set(0, 0.3, 0);
     this.camera.position.set(0.05, 1.52, 2.15);
     this.camera.lookAt(0, 1.32, 0);
+    this.titleScene = new TitleScene(this);
   }
 
   loadArea(id, g, spawnId = null) {
@@ -251,7 +258,7 @@ export class World {
     animateMo(this.mo, dt, { walking: false, high: 0 });
     // A slow, dreadful sway, as though the corridor is breathing
     this.mo.root.position.x = 0.1 + Math.sin(this.menuTime * 0.34) * 0.06;
-    this.mo.head.rotation.y = Math.sin(this.menuTime * 0.22) * 0.16;
+    this.titleScene?.update(dt);
     if (this.addison.root.visible) animateAddison(this.addison, dt * 0.6);
 
     const shake = this.audioLevel * 0.02;

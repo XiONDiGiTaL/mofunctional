@@ -30,6 +30,12 @@ Ice (clinic blue) and VHS (magenta bleed) — recolour the phone, the HUD, the m
 modal from one set of CSS variables. The interface scale is S / M / L, applied to the in-game UI
 layers only, so the 3D stage never shifts. Both are saved with your run.
 
+**The title screen** is a performance rather than a still. Mo stands in the corridor and scans it
+slowly — left, hold, right, hold — then reaches into his jacket, brings out a small glass pipe
+and smokes while the crowd walks past behind him: neighbours coming home, two of them stopped to
+talk, everyone eventually swallowed by the fog. The whole loop runs on a single 26-second clock in
+`src/world/title.js`, which overrides the idle pose after `animateMo` so the two can never argue.
+
 **Typography** is part of the shell: Orbitron carries the machine voice (title, clock, money, app
 headers, endings) and Chakra Petch carries everything meant to be read as prose. Both are
 vendored under `assets/fonts` with their OFL licences, so the interface never waits on a network
