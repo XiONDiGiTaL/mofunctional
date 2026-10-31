@@ -266,8 +266,11 @@ export class World {
     const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play';
 
     // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
+    // A positive orbit means "turn the view to the right". Since forward is (sin yaw, cos yaw),
+    // whose screen-right is (-cos yaw, sin yaw), turning right means *decreasing* the yaw —
+    // adding it swung the camera the wrong way and made every left/right control feel mirrored.
     const orbit = g.input?.orbitDelta || 0;
-    if (orbit) this.camYaw += orbit;
+    if (orbit) this.camYaw -= orbit;
 
     // Movement is camera-relative, so W is always into the screen. A tap on the floor feeds the
     // same model as a target, and both run through one eased velocity — that is what stops the
@@ -291,11 +294,14 @@ export class World {
     }
 
     const impairment = Math.min(1, (s.stats.withdrawal / 140) + (s.high.level / 240));
-    const cYaw = this.camYaw;
-    const fwdX = Math.sin(cYaw);
-    const fwdZ = Math.cos(cYaw);
-    const rightX = -Math.cos(cYaw);   // screen-right is forward turned a quarter to the right
-    const rightZ = Math.sin(cYaw);
+    // Take the basis from the camera that is actually on screen rather than from camYaw: walls
+    // clamp the follow camera and it lags behind Mo, so the two can disagree by a few degrees,
+    // and steering by camYaw then fights the picture.
+    const basis = this.cameraBasis();
+    const fwdX = basis.fx;
+    const fwdZ = basis.fz;
+    const rightX = basis.rx;
+    const rightZ = basis.rz;
     let dirX = 0;
     let dirZ = 0;
     if (keyed) {
@@ -464,6 +470,27 @@ export class World {
     if (this.promptTarget && canMove) {
       // subtle highlight: face the interaction when close, no shader tricks needed
     }
+  }
+
+  /** Screen-relative axes in world space, straight off the live camera. */
+  cameraBasis() {
+    const cam = this.camera;
+    cam.updateMatrixWorld();
+    const e = cam.matrixWorld.elements;
+    let rx = e[0];
+    let rz = e[2];       // camera local +X is screen-right
+    let fx = -e[8];
+    let fz = -e[10];     // camera local -Z is into the screen
+    const rl = Math.hypot(rx, rz);
+    const fl = Math.hypot(fx, fz);
+    if (rl > 1e-4 && fl > 1e-4) {
+      rx /= rl; rz /= rl; fx /= fl; fz /= fl;
+      return { rx, rz, fx, fz };
+    }
+    // camera pointing straight down (or a degenerate matrix): fall back to the orbit angle
+    const c = Math.cos(this.camYaw);
+    const s = Math.sin(this.camYaw);
+    return { rx: -c, rz: s, fx: s, fz: c };
   }
 
   /** NPCs keep to their own patch: pick a spot near home, walk there, stand, repeat. */
