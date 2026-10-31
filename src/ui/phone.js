@@ -13,6 +13,7 @@ import { kindForName } from './threads.js';
 import { THEMES, SCALES, themeLabel } from './themes.js';
 import { APPS, HOME_GRID, DOCK, appIcon, serviceAvatar } from './apps.js';
 import { itemIcon } from './icons.js';
+import * as dealer from '../systems/dealer.js';
 
 const DEFAULT_REPLIES = [
   "ok",
@@ -131,7 +132,7 @@ export class Phone {
     this.body.innerHTML = view;
     this.body.dataset.app = this.app;
     this.wrap.querySelector('.phone__screen').dataset.app = this.app;
-    this.body.scrollTop = 0;
+    this.body.scrollTop = this.app === 'dealer' ? this.body.scrollHeight : 0;
   }
 
   /** Live read-outs under sliders, updated while dragging. */
@@ -190,6 +191,7 @@ export class Phone {
       pantry: s.crp.suspended ? 1 : 0,
       bills: rent.owedCycles > 0 ? rent.owedCycles : 0,
       fellowship: s.fellowship.stage > 0 && s.fellowship.stage < 5 ? 1 : 0,
+      rolo: dealer.dealerState(s).unread || (dealer.activeOrder(s)?.status === 'waiting' ? 1 : 0),
     };
     const ctx = this.iconCtx();
     const c = clock(s);
@@ -427,8 +429,18 @@ export class Phone {
         ${this.footer()}`;
     }
     const unread = unreadMessages(s);
+    const ds = dealer.dealerState(s);
+    const lastLine = ds.log[ds.log.length - 1];
+    const open = dealer.activeOrder(s);
     return `${this.header('Txtr', `${unread} NEW`)}
       <div class="list">
+        <button class="listitem chatlist chatlist--pinned" data-act="go" data-arg="dealer" style="text-align:left;cursor:pointer;width:100%">
+          ${this.senderFace('ROLO')}
+          <div class="grow">
+            <div class="name">${ds.unread ? '<span class="bad">● </span>' : ''}ROLO <span class="pill">pinned</span>${open ? ` <span class="pill pill--live">${open.status === 'waiting' ? 'OUTSIDE' : 'EN ROUTE'}</span>` : ''}</div>
+            <div class="meta">${T(lastLine ? lastLine.text.split('\n')[0] : 'tap to text. he answers.').slice(0, 54)}</div>
+          </div>
+        </button>
         ${s.messages.length ? s.messages.map((m) => `
           <button class="listitem chatlist" data-act="msgopen" data-arg="${m.id}" style="text-align:left;cursor:pointer;width:100%">
             ${this.senderFace(m.from)}
@@ -439,6 +451,91 @@ export class Phone {
           </button>`).join('') : '<div class="empty">No messages. Everyone is giving you space. That is what that is.</div>'}
       </div>
       <div class="tiny mono-dim">Replies you send from the HUD thread show up here too.</div>
+      ${this.footer()}`;
+  }
+
+  /* ------------------------------ ROLO: the thread ------------------------------ */
+
+  dealerView() {
+    const s = this.g.state;
+    const d = dealer.dealerState(s);
+    d.unread = 0;
+    const moFace = portraitURL('mo', this.g.hud?.mood?.id || 'content');
+    const rows = d.log.map((l) => l.from === 'mo'
+      ? `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(l.text).replace(/\n/g, '<br>')}</div><img class="chat__face" src="${moFace}" alt="" /></div>`
+      : `<div class="chat__row">${this.senderFace('ROLO')}<div class="chat__bubble chat__bubble--in">${T(l.text).replace(/\n/g, '<br>')}</div></div>`).join('');
+    const typing = dealer.isTyping();
+    const o = dealer.activeOrder(s);
+    return `${this.header('ROLO', o ? o.id : 'SMS')}
+      ${o ? this.orderCard(o) : ''}
+      <div class="chat">${rows || '<div class="empty">No history. Rolo prefers it that way.</div>'}
+        ${typing ? `<div class="chat__row">${this.senderFace('ROLO')}<div class="chat__bubble chat__bubble--in chat__typing"><i></i><i></i><i></i></div></div>` : ''}
+      </div>
+      <div class="chat__quick">
+        ${dealer.smsOptions(s).map((q) => `<button class="chat__chip" data-act="dealersay" data-arg="${q.key}" ${typing ? 'disabled' : ''}>${T(q.label)}</button>`).join('')}
+      </div>
+      <button class="btn btn--ghost" data-nav="messages">◀ INBOX</button>
+      ${this.footer()}`;
+  }
+
+  orderCard(o) {
+    const stat = { pending: 'EN ROUTE', waiting: 'WAITING OUTSIDE', completed: 'COMPLETED', cancelled: 'CANCELLED', expired: 'EXPIRED' }[o.status] || o.status;
+    return `<div class="ordercard ordercard--${o.status}">
+      <div class="row row--between"><b>${T(o.id)}</b><span class="pill pill--live">${stat}</span></div>
+      <div>${o.qty}x ${T(o.name)} · <b>$${o.total.toFixed(2)}</b> cash on meet</div>
+      <div class="tiny mono-dim">${o.status === 'pending' ? `ETA ${hhmm(o.meetAt)} · ` : ''}${T(o.spot?.label || '')}</div>
+    </div>`;
+  }
+
+  /* ------------------------------ ROLO'S LINE: the app ------------------------------ */
+
+  /**
+   * A crude WAP page from 1999: one font, one colour, numbered links, a balance line. It is a
+   * second face on the same order system the text thread uses.
+   */
+  roloView() {
+    const g = this.g;
+    const s = g.state;
+    const cat = dealer.catalog();
+    if (!this.wapProduct || !dealer.product(this.wapProduct)) this.wapProduct = cat[0].id;
+    const qty = this.wapQty || 1;
+    const p = dealer.product(this.wapProduct);
+    const total = dealer.quote(p.id, qty);
+    const o = dealer.activeOrder(s);
+    const history = dealer.dealerState(s).orders.slice(-4).reverse();
+    const canPay = s.money >= total;
+    return `${this.header("Rolo's Line", 'WAP 1.1')}
+      <div class="wap">
+        <div class="wap__bar"><span>ROLO.WAP</span><span class="wap__blink">█</span><span>BAL $${s.money.toFixed(2)}</span></div>
+        ${o ? `
+          <div class="wap__h">-- ORDER STATUS --</div>
+          ${this.orderCard(o)}
+          <div class="wap__p">${o.status === 'waiting' ? `He is outside: ${T(o.spot.label)}. Walk up and talk to him. Pay on meet.` : 'He is walking over. Status updates here and by text.'}</div>
+          <button class="wap__btn" data-act="wapcancel">[0] CANCEL ORDER</button>
+        ` : `
+          <div class="wap__h">-- MENU -- (prices incl. walk)</div>
+          ${cat.map((c, i) => `
+            <button class="wap__item ${c.id === p.id ? 'on' : ''}" data-act="wappick" data-arg="${c.id}">
+              <span>[${i + 1}] ${T(c.name)}</span><span>$${c.unit.toFixed(2)}</span>
+              <em>${T(c.flavor)} risk+${c.risk} dep+${c.addiction}</em>
+            </button>`).join('')}
+          <div class="wap__h">-- QTY --</div>
+          <div class="wap__qty">
+            <button class="wap__btn" data-act="wapqty" data-num="-1" ${qty <= 1 ? 'disabled' : ''}>[-]</button>
+            <b>${qty}</b>
+            <button class="wap__btn" data-act="wapqty" data-num="1" ${qty >= dealer.DEALER.maxQty ? 'disabled' : ''}>[+]</button>
+            <span>max ${dealer.DEALER.maxQty}</span>
+          </div>
+          <div class="wap__total">${qty}x ${T(p.name)} = <b>$${total.toFixed(2)}</b></div>
+          ${canPay ? '' : `<div class="wap__err">! INSUFFICIENT FUNDS ($${s.money.toFixed(2)})</div>`}
+          ${this.wapNote ? `<div class="wap__err">! ${T(this.wapNote.toUpperCase())}</div>` : ''}
+          <button class="wap__btn wap__btn--go" data-act="waporder" ${canPay ? '' : 'disabled'}>[#] PLACE ORDER</button>
+          <div class="wap__p">Cash on meet. One order at a time. Fictional substances only.</div>
+        `}
+        <div class="wap__h">-- LAST ORDERS --</div>
+        ${history.length ? history.map((h) => `<div class="wap__hist"><span>${T(h.id)} ${h.qty}x ${T(h.name)}</span><span>${h.status.toUpperCase()}</span></div>`).join('') : '<div class="wap__p">none</div>'}
+        <div class="wap__bar wap__bar--foot"><span>(c)1999 ROLO</span><button class="wap__link" data-act="go" data-arg="dealer">TEXT HIM &gt;</button></div>
+      </div>
       ${this.footer()}`;
   }
 
@@ -700,6 +797,18 @@ export class Phone {
         g.audio.sfx('phone');
       },
       msgback() { this.msgId = null; },
+      // Rolo: the thread and the app both go through systems/dealer.js and nothing else
+      dealersay(arg) { dealer.smsSend(g, arg); },
+      wappick(arg) { this.wapProduct = arg; this.wapQty = this.wapQty || 1; },
+      wapqty(arg, num) { this.wapQty = Math.max(1, Math.min(dealer.DEALER.maxQty, (this.wapQty || 1) + (num || 0))); },
+      waporder() {
+        if (dealer.activeOrder(s) || this.wapBusy) return; // one order at a time, one tap per order
+        this.wapBusy = true;
+        const res = dealer.placeOrder(g, this.wapProduct, this.wapQty || 1, 'app');
+        this.wapBusy = false;
+        this.wapNote = res.ok ? '' : res.reason;
+      },
+      wapcancel() { dealer.cancelOrder(g, 'cancelled in the app'); },
       // put the phone away first, so the bite happens on screen
       eatitem(arg) { this.close(); eat(g, arg); },
       useitem(arg) {
@@ -794,6 +903,8 @@ export class Phone {
       social: this.socialView,
       fellowship: this.fellowshipView,
       system: this.systemView,
+      dealer: this.dealerView,
+      rolo: this.roloView,
     };
   }
 }

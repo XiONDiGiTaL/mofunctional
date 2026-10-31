@@ -229,6 +229,12 @@ export const FACE_SPECS = {
     skin: '#af806c', hair: '#3a2a1e', hairLight: '#56402e', hairDark: '#1e150e', style: 'crop',
     brow: '#30261c', eye: '#3a3226', lips: '#86605a', lipsLight: '#a07a70', beard: 'stubble', beardColor: '#3a3024', age: 0.5, gaunt: true,
   },
+  // Rolo: the voice on the other end of the dealer line; painted, not from the face bank
+  rolo: {
+    skin: '#9a6a4c', hair: '#141010', hairLight: '#2a2420', hairDark: '#080606', style: 'beanie',
+    brow: '#1a120c', eye: '#2a1e16', lips: '#7a4a3a', lipsLight: '#9a6250',
+    beard: 'stubble', beardColor: '#1a120c', age: 0.3, browTilt: -0.06,
+  },
   clerk: {
     skin: '#ae7f6e', hair: '#3a281c', hairLight: '#5a4230', hairDark: '#1e150e', style: 'side',
     brow: '#30251a', eye: '#3a2c1e', lips: '#93604c', lipsLight: '#b07a62', age: 0.3, glasses: true,
@@ -685,45 +691,106 @@ function eyeAngle(t) {
 }
 
 /**
- * Fade a kind's head texture toward its "high" face: bloodshot whites, lids at half mast and
- * one corner of the mouth lifted into a smirk. level 0 puts the clean face back exactly. The
- * high face is painted once from the clean wrap; each call only blends the two and re-uploads
- * when the level has moved by a visible step.
+ * Expressions on the 3D head: the clean wrap texture blended toward a painted variant.
+ *   high   bloodshot whites, lids at half mast, one corner of the mouth up (the title screen)
+ *   smile  both corners of the mouth up and the cheeks pushed into them (a deal gone right)
+ * Each variant is painted once from the clean wrap; a call only blends and re-uploads when the
+ * level has moved by a visible step, and level 0 puts the clean face back exactly. Only one
+ * expression shows at a time: asking for another first returns the face to clean.
  */
-const highCache = new Map();
-export function setFaceHigh(kind, level) {
+const exprCache = new Map();
+const PAINTERS = { high: (base, S) => paintHigh(base, S), smile: (base, S) => paintSmile(base, S) };
+export function setFaceExpression(kind, variant, level) {
   const c = wrapCache.get(kind);
-  if (!c) return;
-  let h = highCache.get(kind);
+  if (!c || !PAINTERS[variant]) return;
+  let h = exprCache.get(kind);
   if (!h) {
     const ctx = c.getContext('2d');
-    const base = ctx.getImageData(0, 0, WRAP, WRAP);
-    h = { ctx, base, high: paintHigh(base, faceSpec(kind)), out: ctx.createImageData(WRAP, WRAP), step: 0 };
-    highCache.set(kind, h);
+    h = { ctx, base: ctx.getImageData(0, 0, WRAP, WRAP), variants: {}, out: ctx.createImageData(WRAP, WRAP), step: 0, variant: null };
+    exprCache.set(kind, h);
   }
   const step = Math.round(Math.max(0, Math.min(1, level)) * 48);
-  if (step === h.step) return;
+  // another expression owns the face: neither paint over it nor clear it
+  if (h.variant && h.variant !== variant && h.step > 0) return;
+  if (step === h.step && (h.variant === variant || step === 0)) return;
+  if (!h.variants[variant]) h.variants[variant] = PAINTERS[variant](h.base, faceSpec(kind));
   h.step = step;
+  h.variant = step ? variant : null;
   const k = step / 48;
-  const b = h.base.data, g = h.high.data, o = h.out.data;
-  for (let i = 0; i < b.length; i++) o[i] = b[i] + (g[i] - b[i]) * k;
+  const b = h.base.data, g = h.variants[variant].data, o = h.out.data;
+  if (step) for (let i = 0; i < b.length; i++) o[i] = b[i] + (g[i] - b[i]) * k;
   h.ctx.putImageData(step ? h.out : h.base, 0, 0);
   const tx = texCache.get(kind);
   if (tx) tx.needsUpdate = true;
+}
+
+/** The title screen's high: kept as its own name for the code that already calls it. */
+export function setFaceHigh(kind, level) { setFaceExpression(kind, 'high', level); }
+
+/** Where a kind's eyes and mouth sit in its wrap texture. */
+function wrapFeatures(S) {
+  const wx = (a) => uFromAngle(a) * WRAP;
+  const wy = (t) => (1 - t) * WRAP;
+  const ea = eyeAngle(HEAD.eyeT);
+  return S.wrapFace || {
+    eyes: [[wx(-ea), wy(HEAD.eyeT)], [wx(ea), wy(HEAD.eyeT)]],
+    mouth: [wx(0), wy(HEAD.mouthT), 22],
+  };
+}
+
+const texelAt = (x, y) => ((Math.min(WRAP - 1, Math.max(0, y | 0)) * WRAP) + Math.min(WRAP - 1, Math.max(0, x | 0))) * 4;
+
+/** Bend one side of the mouth (side +1 or -1) up toward its corner by `lift` texels, plus a dimple. */
+function liftMouthSide(src, d, F, side, lift) {
+  const [mx, my, hw] = F.mouth;
+  for (let i = 0; i <= Math.ceil(hw + 7); i++) {
+    const x = mx + side * i;
+    const along = i / hw;
+    const l = lift * (along <= 1 ? Math.pow(smooth(0, 1, along), 1.4) : 1 - smooth(1, 1.3, along));
+    for (let y = Math.floor(my - 9); y <= Math.ceil(my + 9); y++) {
+      const w = 1 - Math.abs(y - my) / 9.5;
+      const sy = y + l * w;
+      const y0 = Math.floor(sy), f = sy - y0;
+      const a = texelAt(x, y0), b = texelAt(x, y0 + 1), o = texelAt(x, y);
+      for (let c = 0; c < 3; c++) d[o + c] = src[a + c] * (1 - f) + src[b + c] * f;
+    }
+  }
+  const cx = mx + side * (hw + 2.5), cy = my - lift - 0.5;
+  for (let y = -3; y <= 2; y++) {
+    const o = texelAt(cx - side * y * 0.4, cy + y);
+    const k = 0.45 * (1 - Math.abs(y + 0.5) / 3.5);
+    for (let c = 0; c < 3; c++) d[o + c] *= 1 - k;
+  }
+}
+
+/** A real smile: both corners up, and the cheeks under the eyes catching a little light. */
+function paintSmile(base, S) {
+  const src = new Uint8ClampedArray(base.data);
+  const out = new ImageData(new Uint8ClampedArray(src), WRAP, WRAP);
+  const F = wrapFeatures(S);
+  liftMouthSide(src, out.data, F, 1, 3.6);
+  liftMouthSide(new Uint8ClampedArray(out.data), out.data, F, -1, 3.6);
+  for (const [ex, ey] of F.eyes) {
+    for (let y = Math.floor(ey + 5); y <= Math.ceil(ey + 10); y++) {
+      for (let x = Math.floor(ex - 9); x <= Math.ceil(ex + 9); x++) {
+        const nx = (x - ex) / 9, ny = (y - ey - 7.5) / 2.6;
+        const r2 = nx * nx + ny * ny;
+        if (r2 > 1) continue;
+        const o = texelAt(x, y);
+        const k = 0.12 * (1 - r2);
+        for (let c = 0; c < 3; c++) out.data[o + c] = Math.min(255, out.data[o + c] + (255 - out.data[o + c]) * k);
+      }
+    }
+  }
+  return out;
 }
 
 function paintHigh(base, S) {
   const src = base.data;
   const out = new ImageData(new Uint8ClampedArray(src), WRAP, WRAP);
   const d = out.data;
-  const at = (x, y) => ((Math.min(WRAP - 1, Math.max(0, y | 0)) * WRAP) + Math.min(WRAP - 1, Math.max(0, x | 0))) * 4;
-  const wx = (a) => uFromAngle(a) * WRAP;
-  const wy = (t) => (1 - t) * WRAP;
-  const ea = eyeAngle(HEAD.eyeT);
-  const F = S.wrapFace || {
-    eyes: [[wx(-ea), wy(HEAD.eyeT)], [wx(ea), wy(HEAD.eyeT)]],
-    mouth: [wx(0), wy(HEAD.mouthT), 22],
-  };
+  const at = texelAt;
+  const F = wrapFeatures(S);
 
   // ---- eyes: red whites, a sore rim under them, the upper lid dropped to half mast
   const rx = 11, ry = 4.6;
@@ -764,26 +831,7 @@ function paintHigh(base, S) {
   }
 
   // ---- smirk: the mouth's right-hand side (Mo's left) bends up toward the corner
-  const [mx, my, hw] = F.mouth;
-  const lift = 4.2;
-  for (let x = Math.floor(mx); x <= Math.ceil(mx + hw + 7); x++) {
-    const along = (x - mx) / hw;
-    const l = lift * (along <= 1 ? Math.pow(smooth(0, 1, along), 1.4) : 1 - smooth(1, 1.3, along));
-    for (let y = Math.floor(my - 9); y <= Math.ceil(my + 9); y++) {
-      const w = 1 - Math.abs(y - my) / 9.5;
-      const sy = y + l * w;
-      const y0 = Math.floor(sy), f = sy - y0;
-      const a = at(x, y0), b = at(x, y0 + 1), o = at(x, y);
-      for (let c = 0; c < 3; c++) d[o + c] = src[a + c] * (1 - f) + src[b + c] * f;
-    }
-  }
-  // the dimple the lifted corner pushes into the cheek
-  const cx = mx + hw + 2.5, cy = my - lift - 0.5;
-  for (let y = -3; y <= 2; y++) {
-    const o = at(cx + y * -0.4, cy + y);
-    const k = 0.45 * (1 - Math.abs(y + 0.5) / 3.5);
-    for (let c = 0; c < 3; c++) d[o + c] *= 1 - k;
-  }
+  liftMouthSide(src, d, F, 1, 4.2);
   return out;
 }
 

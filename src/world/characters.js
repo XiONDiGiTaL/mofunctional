@@ -369,6 +369,8 @@ const CAST = {
   homeless: { height: 1.72, build: 1.0, shirt: 0x4e5038, pants: 0x3a362c, longSleeves: true },
   junkie: { height: 1.71, build: 0.88, shirt: 0x5a5a56, pants: 0x2c2a26, longSleeves: true },
   clerk: { height: 1.75, shirt: 0xb8c6d4, pants: 0x2e3238, longSleeves: true },
+  // Rolo, the phone dealer: navy hoodie, grey sweats, never in a hurry
+  rolo: { height: 1.76, build: 0.96, shirt: 0x1f2c4a, pants: 0x4a4a50, longSleeves: true },
 };
 
 export function createMo() {

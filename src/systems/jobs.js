@@ -68,6 +68,8 @@ export function workShift(g) {
   bump(s, 'hygiene', -6);
   logLine(g, `Worked a shift at ${s.job.employer}.`, 'good');
   g.audio.sfx('cash');
+  // the store's music follows him out the door for a minute
+  g.soundtrack?.cue?.('quikstop', 60);
   g.toast(`Shift complete. +${money(net)}${info.late ? ' (docked for lateness)' : ''}`, 'good');
 
   if (s.flags.tutorial === 2) { s.flags.tutorial = 3; g.bus.emit('tutorial'); }

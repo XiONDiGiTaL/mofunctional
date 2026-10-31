@@ -23,6 +23,7 @@ const NAME_TO_KIND = {
   'HABIB': 'habib',
   'MOM': 'nia',
   'MO': 'mo',
+  'ROLO': 'rolo',
 };
 
 // "DALE (QUIK-STOP #14)" is still Dale: the bracketed part is where he texts from, not who he is

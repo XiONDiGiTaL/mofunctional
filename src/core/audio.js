@@ -1,4 +1,4 @@
-/** Audio: menu theme through WebAudio (for an analyser), plus synthesized retro SFX. */
+/** Audio: the soundtrack through WebAudio (crossfades, one analyser), plus synthesized retro SFX. */
 import { CONFIG } from './config.js';
 
 export class Audio {
@@ -41,47 +41,114 @@ export class Audio {
     this.ready = true;
   }
 
-  async playMusic(src, { loop = true } = {}) {
+  /**
+   * The soundtrack: one <audio> element per track, each through its own gain into the shared
+   * music bus (so the analyser and the volume setting still see everything). Changing track
+   * crossfades: the old one ramps out and pauses once silent, the new one ramps in. Asking for
+   * the track that is already playing does nothing, so walking between rooms that share a score
+   * never restarts it; a track left mid-way keeps its position and picks up from there when it
+   * comes back, unless `restart` asks for the top.
+   *
+   * The files are played exactly as delivered. Their low bitrate, hiss and crunch are the sound
+   * of the game; nothing here filters or normalises them.
+   */
+  async playTrack(src, { fade = 1.6, restart = false, loop = true } = {}) {
     try { await this.init(); } catch (e) { console.warn('[audio] init failed', e); }
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended') {
       try { await Promise.race([this.ctx.resume(), new Promise((r) => setTimeout(r, 600))]); } catch { /* ignore */ }
     }
-    if (!this.musicEl) {
+    this.tracks = this.tracks || new Map();
+    const want = this.tracks.get(src);
+    if (want && this.current === want && !want.el.paused && !restart) return;
+
+    let t = want;
+    if (!t) {
       const el = new window.Audio(src);
       el.loop = loop;
       el.crossOrigin = 'anonymous';
       el.preload = 'auto';
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0;
+      gain.connect(this.musicGain);
+      t = { src, el, gain, wired: false, stopTimer: 0 };
       try {
-        const node = this.ctx.createMediaElementSource(el);
-        node.connect(this.musicGain);
+        this.ctx.createMediaElementSource(el).connect(gain);
+        t.wired = true;
       } catch (e) {
-        // Fallback: unconnected element still plays on its own.
-        el.volume = this._vol;
+        el.volume = 0; // unwired fallback: fade the element itself
       }
-      this.musicEl = el;
-      el.addEventListener('ended', () => { this.musicPlaying = false; });
+      el.addEventListener('error', () => console.warn('[audio] could not load', src));
+      this.tracks.set(src, t);
     }
+
+    const now = this.ctx.currentTime;
+    const ramp = (track, to) => {
+      clearInterval(track.fadeTimer);
+      if (track.wired) {
+        const g = track.gain.gain;
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(g.value, now);
+        g.linearRampToValueAtTime(to, now + fade);
+      } else {
+        const from = track.el.volume;
+        const target = to * this._vol;
+        const t0 = performance.now();
+        track.fadeTimer = setInterval(() => {
+          const k = Math.min(1, (performance.now() - t0) / (fade * 1000));
+          track.el.volume = Math.max(0, Math.min(1, from + (target - from) * k));
+          if (k >= 1) clearInterval(track.fadeTimer);
+        }, 50);
+      }
+    };
+
+    // everything else fades out and stops once it is silent: one score at a time
+    for (const other of this.tracks.values()) {
+      if (other === t || other.el.paused) continue;
+      ramp(other, 0);
+      clearTimeout(other.stopTimer);
+      other.stopTimer = setTimeout(() => { if (this.current !== other) other.el.pause(); }, fade * 1000 + 120);
+    }
+
+    clearTimeout(t.stopTimer);
+    if (restart) t.el.currentTime = 0;
+    this.current = t;
+    this.musicEl = t.el;
+    ramp(t, 1);
     try {
-      await Promise.race([this.musicEl.play(), new Promise((r) => setTimeout(r, 1200))]);
-      this.musicPlaying = !this.musicEl.paused;
+      await Promise.race([t.el.play(), new Promise((r) => setTimeout(r, 1200))]);
+      this.musicPlaying = !t.el.paused;
       if (!this.musicPlaying) console.info('[audio] music did not start (autoplay or no output device)');
     } catch (e) {
       console.warn('[audio] music blocked', e);
     }
   }
 
-  stopMusic() {
-    if (this.musicEl) {
-      this.musicEl.pause();
-      this.musicPlaying = false;
+  /** Kept for older callers: a single track is just the soundtrack with one entry. */
+  async playMusic(src, { loop = true } = {}) {
+    return this.playTrack(src, { loop, fade: 0.6 });
+  }
+
+  stopMusic(fade = 1.2) {
+    if (!this.current || !this.ctx) return;
+    const t = this.current;
+    this.current = null;
+    this.musicPlaying = false;
+    if (t.wired) {
+      const now = this.ctx.currentTime;
+      t.gain.gain.cancelScheduledValues(now);
+      t.gain.gain.setValueAtTime(t.gain.gain.value, now);
+      t.gain.gain.linearRampToValueAtTime(0, now + fade);
     }
+    clearTimeout(t.stopTimer);
+    t.stopTimer = setTimeout(() => t.el.pause(), fade * 1000 + 120);
   }
 
   setVolume(v) {
     this._vol = Math.max(0, Math.min(1, Number(v) || 0));
     if (this.musicGain) this.musicGain.gain.value = this._vol;
-    if (this.musicEl) this.musicEl.volume = this._vol;
+    // wired tracks take their level from the bus; an unwired fallback carries it itself
+    if (this.current && !this.current.wired) this.current.el.volume = this._vol;
   }
 
   /** 0..1 rms of the current music frame, smoothed. */

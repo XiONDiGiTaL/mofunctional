@@ -18,6 +18,9 @@ import { Menu } from './ui/menu.js';
 import { Threads } from './ui/threads.js';
 import { ENDINGS } from './systems/endings.js';
 import { InputSystem } from './core/input.js';
+import { Soundtrack } from './systems/soundtrack.js';
+import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
+import { toggleMap } from './ui/map.js';
 
 class Bus {
   constructor() { this.map = new Map(); }
@@ -39,6 +42,7 @@ class Game {
   constructor() {
     this.bus = new Bus();
     this.audio = new Audio();
+    this.soundtrack = new Soundtrack(this);
     this.input = new InputSystem(this);
     this.state = createState();
     this.mode = 'menu';
@@ -83,13 +87,16 @@ class Game {
   async beginAudio() {
     await this.audio.init();
     this.audio.setVolume(this.state.settings.volume);
-    await this.audio.playMusic('assets/audio/menu_theme.mp3');
+    // the director picks the score from here on (menu now, then one track per place)
+    this.soundtrack.update(0, true);
   }
 
   /** One-shot actions queued by the keyboard or a gamepad button, drained once per frame. */
   handleInputEvents() {
     const inp = this.input;
     if (inp.take('phone')) { this.togglePhone(); }
+    // the map is its own overlay; it closes itself on M or ESC
+    if (inp.take('map') && this.mode === 'play' && !this.phoneOpen && !this.modal.isOpen) this.toggleMap();
     if (inp.take('pause')) {
       if (this.phone.isOpen) this.phone.close();
       else if (this.modal.isOpen) this.modal.close();
@@ -124,6 +131,7 @@ class Game {
     }
 
     if (this.mode === 'play') {
+      tickDealer(this);
       this.world.update(dt, this);
       this.hud.update();
     } else if (this.mode === 'menu') {
@@ -133,6 +141,7 @@ class Game {
       this.world.update(dt, this);
     }
 
+    this.soundtrack.update(dt);
     this.world.render();
     requestAnimationFrame(this.loop);
   }
@@ -331,6 +340,39 @@ class Game {
       m.read = true;
       m.outgoing = true;
     }
+  }
+
+  toggleMap() { toggleMap(this); }
+
+  /** Rolo's thread or app is on screen: keep it current as the order moves. */
+  onDealerChange() {
+    if (this.phone?.isOpen && (this.phone.app === 'dealer' || this.phone.app === 'rolo')) this.phone.render();
+  }
+
+  /** Mo walks up to Rolo on the street: the exchange itself. */
+  dealerHandoff() {
+    const o = activeOrder(this.state);
+    if (!o || o.status !== 'waiting') return;
+    const short = this.state.money < o.total;
+    this.openModal({
+      kicker: `ROLO · ORDER ${o.id}`,
+      title: 'The Handoff',
+      body: `He does not take his hands out of the hoodie until you are close.\n\n"${o.qty}x ${o.name}. $${o.total.toFixed(2)}. Cash."\n\nYou have $${this.state.money.toFixed(2)}.${short ? ' It is not enough, and he can count.' : ''}\n\nA fictional substance that exists only in this game. Using it raises dependence and risk.`,
+      choices: [
+        {
+          label: `Hand him $${o.total.toFixed(2)}.`, sub: `${o.qty}x ${o.name} into your pocket`, disabled: short,
+          effect: () => {
+            const res = completeOrder(this);
+            if (res.ok) {
+              this.world.playHandoff?.();
+              this.toast(`${o.qty}x ${o.name}. It goes in your pocket like it was always there.`, 'event');
+            }
+          },
+        },
+        { label: 'Back out.', sub: 'cancel the order · nothing is charged', effect: () => cancelOrder(this, 'Mo backed out at the meet') },
+        { label: 'Not yet.', sub: 'he waits until the order expires', effect: () => {} },
+      ],
+    });
   }
 
   spendMoney(amount, label) {

@@ -25,7 +25,7 @@ const EVENTS = [
         choices: [
           { label: 'Fix it yourself with tape and optimism.', sub: '-$18, 45 min', effect: () => { spend(g, 18, 'Pipe tape'); bump(g.state, 'stress', 7); g.advance(45); g.state.flags.pipeFixed = true; } },
           { label: 'Put a bucket under it and go to bed.', sub: '+stress, -hygiene over time', effect: () => { bump(g.state, 'stress', 15); g.state.stats.hygiene = clamp(g.state.stats.hygiene - 10); g.state.flags.pipeBucket = true; } },
-          { label: 'Call Rae. Be honest. Feel 12 years old.', sub: 'free, costs dignity', effect: () => { bump(g.state, 'morale', -5); bump(g.state, 'stress', -6); g.advance(20); g.toast('Rae sends her nephew. Her nephew is 14 and better at this than you.', 'info'); } },
+          { label: 'Call Rae. Be honest. Feel 12 years old.', sub: 'free, costs dignity', effect: () => { bump(g.state, 'morale', -5); bump(g.state, 'stress', -6); g.advance(20); g.toast('Rae sends his nephew. His nephew is 14 and better at this than you.', 'info'); } },
         ],
       });
     },

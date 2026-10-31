@@ -13,6 +13,8 @@ import { buyFood, sellToDex, buyGrabBag, billInfo } from '../systems/economy.js'
 import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
 import { openShop } from './shops.js';
 import { showFridge } from '../ui/fridge.js';
+import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
+import { signTex } from '../render/signs.js';
 
 const M = {
   floor: retroMaterial('floor', { map: tex('linoleum') }),
@@ -240,22 +242,54 @@ export function buildStreet(g) {
       }
     }
   };
-  facade(-11, 8, 7.5, 0xc8c0b4);
+  facade(-9.8, 6.6, 7.5, 0xc8c0b4);   // 1120 Kestrel: the tall walk-up
+  facade(-16.5, 5.2, 4.6, 0x9c8a76);  // the bodega's own low building, darker brick
   facade(1.5, 9, 6.2, 0xd8cfc0);
-  facade(11.5, 7, 8.5, 0xe4d6b0);
+  facade(11.5, 5.4, 8.5, 0xe4d6b0);
   facade(-3.6, 3.0, 5.0, 0x9a9088);
-  facade(20, 8, 6.8, 0xb8b8aa);
+  facade(16.85, 4.5, 6.4, 0xb8b8aa);
+  // the seam between the bodega and the walk-up: a drainpipe and a shadow, so they read as two
+  group.add(box(0.6, 7.6, 0.4, retroMaterial('seam', { color: 0x1a1d1e }), [-13.5, 3.8, -6.9]));
+  group.add(box(0.12, 7.4, 0.12, M.metal, [-13.5, 3.7, -6.6]));
 
-  // apartment door
-  group.add(box(1.3, 2.4, 0.2, retroMaterial('aptdoor', { color: 0x4a3b2a }), [-11, 1.2, -6.55]));
-  group.add(box(0.9, 0.14, 0.04, M.white, [-11, 2.3, -6.44]));
-  group.add(box(0.34, 0.1, 0.03, M.goldDoor, [-11.4, 2.3, -6.45]));
+  /**
+   * An entrance you can find: a recessed door in a pale frame, a step, a mat, a lamp over it
+   * and the pool of light it throws on the walk, and a lit sign above. Every door on the block
+   * is built the same way, so once you have found one you can find them all.
+   */
+  const entrance = (x, { w = 1.15, h = 2.35, door = 0x3a2f26, trim = 0xd8d0b8, light = 0xffd9a0, sign = null, signW = 2.4, signH = 0.6, signY = null }) => {
+    const trimMat = retroMaterial(`trim${trim}`, { color: trim, ambient: 0.7 });
+    group.add(box(w + 0.5, h + 0.3, 0.1, retroMaterial('recess', { color: 0x0e1012 }), [x, (h + 0.3) / 2, -6.32]));
+    group.add(box(w, h, 0.12, retroMaterial(`door${door}`, { color: door }), [x, h / 2, -6.26]));
+    group.add(box(w * 0.6, h * 0.34, 0.03, retroMaterial('doorpane', { color: 0xbfd6c8, emissive: 0.45, unlit: true }), [x, h * 0.66, -6.19]));
+    group.add(box(0.14, h + 0.18, 0.26, trimMat, [x - w / 2 - 0.08, (h + 0.18) / 2, -6.2]));
+    group.add(box(0.14, h + 0.18, 0.26, trimMat, [x + w / 2 + 0.08, (h + 0.18) / 2, -6.2]));
+    group.add(box(w + 0.46, 0.18, 0.26, trimMat, [x, h + 0.09, -6.2]));
+    group.add(box(0.06, 0.26, 0.07, M.goldDoor, [x + w / 2 - 0.17, 1.05, -6.16]));
+    group.add(box(w + 0.7, 0.1, 0.55, M.concrete, [x, 0.05, -5.98]));
+    group.add(box(w * 0.92, 0.025, 0.5, retroMaterial('doormat', { color: 0x40302a }), [x, 0.11, -5.72]));
+    group.add(box(0.42, 0.14, 0.24, retroMaterial(`lamp${light}`, { color: light, emissive: 1.1, unlit: true }), [x, h + 0.36, -6.1]));
+    group.add(plane(2.6, 2.1, { name: `pool${light}`, color: light, opacity: 0.17, transparent: true, unlit: true }, [x, 0.035, -5.25], [-Math.PI / 2, 0, 0]));
+    if (sign) {
+      group.add(plane(signW, signH, { name: `sign${x}`, map: sign, emissive: 1.0, unlit: true }, [x, signY ?? h + 0.95, -6.12]));
+    }
+  };
+
+  // 1120 Kestrel: the stoop Mo lives up
+  const apt = building('apartment');
+  entrance(apt.door, {
+    door: 0x4a3b2a, trim: 0xe0d6c0, light: 0xffe0a8, signW: 1.5, signH: 0.5,
+    sign: signTex('sign1120', [{ text: '1120', color: '#f6e8c2', size: 18 }, { text: 'KESTREL ST', color: '#bfae86', size: 7 }], { w: 64, h: 32, bg: '#1d1712', border: '#8a7452' }),
+  });
+  for (let i = 0; i < 2; i++) group.add(box(1.9 - i * 0.3, 0.12, 0.4, M.concrete, [apt.door, 0.06 + i * 0.12, -5.62 + i * 0.32]));
 
   // Quik-Stop storefront
   group.add(box(6.2, 3.0, 0.3, retroMaterial('storefront', { color: 0x2a3a30 }), [1.5, 1.5, -6.5]));
   group.add(plane(4.6, 1.4, { name: 'storewin', map: tex('window'), emissive: 0.5, unlit: true }, [1.5, 1.6, -6.32]));
   group.add(plane(2.4, 1.0, { name: 'storesign', map: tex('neon'), emissive: 0.9, unlit: true }, [1.5, 3.5, -6.3]));
   group.add(box(6.4, 0.16, 1.2, M.green, [1.5, 3.1, -6.0]));
+  group.add(plane(2.6, 0.5, { name: 'qssign', map: signTex('signQuik', [{ text: 'QUIK-STOP #14', color: '#ffe36a', size: 13 }, { text: 'OPEN 24 HRS · COFFEE · LOTTO', color: '#9fe3ff', size: 6 }], { w: 128, h: 32, bg: '#0f1a14', border: '#2f6b4a' }), emissive: 1, unlit: true }, [1.5, 2.5, -6.28]));
+  group.add(plane(2.8, 2.2, { name: 'qspool', color: 0xbfe8ff, opacity: 0.14, transparent: true, unlit: true }, [1.5, 0.035, -5.2], [-Math.PI / 2, 0, 0]));
   // awning stripes
   for (let i = 0; i < 6; i++) {
     group.add(box(1.05, 0.18, 1.15, i % 2 ? M.white : retroMaterial('awningRed', { color: 0x8a3a32 }), [1.5 - 2.65 + i * 1.06, 3.02, -5.9]));
@@ -266,6 +300,8 @@ export function buildStreet(g) {
   group.add(box(1.8, 3.0, 0.25, M.goldDoor, [11.5, 1.5, -6.4]));
   group.add(box(0.1, 2.4, 0.05, retroMaterial('doorseam', { color: 0x7a5c1e }), [11.5, 1.5, -6.27]));
   group.add(plane(1.2, 1.8, { name: 'churchcross', map: tex('cross'), emissive: 0.5, unlit: true }, [11.5, 4.9, -6.3]));
+  group.add(plane(3.4, 0.5, { name: 'churchsign', map: signTex('signChurch', [{ text: 'THE GOLDEN FELLOWSHIP', color: '#ffe08a', size: 10, font: 'Georgia, serif' }, { text: 'ALL ARE WELCOME · SUNDAY 11:00', color: '#d8c08a', size: 6 }], { w: 160, h: 28, bg: '#2a2014', border: '#c9a24a' }), emissive: 0.9, unlit: true }, [11.5, 3.45, -6.33]));
+  group.add(plane(3.0, 2.4, { name: 'churchpool', color: 0xffe0a0, opacity: 0.16, transparent: true, unlit: true }, [11.5, 0.035, -5.2], [-Math.PI / 2, 0, 0]));
   group.add(box(0.4, 0.16, 0.4, M.candle, [10.2, 0.3, -5.9]));
   group.add(box(0.4, 0.16, 0.4, M.candle, [12.8, 0.3, -5.9]));
 
@@ -302,32 +338,39 @@ export function buildStreet(g) {
   group.add(box(0.1, 0.9, 0.1, M.wood, [5.4, 0.45, -6.2]));
   // trash cans
   group.add(box(0.6, 0.9, 0.6, retroMaterial('trash', { color: 0x39443c }), [9.5, 0.45, -5.6]));
-  group.add(box(0.6, 0.9, 0.6, retroMaterial('trash2', { color: 0x39443c }), [-12.6, 0.45, -5.6]));
+  group.add(box(0.6, 0.9, 0.6, retroMaterial('trash2', { color: 0x39443c }), [-13.5, 0.45, -5.7]));
   // road markings + hydrant
   group.add(box(0.6, 0.02, 44, retroMaterial('line', { color: 0xb0a262 }), [0, 0.02, 5.2]));
   group.add(box(0.3, 0.6, 0.3, retroMaterial('hydrant', { color: 0x8a3a32 }), [-5.0, 0.3, 0.9]));
   group.add(box(0.4, 0.1, 0.4, retroMaterial('hydrantTop', { color: 0x6a2a24 }), [-5.0, 0.62, 0.9]));
 
-  // ---- Miguel's bodega, west end: awning, hand-painted sign, crates of fruit on the walk
-  group.add(box(4.6, 3.2, 0.3, retroMaterial('bodfront', { color: 0x2c3d33 }), [-13.5, 1.6, -6.5]));
-  group.add(plane(3.2, 1.5, { name: 'bodwin', map: tex('window'), emissive: 0.42, unlit: true }, [-13.5, 1.7, -6.32]));
-  group.add(box(4.7, 0.18, 1.3, retroMaterial('bodawning', { color: 0x2f5b3c }), [-13.5, 3.15, -5.95]));
-  for (let i = 0; i < 8; i++) {
+  // ---- Miguel's bodega, west end, on its own lot: a lit sign, an OPEN light, a framed door
+  const bod = building('bodega');
+  const bodC = (bod.x0 + bod.x1) / 2;
+  group.add(box(bod.x1 - bod.x0 - 0.2, 3.2, 0.3, retroMaterial('bodfront', { color: 0x2c3d33 }), [bodC, 1.6, -6.5]));
+  group.add(plane(2.4, 1.4, { name: 'bodwin', map: tex('window'), emissive: 0.5, unlit: true }, [bodC - 1.1, 1.65, -6.32]));
+  group.add(plane(0.9, 0.36, { name: 'bodopen', map: signTex('signOpen', [{ text: 'OPEN', color: '#ff4a6a', size: 18, glow: '#ff4a6a' }], { w: 64, h: 24, bg: '#140a0c' }), emissive: 1.2, unlit: true }, [bodC - 1.6, 2.05, -6.3]));
+  group.add(box(bod.x1 - bod.x0, 0.18, 1.3, retroMaterial('bodawning', { color: 0x2f5b3c }), [bodC, 3.35, -5.95]));
+  for (let i = 0; i < 9; i++) {
     group.add(box(0.56, 0.2, 1.25, i % 2 ? retroMaterial('bodawn2', { color: 0xe0d8bd }) : retroMaterial('bodawning', { color: 0x2f5b3c }),
-      [-15.5 + i * 0.57, 3.05, -5.9]));
+      [bod.x0 + 0.3 + i * 0.57, 3.25, -5.9]));
   }
-  group.add(box(0.9, 2.3, 0.16, retroMaterial('boddoor2', { color: 0x39302a }), [-12.4, 1.15, -6.4]));
-  group.add(box(1.1, 0.5, 1.0, M.wood, [-14.9, 0.26, -5.3]));
-  group.add(box(0.5, 0.2, 0.4, retroMaterial('plantain', { color: 0x4a6a2a }), [-14.9, 0.6, -5.3]));
-  group.add(box(1.1, 0.5, 1.0, M.wood, [-14.2, 0.26, -5.3]));
-  group.add(box(0.5, 0.2, 0.4, retroMaterial('orange', { color: 0xc9822a }), [-14.2, 0.6, -5.3]));
+  group.add(plane(4.4, 0.75, { name: 'bodsign', map: signTex('signBodega', [{ text: 'KESTREL BODEGA', color: '#ffd23f', size: 15 }, { text: 'DELI · GROCERY · LOTTO · ATM', color: '#ffffff', size: 7 }], { w: 160, h: 32, bg: '#8a1e22', border: '#ffd23f' }), emissive: 1.0, unlit: true }, [bodC, 3.95, -6.3]));
+  entrance(bod.door, { door: 0x39302a, trim: 0xffd23f, light: 0xfff0b0 });
+  // fruit stand under the window, clear of the door
+  group.add(box(1.0, 0.5, 0.9, M.wood, [bod.x0 + 0.9, 0.26, -5.3]));
+  group.add(box(0.5, 0.2, 0.4, retroMaterial('plantain', { color: 0x4a6a2a }), [bod.x0 + 0.9, 0.6, -5.3]));
+  group.add(box(1.0, 0.5, 0.9, M.wood, [bod.x0 + 2.0, 0.26, -5.3]));
+  group.add(box(0.5, 0.2, 0.4, retroMaterial('orange', { color: 0xc9822a }), [bod.x0 + 2.0, 0.6, -5.3]));
 
   // ---- Habib's halal corner, east end: green sign, hot-case glow, a bench outside
-  group.add(box(4.4, 3.0, 0.3, retroMaterial('habfront', { color: 0x7a2a2a }), [16.2, 1.5, -6.5]));
-  group.add(plane(3.0, 1.4, { name: 'habwin', map: tex('window'), emissive: 0.5, unlit: true }, [16.2, 1.6, -6.32]));
-  group.add(plane(2.6, 0.9, { name: 'habsign2', color: 0x2a5a3a, emissive: 0.55, unlit: true }, [16.2, 3.4, -6.3]));
-  group.add(box(4.5, 0.16, 1.1, retroMaterial('habawning', { color: 0x25482f }), [16.2, 3.0, -5.95]));
-  group.add(box(0.9, 2.3, 0.16, retroMaterial('habdoor', { color: 0x2e2a24 }), [14.7, 1.15, -6.4]));
+  const hab = building('habibs');
+  const habC = (hab.x0 + hab.x1) / 2;
+  group.add(box(hab.x1 - hab.x0 - 0.2, 3.0, 0.3, retroMaterial('habfront', { color: 0x7a2a2a }), [habC, 1.5, -6.5]));
+  group.add(plane(2.2, 1.4, { name: 'habwin', map: tex('window'), emissive: 0.55, unlit: true }, [habC + 1.0, 1.6, -6.32]));
+  group.add(box(hab.x1 - hab.x0, 0.16, 1.1, retroMaterial('habawning', { color: 0x25482f }), [habC, 3.0, -5.95]));
+  group.add(plane(4.0, 0.7, { name: 'habsign2', map: signTex('signHabib', [{ text: "HABIB'S CORNER", color: '#f4f0d0', size: 14 }, { text: 'HALAL · CHICKEN OVER RICE · FALAFEL', color: '#9fe3b0', size: 6 }], { w: 160, h: 30, bg: '#1f4a30', border: '#d8c07a' }), emissive: 0.95, unlit: true }, [habC, 3.55, -6.3]));
+  entrance(hab.door, { door: 0x2e2a24, trim: 0xd8c07a, light: 0xffe6b0 });
   group.add(box(1.7, 0.08, 0.45, M.wood, [18.0, 0.5, 0.1]));
   group.add(box(1.7, 0.45, 0.08, M.wood, [18.0, 0.72, -0.15]));
   group.add(box(0.07, 0.5, 0.45, M.metal, [17.2, 0.25, 0.1]));
@@ -335,8 +378,8 @@ export function buildStreet(g) {
 
   // ---- street life: cardboard, a shopping cart, a sleeping bag that is somebady's home
   group.add(box(1.3, 0.04, 0.9, retroMaterial('cardboard', { color: 0x8a7452 }), [-9.4, 0.02, 0.2]));
-  group.add(box(0.8, 0.9, 0.6, retroMaterial('cart', { color: 0x6a6a62 }), [-11.6, 0.45, -4.9]));
-  group.add(box(0.86, 0.06, 0.66, M.metal, [-11.6, 0.9, -4.9]));
+  group.add(box(0.8, 0.9, 0.6, retroMaterial('cart', { color: 0x6a6a62 }), [-12.6, 0.45, -5.0]));
+  group.add(box(0.86, 0.06, 0.66, M.metal, [-12.6, 0.9, -5.0]));
   group.add(box(1.0, 0.18, 0.7, retroMaterial('sleepingbag', { color: 0x394a5c }), [-9.6, 0.09, 0.4]));
 
   // ================= CITY PASS =================
@@ -364,7 +407,7 @@ export function buildStreet(g) {
       group.add(box(0.5, 1.62, 0.05, retroMaterial('rail2', { color: 0x363b3e }), [fx + (f % 2 ? 0.62 : -0.62), y + 0.81, -6.05], [0, 0, f % 2 ? 0.5 : -0.5]));
     }
   };
-  fireEscape(-11, 2.6, 3);
+  fireEscape(-11.9, 2.9, 3);
   fireEscape(1.5, 2.4, 2);
   fireEscape(11.5, 3.2, 3);
 
@@ -448,27 +491,27 @@ export function buildStreet(g) {
   }
 
   const npcs = [
-    { kind: 'rae', x: -10.2, z: -4.6, rot: 0.4, talk: 'rae' },
+    { kind: 'rae', x: -11.8, z: -3.6, rot: 0.4, talk: 'rae' },
     { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
     { kind: 'kev', x: -1.2, z: -1.2, rot: -1.2, talk: 'kev' },
     { kind: 'dex', x: -3.4, z: -3.4, rot: 1.4, talk: 'dex', live: true },
     { kind: 'homeless', x: -9.6, z: 0.4, rot: 1.2, talk: 'homeless', sit: true },
-    { kind: 'junkie', x: -11.6, z: -4.4, rot: 2.2, talk: 'junkie' },
+    { kind: 'junkie', x: -12.4, z: -4.2, rot: 2.2, talk: 'junkie' },
   ];
 
   const interactables = [
-    { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: -11, z: -5.4, action: (gg) => gg.goTo('apartment', 'street') },
+    { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('apartment', 'street') },
     { id: 'store', label: 'Enter Quik-Stop #14', sub: 'clock in · buy snacks', x: 1.5, z: -5.6, action: (gg) => storeMenu(gg) },
     { id: 'alley', label: 'Step into the alley', sub: 'Dex is usually here', x: -3.6, z: -2.4, action: (gg) => dexMenu(gg) },
-    { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: 11.5, z: -5.4, action: (gg) => gg.goTo('church', 'street') },
-    { id: 'bodega', label: 'Enter Kestrel Bodega', sub: 'Miguel · BEC · loosies', x: -12.4, z: -5.5, action: (gg) => gg.goTo('bodega', 'street') },
-    { id: 'habibs', label: "Enter Habib's Corner", sub: 'halal · chicken over rice', x: 14.7, z: -5.5, action: (gg) => gg.goTo('habibs', 'street') },
+    { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: building('church').door, z: STREET.doorZ, radius: 1.7, action: (gg) => gg.goTo('church', 'street') },
+    { id: 'bodega', label: 'Enter Kestrel Bodega', sub: 'Miguel · BEC · loosies', x: bod.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('bodega', 'street') },
+    { id: 'habibs', label: "Enter Habib's Corner", sub: 'halal · chicken over rice', x: hab.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('habibs', 'street') },
     { id: 'homelessMan', label: 'Talk to the man on the cardboard', sub: 'he is awake', x: -9.6, z: 0.4, action: (gg) => talk(gg, 'homeless') },
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
     { id: 'bench', label: 'Sit on the bench', sub: 'rest · 45 min', x: -7.5, z: 0.4, action: (gg) => bench(gg) },
     { id: 'busstop', label: 'Wait at the bus stop', sub: 'nothing will happen', x: 6.6, z: -4.8, action: (gg) => { gg.advance(20); gg.toast('The bus is late. You watch three people decide not to wait.', 'info'); } },
-    { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -10.2, z: -4.6, action: (gg) => talk(gg, 'rae') },
+    { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
     { id: 'kev', label: 'Talk to Kev', sub: 'coworker · loud', x: -1.2, z: -1.2, action: (gg) => talk(gg, 'kev') },
     { id: 'dex', label: 'Talk to Dex', sub: 'the corner · cash only', x: -3.4, z: -3.4, action: (gg) => dexMenu(gg) },
@@ -476,15 +519,17 @@ export function buildStreet(g) {
 
   return {
     group,
-    bounds: { minX: -16, maxX: 19.2, minZ: -5.6, maxZ: 1.4 },
+    bounds: { ...STREET.bounds },
     solids: [
       solid(-4.2, -5.2, 1.5, 1.0), solid(-7.5, 0.2, 2.0, 0.7), solid(6.5, -5.8, 2.3, 0.4),
-      solid(9.5, -5.6, 0.7, 0.7), solid(-12.6, -5.6, 0.7, 0.7), solid(5.0, -6.2, 1.1, 0.4),
+      solid(9.5, -5.6, 0.7, 0.7), solid(-13.5, -5.7, 0.7, 0.7), solid(5.0, -6.2, 1.1, 0.4), solid(-12.6, -5.0, 0.8, 0.6),
       solid(-5.0, 0.9, 0.5, 0.5),
       solid(-6.2, -4.7, 0.9, 0.9), solid(8.8, -4.7, 0.9, 0.9), solid(17.6, -4.7, 0.9, 0.9),
       solid(7.2, -4.9, 0.5, 0.5), solid(-6.6, -4.9, 0.5, 0.5), solid(4.2, 1.1, 0.3, 0.3),
     ],
-    spawn: { x: -11, z: -2.6, rot: Math.PI },
+    spawn: streetSpawn('apartment'),
+    // out of whichever door he came through, a step clear of its prompt
+    spawnFor: (from) => streetSpawn(from),
     npcs,
     interactables,
     ambient: 'street',
@@ -492,6 +537,7 @@ export function buildStreet(g) {
 }
 
 function storeMenu(g) {
+  g.soundtrack?.cue?.('quikstop', 25);
   const s = g.state;
   const info = shiftInfo(g);
   const mod = minuteOfDay(s.clock.m);
@@ -667,10 +713,10 @@ function talk(g, id) {
     g.openModal({
       kicker: 'RAE VELL — LANDLORD',
       title: 'The Stairwell Conversation',
-      body: npcLine('rae') + '\n\n' + rentLine + '\n\nShe is holding a clipboard with your name on it. Just your name. Nothing else.',
+      body: npcLine('rae') + '\n\n' + rentLine + '\n\nHe is holding a clipboard with your name on it. Just your name. Nothing else.',
       choices: [
         { label: 'Pay what you owe.', sub: `${money(info.owed)}`, disabled: info.owedCycles <= 0 || s.money < info.owed, effect: () => { g.payBill('rent'); } },
-        { label: 'Promise her Friday.', sub: '+stress, +relationship', effect: () => { bump(s, 'stress', 5); s.npc.rae++; g.toast('She writes something on the clipboard. It is not "no".', 'info'); } },
+        { label: 'Promise him Friday.', sub: '+stress, +relationship', effect: () => { bump(s, 'stress', 5); s.npc.rae++; g.toast('He writes something on the clipboard. It is not "no".', 'info'); } },
         { label: 'Say nothing and go upstairs.', sub: '-morale', effect: () => { bump(s, 'morale', -5); s.npc.rae = Math.max(-5, s.npc.rae - 1); } },
       ],
     });
@@ -835,21 +881,30 @@ export function buildBodega(g) {
   group.add(box(2.4, 2.2, 0.5, retroMaterial('cooler', { color: 0x2e3a3c }), [1.9, 1.1, -3.6]));
   group.add(plane(2.1, 1.8, { name: 'coolerglass', color: 0x9fd8ff, emissive: 0.35, unlit: true, opacity: 0.55, transparent: true }, [1.9, 1.15, -3.34]));
 
-  // counter with the grill behind it
-  group.add(box(3.0, 1.0, 0.8, M.wood, [1.6, 0.5, 1.8]));
-  group.add(box(3.0, 0.06, 0.84, M.tile, [1.6, 1.03, 1.8]));
-  group.add(box(1.4, 0.7, 0.6, retroMaterial('grill', { color: 0x3a3a36 }), [1.4, 0.35, 2.6]));
-  group.add(box(0.5, 0.3, 0.4, retroMaterial('lottery', { color: 0x223a5a, emissive: 0.12 }), [-0.9, 1.2, 1.8]));
+  // The counter runs along the right wall with Miguel behind it and the grill at his back, so
+  // the customer side is the open floor by the door. (It used to sit across the front of the
+  // room, and Mo arrived on the wrong side of it, boxed in between the counter and the grill.)
+  group.add(box(0.9, 1.0, 3.0, M.wood, [2.5, 0.5, 0.2]));
+  group.add(box(0.96, 0.06, 3.06, M.tile, [2.5, 1.03, 0.2]));
+  group.add(box(0.8, 0.7, 1.2, retroMaterial('grill', { color: 0x3a3a36 }), [3.55, 0.35, -2.0]));
+  group.add(box(0.7, 0.05, 1.0, retroMaterial('grilltop', { color: 0x1a1a18 }), [3.55, 0.72, -2.0]));
+  group.add(box(0.5, 0.3, 0.4, retroMaterial('lottery', { color: 0x223a5a, emissive: 0.12 }), [2.5, 1.22, 1.3]));
+  group.add(box(0.36, 0.22, 0.3, retroMaterial('register', { color: 0x2a2a28 }), [2.5, 1.17, -0.6]));
   // fluorescent strips
   for (const x of [-2, 2]) group.add(box(1.8, 0.06, 0.2, M.lamp, [x, 2.9, 0]));
-  // door back to the street
-  group.add(box(1.1, 2.3, 0.14, M.door, [3.2, 1.15, 3.4]));
+  // the way out: a framed door in the front wall with a lit EXIT over it
+  group.add(box(1.1, 2.3, 0.14, M.door, [0.6, 1.15, 3.9]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [0.0, 1.2, 3.86]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [1.2, 1.2, 3.86]));
+  group.add(box(1.32, 0.12, 0.2, M.white, [0.6, 2.4, 3.86]));
+  group.add(box(0.6, 0.2, 0.06, retroMaterial('exitsign', { color: 0xff3a2a, emissive: 1.2, unlit: true }), [0.6, 2.68, 3.84]));
+  group.add(plane(1.6, 1.2, { name: 'bodexitpool', color: 0xfff0c0, opacity: 0.12, transparent: true, unlit: true }, [0.6, 0.02, 3.3], [-Math.PI / 2, 0, 0]));
 
   const interactables = [
-    { id: 'bodcounter', label: 'Order from Miguel', sub: 'BEC · chopped cheese · loosies', x: 1.6, z: 1.1, action: (gg) => openShop(gg, 'bodega') },
+    { id: 'bodcounter', label: 'Order from Miguel', sub: 'BEC · chopped cheese · loosies', x: 1.75, z: 0.2, action: (gg) => openShop(gg, 'bodega') },
     { id: 'bodcooler', label: 'Open the cooler', sub: 'cold things', x: 1.9, z: -2.9, action: (gg) => openShop(gg, 'bodega') },
-    { id: 'bodshelf', label: 'Browse the shelves', sub: 'shelf food', x: -2.6, z: -0.6, action: (gg) => openShop(gg, 'bodega') },
-    { id: 'bodexit', label: 'Back out to Kestrel St.', sub: '', x: 3.2, z: 3.4, action: (gg) => gg.goTo('street', 'bodega') },
+    { id: 'bodshelf', label: 'Browse the shelves', sub: 'shelf food', x: -2.5, z: -0.6, action: (gg) => openShop(gg, 'bodega') },
+    { id: 'bodexit', label: 'Back out to Kestrel St.', sub: '', x: 0.6, z: 3.2, radius: 1.05, action: (gg) => gg.goTo('street', 'bodega') },
   ];
 
   return {
@@ -857,11 +912,12 @@ export function buildBodega(g) {
     bounds: { minX: -3.4, maxX: 3.4, minZ: -3.4, maxZ: 3.4 },
     solids: [
       solid(-3.1, -0.6, 0.7, 5.6), solid(1.9, -3.6, 2.6, 0.7),
-      solid(1.6, 1.8, 3.2, 0.9), solid(1.4, 2.6, 1.5, 0.7),
+      solid(2.5, 0.2, 1.0, 3.1), solid(3.55, -2.0, 0.8, 1.3),
     ],
-    spawn: { x: 2.4, z: 2.7, rot: Math.PI },
+    // just inside the door, facing the shop, a step outside the exit's prompt
+    spawn: { x: 0.6, z: 2.0, rot: Math.PI },
     npcs: [
-      { kind: 'miguel', x: 1.6, z: 0.9, rot: 0, talk: 'miguel' },
+      { kind: 'miguel', x: 3.15, z: 0.2, rot: -Math.PI / 2, talk: 'miguel' },
       { kind: 'cat', x: -1.6, z: 1.2, rot: 0.4 },
     ],
     interactables,
@@ -882,12 +938,12 @@ export function buildHabibs(g) {
   group.add(box(0.16, 2.9, D, { name: 'habwall4', color: 0xb9a888 }, [W / 2, 1.45, 0]));
   group.add(plane(W, D, { name: 'habceil', map: tex('ceiling'), repeat: [2, 2] }, [0, 2.9, 0], [Math.PI / 2, 0, 0]));
 
-  // hot case + counter
-  group.add(box(3.4, 1.0, 0.9, retroMaterial('habcounter', { color: 0x6a5744 }), [-0.4, 0.5, 1.6]));
-  group.add(box(3.4, 0.08, 0.94, M.tile, [-0.4, 1.04, 1.6]));
-  group.add(box(1.6, 0.5, 0.7, retroMaterial('hotcase', { color: 0x8a8a80, emissive: 0.1 }), [-1.4, 1.3, 1.5]));
+  // hot case on a counter across the back half; Habib stands behind it, the door is in front
+  group.add(box(3.4, 1.0, 0.9, retroMaterial('habcounter', { color: 0x6a5744 }), [-0.4, 0.5, -0.8]));
+  group.add(box(3.4, 0.08, 0.94, M.tile, [-0.4, 1.04, -0.8]));
+  group.add(box(1.6, 0.5, 0.7, retroMaterial('hotcase', { color: 0x8a8a80, emissive: 0.1 }), [-1.4, 1.3, -0.9]));
   for (let i = 0; i < 3; i++) {
-    group.add(box(0.34, 0.16, 0.4, retroMaterial(`tray${i}`, { color: [0xc98a3a, 0xb5533f, 0xd8c07a][i] }), [-1.9 + i * 0.5, 1.6, 1.5]));
+    group.add(box(0.34, 0.16, 0.4, retroMaterial(`tray${i}`, { color: [0xc98a3a, 0xb5533f, 0xd8c07a][i] }), [-1.9 + i * 0.5, 1.6, -0.9]));
   }
   // display shelves, tidy rows
   for (let s = 0; s < 3; s++) {
@@ -901,25 +957,30 @@ export function buildHabibs(g) {
   group.add(plane(0.9, 1.2, { name: 'habposter', map: tex('poster') }, [-3.0, 1.6, -1.4], [0, Math.PI / 2, 0]));
   // warm lamps
   for (const x of [-1.6, 1.6]) group.add(box(0.9, 0.06, 0.18, M.lamp, [x, 2.8, 0.4]));
-  group.add(box(1.1, 2.3, 0.14, M.door, [-2.8, 1.15, 3.2]));
+  // the door out, framed, with a lit EXIT
+  group.add(box(1.1, 2.3, 0.14, M.door, [-1.2, 1.15, 3.66]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [-1.8, 1.2, 3.62]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [-0.6, 1.2, 3.62]));
+  group.add(box(1.32, 0.12, 0.2, M.white, [-1.2, 2.4, 3.62]));
+  group.add(box(0.6, 0.2, 0.06, retroMaterial('exitsign', { color: 0xff3a2a, emissive: 1.2, unlit: true }), [-1.2, 2.66, 3.6]));
 
   const interactables = [
-    { id: 'habcounter', label: 'Order from Habib', sub: 'chicken over rice · falafel', x: -0.4, z: 1.0, action: (gg) => openShop(gg, 'habibs') },
-    { id: 'habcase', label: 'Look in the hot case', sub: 'it is all still warm', x: -1.4, z: 1.0, action: (gg) => openShop(gg, 'habibs') },
-    { id: 'habshelf', label: 'Browse the shelves', sub: 'no pork, never', x: 2.2, z: -1.9, action: (gg) => openShop(gg, 'habibs') },
-    { id: 'habexit', label: 'Back out to Kestrel St.', sub: '', x: -2.8, z: 3.2, action: (gg) => gg.goTo('street', 'habibs') },
+    { id: 'habcounter', label: 'Order from Habib', sub: 'chicken over rice · falafel', x: -0.4, z: -0.05, action: (gg) => openShop(gg, 'habibs') },
+    { id: 'habcase', label: 'Look in the hot case', sub: 'it is all still warm', x: -1.6, z: -0.05, action: (gg) => openShop(gg, 'habibs') },
+    { id: 'habshelf', label: 'Browse the shelves', sub: 'no pork, never', x: 2.4, z: -1.6, action: (gg) => openShop(gg, 'habibs') },
+    { id: 'habexit', label: 'Back out to Kestrel St.', sub: '', x: -1.2, z: 2.95, radius: 1.05, action: (gg) => gg.goTo('street', 'habibs') },
   ];
 
   return {
     group,
     bounds: { minX: -3.2, maxX: 3.2, minZ: -3.2, maxZ: 3.2 },
     solids: [
-      solid(-0.4, 1.6, 3.6, 1.0), solid(-1.4, 1.5, 1.8, 0.8),
-      solid(2.2, -2.4, 2.4, 0.7),
+      solid(-0.4, -0.8, 3.6, 1.0), solid(2.2, -2.4, 2.4, 0.7),
     ],
-    spawn: { x: -2.2, z: 2.6, rot: Math.PI },
-    npcs: [{ kind: 'habib', x: -0.4, z: 0.8, rot: 0, talk: 'habib' }],
+    spawn: { x: -1.2, z: 1.8, rot: Math.PI },
+    npcs: [{ kind: 'habib', x: -0.4, z: -1.65, rot: 0, talk: 'habib' }],
     interactables,
     ambient: 'street',
   };
 }
+

@@ -46,6 +46,10 @@ export const APPS = {
     name: 'Blessed+', tag: 'salvation, now ad-supported', a: '#ffd86b', b: '#6a2bb0',
     icon: svg('<ellipse cx="12" cy="5" rx="5" ry="1.6"/><path d="M12 9v11M8 13h8"/>'),
   },
+  rolo: {
+    name: "Rolo's Line", tag: 'wap 1.1 · we dont keep logs (we keep logs)', a: '#9bbc0f', b: '#0f380f',
+    icon: svg('<rect x="6.5" y="2.5" width="11" height="19" rx="2"/><path d="M9 6h6v5H9z"/><path d="M9 14h.01M12 14h.01M15 14h.01M9 17h.01M12 17h.01M15 17h.01" stroke-width="2.4"/>'),
+  },
   system: {
     name: 'Tweaks', tag: 'settings for a life you can’t adjust', a: '#9aa3ad', b: '#3c434b',
     icon: svg('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>'),
@@ -98,7 +102,10 @@ export function serviceAvatar(name, cls = '') {
 }
 
 /** The home-screen layout: the grid, then the dock. */
-export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'fellowship'];
+export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'fellowship', 'rolo'];
+
+// Rolo's text thread lives inside Txtr, so it wears Txtr's brand
+APPS.dealer = { ...APPS.messages };
 export const DOCK = ['messages', 'bank', 'pantry', 'system'];
 
 /** An app icon tile. `day` feeds iDread's live date; `badge` is the red notification count. */

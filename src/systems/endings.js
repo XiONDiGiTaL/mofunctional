@@ -35,7 +35,7 @@ You had ${money(s.money)} on you. It went to the state.`,
 
 Everything you own fits into two laundry bags if you are willing to fold the guitar. You are not willing to fold the guitar.
 
-Rae watches from the stairwell. She does not say anything mean. That is somehow worse. She says she hopes you land somewhere, and she means it, and it does not help at all.
+Rae watches from the stairwell. He does not say anything mean. That is somehow worse. He says he hopes you land somewhere, and he means it, and it does not help at all.
 
 You have ${money(s.money)} and a guitar and no address. Addresses turn out to be the whole trick.`,
     stats: (s) => [

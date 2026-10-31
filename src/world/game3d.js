@@ -5,6 +5,7 @@ import { createMo, createAddison, createNPC, createCat, animateMo, animateAddiso
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildMenuWorld } from './areas.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
+import { DealerWalker, HandoffBeat } from './handoff.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay } from '../core/util.js';
 import { scheduleTarget } from './schedules.js';
@@ -80,6 +81,8 @@ export class World {
 
   clearArea() {
     this.eating?.stop();
+    this.handoff?.stop();
+    this.dealerWalker?.remove();
     if (this.titleScene) {
       this.titleScene.dispose();
       this.titleScene = null;
@@ -131,9 +134,10 @@ export class World {
     this.root.add(this.areaGroup);
     this.addison.root.visible = false;
 
-    const spawn = this.area.spawn;
+    // an area can say where each of its doors lets out; otherwise there is one spawn
+    const spawn = (spawnId && this.area.spawnFor?.(spawnId)) || this.area.spawn;
     this.mo.root.visible = true;
-    this.mo.root.position.set(spawnId === 'street' ? spawn.x + 0.6 : spawn.x, 0, spawn.z);
+    this.mo.root.position.set(spawn.x, 0, spawn.z);
     this.mo.root.rotation.set(0, spawn.rot, 0);
     this.camYaw = spawn.rot;
     this.camSwing = 0;
@@ -170,6 +174,20 @@ export class World {
       rig.npcDef = npc;
     }
     this.audioLevel = 0;
+    // a dealer who is already waiting is standing there when Mo steps out
+    if (!this.dealerWalker) this.dealerWalker = new DealerWalker(this);
+    this.dealerWalker.sync(g, true);
+  }
+
+  /** Mo's half of the exchange: hand out, hand back, a smile. */
+  playHandoff() {
+    if (!this.handoff) this.handoff = new HandoffBeat(this);
+    const r = this.dealerWalker?.rig?.root.position;
+    const mo = this.mo.root.position;
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    this.handoff.play(r ? r.x : mo.x, r ? r.z : mo.z + 1);
   }
 
   setPromptTarget(it) {
@@ -290,7 +308,7 @@ export class World {
 
   updatePlay(dt, g) {
     const s = g.state;
-    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play' && !this.eating?.active;
+    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play' && !this.eating?.active && !this.handoff?.active;
 
     // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
     // A positive orbit means "turn the view to the right". Since forward is (sin yaw, cos yaw),
@@ -401,6 +419,9 @@ export class World {
       speed: 1,
     });
     this.eating?.update(dt);
+    this.handoff?.update(dt);
+    this.dealerWalker?.sync(g);
+    this.dealerWalker?.update(dt);
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {

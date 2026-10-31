@@ -6,9 +6,11 @@
  */
 import { readdirSync, readFileSync, writeFileSync, unlinkSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+// fileURLToPath, not .pathname: on Windows .pathname is "/C:/...", which join() turns into C:\C:\...
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const srcDir = join(ROOT, 'src');
 const tmp = join(ROOT, '.syntax-check.mjs');
 

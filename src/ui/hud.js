@@ -8,6 +8,7 @@ import { TUTORIAL_HINTS } from '../systems/dialogue.js';
 import { el } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
 import { MessageFeed } from './feed.js';
+import { renderMinimap } from './map.js';
 
 export class HUD {
   constructor(root, game) {
@@ -36,9 +37,11 @@ export class HUD {
           <span class="hud__money">$0.00</span>
         </div>
         <div class="hud__stats"></div>
+        <button class="minimap" data-hud="map" title="Open the map (M)"></button>
       </div>
       <div class="hud__right">
         <div class="hud__btns">
+          <button class="hud__btn" data-hud="map">MAP [M]</button>
           <button class="hud__btn hud__phone" data-hud="phone">PHONE [TAB]</button>
         </div>
         <div class="hud__btns">
@@ -52,7 +55,7 @@ export class HUD {
         <div class="hud__objective"></div>
       </div>
       <div class="hud__prompt"></div>
-      <div class="hud__hint">WASD move · Q/E orbit · F interact · TAB phone · 1/2/3 speed · ESC pause · pad supported</div>
+      <div class="hud__hint">WASD move · Q/E orbit · F interact · TAB phone · M map · 1/2/3 speed · ESC pause · pad supported</div>
       <div class="hud__log"></div>
       <div class="hud__toasts"></div>
     </div>`);
@@ -71,6 +74,8 @@ export class HUD {
     this.logEl = this.el.querySelector('.hud__log');
     this.toastWrap = this.el.querySelector('.hud__toasts');
     this.feed = new MessageFeed(this.el, this.g);
+    this.minimapEl = this.el.querySelector('.minimap');
+    this.miniT = 0;
 
     this.el.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-hud],[data-speed]');
@@ -82,6 +87,7 @@ export class HUD {
       }
       switch (btn.dataset.hud) {
         case 'phone': g.togglePhone(); break;
+        case 'map': g.toggleMap?.(); break;
         case 'pause': g.togglePause(); break;
         case 'crt': g.toggleCRT(); break;
         case 'ratio': g.toggle43(); break;
@@ -146,6 +152,13 @@ export class HUD {
       st.node.classList.toggle('flash', danger);
       const colors = { energy: '#8fd8ff', hunger: '#ffc46b', stress: '#ff8f7a', morale: '#b992ff', addiction: '#d8d8a0', risk: '#ff5e5e' };
       st.node.style.setProperty('--c', danger ? 'var(--bad)' : colors[k]);
+    }
+
+    // the minimap redraws a few times a second, not every frame
+    const now = performance.now();
+    if (this.minimapEl && now - this.miniT > 180) {
+      this.miniT = now;
+      this.minimapEl.innerHTML = renderMinimap(g);
     }
 
     const hint = TUTORIAL_HINTS[Math.min(5, s.flags.tutorial)] || TUTORIAL_HINTS[5];
