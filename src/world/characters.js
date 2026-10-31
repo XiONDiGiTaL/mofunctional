@@ -202,22 +202,22 @@ function buildBody(spec) {
   const skin = tone(skinColor);
 
   // vertical stack of a 1.78 m figure: crotch at 0.53, shoulder line at 0.83, crown at 1.78
-  const footH = 0.072 * k;
-  const calfH = 0.440 * k;
-  const thighH = 0.440 * k;
-  const pelvisH = 0.120 * k;
-  const abdomenH = 0.150 * k;
-  const chestH = 0.260 * k;
-  const neckH = 0.060 * k;
-  const headH = 0.215 * k;
+  const footH = 0.075 * k;
+  const calfH = 0.445 * k;
+  const thighH = 0.435 * k;
+  const pelvisH = 0.125 * k;
+  const abdomenH = 0.145 * k;
+  const chestH = 0.265 * k;
+  const neckH = 0.058 * k;
+  const headH = 0.222 * k;
   const hipY = footH + calfH + thighH;
   const shoulderY = abdomenH + chestH;
 
-  const hipW = 0.330 * b * k;       // pelvis, wider than the waist
-  const waistW = 0.296 * b * k;
-  const chestW = 0.392 * b * k;
-  const shoulderW = 0.436 * b * k;  // deltoid to deltoid
-  const shoulderX = shoulderW / 2 - 0.085 * k;  // the arm hangs inside the deltoid
+  const hipW = 0.352 * b * k;       // pelvis, wider than the waist
+  const waistW = 0.318 * b * k;
+  const chestW = 0.428 * b * k;
+  const shoulderW = 0.492 * b * k;  // deltoid to deltoid
+  const shoulderX = shoulderW / 2 - 0.094 * k;  // the arm hangs inside the deltoid
 
   const root = new THREE.Group();
   root.add(shadowBlob(0.26 + 0.06 * k));
@@ -226,12 +226,12 @@ function buildBody(spec) {
   hips.add(prism(waistW, hipW, 0.205 * k, 0.222 * k, pelvisH, pantsMat, [0, pelvisH, 0], 8));
 
   function makeLeg(sx) {
-    const pivot = joint(hips, sx * hipW * 0.27, -0.01 * k, 0);
-    pivot.add(prism(0.176 * b * k, 0.128 * b * k, 0.186 * k, 0.146 * k, thighH, pantsMat, [0, 0.012 * k, 0], 7));
+    const pivot = joint(hips, sx * hipW * 0.28, -0.01 * k, 0);
+    pivot.add(prism(0.196 * b * k, 0.150 * b * k, 0.198 * k, 0.158 * k, thighH, pantsMat, [0, 0.012 * k, 0], 7));
     const knee = joint(pivot, 0, -thighH, 0);
-    knee.add(prism(0.128 * b * k, 0.094 * b * k, 0.146 * k, 0.106 * k, calfH, pantsMat, [0, 0.006 * k, 0], 7));
+    knee.add(prism(0.146 * b * k, 0.116 * b * k, 0.152 * k, 0.110 * k, calfH, pantsMat, [0, 0.004 * k, 0], 7));
     const ankle = joint(knee, 0, -calfH, 0);
-    ankle.add(prism(0.104 * k, 0.112 * k, 0.125 * k, 0.255 * k, footH, shoeMat, [0, 0, 0.045 * k], 6));
+    ankle.add(prism(0.120 * k, 0.128 * k, 0.132 * k, 0.272 * k, footH, shoeMat, [0, 0, 0.048 * k], 6));
     return { pivot, knee, ankle };
   }
   const legL = makeLeg(-1);
@@ -245,25 +245,25 @@ function buildBody(spec) {
   torso.add(prism(chestW, waistW * 1.16, 0.245 * k, 0.200 * k, chestH, shirtMat, [0, shoulderY, 0], 8));
 
   // neck: visible above the collar, running up inside the skull so there is no step
-  torso.add(prism(0.104 * k, 0.120 * k, 0.098 * k, 0.114 * k, neckH + 0.05 * k, skin, [0, shoulderY + neckH + 0.035 * k, -0.006 * k], 8));
+  torso.add(prism(0.116 * k, 0.132 * k, 0.104 * k, 0.120 * k, neckH + 0.05 * k, skin, [0, shoulderY + neckH + 0.035 * k, -0.006 * k], 8));
   const head = joint(torso, 0, shoulderY + neckH + 0.012 * k, 0);
   const headGroup = buildHead({ hh: headH, kind, style: hairStyle, skinMat: tone(skinColor, 0.95), hairColor });
   headGroup.position.set(0, -0.02 * k, 0.0);
   head.add(headGroup);
 
-  const upperH = 0.288 * k;
+  const upperH = 0.300 * k;
   const foreH = 0.248 * k;
-  const handH = 0.090 * k;
+  const handH = 0.098 * k;
 
   function makeArm(sx) {
     const pivot = joint(torso, sx * shoulderX, shoulderY - 0.020 * k, 0);
     // deltoid and sleeve are one volume: full over the shoulder, ending at mid-bicep
-    pivot.add(prism(0.112 * b * k, 0.106 * b * k, 0.134 * k, 0.124 * k, upperH * 0.52, sleeveMat, [0, -0.050 * k, 0.004 * k], 8));
-    pivot.add(prism(0.094 * b * k, 0.080 * b * k, 0.104 * k, 0.092 * k, upperH, armMat, [0, 0, 0.004 * k], 8));
+    pivot.add(prism(0.108 * b * k, 0.134 * b * k, 0.126 * k, 0.152 * k, upperH * 0.55, sleeveMat, [0, -0.008 * k, 0.004 * k], 8));
+    pivot.add(prism(0.106 * b * k, 0.088 * b * k, 0.112 * k, 0.096 * k, upperH, armMat, [0, 0, 0.004 * k], 8));
     const elbow = joint(pivot, 0, -upperH, 0);
-    elbow.add(prism(0.086 * b * k, 0.062 * b * k, 0.094 * k, 0.072 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat, [0, 0.006 * k, 0.004 * k], 8));
+    elbow.add(prism(0.096 * b * k, 0.072 * k, 0.100 * k, 0.078 * k, foreH, armMat === sleeveMat ? sleeveMat : armMat, [0, 0.006 * k, 0.004 * k], 8));
     // fist: a small faceted block with a thumb, no wrist ball
-    const hand = prism(0.070 * k, 0.064 * k, 0.052 * k, 0.048 * k, handH, handMat || skin, [0, -foreH - 0.004 * k, 0.012 * k], 6);
+    const hand = prism(0.086 * b * k, 0.078 * b * k, 0.062 * k, 0.056 * k, handH, handMat || skin, [0, -foreH - 0.004 * k, 0.012 * k], 6);
     elbow.add(hand);
     elbow.add(prism(0.026 * k, 0.022 * k, 0.030 * k, 0.026 * k, handH * 0.52, handMat || skin, [sx * -0.028 * k, -foreH + 0.006 * k, 0.026 * k], 5));
     return { pivot, elbow, hand };
@@ -277,7 +277,7 @@ function buildBody(spec) {
 /* ---------------------------------- cast ---------------------------------- */
 
 const CAST = {
-  mo: { height: 1.78, skin: 0x8f6446, hair: 0x201812, style: 'short', beard: 'goatee' },
+  mo: { height: 1.78, build: 1.04, skin: 0x8f6446, hair: 0x201812, style: 'short', beard: 'goatee' },
   addison: { height: 1.86, build: 1.03, skin: 0xdcbb95, hair: 0xb9b6ad, style: 'swept', beard: 'full' },
   rae: { height: 1.66, skin: 0xe0c0a2, hair: 0x201a20, style: 'bob', shirt: 0x6d5a74, pants: 0x3a3442 },
   dale: { height: 1.72, skin: 0xbf9d80, hair: 0x9d9c96, style: 'receding', beard: 'stubble', shirt: 0x2f6b4a, pants: 0x26302a },

@@ -39,6 +39,7 @@ export class InputSystem {
     this.padName = null;
     this.padButtons = {};
     this.events = [];
+    this.clicks = [];
     this.lastDevice = 'keyboard';
     this.bind();
   }
@@ -90,26 +91,46 @@ export class InputSystem {
       }
     });
 
-    // mouse orbit: drag anywhere over the stage
+    // mouse and touch: drag to orbit the camera, tap the floor to walk Mo there
     const stage = document.getElementById('stage');
     if (stage) {
       let dragging = false;
       let lastX = 0;
+      let downX = 0;
+      let downY = 0;
+      let moved = 0;
+      let downAt = 0;
+      let onWorld = false;
       stage.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         dragging = true;
         lastX = e.clientX;
+        downX = e.clientX;
+        downY = e.clientY;
+        moved = 0;
+        downAt = performance.now();
+        onWorld = e.target?.tagName === 'CANVAS';
         stage.setPointerCapture?.(e.pointerId);
       });
       stage.addEventListener('pointermove', (e) => {
         if (!dragging) return;
-        this.dragAxis += (e.clientX - lastX) * 0.006;
+        const d = e.clientX - lastX;
         lastX = e.clientX;
+        moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
+        // only orbit once the pointer has actually travelled, so a tap never nudges the camera
+        if (moved > 5) this.dragAxis += d * 0.006;
       });
-      const stop = () => { dragging = false; };
-      stage.addEventListener('pointerup', stop);
-      stage.addEventListener('pointercancel', stop);
-      stage.addEventListener('pointerleave', stop);
+      stage.addEventListener('pointerup', (e) => {
+        if (!dragging) return;
+        dragging = false;
+        const g = this.g;
+        const tap = onWorld && moved <= 6 && performance.now() - downAt < 600;
+        if (tap && g.mode === 'play' && !g.modalOpen && !g.phoneOpen) {
+          this.clicks.push({ x: e.clientX, y: e.clientY });
+        }
+      });
+      stage.addEventListener('pointercancel', () => { dragging = false; });
+      stage.addEventListener('pointerleave', () => { dragging = false; });
     }
   }
 
@@ -208,6 +229,7 @@ export class InputSystem {
     this.move.x = 0;
     this.move.y = 0;
     this.events.length = 0;
+    this.clicks.length = 0;
   }
 
   get padConnected() { return !!this.gamepad(); }

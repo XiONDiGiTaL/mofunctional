@@ -50,6 +50,11 @@ export class World {
     this.menuGroup = null;
     this.menuTime = 0;
     this.walking = false;
+    this.vel = new THREE.Vector3();
+    this.moveTarget = null;
+    this.marker = null;
+    this.markerFade = 0;
+    this.ray = new THREE.Raycaster();
     this.hurt = 0;
 
     this.resize();
@@ -103,6 +108,8 @@ export class World {
 
   loadArea(id, g, spawnId = null) {
     this.clearArea();
+    this.moveTarget = null;
+    this.vel.set(0, 0, 0);
     this.mode = 'play';
     this.areaId = id;
     const builder = BUILDERS[id] || buildApartment;
@@ -180,6 +187,44 @@ export class World {
     this.tilt = 0.4;
   }
 
+  /** Where a screen point lands on the floor of the current area (null if it misses). */
+  groundAt(clientX, clientY) {
+    const canvas = this.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const ndc = new THREE.Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1
+    );
+    this.ray.setFromCamera(ndc, this.camera);
+    const dir = this.ray.ray.direction;
+    if (Math.abs(dir.y) < 1e-4) return null;
+    const t = -this.ray.ray.origin.y / dir.y;
+    if (t <= 0 || t > 40) return null;
+    const hit = this.ray.ray.origin.clone().addScaledVector(dir, t);
+    const b = this.area?.bounds;
+    if (b) {
+      hit.x = clamp(hit.x, b.minX, b.maxX);
+      hit.z = clamp(hit.z, b.minZ, b.maxZ);
+    }
+    return hit;
+  }
+
+  setMoveTarget(spot) {
+    this.moveTarget = { x: spot.x, z: spot.z };
+    if (!this.marker) {
+      const ring = new THREE.RingGeometry(0.17, 0.235, 20);
+      const m = new THREE.MeshBasicMaterial({ color: 0xf4e7b0, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false });
+      this.marker = new THREE.Mesh(ring, m);
+      this.marker.rotation.x = -Math.PI / 2;
+      this.marker.renderOrder = 2;
+      this.root.add(this.marker);
+    }
+    this.marker.position.set(spot.x, 0.02, spot.z);
+    this.marker.visible = true;
+    this.markerFade = 1;
+  }
+
   update(dt, g) {
     this.time += dt;
     retroUniforms.time.value = this.time * 1.0;
@@ -224,48 +269,95 @@ export class World {
     const orbit = g.input?.orbitDelta || 0;
     if (orbit) this.camYaw += orbit;
 
-    // Camera-relative movement. Forward is always away from the camera, so W walks into
-    // the screen and the character turns to face wherever the stick points.
+    // Movement is camera-relative, so W is always into the screen. A tap on the floor feeds the
+    // same model as a target, and both run through one eased velocity — that is what stops the
+    // start/stop snap that made the walk feel janky.
     const mx = canMove ? (g.input?.move?.x || 0) : 0;
     const my = canMove ? (g.input?.move?.y || 0) : 0;
     const len = Math.hypot(mx, my);
-    this.walking = len > 0.08;
+    const keyed = len > 0.08;
+    if (keyed) this.moveTarget = null;
+
+    if (canMove && g.input?.clicks?.length) {
+      const click = g.input.clicks.shift();
+      const spot = this.groundAt(click.x, click.y);
+      if (spot) this.setMoveTarget(spot);
+    } else if (g.input?.clicks) {
+      g.input.clicks.length = 0;
+    }
+    if (this.moveTarget) {
+      const rest = Math.hypot(this.moveTarget.x - this.mo.root.position.x, this.moveTarget.z - this.mo.root.position.z);
+      if (rest < 0.16) this.moveTarget = null;
+    }
+
     const impairment = Math.min(1, (s.stats.withdrawal / 140) + (s.high.level / 240));
-    if (this.walking) {
+    const cYaw = this.camYaw;
+    const fwdX = Math.sin(cYaw);
+    const fwdZ = Math.cos(cYaw);
+    const rightX = -Math.cos(cYaw);   // screen-right is forward turned a quarter to the right
+    const rightZ = Math.sin(cYaw);
+    let dirX = 0;
+    let dirZ = 0;
+    if (keyed) {
       const nxm = mx / len;
       const nym = my / len;
-      const cYaw = this.camYaw;
-      const fwdX = Math.sin(cYaw);
-      const fwdZ = Math.cos(cYaw);
-      const rightX = Math.cos(cYaw);
-      const rightZ = -Math.sin(cYaw);
-      const wx = fwdX * nym + rightX * nxm;
-      const wz = fwdZ * nym + rightZ * nxm;
-      let speed = 2.45;
-      if (g.input?.lastDevice === 'pad') speed *= 1.05;
-      if (impairment > 0.5) speed *= 0.78;
-      if (s.stats.energy < 15) speed *= 0.72;
-      let nx = this.mo.root.position.x + wx * speed * dt;
-      let nz = this.mo.root.position.z + wz * speed * dt;
+      dirX = fwdX * nym + rightX * nxm;
+      dirZ = fwdZ * nym + rightZ * nxm;
+    } else if (this.moveTarget) {
+      const tx = this.moveTarget.x - this.mo.root.position.x;
+      const tz = this.moveTarget.z - this.mo.root.position.z;
+      const tl = Math.hypot(tx, tz) || 1;
+      dirX = tx / tl;
+      dirZ = tz / tl;
+    }
+
+    let speed = 2.45;
+    if (g.input?.lastDevice === 'pad') speed *= 1.05;
+    if (impairment > 0.5) speed *= 0.78;
+    if (s.stats.energy < 15) speed *= 0.72;
+
+    const ease = Math.min(1, dt * (dirX || dirZ ? 11 : 15));
+    this.vel.x += (dirX * speed - this.vel.x) * ease;
+    this.vel.z += (dirZ * speed - this.vel.z) * ease;
+    if (!dirX && !dirZ && Math.hypot(this.vel.x, this.vel.z) < 0.06) { this.vel.x = 0; this.vel.z = 0; }
+    const speedNow = Math.hypot(this.vel.x, this.vel.z);
+    this.walking = speedNow > 0.22;
+
+    if (this.walking) {
+      let vx = this.vel.x;
+      let vz = this.vel.z;
       // wander when impaired
       if (impairment > 0.35) {
-        nx += Math.sin(this.time * 3.1) * impairment * 0.22 * dt * 6;
-        nz += Math.cos(this.time * 2.7) * impairment * 0.22 * dt * 6;
+        vx += Math.sin(this.time * 3.1) * impairment * 0.55;
+        vz += Math.cos(this.time * 2.7) * impairment * 0.55;
       }
+      const beforeX = this.mo.root.position.x;
+      const beforeZ = this.mo.root.position.z;
       const b = this.area.bounds;
-      nx = clamp(nx, b.minX, b.maxX);
-      nz = clamp(nz, b.minZ, b.maxZ);
-      if (!this.blocked(nx, this.mo.root.position.z)) this.mo.root.position.x = nx;
+      const nx = clamp(beforeX + vx * dt, b.minX, b.maxX);
+      const nz = clamp(beforeZ + vz * dt, b.minZ, b.maxZ);
+      if (!this.blocked(nx, beforeZ)) this.mo.root.position.x = nx;
       if (!this.blocked(this.mo.root.position.x, nz)) this.mo.root.position.z = nz;
+      // a target behind a wall is dropped instead of shoving him against it forever
+      const stuck = Math.abs(this.mo.root.position.x - beforeX) < 1e-5 && Math.abs(this.mo.root.position.z - beforeZ) < 1e-5;
+      if (stuck && this.moveTarget) this.moveTarget = null;
 
-      const targetRot = Math.atan2(wx, wz);
-      void targetRot;
-      this.mo.root.rotation.y += angleDelta(this.mo.root.rotation.y, targetRot) * Math.min(1, dt * 12);
+      const targetRot = Math.atan2(vx, vz);
+      this.mo.root.rotation.y += angleDelta(this.mo.root.rotation.y, targetRot) * Math.min(1, dt * 10);
       this.stepTimer -= dt;
       if (this.stepTimer <= 0) {
-        this.stepTimer = 0.42;
+        this.stepTimer = 0.40 * (2.45 / Math.max(1.2, speedNow));
         g.audio?.sfx?.('step');
       }
+    }
+
+    // the tap marker: a small ring on the floor that turns and fades as he arrives
+    if (this.marker) {
+      if (this.moveTarget) this.markerFade = 1;
+      this.markerFade = Math.max(0, this.markerFade - dt * (this.moveTarget ? 0 : 0.9));
+      this.marker.visible = this.markerFade > 0.01;
+      this.marker.material.opacity = this.markerFade * 0.8;
+      this.marker.rotation.z += dt * 1.1;
     }
 
     // animation

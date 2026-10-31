@@ -48,6 +48,7 @@ way the camera is turned, and Mo turns to face the way the stick points.
 | Input | Action |
 |---|---|
 | `W A S D` / arrows | Move |
+| Click / tap the floor | Walk Mo to that spot (a drag still orbits) |
 | `Q` `E` | Orbit the camera around Mo |
 | Mouse drag | Orbit the camera |
 | `F` / `Space` / `Enter` | Interact with whatever is near |
