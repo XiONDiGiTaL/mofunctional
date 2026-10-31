@@ -106,10 +106,11 @@ function applyRates(g, hours, ctx) {
   const depends = st.addiction > 18;
   const threshold = S.withdrawal.startsAfterMinutes / 60 + st.tolerance * S.withdrawal.toleranceHours;
   if (depends && sinceDose > threshold) {
-    const w = 11.5 * hours * (0.55 + st.addiction / 110);
+    // asleep, it creeps instead of climbs, and the stress waits until he is awake to feel it
+    const w = 11.5 * hours * (0.55 + st.addiction / 110) * (sleeping ? 0.35 : 1);
     st.withdrawal = clamp(st.withdrawal + w);
     bump(s, 'energy', S.withdrawal.energyPerHour * hours);
-    bump(s, 'stress', S.withdrawal.stressPerHour * hours * (0.5 + st.withdrawal / 140));
+    if (!sleeping) bump(s, 'stress', S.withdrawal.stressPerHour * hours * (0.5 + st.withdrawal / 140));
     bump(s, 'morale', S.withdrawal.moralePerHour * hours);
     if (st.withdrawal > S.withdrawal.collapseAt && !s.flags.collapse) {
       s.flags.collapse = true;
@@ -161,23 +162,53 @@ function collapse(g) {
 
 /* ------------------------------ actions ------------------------------ */
 
-export function eat(g, itemId) {
+/** Things Mo can put in his mouth that are not the fictional substances: food, drinks, smokes. */
+export const isEdible = (def) => !!def && (def.kind === 'food' || def.kind === 'comfort');
+
+/**
+ * Eat (or drink, or smoke) one of `itemId`, from his pockets or from the fridge. The stats land
+ * at once and the HUD bars ease up to them while the world plays him eating it.
+ */
+export function eat(g, itemId, from = 'inventory') {
   const s = g.state;
   const def = CONFIG.items[itemId];
-  if (!def || def.kind !== 'food') return false;
-  const entry = s.inventory.find((i) => i.id === itemId && i.qty > 0);
-  if (!entry) { g.toast('Nothing left in the cupboard.', 'bad'); return false; }
+  if (!isEdible(def)) return false;
+  const shelf = from === 'fridge' ? (s.fridge = s.fridge || []) : s.inventory;
+  const entry = shelf.find((i) => i.id === itemId && i.qty > 0);
+  if (!entry) { g.toast(from === 'fridge' ? 'That shelf is empty now.' : 'Nothing left in your pockets.', 'bad'); return false; }
   entry.qty -= 1;
-  if (entry.qty <= 0) s.inventory = s.inventory.filter((i) => i !== entry);
+  if (entry.qty <= 0) {
+    const rest = shelf.filter((i) => i !== entry);
+    if (from === 'fridge') s.fridge = rest; else s.inventory = rest;
+  }
   bump(s, 'hunger', def.hunger || 0);
   bump(s, 'energy', def.energy || 0);
   bump(s, 'morale', def.morale || 0);
   bump(s, 'hygiene', def.hygiene || 0);
-  s.counters.meals++;
-  logLine(g, `Ate ${def.name}.`, 'good');
-  g.audio.sfx('confirm');
-  g.advance(15);
-  if (s.flags.tutorial === 1) { s.flags.tutorial = 2; g.bus.emit('tutorial'); }
+  bump(s, 'stress', def.stress || 0);
+  if (def.kind === 'food') s.counters.meals++;
+  const verb = def.kind === 'food' ? 'Ate' : itemId === 'loosies' ? 'Smoked' : 'Drank';
+  logLine(g, `${verb} ${def.name}.`, 'good');
+  g.world?.playEat?.(itemId, (name) => g.audio?.sfx?.(name));
+  g.advance(def.kind === 'food' ? 15 : 8);
+  if (def.kind === 'food' && s.flags.tutorial === 1) { s.flags.tutorial = 2; g.bus.emit('tutorial'); }
+  return true;
+}
+
+/** Move one of `itemId` between his pockets and the fridge (to: 'fridge' | 'inventory'). */
+export function moveFood(g, itemId, to = 'fridge') {
+  const s = g.state;
+  s.fridge = s.fridge || [];
+  const src = to === 'fridge' ? s.inventory : s.fridge;
+  const entry = src.find((i) => i.id === itemId && i.qty > 0);
+  if (!entry) return false;
+  entry.qty -= 1;
+  const dst = to === 'fridge' ? s.fridge : s.inventory;
+  const have = dst.find((i) => i.id === itemId);
+  if (have) have.qty += 1; else dst.push({ id: itemId, qty: 1 });
+  if (to === 'fridge') s.inventory = s.inventory.filter((i) => i.qty > 0);
+  else s.fridge = s.fridge.filter((i) => i.qty > 0);
+  g.audio?.sfx?.('ui');
   return true;
 }
 

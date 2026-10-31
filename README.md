@@ -16,24 +16,47 @@ Rent is due on Friday. It is Monday. He does not have it.
 
 ---
 
-## The phone and the interface
+## The MoPhone and the interface
 
-The phone is the management screen: a chamfered brushed-metal shell with a warm, glowing glass
-panel, speaker slots, side buttons and a five-app dock. Everything on it is reachable with the
-mouse or the keyboard.
+The phone is the management screen, and it is built like a modern handset: a rounded metal
+chassis, an island at the top, a gesture bar at the bottom, and a home screen with a lock-screen
+clock, two widgets (Mo's current mood, and what is due next), an icon grid and a dock. Every app
+is a **parody of an app you already have**, with its own name, icon, colours and layout:
 
-![The phone](assets/img/ui_phone.png)
+| App | What it is | What it does |
+|---|---|---|
+| **Txtr** | the messages app | inbox and threads; companies text with their own app icon, people with their face |
+| **Shale Pay** | the bank | a debit card with a live balance, bills, recent activity |
+| **LinkedOut** | the job app | an #OpenToWork profile, the Quik-Stop shift, odd jobs |
+| **BidBay** | the marketplace | list valuables, set a price, a mystery grab bag |
+| **iDread** | the calendar | the week ahead (shifts, rent, power, service) and sleep |
+| **GrubHope** | groceries | food for cash or Civic Relief credit, relief programs |
+| **Pocket Lint** | the inventory | everything he carries, as illustrated tiles; eat, drink, sell |
+| **Landlordly** | the smart home | a thermostat dial that counts down the days to rent |
+| **FeedLove** | the social app | a profile ring, follower counts, posting for likes |
+| **Blessed+** | the church app | the Golden Fellowship's "live" Sunday stream and the tithe |
+| **Tweaks** | settings | skin, scale, camera, volume, saves, run stats |
 
-**Themes and scale** live in two places: `SETTINGS` on the main menu, and `SYSTEM` inside the
-phone (so you can change them mid-run). Four skins — Functional (CRT green), Amber (warm glass),
-Ice (clinic blue) and VHS (magenta bleed) — recolour the phone, the HUD, the menus and every
-modal from one set of CSS variables. The interface scale is S / M / L, applied to the in-game UI
-layers only, so the 3D stage never shifts. Both are saved with your run.
+**Themes and scale** live in two places: `SETTINGS` on the main menu, and **Tweaks** inside the
+phone (so you can change them mid-run). Seven skins — Functional (CRT green), Amber (warm glass),
+Ice (clinic blue), VHS (magenta bleed), Primo (indigo glass, cyan pills), Bodega (neon sign, 3am
+grill) and Graphite (monochrome) — recolour the phone, the HUD, the menus and every panel from one
+set of CSS variables. The interface scale is S / M / L, applied to the in-game UI layers only, so
+the 3D stage never shifts. Both are saved with your run.
+
+**Messages on the HUD** arrive as text bubbles in the bottom-right corner: they pop in, stay long
+enough to read, and fade away. Nothing is thrown out. Hover the feed (or click its **MESSAGES**
+handle to pin it open) and the whole day scrolls back up as a conversation, each bubble with its
+sender, its in-game timestamp and a colour for what kind of news it is. Log lines sit between them
+as small centred timestamps, like a real thread.
 
 **The title screen** is a performance rather than a still. Mo stands in the corridor and scans it
-slowly — left, hold, right, hold — then reaches into his jacket, brings out a small glass pipe
-and smokes while the crowd walks past behind him: neighbours coming home, two of them stopped to
-talk, everyone eventually swallowed by the fog. The whole loop runs on a single 26-second clock in
+slowly — left, hold, right, hold — then reaches into his jacket and brings out a small glass pipe
+(a thin stem with a ball on the end). The stem goes to his lips and stays there, the ball clouds
+over on the draw, he tips his head back and lets the smoke out of his mouth. Then it lands: his
+eyes go red and heavy-lidded and one corner of his mouth lifts into a smirk, until the loop wraps.
+The crowd walks past behind him the whole time — neighbours coming home, two of them stopped to
+talk, everyone eventually swallowed by the fog. The loop runs on a single 26-second clock in
 `src/world/title.js`, which overrides the idle pose after `animateMo` so the two can never argue.
 
 **Typography** is part of the shell: Orbitron carries the machine voice (title, clock, money, app
@@ -41,12 +64,10 @@ headers, endings) and Chakra Petch carries everything meant to be read as prose.
 vendored under `assets/fonts` with their OFL licences, so the interface never waits on a network
 font.
 
-**The camera** is adjustable in `SYSTEM` as well: distance (70–140%) and height (80–135%), plus a
+**The camera** is adjustable in **Tweaks** as well: distance (70–140%) and height (80–135%), plus a
 reset, saved with the run. The follow camera is a spring arm — it shortens against walls, and when
 Mo backs into a corner it swings sideways along the wall instead of tipping the view to a
 top-down.
-
-![Themes](assets/img/ui_themes.png)
 
 ## The block
 
@@ -111,7 +132,8 @@ way the camera is turned, and Mo turns to face the way the stick points.
 | `START` | Pause |
 | `X` / `Y` | Speed 1× / 2× |
 
-The HUD has the same controls as buttons. The phone has its own bottom navigation.
+The HUD has the same controls as buttons. On the phone, the bar at the bottom goes home and the
+× puts it away; in the fridge and the shop boards, `ESC` closes them.
 
 ---
 
@@ -147,9 +169,10 @@ when his state changes. NPC avatars in the phone and text threads come from the 
 ### Text threads that answer back
 
 Incoming messages arrive as an SMS overlay with the sender's face on their bubbles and Mo's face
-on his. When a message asks something, the thread waits for an answer — and the option Mo picks is
-posted into the thread as a sent bubble, then filed in the phone's Messages app, where the whole
-conversation stays readable and repliable.
+on his; companies (BidBay, the Golden Fellowship, Civic Relief, Shale Mobile, Municipal Power)
+use their app icon or seal instead of a stranger's face. When a message asks something, the thread
+waits for an answer — and the option Mo picks is posted into the thread as a sent bubble, then
+filed in Txtr, where the whole conversation stays readable and repliable.
 
 ![A text thread with Kev](assets/img/hud_text_thread.png)
 
@@ -164,6 +187,11 @@ preacher with gold-edged leaflets, spilled groceries, skate kids, the alley at n
 with real choices.
 
 ### Two counters, two economies
+
+Both shops open a **menu board** instead of a list: the owner's face and a line of his, the cash
+you have, and a card per item with its illustration, a price tag, chips for what it does to Mo
+(food, energy, morale, stress, hot), and the owner's note. Click a card to buy; it stamps
+**BAGGED** and the board stays open, so a breakfast run is three clicks.
 
 **Kestrel Bodega** (Miguel): bacon, egg and cheese, a chopped cheese, a hero, loosies from under
 the register, tall boys from the back cooler. Cheap, salty, pork-forward.
@@ -186,16 +214,37 @@ him: the halal plate is the best hunger/energy buy on the block, falafel is the 
 ![Inside the bodega](assets/img/bodega_interior.png)
 ![Inside Habib's](assets/img/habibs_interior.png)
 
-![The phone: inbox with faces](assets/img/phone.png)
-![A chat thread in the phone](assets/img/phone_chat.png)
+### The fridge, and eating on screen
+
+The fridge in Unit 3B is **storage**. Opening it shows two shelves side by side — what is in the
+fridge and what is in Mo's pockets — and food moves between them one item at a time: **STORE** it
+for later, **TAKE** it for the road. He starts the week with groceries in the fridge and a pack of
+ramen in his pocket. Anything edible can be eaten from either shelf, or straight from Pocket Lint
+on the phone, wherever he is standing.
+
+Eating is something you watch. The phone or the fridge door gets out of the way, Mo turns
+three-quarters to the camera, brings the item up in his right hand and takes it in three bites —
+the food shrinking with each one, crumbs falling, a crunchy munch on every bite and his head
+working between them (a drink is a long pull with the head tipped back and a gulp; a loosie is a
+drag). Then the hand drops, he holds still for a beat, and the walk takes him back. The HUD bars
+ease up to the new values while he chews.
+
+### Item art
+
+Everything Mo can carry has its own small flat illustration — the ramen cup, the can of beans,
+the BEC on a roll, the chopped cheese, the tall boy, the halal plate, the CRT, the guitar, the
+watch, the State ID, the lease — drawn as inline SVG so it stays sharp at any scale. The same art
+is used on the menu boards, the fridge shelves and the inventory tiles.
 
 ### The rest of the loop
 
 - **Needs** — energy, hunger, hygiene, stress, morale, dependence, risk. Sleep, eat, shower, work.
+  Sleep eases withdrawal instead of compounding it, and the night ends in the **Daily Report**:
+  money, energy, hunger, stress, dependence and risk for the day just closed.
 - **The job** — Quik-Stop #14, shifts, strikes, calling out, quitting, rehire.
 - **Rent and bills** — rent, power, phone; eviction after two missed cycles; power cuts.
-- **The phone** — banking, employment, BidBay, pantry/CRP credit, calendar, social, Fellowship,
-  inventory, saves, settings.
+- **The phone** — eleven parody apps: Txtr, Shale Pay, LinkedOut, BidBay, iDread, GrubHope,
+  Pocket Lint, Landlordly, FeedLove, Blessed+ and Tweaks.
 - **The Golden Fellowship** — Addison Octavius, the allowance, the tithe, the pledge.
 - **Eleven endings**, from `functional` to `overdose`, `evicted`, `pledged`, `snapped`.
 
@@ -205,14 +254,18 @@ him: the halal plate is the best hunger/energy buy on the block, falafel is the 
 
 ```
 index.html            page shell, CRT overlay, UI root
-styles/main.css       all UI: HUD, phone, threads, menus
+styles/main.css       base UI: HUD, phone chassis, threads, menus
+styles/ui2.css        skins, message feed, MoPhone apps, menu boards, fridge, report
 src/main.js           game orchestrator: loop, state, flow
 src/core/             config (all balance values), state, input, audio, save, util
 src/render/           retro renderer (affine UVs, vertex snap, dither), textures,
                       heads (skull + wrap face textures), faces (rendered portraits)
-src/world/            characters, areas, shops, schedules, 3D world/camera
+src/world/            characters, areas, shops, schedules, 3D world/camera,
+                      title (the title performance), eating (the eating animation)
 src/systems/          needs, economy, jobs, events, street, fellowship, dialogue, endings
-src/ui/               hud, phone, threads, modal, menu
+src/ui/               hud, feed (message history), phone, apps (parody app catalog
+                      and icons), icons (item art), shopmenu, fridge, threads, modal,
+                      menu, themes
 scripts/              check-syntax.mjs (parses every module), shot.mjs (Playwright
                       screenshots of the cast/HUD), bake-mo-face.py (reference -> texture)
 assets/ref/           Mo's reference sheets (face + full body) — the art-direction anchor
@@ -229,6 +282,8 @@ reads from `CONFIG` rather than hardcoding numbers.
 - Everything here is fiction. The substances in the game (BLISS, STATIC, MUD, DRIP) are invented
   and described only in mechanical terms — no real-world dosing, sourcing or preparation detail.
 - The Golden Fellowship, Addison Octavius, Shale Mobile, Quik-Stop, Kestrel Street, the Civic
-  Relief Program and BidBay are original fiction.
+  Relief Program and BidBay are original fiction. The phone apps (Txtr, Shale Pay, LinkedOut,
+  iDread, GrubHope, Pocket Lint, Landlordly, FeedLove, Blessed+, Tweaks) are parodies with their
+  own names and artwork; no real app's logo or trademark is used.
 - Visual style is an homage to late-90s console rendering: low internal resolution, affine texture
   mapping, vertex snapping, ordered dithering, fog. No platform assets or trademarks are used.

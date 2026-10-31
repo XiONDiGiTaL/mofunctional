@@ -4,6 +4,7 @@ import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../r
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildMenuWorld } from './areas.js';
 import { TitleScene } from './title.js';
+import { EatAnim } from './eating.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay } from '../core/util.js';
 import { scheduleTarget } from './schedules.js';
@@ -78,6 +79,7 @@ export class World {
   }
 
   clearArea() {
+    this.eating?.stop();
     if (this.titleScene) {
       this.titleScene.dispose();
       this.titleScene = null;
@@ -240,6 +242,16 @@ export class World {
     this.markerFade = 1;
   }
 
+  /** Mo eats (or drinks, or smokes) `itemId` on screen; bites call back into the game's sfx. */
+  playEat(itemId, sfx) {
+    if (this.mode !== 'play') return;
+    if (!this.eating) this.eating = new EatAnim(this);
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    this.eating.play(itemId, sfx, (this.camYaw || 0) + Math.PI * 0.78);
+  }
+
   update(dt, g) {
     this.time += dt;
     retroUniforms.time.value = this.time * 1.0;
@@ -278,7 +290,7 @@ export class World {
 
   updatePlay(dt, g) {
     const s = g.state;
-    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play';
+    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play' && !this.eating?.active;
 
     // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
     // A positive orbit means "turn the view to the right". Since forward is (sin yaw, cos yaw),
@@ -388,6 +400,7 @@ export class World {
       withdrawal: s.stats.withdrawal,
       speed: 1,
     });
+    this.eating?.update(dt);
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {

@@ -11,6 +11,8 @@ import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js'
 import { portraitURL } from '../render/faces.js';
 import { kindForName } from './threads.js';
 import { THEMES, SCALES, themeLabel } from './themes.js';
+import { APPS, HOME_GRID, DOCK, appIcon, serviceAvatar } from './apps.js';
+import { itemIcon } from './icons.js';
 
 const DEFAULT_REPLIES = [
   "ok",
@@ -57,12 +59,9 @@ export class Phone {
             <span data-live="money">$0</span>
           </div>
           <div class="phone__body"></div>
-          <div class="phone__nav">
-            <button data-nav="home">HOME</button>
-            <button data-nav="bank">BANK</button>
-            <button data-nav="messages">MSGS</button>
-            <button data-nav="pantry">FOOD</button>
-            <button data-nav="close">CLOSE</button>
+          <div class="phone__nav phone__nav--gesture">
+            <button data-nav="home" class="phone__homebar" aria-label="Home"><i></i></button>
+            <button data-nav="close" class="phone__x" aria-label="Put the phone away">×</button>
           </div>
         </div>
         <div class="phone__chin"><i></i></div>
@@ -130,6 +129,8 @@ export class Phone {
     this.wrap.querySelector('[data-live="money"]').textContent = money(s.money);
     const view = this.apps[this.app] ? this.apps[this.app].call(this) : this.homeView();
     this.body.innerHTML = view;
+    this.body.dataset.app = this.app;
+    this.wrap.querySelector('.phone__screen').dataset.app = this.app;
     this.body.scrollTop = 0;
   }
 
@@ -145,14 +146,36 @@ export class Phone {
     if (s.camHeight !== undefined) set('camheight', `${Math.round(s.camHeight * 100)}%`);
   }
 
+  /**
+   * Every app wears its own brand: the parody name and tagline from the catalog, its icon, and
+   * its colours as --a/--b, which the per-app stylesheet builds the rest of the look from.
+   */
   header(title, kicker = '') {
-    return `<div class="papp">
-      <div class="app__header">
-        <button class="app__back" data-nav="home">◀</button>
-        <span class="app__title">${T(title)}</span>
-        ${kicker ? `<span class="spacer"></span><span class="tiny mono-dim">${T(kicker)}</span>` : ''}
+    const brand = APPS[this.app];
+    if (!brand) {
+      return `<div class="papp">
+        <div class="app__header">
+          <button class="app__back" data-nav="home">◀</button>
+          <span class="app__title">${T(title)}</span>
+          ${kicker ? `<span class="spacer"></span><span class="tiny mono-dim">${T(kicker)}</span>` : ''}
+        </div>
+        <div class="app__body">`;
+    }
+    const sub = title && title !== brand.name ? title : brand.tag;
+    return `<div class="papp papp--${this.app}" style="--a:${brand.a};--b:${brand.b}">
+      <div class="app__header app__header--brand">
+        <button class="app__back" data-nav="home" aria-label="Home">‹</button>
+        ${appIcon(this.app, { ...this.iconCtx(), label: false })}
+        <span class="app__brand"><b class="app__logo">${T(brand.name)}</b><em>${T(sub)}</em></span>
+        ${kicker ? `<span class="app__kick">${T(kicker)}</span>` : ''}
       </div>
       <div class="app__body">`;
+  }
+
+  iconCtx() {
+    const s = this.g.state;
+    const day = dayOf(s.clock.m);
+    return { day, weekday: DAY_NAMES[(day - 1) % 7].slice(0, 3).toUpperCase() };
   }
   footer() { return '</div></div>'; }
 
@@ -160,40 +183,37 @@ export class Phone {
 
   homeView() {
     const s = this.g.state;
-    const apps = [
-      ['messages', '✉', 'Messages', unreadMessages(s)],
-      ['bank', '$', 'Banking', 0],
-      ['jobs', '≡', 'Employment', 0],
-      ['bidbay', '◈', 'BidBay', s.listings.length],
-      ['calendar', '▦', 'Calendar', 0],
-      ['pantry', '▤', 'Pantry', s.crp.suspended ? 1 : 0],
-      ['inventory', '▣', 'Inventory', 0],
-      ['bills', '⌂', 'Rent & Bills', billInfo(this.g, 'rent').owedCycles > 0 ? 1 : 0],
-      ['social', '◎', 'FeedLove', 0],
-      ['fellowship', '✝', 'Fellowship', s.fellowship.stage > 0 && s.fellowship.stage < 5 ? 1 : 0],
-      ['system', '⚙', 'System', 0],
-    ];
-    return `${this.header('MoPhone OS', 'v0.9')}
-      <div class="row" style="gap:9px;padding:0 2px 9px;align-items:center">
-        <img class="avatar" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" />
-        <div>
-          <div class="tiny mono-dim">SIGNED IN AS</div>
-          <div style="font-size:12px">Mo · Unit 3B · Shale Mobile</div>
+    const rent = billInfo(this.g, 'rent');
+    const badges = {
+      messages: unreadMessages(s),
+      bidbay: s.listings.length,
+      pantry: s.crp.suspended ? 1 : 0,
+      bills: rent.owedCycles > 0 ? rent.owedCycles : 0,
+      fellowship: s.fellowship.stage > 0 && s.fellowship.stage < 5 ? 1 : 0,
+    };
+    const ctx = this.iconCtx();
+    const c = clock(s);
+    const mood = this.g.hud?.mood || { id: 'content', label: 'CONTENT', note: '' };
+    const fit = s.stats.energy > 55 ? 'Roughly' : s.stats.energy > 25 ? 'Barely' : 'No';
+    return `<div class="mohome">
+      <div class="mohome__lock">
+        <span class="mohome__time">${c.hhmm}</span>
+        <span class="mohome__date">${DAY_NAMES[(ctx.day - 1) % 7]} · Day ${ctx.day}</span>
+      </div>
+      <div class="mohome__widgets">
+        <div class="widget widget--mo">
+          <img src="${portraitURL('mo', mood.id)}" alt="" />
+          <div><b>${T(mood.label)}</b><em>${T(mood.note || 'holding')}</em></div>
+        </div>
+        <div class="widget widget--next">
+          <em>Up next</em><b>${T(this.nextObligation())}</b>
+          <span>Fit for the day: ${fit}</span>
         </div>
       </div>
-      <div class="phone__home">
-        ${apps.map(([id, icon, name, badge]) => `
-          <button class="appbtn" data-act="go" data-arg="${id}">
-            <span class="appbtn__icon">${icon}</span>
-            <span class="appbtn__name">${name}${badge ? ` <span class="notif">●</span>` : ''}</span>
-          </button>`).join('')}
-      </div>
-      <div class="hr"></div>
-      <div class="kv"><span class="mono-dim">Fit for the day</span><b>${s.stats.energy > 55 ? 'Roughly' : s.stats.energy > 25 ? 'Barely' : 'No'}</b></div>
-      <div class="kv"><span class="mono-dim">Next obligation</span><b>${this.nextObligation()}</b></div>
-      <div class="hr"></div>
-      <div class="tiny mono-dim">Signal: ${s.flags.phoneLate ? 'degraded (bill overdue)' : 'weak but honest'}</div>
-      ${this.footer()}`;
+      <div class="mohome__grid">${HOME_GRID.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
+      <div class="mohome__signal">${s.flags.phoneLate ? 'Shale Mobile · signal degraded (bill overdue)' : 'Shale Mobile · weak but honest'}</div>
+      <div class="mohome__dock">${DOCK.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0, label: false })).join('')}</div>
+    </div>`;
   }
 
   nextObligation() {
@@ -222,12 +242,16 @@ export class Phone {
         <button class="btn btn--sm" data-act="pay" data-arg="${b.key}" ${b.owedCycles <= 0 || s.money < b.owed ? 'disabled' : ''}>PAY</button>
       </div>`).join('');
 
-    return `${this.header('Banking', 'SHALE BANK')}
-      <div class="card">
-        <div class="tiny mono-dim">AVAILABLE BALANCE</div>
-        <div style="font-size:26px;letter-spacing:.04em" class="${s.money < 30 ? 'bad' : 'creditv'}">${money(s.money)}</div>
-        <div class="tiny mono-dim">Overdraft: none. Bank policy: "we are not a charity, we are a bank" — the difference is marketing.</div>
+    return `${this.header('Shale Pay', 'DEBIT')}
+      <div class="bankcard ${s.money < 30 ? 'bankcard--low' : ''}">
+        <span class="bankcard__chip"></span>
+        <span class="bankcard__brand">SHALE<b>PAY</b></span>
+        <span class="bankcard__label">Available balance</span>
+        <span class="bankcard__bal">${money(s.money)}</span>
+        <span class="bankcard__num">•••• •••• •••• 03B0</span>
+        <span class="bankcard__name">MO · UNIT 3B</span>
       </div>
+      <div class="tiny mono-dim">Overdraft: none. Bank policy: "we are not a charity, we are a bank" — the difference is marketing.</div>
       <div class="app__h">Bills</div>
       <div class="list">${bills}</div>
       <div class="app__h">Recent activity</div>
@@ -248,7 +272,11 @@ export class Phone {
     const stateLabel = {
       off: 'Not a shift day.', before: 'Too early.', 'on-time': 'Shift starting — clock in.', late: 'You are late.', 'almost-over': 'Shift almost gone.', missed: 'Shift missed.', done: 'Shift complete.',
     }[info.state] || '';
-    return `${this.header('Employment', 'CASH TODAY')}
+    return `${this.header('LinkedOut', 'CASH TODAY')}
+      <div class="profile">
+        <span class="profile__ring"><img src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></span>
+        <div><b>Mo</b><em>${s.job.employed ? `${T(s.job.title)} at ${T(s.job.employer)}` : 'Between opportunities'}</em><span class="profile__open">#OpenToWork</span></div>
+      </div>
       <div class="card">
         <div class="kv"><span>Employer</span><b>${s.job.employed ? T(s.job.employer) : 'None'}</b></div>
         <div class="kv"><span>Position</span><b>${s.job.employed ? T(s.job.title) : '—'}</b></div>
@@ -340,7 +368,8 @@ export class Phone {
     const g = this.g;
     const s = g.state;
     const crp = s.crp;
-    return `${this.header('Pantry', crp.active ? `CREDIT ${money(crp.credit)}` : 'CASH')}
+    return `${this.header('GrubHope', crp.active ? `CREDIT ${money(crp.credit)}` : 'CASH')}
+      <div class="promo"><b>Delivery: never.</b><span>Pickup: you. Groceries land in your pocket instantly, because the plot needs them to.</span></div>
       <div class="card">
         <div class="kv"><span class="tiny mono-dim">FOOD CREDIT</span><b class="${crp.suspended ? 'bad' : 'creditv'}">${money(crp.credit)}</b></div>
         <div class="kv"><span class="tiny mono-dim">CASH</span><b>${money(s.money)}</b></div>
@@ -351,7 +380,8 @@ export class Phone {
         ${GROCERY.map((id) => {
           const def = CONFIG.items[id];
           const cost = def.price;
-          return `<div class="listitem">
+          return `<div class="listitem listitem--food">
+            ${itemIcon(id)}
             <div class="grow"><div class="name">${T(def.name)}</div><div class="meta">+${def.hunger} hunger · ${money(cost)} · have ${countItem(s, id)}</div></div>
             <button class="btn btn--sm" data-act="buyfood" data-arg="${id}" ${s.money < cost ? 'disabled' : ''}>CASH</button>
             <button class="btn btn--sm btn--gold" data-act="buycredit" data-arg="${id}" ${!crp.active || crp.suspended || crp.credit < cost ? 'disabled' : ''}>CRP</button>
@@ -382,9 +412,9 @@ export class Phone {
       const m = s.messages.find((x) => x.id === this.msgId);
       if (!m) { this.msgId = null; return this.messagesView(); }
       m.read = true;
-      const kind = kindForName(m.from);
+      const face = this.senderFace(m.from);
       const bubbles = [
-        `<div class="chat__row"><img class="chat__face" src="${portraitURL(kind, 'content')}" alt="" /><div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`,
+        `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`,
         ...(m.replies || []).map((r) => `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div><img class="chat__face" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></div>`),
       ].join('');
       const quick = (m.choices && m.choices.length ? m.choices.map((c) => c.label) : DEFAULT_REPLIES);
@@ -397,11 +427,11 @@ export class Phone {
         ${this.footer()}`;
     }
     const unread = unreadMessages(s);
-    return `${this.header('Messages', `${unread} NEW`)}
+    return `${this.header('Txtr', `${unread} NEW`)}
       <div class="list">
         ${s.messages.length ? s.messages.map((m) => `
           <button class="listitem chatlist" data-act="msgopen" data-arg="${m.id}" style="text-align:left;cursor:pointer;width:100%">
-            <img class="chat__face" src="${portraitURL(kindForName(m.from), 'content')}" alt="" />
+            ${this.senderFace(m.from)}
             <div class="grow">
               <div class="name">${m.read ? '' : '<span class="bad">● </span>'}${T(m.from)}</div>
               <div class="meta">${T((m.replies && m.replies.length ? m.replies[m.replies.length - 1].text : m.body)).slice(0, 54)}</div>
@@ -412,20 +442,26 @@ export class Phone {
       ${this.footer()}`;
   }
 
+  /** A sender's avatar: a company's app icon, or a person's face. */
+  senderFace(from) {
+    return serviceAvatar(from, 'chat__face') || `<img class="chat__face" src="${portraitURL(kindForName(from), 'content')}" alt="" />`;
+  }
+
   /* ------------------------------ INVENTORY ------------------------------ */
 
   inventoryView() {
     const s = this.g.state;
     const items = inventoryList(s);
-    return `${this.header('Inventory', `${items.length} ITEMS`)}
-      <div class="list">
+    return `${this.header('Pocket Lint', `${items.length} ITEMS`)}
+      <div class="list list--tiles">
         ${items.length ? items.map((i) => {
           const def = i.def;
           let buttons = '';
-          if (def.kind === 'food') buttons = `<button class="btn btn--sm" data-act="eatitem" data-arg="${i.id}">EAT</button>`;
+          if (def.kind === 'food' || def.kind === 'comfort') buttons = `<button class="btn btn--sm btn--primary" data-act="eatitem" data-arg="${i.id}">${def.kind === 'food' ? 'EAT' : i.id === 'loosies' ? 'SMOKE' : 'DRINK'}</button>`;
           else if (def.kind === 'substance') buttons = `<button class="btn btn--sm btn--danger" data-act="useitem" data-arg="${i.id}">USE</button>`;
           else if (def.kind === 'valuable') buttons = `<button class="btn btn--sm" data-act="listitem" data-arg="${i.id}">SELL</button>`;
-          return `<div class="listitem">
+          return `<div class="listitem listitem--tile">
+            ${itemIcon(i.id, def.kind)}
             <div class="grow">
               <div class="name">${T(def.name)} ${i.qty > 1 ? `x${i.qty}` : ''}</div>
               <div class="meta">${def.kind}${def.value ? ` · value ${money(def.value)}` : ''}${def.price ? ` · ${money(def.price)}` : ''}</div>
@@ -455,7 +491,17 @@ export class Phone {
           <button class="btn btn--primary btn--sm" data-act="pay" data-arg="${b.key}" ${b.owedCycles <= 0 || s.money < b.owed ? 'disabled' : ''}>PAY ${b.owedCycles ? money(b.owed) : ''}</button>
         </div>
       </div>`;
-    return `${this.header('Rent & Utilities', 'UNIT 3B')}
+    // the thermostat that is not a thermostat: it counts down to rent instead of degrees
+    const days = rent.owedCycles ? 0 : Math.max(0, rent.daysLeft);
+    const frac = rent.owedCycles ? 1 : 1 - Math.min(1, days / CONFIG.economy.rent.periodDays);
+    return `${this.header('Landlordly', 'UNIT 3B')}
+      <div class="dial ${rent.owedCycles ? 'dial--late' : ''}" style="--f:${frac.toFixed(3)}">
+        <div class="dial__ring"></div>
+        <div class="dial__face">
+          <b>${rent.owedCycles ? '!' : days}</b>
+          <em>${rent.owedCycles ? 'rent overdue' : days === 1 ? 'day to rent' : 'days to rent'}</em>
+        </div>
+      </div>
       ${block(rent, `<div class="tiny ${s.flags.evictionNotice ? 'bad' : 'mono-dim'}">${s.flags.evictionNotice ? 'EVICTION NOTICE POSTED. Two missed cycles ends the lease — and the run.' : `Lease: week to week. Landlord: Rae Vell. Missed cycles: ${s.bills.rent.missed}.`}</div>`)}
       ${block(power, `<div class="tiny ${s.flags.powerCut ? 'bad' : 'mono-dim'}">${s.flags.powerCut ? 'POWER CUT. The fridge is silent. Showers are cold.' : 'Municipal Power. Billed every 14 days.'}</div>`)}
       ${block(phone, `<div class="tiny mono-dim">Shale Mobile. Unpaid service degrades your signal (cosmetically).</div>`)}
@@ -491,7 +537,10 @@ export class Phone {
         <span class="tiny mono-dim">${i === 0 ? hhmm(s.clock.m) : ''}</span>
       </div>`);
     }
-    return `${this.header('Calendar', `DAY ${day}`)}
+    return `${this.header('iDread', `DAY ${day}`)}
+      <div class="datetile">
+        <em>${DAY_NAMES[(day - 1) % 7]}</em><b>${day}</b><span>${hhmm(s.clock.m)} · ${this.nextObligation()}</span>
+      </div>
       <div class="list">${rows.join('')}</div>
       <div class="app__h">Sleep</div>
       <div class="row row--wrap">
@@ -510,15 +559,20 @@ export class Phone {
     const s = g.state;
     const posts = s.feedPosts || [];
     return `${this.header('FeedLove', `${s.social.followers} FOLLOWERS`)}
-      <div class="card">
-        <div class="tiny mono-dim">YOU ARE @mofunctional</div>
-        <div class="tiny">${T(s.feedBio || 'not really a brand. a person. mostly.')}</div>
+      <div class="profile profile--feed">
+        <span class="profile__ring"><img src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></span>
+        <div class="profile__stats">
+          <span><b>${posts.length}</b>posts</span>
+          <span><b>${s.social.followers}</b>followers</span>
+          <span><b>3</b>following</span>
+        </div>
       </div>
+      <div class="tiny"><b>@mofunctional</b> · ${T(s.feedBio || 'not really a brand. a person. mostly.')}</div>
       <button class="btn btn--primary" data-act="post">POST SOMETHING (10 MIN)</button>
       <div class="app__h">Your posts</div>
       <div class="list">
         ${posts.length ? posts.slice(-6).reverse().map((p) => `
-          <div class="listitem"><div class="grow"><div class="name">${T(p.text)}</div><div class="meta">${p.likes} likes · ${p.replies} replies · D${p.day}</div></div></div>`).join('') : '<div class="empty">You have never posted. This is probably correct.</div>'}
+          <div class="listitem post"><div class="grow"><div class="name">${T(p.text)}</div><div class="meta"><span class="post__heart">♥</span> ${p.likes} · ${p.replies} replies · D${p.day}</div></div></div>`).join('') : '<div class="empty">You have never posted. This is probably correct.</div>'}
       </div>
       <div class="tiny mono-dim">Posting costs 10 minutes and may produce: one like, one insult, or an unexpected $12 from a stranger.</div>
       ${this.footer()}`;
@@ -531,6 +585,11 @@ export class Phone {
     const st = fellowshipStage(s);
     const win = serviceWindow(this.g);
     return `${this.header('The Golden Fellowship', 'SALT & GOLD')}
+      <div class="stream">
+        <span class="stream__live">${win.inWindow ? 'LIVE' : 'NEXT'}</span>
+        <img src="${portraitURL('addison', 'content')}" alt="" />
+        <div><b>Sunday Service with Addison Octavius</b><em>${win.isSunday ? (win.inWindow ? 'Streaming now · tithe button enabled' : 'Today 11:00 · set a reminder') : 'Sunday 11:00 · skip intro: $4.99'}</em></div>
+      </div>
       <div class="card panel--gold" style="border-color:#7a5c1e">
         <div class="tiny" style="color:#ffd24a;letter-spacing:.2em">${T(st.label.toUpperCase())}</div>
         <div class="tiny mono-dim">${T(st.note)}</div>
@@ -554,7 +613,7 @@ export class Phone {
   systemView() {
     const g = this.g;
     const s = g.state;
-    return `${this.header('System', 'SETTINGS')}
+    return `${this.header('Tweaks', 'SETTINGS')}
       <div class="row row--wrap">
         <button class="btn btn--sm ${s.settings.crt ? 'on btn--primary' : ''}" data-act="togglecrt">CRT: ${s.settings.crt ? 'ON' : 'OFF'}</button>
         <button class="btn btn--sm ${s.settings.ratio43 ? 'btn--primary' : ''}" data-act="toggle43">4:3: ${s.settings.ratio43 ? 'ON' : 'OFF'}</button>
@@ -635,13 +694,14 @@ export class Phone {
         if (!m) return;
         const pool = m.choices && m.choices.length ? m.choices.map((c) => c.label) : DEFAULT_REPLIES;
         const text = pool[num] ?? pool[0];
+        // straight onto this thread: recordReply would look the thread up again and post it twice
         m.replies = m.replies || [];
         m.replies.push({ text, day: dayOf(s.clock.m) });
-        g.recordReply?.(m.from, text);
         g.audio.sfx('phone');
       },
       msgback() { this.msgId = null; },
-      eatitem(arg) { eat(g, arg); },
+      // put the phone away first, so the bite happens on screen
+      eatitem(arg) { this.close(); eat(g, arg); },
       useitem(arg) {
         const def = CONFIG.items[arg];
         g.openModal({

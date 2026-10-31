@@ -8,6 +8,7 @@
  */
 import { el } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
+import { serviceAvatar } from './apps.js';
 
 const NAME_TO_KIND = {
   'ADDISON OCTAVIUS': 'addison',
@@ -24,7 +25,8 @@ const NAME_TO_KIND = {
   'MO': 'mo',
 };
 
-export const kindForName = (name = '') => NAME_TO_KIND[String(name).toUpperCase().trim()] || 'kev';
+// "DALE (QUIK-STOP #14)" is still Dale: the bracketed part is where he texts from, not who he is
+export const kindForName = (name = '') => NAME_TO_KIND[String(name).toUpperCase().replace(/\(.*?\)/g, '').trim()] || 'kev';
 
 export class Threads {
   constructor(root, game) {
@@ -52,7 +54,7 @@ export class Threads {
     const kind = kindForName(name);
     this.wrap = el(`<div class="thread" data-name="${escapeAttr(name)}">
       <div class="thread__head">
-        <img class="thread__face" src="${portraitURL(kind, 'content')}" alt="" />
+        ${serviceAvatar(name, 'thread__face') || `<img class="thread__face" src="${portraitURL(kind, 'content')}" alt="" />`}
         <div class="thread__who"><b class="thread__name">${escapeHtml(name)}</b><span class="thread__sub">${escapeHtml(subtitle || 'now')}</span></div>
         <button class="thread__close" data-thread="close" aria-label="close">×</button>
       </div>
@@ -74,7 +76,7 @@ export class Threads {
     this.ensure(from, 'SMS · now');
     clearTimeout(this.hideTimer);
     const post = () => {
-      this.addBubble('in', text, kindForName(from), mood);
+      this.addBubble('in', text, kindForName(from), mood, from);
       this.g.audio?.sfx?.('phone');
       if (!this.pending) this.queueDismiss(9000);
     };
@@ -92,10 +94,10 @@ export class Threads {
     }
   }
 
-  addBubble(side, text, kind, mood) {
+  addBubble(side, text, kind, mood, from = '') {
     const body = this.body();
     const row = el(`<div class="bubble bubble--${side}">
-      ${side === 'in' ? `<img class="bubble__face" src="${portraitURL(kind, mood)}" alt="" />` : ''}
+      ${side === 'in' ? serviceAvatar(from, 'bubble__face') || `<img class="bubble__face" src="${portraitURL(kind, mood)}" alt="" />` : ''}
       <div class="bubble__text">${escapeHtml(text)}</div>
       ${side === 'out' ? `<img class="bubble__face" src="${portraitURL('mo', mood)}" alt="" />` : ''}
     </div>`);
@@ -109,7 +111,7 @@ export class Threads {
   ask({ from, text, choices, subtitle = '' }) {
     this.ensure(from, subtitle || 'SMS · needs a reply');
     clearTimeout(this.hideTimer);
-    if (text) this.addBubble('in', text, kindForName(from), 'content');
+    if (text) this.addBubble('in', text, kindForName(from), 'content', from);
     this.pending = { from, choices };
     const box = this.wrap.querySelector('.thread__choices');
     box.innerHTML = choices.map((c, i) => `<button class="thread__choice" data-choice="${i}">${escapeHtml(c.label)}</button>`).join('');

@@ -10,13 +10,14 @@ export class Modal {
 
   get isOpen() { return !!this.wrap; }
 
-  open({ kicker = '', title = '', body = '', choices = [], onClose = null }) {
+  /** `html` is for bodies the game builds itself (the daily report table); text is escaped. */
+  open({ kicker = '', title = '', body = '', html = '', choices = [], onClose = null }) {
     this.close();
     const wrap = el(`<div class="modal-wrap">
       <div class="panel modal">
         ${kicker ? `<div class="modal__kicker">${esc(kicker)}</div>` : ''}
         <h2 class="modal__title">${esc(title)}</h2>
-        <div class="modal__body">${format(body)}</div>
+        <div class="modal__body">${html || format(body)}</div>
         <div class="modal__choices"></div>
       </div>
     </div>`);

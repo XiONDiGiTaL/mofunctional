@@ -12,6 +12,7 @@ import { workShift, callOut, quitJob, applyForJob, doOddJob, oddJobsAvailable, s
 import { buyFood, sellToDex, buyGrabBag, billInfo } from '../systems/economy.js';
 import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
 import { openShop } from './shops.js';
+import { showFridge } from '../ui/fridge.js';
 
 const M = {
   floor: retroMaterial('floor', { map: tex('linoleum') }),
@@ -116,7 +117,7 @@ export function buildApartment(g) {
 
   const interactables = [
     { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
-    { id: 'fridge', label: 'Open the fridge', sub: 'eat something', x: 2.7, z: -2.9, action: (gg) => eatMenu(gg) },
+    { id: 'fridge', label: 'Open the fridge', sub: 'eat · store food for later', x: 2.7, z: -2.9, action: (gg) => showFridge(gg) },
     { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
     { id: 'tv', label: 'Turn on the TV', sub: 'waste time productively', x: -2.6, z: 1.0, action: (gg) => tvMenu(gg) },
     { id: 'laptop', label: 'Use the laptop', sub: 'open BidBay', x: 1.4, z: 0.1, action: (gg) => gg.openPhone('bidbay') },
@@ -155,33 +156,6 @@ function bedMenu(g) {
       { label: 'Sleep 9 hours.', sub: 'grief nap, basically', effect: () => sleep(g, 9) },
       { label: 'Lie down for an hour.', sub: '+energy, still awake-ish', effect: () => { g.advance(60, { sleeping: true }); bump(s, 'energy', 4); bump(s, 'stress', -3); } },
       { label: 'Get up.', sub: '', effect: () => {} },
-    ],
-  });
-}
-
-function eatMenu(g) {
-  const food = inventoryList(g.state).filter((i) => i.def.kind === 'food');
-  if (!food.length) {
-    g.toast('The fridge contains a jar of something and a light bulb.', 'bad');
-    g.openModal({
-      kicker: 'THE FRIDGE',
-      title: 'An Empty Fridge Is A Kind Of Clock',
-      body: 'You have no food. The Pantry app in your phone can order groceries — with money, or with CRP food credit if you have enrolled at the Civic Relief office.',
-      choices: [{ label: 'Open the Pantry app.', sub: 'order food', effect: () => g.openPhone('pantry') }, { label: 'Close the fridge.', sub: '', effect: () => {} }],
-    });
-    return;
-  }
-  g.openModal({
-    kicker: 'THE FRIDGE',
-    title: 'Cold Options',
-    body: 'Everything in here is either a meal or a decision.',
-    choices: [
-      ...food.map((f) => ({
-        label: `Eat ${f.def.name} (x${f.qty}).`,
-        sub: `+${f.def.hunger} hunger · 15 min`,
-        effect: () => eat(g, f.id),
-      })),
-      { label: 'Close the fridge.', sub: '', effect: () => {} },
     ],
   });
 }

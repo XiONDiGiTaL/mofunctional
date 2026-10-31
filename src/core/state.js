@@ -15,7 +15,9 @@ export function createState() {
       energy: 64, hunger: 46, hygiene: 58, stress: 30, morale: 48,
       addiction: 22, tolerance: 8, risk: 10, withdrawal: 0,
     },
-    high: { level: 0, until: 0, lastDose: -9999 },
+    // his last dose was the night before the game opens, so withdrawal starts mid-afternoon
+    // on day one instead of the moment he wakes up
+    high: { level: 0, until: 0, lastDose: CONFIG.time.startMinutes - 4 * 60 },
     job: {
       employed: true,
       workedDay: 0,
@@ -41,10 +43,14 @@ export function createState() {
     },
     crp: { active: false, credit: 0, lastRecert: 0, applied: false, recertDue: 0 },
     fellowship: { stage: 0, joinedDay: 0, titheOwed: 0, lastAllowanceDay: 0, visits: 0, pledged: false },
-    inventory: [
-      { id: 'ramen', qty: 3 },
+    // the fridge is storage: food kept here is out of his pockets until he takes or eats it
+    fridge: [
+      { id: 'ramen', qty: 2 },
       { id: 'beans', qty: 2 },
       { id: 'eggs', qty: 1 },
+    ],
+    inventory: [
+      { id: 'ramen', qty: 1 },
       { id: 'id_card', qty: 1 },
       { id: 'lease', qty: 1 },
       { id: 'tv', qty: 1 },

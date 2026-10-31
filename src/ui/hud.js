@@ -7,6 +7,7 @@ import { shiftInfo } from '../systems/jobs.js';
 import { TUTORIAL_HINTS } from '../systems/dialogue.js';
 import { el } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
+import { MessageFeed } from './feed.js';
 
 export class HUD {
   constructor(root, game) {
@@ -69,6 +70,7 @@ export class HUD {
     this.objectiveEl = this.el.querySelector('.hud__objective');
     this.logEl = this.el.querySelector('.hud__log');
     this.toastWrap = this.el.querySelector('.hud__toasts');
+    this.feed = new MessageFeed(this.el, this.g);
 
     this.el.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-hud],[data-speed]');
@@ -173,6 +175,7 @@ export class HUD {
   }
 
   toast(text, kind = 'info') {
+    if (this.feed) { this.feed.push(text, kind); return; }
     if (!this.toastWrap) return;
     const t = el(`<div class="toast toast--${kind}">${escapeHtml(text)}</div>`);
     this.toastWrap.appendChild(t);
@@ -184,6 +187,7 @@ export class HUD {
   }
 
   pushLog(text) {
+    if (this.feed) { this.feed.system(text); return; }
     this.logLines.push(text);
     if (this.logLines.length > 5) this.logLines.shift();
     if (this.logEl) this.logEl.innerHTML = this.logLines.slice(-4).map((l) => `<div>${escapeHtml(l)}</div>`).join('');

@@ -4,6 +4,9 @@ export const THEMES = [
   { id: 'amber', label: 'Amber', note: 'Shale Mobile · warm glass', dot: '#ffb347' },
   { id: 'ice', label: 'Ice', note: 'Clinic blue · cold readout', dot: '#63c8ff' },
   { id: 'vhs', label: 'VHS', note: 'Magenta bleed · late rental', dot: '#ff7ad9' },
+  { id: 'primo', label: 'Primo', note: 'Indigo glass · cyan pills', dot: '#4cc9ff' },
+  { id: 'bodega', label: 'Bodega', note: 'Neon sign · 3am grill', dot: '#ff5f8f' },
+  { id: 'graphite', label: 'Graphite', note: 'Monochrome · quiet hours', dot: '#e8e8ec' },
 ];
 
 export const SCALES = [

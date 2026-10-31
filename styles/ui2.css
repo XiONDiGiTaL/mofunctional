@@ -1,0 +1,467 @@
+/* ============================================================================
+   UI 2 — loaded after main.css and layered over it.
+   · three more skins (Primo, Bodega, Graphite)
+   · the message feed: toasts as text bubbles with a scrollable history
+   · MoPhone: a rounded modern handset, a home screen with widgets and a dock,
+     and a parody brand per app (Txtr, Shale Pay, LinkedOut, BidBay, iDread,
+     GrubHope, Pocket Lint, Landlordly, FeedLove, Blessed+, Tweaks)
+   · item art, the shop menu board, the fridge door, the daily report
+   Everything still runs off the skin tokens (--gold, --glow, --line ...).
+   ============================================================================ */
+
+:root[data-theme="primo"] {
+  --ink: #070b1c; --ink-2: #0b1230; --ink-3: #111a42;
+  --line: #2b3a7a; --line-hot: #4cc9ff;
+  --text: #e4ecff; --dim: #8796c8; --paper: #f2f6ff;
+  --gold: #4cc9ff; --gold-deep: #1f7fb8;
+  --bad: #ff6b8a; --good: #5ef0b4; --warn: #ffc56b; --violet: #a99bff;
+  --screen: #0a1030; --screen-2: #1a2766; --glow: rgba(76, 201, 255, .5);
+  --bezel-a: #8a93b8; --bezel-b: #1c2246; --bezel-c: #9aa4cc;
+}
+:root[data-theme="bodega"] {
+  --ink: #0d0708; --ink-2: #170b0e; --ink-3: #221014;
+  --line: #5a2430; --line-hot: #ff5f8f;
+  --text: #ffe6ea; --dim: #b48a92; --paper: #fff2f4;
+  --gold: #ff9a3c; --gold-deep: #b85c12;
+  --bad: #ff4f6b; --good: #8ff0a4; --warn: #ffd06b; --violet: #ff7ad9;
+  --screen: #120709; --screen-2: #2a0d16; --glow: rgba(255, 95, 143, .5);
+  --bezel-a: #7d6266; --bezel-b: #2a1418; --bezel-c: #95787c;
+}
+:root[data-theme="graphite"] {
+  --ink: #0a0a0c; --ink-2: #121215; --ink-3: #1a1a1f;
+  --line: #3a3a42; --line-hot: #d8d8e0;
+  --text: #ececf2; --dim: #8e8e99; --paper: #ffffff;
+  --gold: #f2f2f6; --gold-deep: #8e8e99;
+  --bad: #ff6b6b; --good: #7fe0a8; --warn: #ffcf70; --violet: #b9b2ff;
+  --screen: #0c0c0f; --screen-2: #1e1e24; --glow: rgba(230, 230, 240, .28);
+  --bezel-a: #9a9aa2; --bezel-b: #222226; --bezel-c: #b0b0b8;
+}
+
+/* ------------------------------------------------------------------ HUD polish */
+.hud__top { border-radius: 20px; }
+.stat__bar { height: 8px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--ink) 70%, #000); }
+.stat__fill {
+  border-radius: 999px; transition: width .9s cubic-bezier(.2, .9, .2, 1);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 70%, #000), var(--c));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.stat__bar::after { opacity: .35; }
+.hud__btn { border-radius: 999px; padding: 6px 11px; }
+.hud__phone {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 92%, #fff), color-mix(in srgb, var(--gold) 70%, #000));
+  color: #071009; border: 0; font-weight: 700;
+  box-shadow: 0 10px 22px -12px var(--gold), inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+.hud__phone.on { color: #071009; }
+.hud__objective { border-radius: 14px; backdrop-filter: blur(8px); }
+/* the feed replaces the old toast stack and log ticker */
+.hud__toasts, .hud__log { display: none !important; }
+.hud__hint { bottom: 8px; }
+
+/* ------------------------------------------------------------------ message feed */
+.feed {
+  position: absolute; right: 14px; bottom: 30px; width: min(340px, 72vw);
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  pointer-events: none; z-index: 30;
+}
+.feed__list {
+  display: flex; flex-direction: column; gap: 5px;
+  max-height: 46vh; overflow: hidden; padding: 4px 4px 2px;
+  border-radius: 18px; transition: background .2s, box-shadow .2s;
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--line-hot) 50%, transparent) transparent;
+  mask-image: linear-gradient(180deg, transparent 0, #000 22px);
+}
+.feed:hover .feed__list, .feed--open .feed__list {
+  overflow-y: auto; pointer-events: auto; mask-image: none;
+  background: color-mix(in srgb, var(--ink) 82%, transparent);
+  box-shadow: 0 18px 46px -18px #000, inset 0 0 0 1px var(--hair-soft);
+  backdrop-filter: blur(12px) saturate(1.2); padding: 10px 8px 6px;
+}
+.fb {
+  display: flex; gap: 7px; align-items: flex-end; max-height: 190px;
+  animation: fbpop .42s cubic-bezier(.2, 1.4, .3, 1) both;
+  transition: opacity .7s ease, max-height .6s ease, margin .6s ease, transform .6s ease;
+  pointer-events: auto; transform-origin: 100% 100%; overflow: hidden; flex: none;
+}
+@keyframes fbpop { from { opacity: 0; transform: translateY(14px) scale(.7); } to { opacity: 1; transform: none; } }
+.fb--old { opacity: 0; max-height: 0; margin-top: -5px; transform: translateY(-6px) scale(.96); pointer-events: none; }
+.feed:hover .fb--old, .feed--open .fb--old { opacity: .9; max-height: 190px; margin-top: 0; transform: none; pointer-events: auto; }
+.fb__avatar {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; color: #0a0f0b;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--k) 85%, #fff), var(--k));
+  box-shadow: 0 4px 10px -4px var(--k);
+}
+.fb--grouped .fb__avatar { visibility: hidden; }
+.fb__body {
+  position: relative; flex: 1; min-width: 0; border-radius: 18px 18px 18px 5px; padding: 7px 11px 8px;
+  background: color-mix(in srgb, #26262b 88%, var(--k) 12%); color: #f2f2f7;
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+.fb__body::after {
+  content: ""; position: absolute; left: -6px; bottom: 0; width: 12px; height: 12px;
+  background: radial-gradient(circle at top right, transparent 70%, color-mix(in srgb, #26262b 88%, var(--k) 12%) 72%);
+}
+.fb--grouped .fb__body { border-bottom-left-radius: 18px; }
+.fb--grouped .fb__body::after { display: none; }
+.fb--grouped .fb__head { display: none; }
+.fb__head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.fb__head b { font-family: var(--ui); font-weight: 700; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--k); }
+.fb__head time { font-family: var(--ui); font-size: 8.5px; letter-spacing: .08em; color: rgba(235, 235, 245, .45); }
+.fb__text { font-family: var(--ui); font-size: 11.5px; line-height: 1.45; }
+.fb--info { --k: #8ab4ff; }
+.fb--good { --k: #5be38a; }
+.fb--bad { --k: #ff6b5e; }
+.fb--gold { --k: #ffd24a; }
+.fb--event { --k: #c39bff; }
+.fb--good .fb__body { background: linear-gradient(180deg, #2fc566, #1f9d4c); color: #04160a; }
+.fb--good .fb__body::after { background: radial-gradient(circle at top right, transparent 70%, #1f9d4c 72%); }
+.fb--good .fb__head b, .fb--good .fb__head time { color: rgba(4, 22, 10, .7); }
+.fb--sys {
+  justify-content: center; max-height: 40px;
+  font-family: var(--ui); font-size: 9px; letter-spacing: .12em; color: color-mix(in srgb, var(--dim) 90%, transparent);
+}
+.fb--sys span { padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, .35); }
+.feed__handle {
+  align-self: flex-end; pointer-events: auto; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 7px 5px 10px; border-radius: 999px; border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--ink) 78%, transparent); backdrop-filter: blur(8px);
+  color: var(--text); font-family: var(--ui); font-weight: 600; font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+}
+.feed__handle:hover, .feed--open .feed__handle { border-color: var(--gold); color: #fff; }
+.feed__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
+.feed--ping .feed__dot { animation: feedping .9s ease; }
+@keyframes feedping { 0% { transform: scale(1); } 30% { transform: scale(1.9); background: var(--gold); } 100% { transform: scale(1); } }
+.feed__count {
+  min-width: 18px; padding: 1px 6px; border-radius: 999px; text-align: center;
+  background: var(--gold); color: #0a0f0b; font-family: var(--display); font-size: 8.5px; letter-spacing: .04em;
+}
+.thread { bottom: 34px; }
+
+/* ------------------------------------------------------------------ MoPhone chassis */
+.phone { width: 360px; height: min(690px, 92vh); }
+.phone__shell {
+  clip-path: none; border-radius: 52px; padding: 11px;
+  box-shadow: inset 0 0 0 1px var(--bezel-line), inset 0 0 0 4px rgba(0, 0, 0, .55), 0 0 0 1px rgba(0, 0, 0, .7);
+}
+.phone__shell::before { border-radius: 52px; }
+.phone__speaker { position: absolute; top: 19px; left: 50%; transform: translateX(-50%); z-index: 6; margin: 0;
+  width: 92px; height: 24px; border-radius: 999px; background: #000; gap: 0; }
+.phone__speaker i { display: none; }
+.phone__speaker::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2b3b5a, #05070c 70%); margin-left: 48px; }
+.phone__chin { display: none; }
+.phone__screen { clip-path: none; border-radius: 42px; overflow: hidden; }
+.phone__screen::before { opacity: .18; border-radius: 42px; }
+.phone__bar { padding: 15px 28px 6px; background: transparent; border: 0; min-height: 40px; }
+.phone__bar .phone__carrier { display: none; }
+.phone__body { scrollbar-width: none; }
+.phone__body::-webkit-scrollbar { display: none; }
+.phone__nav--gesture {
+  display: flex; align-items: center; justify-content: center; position: relative;
+  border: 0; background: transparent; padding: 6px 0 10px; gap: 0;
+}
+.phone__nav--gesture button { flex: none; border: 0; background: none; padding: 0; cursor: pointer; }
+.phone__homebar { width: 140px; height: 20px; display: grid; place-items: center; }
+.phone__homebar i { display: block; width: 124px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, .72); transition: width .15s; }
+.phone__homebar:hover i { width: 134px; background: #fff; }
+.phone__x {
+  position: absolute; right: 18px; top: 50%; transform: translateY(-58%);
+  width: 26px; height: 26px; border-radius: 50%; font-size: 15px; line-height: 1;
+  color: rgba(255, 255, 255, .8) !important; background: rgba(255, 255, 255, .1) !important;
+}
+.phone__x:hover { background: rgba(255, 90, 90, .35) !important; color: #fff !important; }
+
+/* wallpaper: the skin's glow, a second colour, and grain */
+.phone__screen[data-app="home"] {
+  background:
+    radial-gradient(90% 60% at 15% 10%, color-mix(in srgb, var(--glow) 60%, transparent), transparent 60%),
+    radial-gradient(80% 60% at 90% 80%, color-mix(in srgb, var(--violet) 40%, transparent), transparent 62%),
+    linear-gradient(180deg, var(--screen-2), var(--screen));
+}
+
+/* ------------------------------------------------------------------ home screen */
+.mohome { display: flex; flex-direction: column; gap: 14px; padding: 4px 18px 10px; min-height: 100%; }
+.mohome__lock { display: flex; flex-direction: column; align-items: center; padding-top: 2px; }
+.mohome__time { font-family: var(--display); font-weight: 700; font-size: 46px; letter-spacing: -.01em; color: #fff; line-height: 1; text-shadow: 0 4px 24px rgba(0, 0, 0, .5); }
+.mohome__date { font-family: var(--ui); font-weight: 600; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255, 255, 255, .75); margin-top: 6px; }
+.mohome__widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.widget {
+  border-radius: 22px; padding: 11px 12px; min-height: 76px;
+  background: rgba(255, 255, 255, .1); backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); color: #fff;
+  display: flex; gap: 9px; align-items: center;
+}
+.widget b { display: block; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: .08em; }
+.widget em { display: block; font-style: normal; font-family: var(--ui); font-size: 9.5px; line-height: 1.35; color: rgba(255, 255, 255, .72); }
+.widget--mo img { width: 42px; height: 42px; border-radius: 14px; object-fit: cover; flex: none; }
+.widget--next { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+.widget--next em { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; }
+.widget--next span { font-family: var(--ui); font-size: 9px; color: rgba(255, 255, 255, .6); }
+.mohome__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 8px; margin-top: 4px; }
+.mohome__signal { margin-top: auto; text-align: center; font-family: var(--ui); font-size: 8.5px; letter-spacing: .14em; color: rgba(255, 255, 255, .5); }
+.mohome__dock {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px 12px;
+  border-radius: 30px; background: rgba(255, 255, 255, .14); backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14);
+}
+
+/* app icons */
+.appicon { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 0; padding: 0; cursor: pointer; color: #fff; }
+.appicon__tile {
+  position: relative; width: 54px; height: 54px; border-radius: 15px; display: grid; place-items: center;
+  background: linear-gradient(160deg, var(--a), var(--b));
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -2px 0 rgba(0, 0, 0, .18);
+  transition: transform .14s cubic-bezier(.2, .9, .2, 1), filter .14s;
+}
+.appicon:hover .appicon__tile { transform: translateY(-2px) scale(1.06); filter: brightness(1.08); }
+.appicon:active .appicon__tile { transform: scale(.92); }
+.appicon__tile svg { width: 30px; height: 30px; color: #fff; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
+.appicon--light .appicon__tile svg { color: #222; }
+.appicon__name { font-family: var(--ui); font-weight: 600; font-size: 9.5px; letter-spacing: .02em; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); white-space: nowrap; }
+.appicon__badge {
+  position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px;
+  display: grid; place-items: center; background: #ff3b30; color: #fff;
+  font-family: var(--ui); font-weight: 700; font-size: 10px; box-shadow: 0 0 0 2px var(--screen);
+}
+.appicon__bid { font-family: "Arial Black", var(--display); font-weight: 900; font-size: 19px; letter-spacing: -.06em; }
+.appicon__bid i { font-style: normal; }
+.appicon__bid i:nth-child(1) { color: #e53238; }
+.appicon__bid i:nth-child(2) { color: #0064d2; }
+.appicon__bid i:nth-child(3) { color: #f5af02; }
+.appicon__date { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.appicon__date em { font-style: normal; font-family: var(--ui); font-weight: 700; font-size: 8px; letter-spacing: .14em; color: #ff3b30; }
+.appicon__date b { font-family: var(--ui); font-weight: 600; font-size: 24px; color: #1a1a1a; }
+
+/* service senders wear their app icon in threads */
+.svcavatar {
+  display: inline-grid; place-items: center; flex: none; border-radius: 30%;
+  background: linear-gradient(160deg, var(--a), var(--b)); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.svcavatar svg { width: 64%; height: 64%; }
+.svcavatar--light { color: #222; }
+.svcavatar .appicon__bid { font-size: 12px; }
+.chat__face.svcavatar, .bubble__face.svcavatar, .thread__face.svcavatar { width: 28px; height: 28px; }
+.listitem .chat__face.svcavatar { width: 34px; height: 34px; }
+
+/* ------------------------------------------------------------------ branded apps */
+.papp { --a: var(--gold); --b: var(--gold-deep); }
+.app__header--brand {
+  display: flex; align-items: center; gap: 9px; padding: 8px 14px 10px;
+  border: 0; border-radius: 0; position: sticky; top: 0; z-index: 3;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--b) 55%, var(--screen)), color-mix(in srgb, var(--b) 18%, var(--screen)));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 10px 22px -16px #000;
+}
+.app__header--brand .app__back { font-size: 26px; line-height: 1; color: #fff; opacity: .85; padding: 0 2px 2px 0; }
+.app__header--brand .appicon__tile { width: 34px; height: 34px; border-radius: 10px; }
+.app__header--brand .appicon__tile svg { width: 20px; height: 20px; }
+.app__header--brand .appicon__bid { font-size: 13px; }
+.app__header--brand .appicon__date b { font-size: 15px; }
+.app__header--brand .appicon__date em { font-size: 6px; }
+.app__brand { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.app__logo { font-family: var(--display); font-weight: 800; font-size: 14px; letter-spacing: .02em; color: #fff; }
+.app__brand em { font-style: normal; font-family: var(--ui); font-size: 9px; color: rgba(255, 255, 255, .62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app__kick {
+  flex: none; font-family: var(--ui); font-weight: 700; font-size: 8px; letter-spacing: .16em;
+  padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, .12); color: #fff;
+}
+.papp .app__body { padding: 12px 14px 18px; }
+.papp .card, .papp .listitem { border-radius: 16px; border-color: rgba(255, 255, 255, .07); background: rgba(255, 255, 255, .045); }
+.papp .btn--primary { background: linear-gradient(180deg, var(--a), color-mix(in srgb, var(--a) 60%, var(--b))); color: #071009; border: 0; }
+.papp .btn { border-radius: 999px; }
+.papp .app__h { color: color-mix(in srgb, var(--a) 70%, #fff); }
+
+/* Txtr */
+.papp--messages .app__header--brand { background: linear-gradient(180deg, #1b2a1f, var(--screen)); }
+.papp--messages .chatlist { align-items: center; gap: 10px; }
+
+/* Shale Pay: a card you can almost tap */
+.bankcard {
+  position: relative; height: 172px; border-radius: 20px; padding: 18px;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(43, 210, 196, .55), transparent 55%),
+    linear-gradient(135deg, #0d3550, #08192a 60%, #123d3a);
+  box-shadow: 0 18px 34px -16px #000, inset 0 0 0 1px rgba(255, 255, 255, .12);
+  color: #e9fffb; overflow: hidden;
+}
+.bankcard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, .12) 50%, transparent 60%); }
+.bankcard--low { background: radial-gradient(120% 90% at 100% 0%, rgba(255, 107, 94, .5), transparent 55%), linear-gradient(135deg, #3a1218, #1a0a0d 60%, #3d1a12); }
+.bankcard__chip { position: absolute; left: 18px; top: 46px; width: 34px; height: 25px; border-radius: 6px; background: linear-gradient(135deg, #f4d58a, #b8862c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25); }
+.bankcard__brand { position: absolute; right: 18px; top: 16px; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .14em; }
+.bankcard__brand b { color: #2bd2c4; }
+.bankcard__label { position: absolute; left: 18px; top: 16px; font-family: var(--ui); font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; opacity: .7; }
+.bankcard__bal { position: absolute; left: 66px; top: 42px; font-family: var(--display); font-weight: 700; font-size: 26px; }
+.bankcard__num { position: absolute; left: 18px; bottom: 36px; font-family: var(--ui); font-weight: 600; font-size: 13px; letter-spacing: .16em; }
+.bankcard__name { position: absolute; left: 18px; bottom: 14px; font-family: var(--ui); font-size: 9px; letter-spacing: .22em; opacity: .7; }
+
+/* LinkedOut / FeedLove profiles */
+.profile { display: flex; align-items: center; gap: 12px; padding: 4px 2px; }
+.profile b { display: block; font-family: var(--display); font-size: 13px; color: #fff; }
+.profile em { display: block; font-style: normal; font-size: 10.5px; color: rgba(255, 255, 255, .7); }
+.profile__ring { flex: none; width: 58px; height: 58px; border-radius: 50%; padding: 3px; background: conic-gradient(#5be38a 0 70%, transparent 70%); }
+.profile__ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--screen); display: block; }
+.profile__open { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: #1f6f3c; color: #d6ffe4; font-size: 9px; font-weight: 700; letter-spacing: .06em; }
+.papp--jobs .card { background: rgba(61, 155, 255, .08); }
+.profile--feed .profile__ring { width: 66px; height: 66px; background: conic-gradient(from 210deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #feda75); }
+.profile__stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
+.profile__stats span { font-size: 9.5px; color: rgba(255, 255, 255, .7); }
+.profile__stats b { font-family: var(--display); font-size: 15px; }
+.papp--social .btn--primary { background: linear-gradient(90deg, #f58529, #dd2a7b, #8134af); color: #fff; }
+.post .post__heart { color: #ff3b6b; }
+.papp--social .app__header--brand { background: linear-gradient(90deg, rgba(245, 133, 41, .35), rgba(221, 42, 123, .35), rgba(129, 52, 175, .35)), var(--screen); }
+
+/* BidBay: white-label marketplace energy */
+.papp--bidbay .app__header--brand { background: linear-gradient(180deg, #f4f5f8, #dfe2ea); }
+.papp--bidbay .app__logo { color: #1a1a1a; font-family: "Arial Black", var(--display); letter-spacing: -.04em; }
+.papp--bidbay .app__brand em, .papp--bidbay .app__header--brand .app__back { color: #333; }
+.papp--bidbay .app__kick { background: #0064d2; }
+.papp--bidbay .listitem .name { color: #fff; }
+.papp--bidbay .btn--primary { background: #0064d2; color: #fff; }
+
+/* iDread */
+.papp--calendar .app__header--brand { background: linear-gradient(180deg, #2a2a2e, var(--screen)); }
+.datetile { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: end; padding: 12px 14px; border-radius: 18px; background: #fff; color: #111; }
+.datetile em { grid-column: 1; font-style: normal; font-weight: 700; font-size: 10px; letter-spacing: .14em; color: #ff3b30; text-transform: uppercase; }
+.datetile b { grid-column: 1; font-family: var(--ui); font-weight: 600; font-size: 44px; line-height: .95; }
+.datetile span { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 11px; color: #444; }
+
+/* GrubHope */
+.promo { border-radius: 16px; padding: 12px 14px; background: linear-gradient(120deg, #ffae3d, #ff4d2e); color: #2a0b02; }
+.promo b { display: block; font-family: var(--display); font-size: 14px; }
+.promo span { font-size: 10.5px; }
+.listitem--food { align-items: center; gap: 10px; }
+
+/* Pocket Lint: inventory as tiles */
+.list--tiles { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+.listitem--tile { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; }
+.listitem--tile .itemicon { width: 46px; height: 46px; }
+.listitem--tile .grow { width: 100%; }
+.listitem--tile .btn { align-self: stretch; }
+.papp--inventory .app__header--brand { background: linear-gradient(180deg, #4a3016, var(--screen)); }
+
+/* Landlordly: a thermostat that counts down to rent */
+.dial { position: relative; width: 168px; height: 168px; margin: 4px auto 2px; }
+.dial__ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 220deg, #ffb35c 0, #ff7a59 calc(var(--f) * 280deg), rgba(255, 255, 255, .08) calc(var(--f) * 280deg) 280deg, transparent 280deg); }
+.dial__face { position: absolute; inset: 12px; border-radius: 50%; display: grid; place-content: center; text-align: center; background: radial-gradient(circle at 50% 30%, #2d2220, #120c0b); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 10px 26px -10px #000; }
+.dial__face b { font-family: var(--display); font-weight: 700; font-size: 44px; color: #fff; line-height: 1; }
+.dial__face em { font-style: normal; font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: rgba(255, 255, 255, .6); }
+.dial--late .dial__face b { color: #ff5a4a; animation: dialpulse 1.2s ease-in-out infinite; }
+@keyframes dialpulse { 50% { opacity: .45; } }
+
+/* Blessed+ */
+.stream { display: flex; gap: 10px; align-items: center; position: relative; padding: 10px; border-radius: 16px; background: linear-gradient(120deg, rgba(106, 43, 176, .55), rgba(255, 216, 107, .25)); }
+.stream img { width: 64px; height: 48px; object-fit: cover; border-radius: 10px; }
+.stream b { display: block; font-size: 11px; color: #fff; }
+.stream em { display: block; font-style: normal; font-size: 9.5px; color: rgba(255, 255, 255, .72); }
+.stream__live { position: absolute; left: 14px; top: 6px; z-index: 1; padding: 0 5px; border-radius: 4px; background: #ff3b30; color: #fff; font-size: 8px; font-weight: 700; letter-spacing: .1em; }
+
+/* Tweaks: grouped iOS-ish */
+.papp--system .app__header--brand { background: linear-gradient(180deg, #2c3036, var(--screen)); }
+
+/* ------------------------------------------------------------------ item art */
+.itemicon {
+  display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .16), rgba(255, 255, 255, .03));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+}
+.itemicon svg { width: 80%; height: 80%; }
+
+/* ------------------------------------------------------------------ shop menu board */
+.shopmenu, .fridge {
+  position: absolute; inset: 0; z-index: 42; display: grid; place-items: center; padding: 18px;
+  background: radial-gradient(circle at 50% 40%, rgba(5, 6, 6, .45), rgba(2, 3, 3, .86));
+  animation: fadein .18s ease;
+}
+@keyframes fadein { from { opacity: 0; } }
+.shopmenu__board, .fridge__door {
+  width: min(860px, 96vw); max-height: 92vh; overflow: auto; border-radius: 24px; padding: 18px 20px 16px;
+  background: linear-gradient(180deg, rgba(20, 17, 14, .96), rgba(10, 9, 8, .97));
+  box-shadow: 0 30px 70px -20px #000, inset 0 0 0 1px rgba(255, 255, 255, .08);
+  animation: boardin .3s cubic-bezier(.2, 1.2, .3, 1);
+}
+@keyframes boardin { from { transform: translateY(18px) scale(.97); opacity: 0; } }
+.shopmenu__head { display: flex; align-items: center; gap: 14px; }
+.shopmenu__owner { width: 64px; height: 64px; border-radius: 18px; object-fit: cover; box-shadow: 0 0 0 2px var(--shop-a, var(--gold)); }
+.shopmenu__title { flex: 1; min-width: 0; }
+.shopmenu__kicker, .fridge__kicker { font-family: var(--ui); font-weight: 700; font-size: 9px; letter-spacing: .3em; color: var(--shop-a, var(--gold)); }
+.shopmenu__title h2, .fridge__head h2 { font-family: var(--display); font-weight: 800; font-size: 24px; color: #fff; margin: 2px 0 4px; }
+.shopmenu__say { font-family: var(--ui); font-size: 12px; color: #e9dcc6; margin: 0; padding: 6px 11px; border-radius: 14px 14px 14px 4px; background: rgba(255, 255, 255, .07); display: inline-block; }
+.shopmenu__cash { text-align: right; }
+.shopmenu__cash em { display: block; font-style: normal; font-family: var(--ui); font-size: 8.5px; letter-spacing: .24em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+.shopmenu__cash b { font-family: var(--display); font-size: 20px; color: var(--good); }
+.shopmenu__x, .fridge__x { width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; font-size: 18px; color: #fff; background: rgba(255, 255, 255, .1); }
+.shopmenu__x:hover, .fridge__x:hover { background: rgba(255, 90, 90, .4); }
+.shopmenu__blurb { font-family: var(--ui); font-size: 11.5px; color: rgba(255, 255, 255, .6); margin: 12px 0; }
+.shopmenu__halal { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #1f6f3c; color: #d6ffe4; font-size: 9px; font-weight: 700; letter-spacing: .1em; }
+.shopmenu__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
+.menucard {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left;
+  padding: 14px 13px 12px; border-radius: 18px; cursor: pointer; border: 0; color: #fff; font-family: var(--ui);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .03));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 10px 24px -16px #000;
+  transform: rotate(var(--tilt)); transition: transform .16s cubic-bezier(.2, .9, .2, 1), box-shadow .16s, background .16s;
+}
+.menucard:hover { transform: rotate(0) translateY(-3px); box-shadow: inset 0 0 0 1px var(--shop-a, var(--gold)), 0 18px 30px -16px #000; background: rgba(255, 255, 255, .1); }
+.menucard:active { transform: scale(.97); }
+.menucard .itemicon { width: 70px; height: 70px; border-radius: 18px; align-self: center; margin-bottom: 2px; }
+.menucard__price {
+  position: absolute; right: 10px; top: 10px; padding: 2px 9px; border-radius: 999px;
+  background: var(--shop-a, var(--gold)); color: #120a04; font-family: var(--display); font-weight: 700; font-size: 11px;
+}
+.menucard__name { font-size: 13px; font-weight: 700; }
+.menucard__note { font-size: 10px; color: rgba(255, 255, 255, .55); line-height: 1.35; }
+.menucard__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.chip { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: .04em; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.chip--good { background: rgba(91, 227, 138, .18); color: #9ff5bd; }
+.chip--bad { background: rgba(255, 107, 94, .18); color: #ffb3aa; }
+.chip--warm { background: rgba(255, 154, 60, .2); color: #ffc48c; }
+.menucard__stamp {
+  position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-14deg) scale(1.6); opacity: 0;
+  padding: 3px 10px; border: 2px solid var(--good); border-radius: 8px; color: var(--good);
+  font-family: var(--display); font-weight: 800; font-size: 14px; letter-spacing: .16em; pointer-events: none;
+}
+.menucard--bagged .menucard__stamp { animation: stamp .9s ease forwards; }
+@keyframes stamp { 0% { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(1.8); } 18% { opacity: 1; transform: translate(-50%, -50%) rotate(-14deg) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
+.menucard--broke { opacity: .38; filter: grayscale(.6); cursor: not-allowed; }
+.menucard--nope { animation: nope .3s; }
+@keyframes nope { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.shopmenu__foot, .fridge__foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-family: var(--ui); font-size: 10px; color: rgba(255, 255, 255, .5); }
+.shopmenu__foot span, .fridge__foot span { flex: 1; }
+.shopmenu--bodega { --shop-a: #ffb13b; }
+.shopmenu--bodega .shopmenu__board { background: linear-gradient(180deg, rgba(34, 18, 10, .97), rgba(14, 9, 6, .98)); }
+.shopmenu--habibs { --shop-a: #5fd18b; }
+.shopmenu--habibs .shopmenu__board { background: linear-gradient(180deg, rgba(10, 28, 22, .97), rgba(6, 14, 11, .98)); }
+
+/* ------------------------------------------------------------------ fridge door */
+.fridge__door { width: min(720px, 96vw); background: linear-gradient(180deg, rgba(232, 240, 244, .97), rgba(196, 210, 218, .97)); color: #12202a; }
+.fridge__head { display: flex; align-items: center; gap: 12px; }
+.fridge__head > div { flex: 1; }
+.fridge__head h2 { color: #0d1a22; }
+.fridge__kicker { color: #3a7ca5; }
+.fridge__hum { font-family: var(--ui); font-size: 10px; color: #4b6272; }
+.fridge__x { color: #12202a; background: rgba(0, 0, 0, .08); }
+.fridge__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.fridge__col { border-radius: 18px; padding: 12px; background: rgba(255, 255, 255, .6); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); display: flex; flex-direction: column; gap: 8px; }
+.fridge__col--cold { background: linear-gradient(180deg, rgba(214, 238, 255, .9), rgba(240, 248, 255, .8)); box-shadow: inset 0 0 0 1px rgba(58, 124, 165, .25), inset 0 12px 24px -16px rgba(58, 124, 165, .5); }
+.fridge__col h3 { margin: 0 0 2px; font-family: var(--ui); font-weight: 700; font-size: 10px; letter-spacing: .24em; text-transform: uppercase; color: #3a5566; }
+.fridge__item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: #fff; box-shadow: 0 6px 14px -10px rgba(0, 0, 0, .5); }
+.fridge__item .itemicon { background: #f1f4f6; }
+.fridge__meta { flex: 1; min-width: 0; font-family: var(--ui); }
+.fridge__meta b { display: block; font-size: 11.5px; }
+.fridge__meta em { font-style: normal; color: #3a7ca5; }
+.fridge__meta span { font-size: 9.5px; color: #5c6f7c; }
+.fridge__btns { display: flex; flex-direction: column; gap: 4px; }
+.fridge .btn { border-radius: 999px; color: #12202a; border-color: rgba(0, 0, 0, .15); background: rgba(0, 0, 0, .05); }
+.fridge .btn--primary { background: #3a7ca5; color: #fff; border: 0; }
+.fridge__empty { font-family: var(--ui); font-size: 11px; color: #6a7c88; padding: 14px 4px; text-align: center; }
+.fridge__foot { color: #4b6272; }
+
+/* ------------------------------------------------------------------ daily report */
+.summary { display: flex; flex-direction: column; gap: 4px; }
+.summary__row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .04); }
+
+@media (max-width: 720px) {
+  .fridge__cols { grid-template-columns: 1fr; }
+  .phone { width: min(360px, 94vw); }
+}

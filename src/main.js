@@ -75,7 +75,8 @@ class Game {
   }
 
   get phoneOpen() { return this.phone.isOpen; }
-  get modalOpen() { return this.modal.isOpen; }
+  // the shop board and the fridge door are modal too, they just are not the Modal
+  get modalOpen() { return this.modal.isOpen || !!this.overlayOpen; }
 
   /* ------------------------------ boot / audio ------------------------------ */
 
@@ -146,6 +147,7 @@ class Game {
     this.modal.close();
     this.phone.close();
     this.menu.hide();
+    this.hud.feed?.clear();
     this.hud.show(true);
     this.world.loadArea('apartment', this);
     this.state.flags.tutorial = 0;
@@ -183,6 +185,7 @@ class Game {
     this.modal.close();
     this.phone.close();
     this.menu.hide();
+    this.hud.feed?.clear();
     this.hud.show(true);
     this.world.loadArea('apartment', this);
     this.hud.update();
@@ -374,7 +377,7 @@ class Game {
     this.modal.open({
       kicker: `DAY ${prev.day} CLOSED · ${hhmm(s.clock.m)}`,
       title: 'The Daily Report',
-      body: `<div>${rows.map(([k, v]) => `<div class="summary__row"><span class="mono-dim">${k}</span><b>${v}</b></div>`).join('')}</div>`,
+      html: `<div class="summary">${rows.map(([k, v]) => `<div class="summary__row"><span class="mono-dim">${k}</span><b>${v}</b></div>`).join('')}</div>`,
       choices: [{ label: 'Start the next day.', effect: () => {} }],
     });
     s.dayStart = { money: s.money, stats: { ...s.stats }, day: now };

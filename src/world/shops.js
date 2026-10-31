@@ -9,6 +9,8 @@
 import { CONFIG } from '../core/config.js';
 import { money } from '../core/util.js';
 import { addItem } from '../core/state.js';
+import { portraitURL } from '../render/faces.js';
+import { showShopMenu } from '../ui/shopmenu.js';
 
 export const SHOPS = {
   bodega: {
@@ -91,6 +93,22 @@ export function buyFromShop(g, shopId, itemId, qty = 1) {
 export function openShop(g, shopId) {
   const shop = shopById(shopId);
   const s = g.state;
+  // the illustrated menu board; the plain choice modal below is the fallback
+  if (typeof document !== 'undefined') {
+    const items = shop.stock.map(({ id, note }) => {
+      const def = CONFIG.items[id];
+      const gains = [
+        def.hunger ? [`+${def.hunger} food`, 'good'] : null,
+        def.energy ? [`${def.energy > 0 ? '+' : ''}${def.energy} energy`, def.energy > 0 ? 'good' : 'bad'] : null,
+        def.morale ? [`${def.morale > 0 ? '+' : ''}${def.morale} morale`, def.morale > 0 ? 'good' : 'bad'] : null,
+        def.stress ? [`${def.stress > 0 ? '+' : ''}${def.stress} stress`, def.stress < 0 ? 'good' : 'bad'] : null,
+        def.hot ? ['hot', 'warm'] : null,
+      ].filter(Boolean);
+      return { id, def, note, gains, price: shopPrice(shopId, id) };
+    });
+    showShopMenu(g, { shop, items, portrait: portraitURL(shop.ownerKind, 'content'), buy: (id) => buyFromShop(g, shopId, id) });
+    return;
+  }
   const choices = shop.stock.map(({ id, note }) => {
     const def = CONFIG.items[id];
     const price = shopPrice(shopId, id);
