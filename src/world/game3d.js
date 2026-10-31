@@ -40,6 +40,9 @@ export class World {
     this.npcRigs = [];
     this.camTarget = new THREE.Vector3(0, 1.2, 0);
     this.camPos = new THREE.Vector3(0, 3.2, 5);
+    this.camFocus = new THREE.Vector3(0, 0, 0);
+    this.camBoom = 4.1;
+    this.boomHeight = 2.62;
     this.camYaw = 0;
     this.tilt = 0;
     this.ragdollTimer = 0;
@@ -129,6 +132,9 @@ export class World {
     const behind = new THREE.Vector3(Math.sin(spawn.rot), 0, Math.cos(spawn.rot)).multiplyScalar(4.2);
     this.camera.position.set(this.mo.root.position.x + behind.x, 2.9, this.mo.root.position.z + behind.z);
     this.camPos.copy(this.camera.position);
+    this.camFocus.set(this.mo.root.position.x, 0, this.mo.root.position.z);
+    this.camBoom = id === 'apartment' || id === 'church' ? 2.45 : 4.1;
+    this.boomHeight = id === 'apartment' || id === 'church' ? 1.98 : 2.62;
     this.camTarget.set(this.mo.root.position.x, 1.15, this.mo.root.position.z);
     this.camera.lookAt(this.camTarget);
 
@@ -394,34 +400,53 @@ export class World {
     }
     if (this.addison.root.visible) animateAddison(this.addison, dt);
 
-    // camera follow — pulled in and clamped so it never leaves the room or clips a wall
+    // camera follow — a spring arm. The orbit is applied to the arm instantly, so turning the
+    // view is crisp; only the boom length eases, sampled outward from Mo until something solid
+    // stops it. That replaces the old clamp-then-shove-to-85% step, which snapped in corners.
     const interior = this.areaId === 'apartment' || this.areaId === 'church';
-    const followDist = interior ? 2.45 : 4.1;
-    const camHeight = interior ? 1.98 : 2.62;
+    const boomMax = interior ? 2.45 : 4.1;
+    const restHeight = interior ? 1.98 : 2.62;
+    const follow = 1 - Math.exp(-9 * dt);
+    this.camFocus.x += (this.mo.root.position.x - this.camFocus.x) * follow;
+    this.camFocus.z += (this.mo.root.position.z - this.camFocus.z) * follow;
+
+    const backX = -Math.sin(this.camYaw);
+    const backZ = -Math.cos(this.camYaw);
     const b = this.area.bounds;
     const margin = 0.42;
-    const desiredPos = new THREE.Vector3(
-      this.mo.root.position.x - Math.sin(this.camYaw) * followDist,
-      camHeight + (impairment * 0.06),
-      this.mo.root.position.z - Math.cos(this.camYaw) * followDist
-    );
-    desiredPos.x = clamp(desiredPos.x, b.minX + margin, b.maxX - margin);
-    desiredPos.z = clamp(desiredPos.z, b.minZ + margin, b.maxZ - margin);
-    if (this.blocked(desiredPos.x, desiredPos.z)) {
-      for (let t = 0.85; t >= 0.12; t -= 0.12) {
-        const cx = lerp(this.mo.root.position.x, desiredPos.x, t);
-        const cz = lerp(this.mo.root.position.z, desiredPos.z, t);
-        if (!this.blocked(cx, cz)) {
-          desiredPos.x = cx;
-          desiredPos.z = cz;
-          break;
-        }
+    let room = boomMax;
+    let clear = false;
+    // try a comfortable clearance first, then accept hugging the wall before giving up the angle
+    for (const clearance of [margin, 0.2]) {
+      for (room = boomMax; room > 0.3; room -= 0.1) {
+        const px = this.camFocus.x + backX * room;
+        const pz = this.camFocus.z + backZ * room;
+        if (px > b.minX + clearance && px < b.maxX - clearance && pz > b.minZ + clearance && pz < b.maxZ - clearance && !this.blocked(px, pz)) { clear = true; break; }
       }
+      if (clear) break;
+      room = boomMax;
     }
-    this.camPos.lerp(desiredPos, Math.min(1, dt * 5.2));
+    // backed into a corner with nowhere to stand: go close and high rather than through the wall
+    if (!clear) room = 0.3;
+    // in fast, out slow: a wall shortening the arm is urgent, opening back up is not, and easing
+    // both ways at one rate made the camera pump in and out as he clipped past a corner
+    const boomRate = room < this.camBoom ? 16 : 4.5;
+    this.camBoom += (room - this.camBoom) * (1 - Math.exp(-boomRate * dt));
+    const targetHeight = restHeight + impairment * 0.06 + (boomMax - this.camBoom) * 0.28;
+    this.boomHeight += (targetHeight - this.boomHeight) * (1 - Math.exp(-6 * dt));
+
+    // last resort: never let the arm place the eye outside the room, whatever the corner does
+    this.camPos.set(
+      clamp(this.camFocus.x + backX * this.camBoom, b.minX + 0.15, b.maxX - 0.15),
+      this.boomHeight,
+      clamp(this.camFocus.z + backZ * this.camBoom, b.minZ + 0.15, b.maxZ - 0.15)
+    );
     this.camera.position.copy(this.camPos);
-    const look = new THREE.Vector3(this.mo.root.position.x, 1.16, this.mo.root.position.z);
-    this.camTarget.lerp(look, Math.min(1, dt * 6));
+    // the aim rides the same smoothed focus, so it can never lag the position and drift off Mo
+    const aim = 1 - Math.exp(-12 * dt);
+    this.camTarget.x += (this.camFocus.x - this.camTarget.x) * aim;
+    this.camTarget.y += (1.16 - this.camTarget.y) * aim;
+    this.camTarget.z += (this.camFocus.z - this.camTarget.z) * aim;
     this.camera.lookAt(this.camTarget);
     const sway = Math.sin(this.time * 1.3) * (s.high.level / 100) * 0.05 + Math.sin(this.time * 2.1) * (s.stats.withdrawal / 200) * 0.04;
     this.camera.rotation.z += sway;
