@@ -17,6 +17,10 @@ export function billInfo(g, key) {
     return { key, name: key, base: 0, reached: -1, paidCycle: -1, owedCycles: 0, owed: 0, dueDay: 0, nextDueDay: 0, daysLeft: 0, overdue: false };
   }
   const st = s.bills[key] || (s.bills[key] = { paidCycle: -1, missed: 0, lastPaid: 0, remindedDay: 0 });
+  // evicted: there is no lease, so no rent falls due (the arrears moved to debt at the door)
+  if (key === 'rent' && s.life?.housing === 'evicted') {
+    return { key, name: def.name, base: def.amount, reached: st.paidCycle, paidCycle: st.paidCycle, owedCycles: 0, owed: 0, dueDay: 0, nextDueDay: 0, daysLeft: 99, overdue: false, noLease: true };
+  }
   const day = dayOf(s.clock.m);
   const first = def.firstDueDay;
   const period = def.periodDays;
@@ -52,6 +56,8 @@ export function payBill(g, key) {
     return false;
   }
   spend(g, info.owed, info.name);
+  // on time = settled the day it fell due or the morning after
+  if (key === 'rent' && info.owedCycles === 1 && dayOf(s.clock.m) - info.dueDay <= 1) s.counters.rentPaidOnTime = (s.counters.rentPaidOnTime || 0) + 1;
   s.bills[key].paidCycle = info.reached;
   s.bills[key].missed = 0;
   g.audio.sfx('cash');

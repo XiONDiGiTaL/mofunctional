@@ -21,6 +21,7 @@ import { InputSystem } from './core/input.js';
 import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
 import { toggleMap } from './ui/map.js';
+import * as life from './systems/life.js';
 
 class Bus {
   constructor() { this.map = new Map(); }
@@ -153,7 +154,7 @@ class Game {
     this.applyPresentation();
     this.mode = 'play';
     this.paused = true;
-    this.modal.close();
+    this.modal.reset?.() ?? this.modal.close();
     this.phone.close();
     this.menu.hide();
     this.hud.feed?.clear();
@@ -191,7 +192,7 @@ class Game {
     this.applyPresentation();
     this.mode = 'play';
     this.paused = false;
-    this.modal.close();
+    this.modal.reset?.() ?? this.modal.close();
     this.phone.close();
     this.menu.hide();
     this.hud.feed?.clear();
@@ -206,7 +207,7 @@ class Game {
     this.mode = 'menu';
     this.paused = false;
     this.phone.close();
-    this.modal.close();
+    this.modal.reset?.() ?? this.modal.close();
     this.hud.show(false);
     this.world.showMenu();
     this.menu.show();
@@ -415,8 +416,21 @@ class Game {
       ['Dependence', `${pct(prev.stats?.addiction ?? s.stats.addiction)} → ${pct(s.stats.addiction)}`],
       ['Risk', `${pct(prev.stats?.risk ?? s.stats.risk)} → ${pct(s.stats.risk)}`],
       ['Shifts', `${s.counters.shifts}`,],
-      ['Next rent', `Day ${billInfo(this, 'rent').nextDueDay} · ${money(billInfo(this, 'rent').base)}`],
     ];
+    // the trajectory: the same overlapping pressures every night, so the player can see the slope
+    const L = life.lifeState?.(s);
+    if (L) {
+      const tr = life.trajectory(s);
+      const index = L.index ?? life.lifeIndex(this);
+      const rent = billInfo(this, 'rent');
+      rows.unshift(['Trajectory', `<span class="traj traj--${tr.label.toLowerCase().replace(/[^a-z]/g, '')}">${tr.arrow} ${tr.label}</span> · life ${index}/100${tr.delta ? ` (${tr.delta > 0 ? '+' : ''}${tr.delta})` : ''}`]);
+      rows.push(['Housing', L.housing === 'housed' ? (rent.owedCycles ? `Unit 3B · rent ${rent.owedCycles} cycle${rent.owedCycles > 1 ? 's' : ''} behind${s.flags.evictionNotice ? ' · NOTICE ON THE DOOR' : ''}` : `Unit 3B · next rent Day ${rent.nextDueDay} (${money(rent.base)})`) : `none · back in for ${money(life.rehouseCost(s))}`]);
+      rows.push(['Days clean', `${life.daysClean(s)}`]);
+      if (life.totalDebt(s) > 0) rows.push(['Debt', `${money(life.totalDebt(s))} (+1%/day)`]);
+      if (L.rockBottom) rows.push(['Rock bottom', 'yes. people have noticed.']);
+      const today = Object.entries(L.milestones).filter(([, d]) => d === now).map(([id]) => id);
+      if (today.length) rows.push(['Milestones', today.length === 1 ? 'one today' : `${today.length} today`]);
+    }
     this.modal.open({
       kicker: `DAY ${prev.day} CLOSED · ${hhmm(s.clock.m)}`,
       title: 'The Daily Report',

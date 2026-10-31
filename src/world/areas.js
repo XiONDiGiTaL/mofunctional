@@ -15,6 +15,7 @@ import { openShop } from './shops.js';
 import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
 import { signTex } from '../render/signs.js';
+import * as life from '../systems/life.js';
 
 const M = {
   floor: retroMaterial('floor', { map: tex('linoleum') }),
@@ -502,7 +503,7 @@ export function buildStreet(g) {
   ];
 
   const interactables = [
-    { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('apartment', 'street') },
+    { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => apartmentDoor(gg) },
     { id: 'store', label: 'Enter Quik-Stop #14', sub: 'clock in · buy snacks', x: 1.5, z: -5.6, action: (gg) => storeMenu(gg) },
     { id: 'alley', label: 'Step into the alley', sub: 'Dex is usually here', x: -3.6, z: -2.4, action: (gg) => dexMenu(gg) },
     { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: building('church').door, z: STREET.doorZ, radius: 1.7, action: (gg) => gg.goTo('church', 'street') },
@@ -511,7 +512,7 @@ export function buildStreet(g) {
     { id: 'homelessMan', label: 'Talk to the man on the cardboard', sub: 'he is awake', x: -9.6, z: 0.4, action: (gg) => talk(gg, 'homeless') },
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
-    { id: 'bench', label: 'Sit on the bench', sub: 'rest · 45 min', x: -7.5, z: 0.4, action: (gg) => bench(gg) },
+    { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
     { id: 'busstop', label: 'Wait at the bus stop', sub: 'nothing will happen', x: 6.6, z: -4.8, action: (gg) => { gg.advance(20); gg.toast('The bus is late. You watch three people decide not to wait.', 'info'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
@@ -684,6 +685,96 @@ function dumpster(g) {
   }
 }
 
+/** 1120's door: home, or a new lock and a note from Rae. */
+function apartmentDoor(g) {
+  const s = g.state;
+  if (life.isHoused?.(s) !== false) { g.goTo('apartment', 'street'); return; }
+  const cost = life.rehouseCost(s);
+  g.openModal({
+    kicker: '1120 KESTREL ST. · UNIT 3B',
+    title: 'The Lock Is Still New',
+    body: `Rae's note is still taped to the door, a little curled now.\n\nGetting back in: ${money(cost)} — what you owed, plus a deposit. You have ${money(s.money)}.`,
+    choices: [
+      { label: `Call Rae and pay ${money(cost)}.`, sub: 'arrears + deposit · the key back', disabled: s.money < cost, effect: () => { if (life.rehouse(g)) g.goTo('apartment', 'street'); } },
+      { label: 'Step back onto the walk.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/** The bench: a sit, or a night if there is nowhere else. */
+function benchMenu(g) {
+  const s = g.state;
+  const mod = minuteOfDay(s.clock.m);
+  const late = mod >= 21 * 60 || mod < 5 * 60;
+  g.openModal({
+    kicker: 'KESTREL ST. · THE BENCH',
+    title: 'Slats, Mostly',
+    body: life.isHoused?.(s) === false ? 'It is not a bed. It is the bed you have.' : 'You have a bed. This is a bench. Still.',
+    choices: [
+      { label: 'Sit for a while.', sub: '45 min · +energy · -stress', effect: () => bench(g) },
+      { label: 'Sleep here.', sub: late ? '6 hours · rough · watch your pockets' : 'better after dark', disabled: !late, effect: () => life.roughSleep(g, 'bench', 6) },
+      { label: 'Get up.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/** A Fellowship cot: the warmest bed on the block and the most expensive gift. */
+function cotMenu(g) {
+  const s = g.state;
+  const mod = minuteOfDay(s.clock.m);
+  const late = mod >= 20 * 60 || mod < 6 * 60;
+  const welcome = s.fellowship.stage >= 1 || s.fellowship.pledged;
+  g.openModal({
+    kicker: 'THE GOLDEN FELLOWSHIP',
+    title: 'The Back Room',
+    body: welcome
+      ? 'Six cots under a painting of Addison looking at something just past you. A volunteer writes your name on a list that already had your name on it.'
+      : '"Cots are for members of the Fellowship," the volunteer says, kindly, sliding a brochure across the table.',
+    choices: [
+      { label: 'Take a cot for the night.', sub: '7 hours · +$12 to your tithe', disabled: !welcome || !late, effect: () => life.roughSleep(g, 'cot', 7) },
+      { label: 'Not tonight.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/** Habib's counter: the menu board, unless he has decided you are eating for free today. */
+function habibCounter(g) {
+  const s = g.state;
+  if (s.flags.habibMeal) {
+    s.flags.habibMeal = false;
+    life.trust(s, 'habib', 1);
+    addItem(s, 'chicken_rice', 1);
+    g.toast('Habib puts a chicken over rice in your hands and refuses your money with his whole face.', 'good');
+    return;
+  }
+  if (life.trust(s, 'habib') >= 2 && s.stats.hygiene < 40) {
+    g.openModal({
+      kicker: "HABIB'S CORNER",
+      title: 'He Looks At You Properly',
+      body: '"The sink in the back works. There is a towel. Go. Then we talk about food."',
+      choices: [
+        { label: 'Wash up in the back.', sub: '20 min · +hygiene', effect: () => life.washUp(g, 'habibs') },
+        { label: 'Just the menu, thanks.', sub: '', effect: () => openShop(g, 'habibs') },
+      ],
+    });
+    return;
+  }
+  openShop(g, 'habibs');
+}
+
+/** Miguel's counter: the board, or the BEC he promised you. */
+function miguelCounter(g) {
+  const s = g.state;
+  if (s.flags.miguelBec) {
+    s.flags.miguelBec = false;
+    life.trust(s, 'miguel', 1);
+    addItem(s, 'bec', 1);
+    g.toast('"On the house. This one time. Don\'t tell nobody." Miguel wraps it like it matters.', 'good');
+    return;
+  }
+  openShop(g, 'bodega');
+}
+
 function bench(g) {
   const s = g.state;
   g.advance(45);
@@ -706,7 +797,16 @@ function talk(g, id) {
   speak(g, id, 8);
   g.advance(10);
   bump(s, 'morale', 3);
-  s.npc[id] = (s.npc[id] || 0) + 1;
+  // Showing up and talking builds trust, once a day per person: you cannot fix a week of
+  // letting Dale down in one afternoon of small talk, but you can by showing up every day.
+  s.talkedDay = s.talkedDay || {};
+  const today = dayOf(s.clock.m);
+  if (s.talkedDay[id] !== today) {
+    s.talkedDay[id] = today;
+    // high or filthy, the conversation does not land the way you think it does
+    const good = s.high.level < 25 && s.stats.hygiene > 25;
+    life.trust(s, id, good ? 1 : 0);
+  }
   if (id === 'rae') {
     const info = billInfo(g, 'rent');
     const rentLine = info.owedCycles > 0
@@ -793,10 +893,19 @@ export function buildChurch(g) {
     }
   }
 
+  // two side doors near the entrance: the back room with the cots, and the restroom
+  for (const [sx, text] of [[1, 'BACK ROOM'], [-1, 'RESTROOM']]) {
+    group.add(box(0.12, 2.2, 1.0, M.door, [sx * 5.36, 1.1, 3.0]));
+    group.add(box(0.14, 0.12, 1.2, M.goldDoor, [sx * 5.34, 2.26, 3.0]));
+    group.add(plane(1.0, 0.28, { name: `chdoor${sx}`, map: signTex(`signChurch${sx}`, [{ text, color: '#ffe08a', size: 9, font: 'Georgia, serif' }], { w: 64, h: 18, bg: '#2a2014' }), emissive: 0.8, unlit: true }, [sx * 5.28, 2.6, 3.0], [0, -sx * Math.PI / 2, 0]));
+  }
+
   const interactables = [
     { id: 'addison', label: 'Speak with Addison Octavius', sub: 'he is expecting you', x: 0, z: -4.6, action: (gg) => visitFellowship(gg) },
     { id: 'donate', label: 'Put money in the donation box', sub: '$10 · +morale, +favour', x: -2.6, z: -4.4, action: (gg) => { if (gg.state.money < 10) { gg.toast('You cannot donate what you do not have. He would understand.', 'bad'); return; } gg.spendMoney(10, 'Fellowship donation'); bump(gg.state, 'morale', 4); gg.state.npc.addison++; gg.toast('The box makes a sound like a swallow.', 'event'); } },
     { id: 'candle', label: 'Light a candle', sub: '10 min · +morale', x: 1.5, z: -5.0, action: (gg) => { gg.advance(10); bump(gg.state, 'morale', 4); bump(gg.state, 'stress', -5); gg.toast('You light one. You do not know who it is for. That is fine.', 'good'); } },
+    { id: 'cot', label: 'Ask about a cot', sub: 'a night here · it is never free', x: 4.4, z: 3.0, action: (gg) => cotMenu(gg) },
+    { id: 'restroom', label: 'Wash up in the restroom', sub: '20 min · +hygiene', x: -4.4, z: 3.0, action: (gg) => life.washUp?.(gg, 'church') },
     { id: 'exit', label: 'Leave the Fellowship', sub: 'back to the street', x: 0, z: 7.1, action: (gg) => gg.goTo('street', 'church') },
   ];
 
@@ -903,7 +1012,7 @@ export function buildBodega(g) {
   group.add(plane(1.6, 1.2, { name: 'bodexitpool', color: 0xfff0c0, opacity: 0.12, transparent: true, unlit: true }, [0.6, 0.02, 3.3], [-Math.PI / 2, 0, 0]));
 
   const interactables = [
-    { id: 'bodcounter', label: 'Order from Miguel', sub: 'BEC · chopped cheese · loosies', x: 1.75, z: 0.2, action: (gg) => openShop(gg, 'bodega') },
+    { id: 'bodcounter', label: 'Order from Miguel', sub: 'BEC · chopped cheese · loosies', x: 1.75, z: 0.2, action: (gg) => miguelCounter(gg) },
     { id: 'bodcooler', label: 'Open the cooler', sub: 'cold things', x: 1.9, z: -2.9, action: (gg) => openShop(gg, 'bodega') },
     { id: 'bodshelf', label: 'Browse the shelves', sub: 'shelf food', x: -2.5, z: -0.6, action: (gg) => openShop(gg, 'bodega') },
     { id: 'bodexit', label: 'Back out to Kestrel St.', sub: '', x: 0.6, z: 3.2, radius: 1.05, action: (gg) => gg.goTo('street', 'bodega') },
@@ -967,7 +1076,7 @@ export function buildHabibs(g) {
   group.add(box(0.6, 0.2, 0.06, retroMaterial('exitsign', { color: 0xff3a2a, emissive: 1.2, unlit: true }), [-1.2, 2.66, 3.6]));
 
   const interactables = [
-    { id: 'habcounter', label: 'Order from Habib', sub: 'chicken over rice · falafel', x: -0.4, z: -0.05, action: (gg) => openShop(gg, 'habibs') },
+    { id: 'habcounter', label: 'Order from Habib', sub: 'chicken over rice · falafel', x: -0.4, z: -0.05, action: (gg) => habibCounter(gg) },
     { id: 'habcase', label: 'Look in the hot case', sub: 'it is all still warm', x: -1.6, z: -0.05, action: (gg) => openShop(gg, 'habibs') },
     { id: 'habshelf', label: 'Browse the shelves', sub: 'no pork, never', x: 2.4, z: -1.6, action: (gg) => openShop(gg, 'habibs') },
     { id: 'habexit', label: 'Back out to Kestrel St.', sub: '', x: -1.2, z: 2.95, radius: 1.05, action: (gg) => gg.goTo('street', 'habibs') },

@@ -7,7 +7,7 @@ import { CONFIG } from '../core/config.js';
 import { clamp, dayOf, hhmm } from '../core/util.js';
 import { bump, logLine, clock, spend } from '../core/state.js';
 import { onNewDay } from './economy.js';
-import { checkEndings } from './endings.js';
+import { checkTurningPoints, lifeNewDay } from './life.js';
 import { rollEvent } from './events.js';
 import { bidbayTick } from './economy.js';
 import { onNewDayJob } from './jobs.js';
@@ -37,11 +37,13 @@ export function simulate(g, minutes, ctx = {}) {
       onNewDay(g, d, prev);
       onNewDayJob(g, prev);
       fellowshipNewDay(g, d);
+      lifeNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
     bidbayTick(g);
-    if (checkEndings(g)) return;
+    // nothing ends the run any more; a turning point takes the moment and the day goes on
+    if (checkTurningPoints(g)) return;
     // Day summary at the configurable hour
     if (clock(s).mod >= CONFIG.time.summaryAtHour * 60 && clock(s).mod < CONFIG.time.summaryAtHour * 60 + step && s.flags.daySummaryShown !== d) {
       s.flags.daySummaryShown = d;
@@ -236,6 +238,7 @@ export function useSubstance(g, itemId) {
   s.counters.doses++;
   s.flags.firstDose = true;
   logLine(g, `Used ${type.name}.`, 'bad');
+  if (s.life) s.life.lastDoseDay = dayOf(s.clock.m);
   g.toast(`${type.name}. ${type.flavor}`, 'event');
   g.audio.sfx('dose');
   g.advance(6);

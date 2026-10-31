@@ -14,6 +14,8 @@ import { THEMES, SCALES, themeLabel } from './themes.js';
 import { APPS, HOME_GRID, DOCK, appIcon, serviceAvatar } from './apps.js';
 import { itemIcon } from './icons.js';
 import * as dealer from '../systems/dealer.js';
+import * as life from '../systems/life.js';
+import { ENDINGS } from '../systems/endings.js';
 
 const DEFAULT_REPLIES = [
   "ok",
@@ -254,6 +256,7 @@ export class Phone {
         <span class="bankcard__name">MO · UNIT 3B</span>
       </div>
       <div class="tiny mono-dim">Overdraft: none. Bank policy: "we are not a charity, we are a bank" — the difference is marketing.</div>
+      ${this.debtCard()}
       <div class="app__h">Bills</div>
       <div class="list">${bills}</div>
       <div class="app__h">Recent activity</div>
@@ -434,6 +437,15 @@ export class Phone {
     const open = dealer.activeOrder(s);
     return `${this.header('Txtr', `${unread} NEW`)}
       <div class="list">
+        ${life.lifeState(s).counselor ? `
+        <div class="listitem chatlist chatlist--clinic">
+          ${this.senderFace('CIVIC RELIEF PROGRAM')}
+          <div class="grow">
+            <div class="name">KESTREL CLINIC <span class="pill">daily</span></div>
+            <div class="meta">${life.lifeState(s).checkinDay === clock(s).day ? 'Checked in today. That counts.' : 'One text a day. That is the whole program.'} · ${life.lifeState(s).checkins || 0} check-ins</div>
+          </div>
+          <button class="btn btn--sm btn--primary" data-act="clinic" ${life.lifeState(s).checkinDay === clock(s).day ? 'disabled' : ''}>CHECK IN</button>
+        </div>` : ''}
         <button class="listitem chatlist chatlist--pinned" data-act="go" data-arg="dealer" style="text-align:left;cursor:pointer;width:100%">
           ${this.senderFace('ROLO')}
           <div class="grow">
@@ -539,6 +551,23 @@ export class Phone {
       ${this.footer()}`;
   }
 
+  /** What he owes outside the monthly bills: the hospital, the landlord he left. */
+  debtCard() {
+    const s = this.g.state;
+    const owe = life.totalDebt(s);
+    if (!owe) return '';
+    const d = life.lifeState(s).debt;
+    return `<div class="card debtcard">
+      <div class="kv"><span class="tiny mono-dim">DEBT · grows ~1%/day</span><b class="bad">${money(owe)}</b></div>
+      ${d.hospital ? `<div class="kv"><span>Kings County Hospital</span><b>${money(d.hospital)}</b></div>` : ''}
+      ${d.rent ? `<div class="kv"><span>Rae Vell (arrears)</span><b>${money(d.rent)}</b></div>` : ''}
+      <div class="row row--wrap" style="margin-top:6px">
+        ${[20, 50, 100].map((n) => `<button class="btn btn--sm" data-act="paydebt" data-num="${n}" ${s.money < n ? 'disabled' : ''}>PAY $${n}</button>`).join('')}
+        <button class="btn btn--sm btn--primary" data-act="paydebt" data-num="0" ${s.money <= 0 ? 'disabled' : ''}>PAY ALL YOU CAN</button>
+      </div>
+    </div>`;
+  }
+
   /** A sender's avatar: a company's app icon, or a person's face. */
   senderFace(from) {
     return serviceAvatar(from, 'chat__face') || `<img class="chat__face" src="${portraitURL(kindForName(from), 'content')}" alt="" />`;
@@ -591,6 +620,20 @@ export class Phone {
     // the thermostat that is not a thermostat: it counts down to rent instead of degrees
     const days = rent.owedCycles ? 0 : Math.max(0, rent.daysLeft);
     const frac = rent.owedCycles ? 1 : 1 - Math.min(1, days / CONFIG.economy.rent.periodDays);
+    if (life.lifeState(s).housing === 'evicted') {
+      const cost = life.rehouseCost(s);
+      return `${this.header('Landlordly', 'NO LEASE')}
+        <div class="dial dial--late" style="--f:1"><div class="dial__ring"></div><div class="dial__face"><b>✕</b><em>no lease</em></div></div>
+        <div class="card">
+          <div class="kv"><span>Unit 3B</span><b class="bad">locked out</b></div>
+          <div class="kv"><span>Arrears (with interest)</span><b>${money(life.lifeState(s).debt.rent || 0)}</b></div>
+          <div class="kv"><span>Deposit</span><b>${money(life.LIFE.deposit)}</b></div>
+          <div class="kv"><span>To get back in</span><b>${money(cost)}</b></div>
+          <div class="row" style="margin-top:6px"><button class="btn btn--primary btn--sm" data-act="rehouse" ${s.money < cost ? 'disabled' : ''}>PAY RAE ${money(cost)}</button></div>
+        </div>
+        <div class="tiny mono-dim">Until then: the bench on Kestrel after dark, or a cot at the Fellowship if Addison likes you. Habib's sink, if Habib does.</div>
+        ${this.footer()}`;
+    }
     return `${this.header('Landlordly', 'UNIT 3B')}
       <div class="dial ${rent.owedCycles ? 'dial--late' : ''}" style="--f:${frac.toFixed(3)}">
         <div class="dial__ring"></div>
@@ -757,6 +800,7 @@ export class Phone {
       <div class="kv"><span>Money earned</span><b>${money(s.counters.moneyEarned)}</b></div>
       <div class="row" style="margin-top:8px">
         <button class="btn btn--ghost btn--sm" data-act="quitmenu">QUIT TO MENU</button>
+        <button class="btn btn--sm" data-act="closebook">CLOSE THE BOOK</button>
       </div>
       ${this.footer()}`;
   }
@@ -886,6 +930,21 @@ export class Phone {
       save(arg) { g.saveSlot(Number(arg)); },
       load(arg) { g.loadSlot(Number(arg)); this.close(); },
       quitmenu() { this.close(); g.quitToMenu(); },
+      clinic() { life.clinicCheckIn(g); },
+      paydebt(arg, num) { life.payDebt(g, num === 0 ? life.totalDebt(s) : num); },
+      rehouse() { if (life.rehouse(g)) this.close(); },
+      closebook() {
+        const id = epilogueFor(g);
+        g.openModal({
+          kicker: 'CLOSE THE BOOK',
+          title: 'End Mo\'s Story Here?',
+          body: `Nothing forces this. Mo's life would go on tomorrow, worse or better.\n\nIf you stop here, his story closes as: ${(ENDINGS[id] || {}).title || id}.`,
+          choices: [
+            { label: 'Close it here.', effect: () => { this.close(); g.finishEnding(id); } },
+            { label: 'Not yet. There is a tomorrow.', effect: () => {} },
+          ],
+        });
+      },
     };
   }
 
@@ -909,4 +968,17 @@ export class Phone {
   }
 }
 
-
+/** Which epilogue fits Mo's life as it stands, for closing the book by choice. */
+function epilogueFor(g) {
+  const s = g.state;
+  const st = s.stats;
+  const L = life.lifeState(s);
+  if (s.fellowship?.pledged || s.fellowship?.stage >= 5) return 'pledge';
+  if (L.housing === 'evicted') return 'evicted';
+  if (!s.job.employed && s.job.fired) return 'terminated';
+  if (st.addiction <= 22 && st.morale >= 55 && st.risk < 30) return 'lucid';
+  if (st.addiction <= 42 && st.morale >= 48) return 'steady';
+  if (st.morale < 15) return 'empty';
+  if (billInfo(g, 'rent').owedCycles === 0 && s.job.employed) return 'functional';
+  return 'quiet';
+}

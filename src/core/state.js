@@ -43,6 +43,8 @@ export function createState() {
     },
     crp: { active: false, credit: 0, lastRecert: 0, applied: false, recertDue: 0 },
     fellowship: { stage: 0, joinedDay: 0, titheOwed: 0, lastAllowanceDay: 0, visits: 0, pledged: false },
+    // the trajectory: housing, debt, milestones, the daily life index (systems/life.js)
+    life: { housing: 'housed', debt: { hospital: 0, rent: 0 }, milestones: {}, history: [], turning: [], overdoses: 0 },
     // Rolo's line: orders, the text thread and where the conversation is (systems/dealer.js)
     dealer: { seq: 0, orders: [], log: [], convo: { step: 'idle', product: null, qty: 1 }, unread: 0 },
     // the fridge is storage: food kept here is out of his pockets until he takes or eats it

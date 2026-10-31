@@ -57,9 +57,33 @@ export function workShift(g) {
   g.advance(minutesRemaining, { working: true });
   if (s.ending) return false;
 
-  const gross = (minutesRemaining / 60) * s.job.wage * latePenalty;
-  const net = Math.max(0, gross - J.transportCost);
+  // How he was when he walked in decides how the shift went. Each of these is something Dale
+  // can see; two warnings make a strike, and a clean shift every other time earns a little trust.
+  const st = s.stats;
+  const notes = [];
+  let perf = 1;
+  if (st.withdrawal > 50) { perf *= 0.85; notes.push('Your hands shook at the register. The drawer came up short and it came out of your pay.'); }
+  if (s.high.level > 30 && Math.random() < 0.45) { s.job.warnings = (s.job.warnings || 0) + 1; notes.push('Dale looked at your eyes for a long second and wrote something down.'); }
+  if (st.hygiene < 20) { s.job.warnings = (s.job.warnings || 0) + 1; notes.push('A customer said something about the smell. Dale said something about the customer, and then something to you.'); }
+  if (st.stress > 85 && Math.random() < 0.35) { s.job.warnings = (s.job.warnings || 0) + 1; notes.push('You snapped at a man over a lottery ticket. He asked for the manager. You are standing next to the manager.'); }
+  if (!notes.length) {
+    s.job.cleanShifts = (s.job.cleanShifts || 0) + 1;
+    if (s.job.cleanShifts % 2 === 0 && s.npc) s.npc.dale = Math.min(10, (s.npc.dale || 0) + 1);
+  }
+  if ((s.job.warnings || 0) >= 2) {
+    s.job.warnings = 0;
+    s.job.strikes++;
+    notes.push(`Two warnings make a strike. Strike ${s.job.strikes} of ${J.maxStrikes}.`);
+  }
+
+  const gross = (minutesRemaining / 60) * s.job.wage * latePenalty * perf;
+  // a pledged member tithes from every paycheck, automatically
+  const tithe = s.fellowship?.pledged ? gross * 0.3 : 0;
+  const net = Math.max(0, gross - J.transportCost - tithe);
   earn(g, net, `Shift — ${s.job.employer}`);
+  if (tithe > 0) logLine(g, `The Fellowship took ${money(tithe)} of the shift.`, 'info');
+  for (const n of notes) g.toast(n, 'bad');
+  if (s.job.strikes >= J.maxStrikes) fireJob(g);
   s.job.shiftsWorked++;
   s.job.workedDay = dayOf(s.clock.m);
   s.job.strikes = Math.max(0, s.job.strikes - 1);
@@ -101,6 +125,8 @@ function fireJob(g) {
   if (s.job.fired) return;
   s.job.fired = true;
   s.job.employed = false;
+  s.job.firedDay = dayOf(s.clock.m);
+  if (s.npc) s.npc.dale = Math.max(-10, (s.npc.dale || 0) - 2);
   bump(s, 'stress', 22);
   bump(s, 'morale', -18);
   logLine(g, 'Fired from Quik-Stop.', 'bad');
@@ -146,7 +172,22 @@ export function quitJob(g) {
 export function applyForJob(g) {
   const s = g.state;
   if (s.job.employed) { g.toast('You already work there. Sort of.', 'info'); return false; }
+  // Getting back on the schedule is not a button: it takes a few days, and Dale's patience.
+  const day = dayOf(s.clock.m);
+  const since = day - (s.job.firedDay ?? -99);
+  const daleTrust = s.npc?.dale || 0;
+  if (s.job.fired && since < 4) {
+    g.advance(15);
+    g.toast(`Dale does not look up. "It has been ${since} day${since === 1 ? '' : 's'}." Give it a few more.`, 'bad');
+    return false;
+  }
+  if (s.job.fired && daleTrust < -3) {
+    g.advance(15);
+    g.toast('Dale says the schedule is full. It is not. He is telling you something — maybe come by and talk to him, sober, a few days running.', 'bad');
+    return false;
+  }
   g.advance(35);
+  s.flags.rehired = !!s.job.fired;
   s.job.employed = true;
   s.job.fired = false;
   s.job.quit = false;
