@@ -30,12 +30,26 @@ Ice (clinic blue) and VHS (magenta bleed) — recolour the phone, the HUD, the m
 modal from one set of CSS variables. The interface scale is S / M / L, applied to the in-game UI
 layers only, so the 3D stage never shifts. Both are saved with your run.
 
+**Typography** is part of the shell: Orbitron carries the machine voice (title, clock, money, app
+headers, endings) and Chakra Petch carries everything meant to be read as prose. Both are
+vendored under `assets/fonts` with their OFL licences, so the interface never waits on a network
+font.
+
 **The camera** is adjustable in `SYSTEM` as well: distance (70–140%) and height (80–135%), plus a
 reset, saved with the run. The follow camera is a spring arm — it shortens against walls, and when
 Mo backs into a corner it swings sideways along the wall instead of tipping the view to a
 top-down.
 
 ![Themes](assets/img/ui_themes.png)
+
+## The block
+
+Kestrel Street is one block, and it is dressed like one: dark towers behind the shopfronts,
+fire escapes and a rooftop water tank overhead, vertical neon blades and a bulb marquee at
+street level, cars parked at the curb, a crossing with its own traffic light, trees in concrete
+planters, a mailbox, a news box, a wall phone, and a steaming grate with the wet patch it leaves
+on the walk. It is all built from the same box and plane primitives as the rest of the world, so
+it dithers, warps and fogs with everything else in the frame.
 
 ## Play it
 

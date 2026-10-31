@@ -365,6 +365,114 @@ export function buildStreet(g) {
   group.add(box(0.86, 0.06, 0.66, M.metal, [-11.6, 0.9, -4.9]));
   group.add(box(1.0, 0.18, 0.7, retroMaterial('sleepingbag', { color: 0x394a5c }), [-9.6, 0.09, 0.4]));
 
+  // ================= CITY PASS =================
+  // Behind the shopfront row: a skyline, so the street reads as one block of a city rather
+  // than a corridor with wallpaper. Fog does the rest of the depth work for free.
+  const skyline = [[-19.5, 13, 9], [-13, 17, 7.5], [-6.5, 11.5, 10], [0.5, 15, 8], [7.5, 12, 9], [14, 17.5, 7], [21, 12.5, 10], [27.5, 15.5, 8]];
+  for (const [sx, sh, sw] of skyline) {
+    const sz = -12.5 - (sw % 3);
+    group.add(box(sw, sh, 6, retroMaterial(`sky${sx}`, { color: 0x171e24 }), [sx, sh / 2, sz]));
+    for (let r = 0; r < Math.floor(sh / 2.2); r++) {
+      for (let c = 0; c < 3; c++) {
+        if (!chance(0.24)) continue;
+        group.add(plane(0.46, 0.66, { name: 'skywin', color: 0x9a9c74, emissive: 0.42, unlit: true },
+          [sx - 1.3 + c * 1.3, 2.2 + r * 2.2, sz + 3.03]));
+      }
+    }
+  }
+
+  // fire escapes: the reason every building in this city looks tired
+  const fireEscape = (fx, y0, floors) => {
+    for (let f = 0; f < floors; f++) {
+      const y = y0 + f * 1.62;
+      group.add(box(2.1, 0.06, 0.72, M.metal, [fx, y, -6.2]));
+      group.add(box(2.1, 0.42, 0.05, retroMaterial('rail', { color: 0x3a3f42 }), [fx, y + 0.26, -5.88]));
+      group.add(box(0.5, 1.62, 0.05, retroMaterial('rail2', { color: 0x363b3e }), [fx + (f % 2 ? 0.62 : -0.62), y + 0.81, -6.05], [0, 0, f % 2 ? 0.5 : -0.5]));
+    }
+  };
+  fireEscape(-11, 2.6, 3);
+  fireEscape(1.5, 2.4, 2);
+  fireEscape(11.5, 3.2, 3);
+
+  // rooftop machinery: a water tower, a few AC boxes, an aerial forest
+  group.add(box(2.0, 1.9, 2.0, retroMaterial('tank', { color: 0x4a3f33 }), [-12.8, 8.6, -7.4]));
+  group.add(box(2.3, 0.18, 2.3, retroMaterial('tankcap', { color: 0x39302a }), [-12.8, 9.6, -7.4]));
+  for (const [ax, ay] of [[-8.6, 7.9], [-1.2, 6.5], [11.0, 8.8], [13.4, 8.8], [19.0, 7.1]]) {
+    group.add(box(0.9, 0.55, 0.7, retroMaterial('ac', { color: 0x9aa0a0 }), [ax, ay, -7.0]));
+  }
+  for (const [mx, mh] of [[-14.6, 9.2], [4.2, 7.6], [17.8, 8.4]]) {
+    group.add(box(0.04, mh, 0.04, retroMaterial('aerial', { color: 0x5a6064 }), [mx, mh / 2, -7.2]));
+    for (let a = 0; a < 3; a++) group.add(box(mh * 0.5, 0.03, 0.03, retroMaterial('aerial2', { color: 0x5a6064 }), [mx, mh * 0.55 + a * 0.35, -7.2], [0, 0, 0]));
+  }
+
+  // vertical neon blades: the street's colour comes from its signage, not its sun
+  const blade = (bx, by, bh, tint) => {
+    group.add(box(0.72, bh, 0.08, retroMaterial(`bladebox${bx}`, { color: 0x1b1f22 }), [bx, by, -6.5]));
+    group.add(plane(0.56, bh - 0.24, { name: `blade${bx}`, color: tint, emissive: 1.15, unlit: true }, [bx, by, -6.44]));
+    group.add(plane(1.5, bh * 0.9, { name: `halo${bx}`, color: tint, opacity: 0.09, transparent: true, unlit: true }, [bx, by, -6.4]));
+  };
+  blade(-8.4, 4.4, 2.8, 0xff8a6a);
+  blade(4.6, 4.2, 2.4, 0x8fd8a0);
+  blade(13.2, 4.6, 3.0, 0xffc46a);
+  blade(-1.6, 3.6, 1.8, 0x9fd8ff);
+
+  // marquee bulbs over the store door
+  for (let i = 0; i < 12; i++) {
+    group.add(box(0.1, 0.1, 0.1, M.lamp, [1.5 - 2.4 + i * 0.44, 2.86, -5.72]));
+  }
+
+  // crosswalk + traffic light
+  for (let i = 0; i < 7; i++) {
+    group.add(box(0.52, 0.02, 6.4, retroMaterial('zebra', { color: 0xa8a492 }), [6.2 + i * 1.05, 0.02, 4.6]));
+  }
+  group.add(box(0.16, 3.2, 0.16, M.metal, [4.2, 1.6, 1.1]));
+  group.add(box(0.32, 0.86, 0.3, retroMaterial('tlight', { color: 0x20262a }), [4.2, 3.1, 1.1]));
+  group.add(box(0.13, 0.13, 0.03, retroMaterial('tred', { color: 0xff5a4a, emissive: 1, unlit: true }), [4.2, 3.36, 0.93]));
+  group.add(box(0.13, 0.13, 0.03, retroMaterial('tgrn', { color: 0x2a3a2a }), [4.2, 3.02, 0.93]));
+
+  // parked cars: the first thing that makes a street look inhabited
+  const car = (cx, cz, tint, nose) => {
+    const bodyMat = retroMaterial(`carbody${tint}`, { color: tint });
+    group.add(box(3.7, 0.64, 1.72, bodyMat, [cx, 0.52, cz]));
+    group.add(box(2.0, 0.5, 1.5, retroMaterial(`carcab${tint}`, { color: 0x232a30 }), [cx - nose * 0.25, 1.05, cz]));
+    group.add(box(1.78, 0.3, 1.54, { name: 'carglass', color: 0x6f8a96, opacity: 0.5, transparent: true, unlit: true }, [cx - nose * 0.25, 1.09, cz]));
+    for (const dx of [-1.28, 1.24]) {
+      for (const dz of [-0.84, 0.84]) group.add(box(0.28, 0.54, 0.54, M.dark, [cx + dx, 0.3, cz + dz]));
+    }
+    group.add(box(0.08, 0.15, 0.42, M.lamp, [cx + nose * 1.84, 0.6, cz - 0.52]));
+    group.add(box(0.08, 0.15, 0.42, M.lamp, [cx + nose * 1.84, 0.6, cz + 0.52]));
+    group.add(box(0.08, 0.13, 0.4, retroMaterial(`cartail${tint}`, { color: 0x8a2a22, emissive: 0.5, unlit: true }), [cx - nose * 1.84, 0.62, cz - 0.52]));
+    group.add(box(0.08, 0.13, 0.4, retroMaterial(`cartail2${tint}`, { color: 0x8a2a22, emissive: 0.5, unlit: true }), [cx - nose * 1.84, 0.62, cz + 0.52]));
+  };
+  car(-7.2, 3.4, 0x5a6a78, 1);
+  car(9.6, 3.6, 0x6a4a3a, -1);
+
+  // street trees in planters, mailbox, news box, wall phone
+  const tree = (tx, tz) => {
+    group.add(box(0.92, 0.34, 0.92, M.concrete, [tx, 0.17, tz]));
+    group.add(box(0.2, 1.9, 0.2, retroMaterial('trunk', { color: 0x463726 }), [tx, 1.2, tz]));
+    for (let i = 0; i < 3; i++) {
+      group.add(box(1.5 - i * 0.42, 0.86, 1.5 - i * 0.42, retroMaterial(`leaf${i}`, { color: i % 2 ? 0x3d5832 : 0x2d4629 }), [tx, 2.2 + i * 0.72, tz], [0, i * 0.55, 0]));
+    }
+  };
+  tree(-6.2, -4.7); tree(8.8, -4.7); tree(17.6, -4.7);
+  group.add(box(0.5, 0.9, 0.46, retroMaterial('mailbox', { color: 0x27466e }), [7.2, 0.45, -4.9]));
+  group.add(box(0.44, 0.86, 0.4, retroMaterial('newsbox', { color: 0x8a3a32 }), [-6.6, 0.43, -4.9]));
+  group.add(box(0.34, 0.62, 0.28, retroMaterial('payphone', { color: 0x282d31 }), [12.9, 1.0, -6.1]));
+
+  // steam vent + the wet patch it makes, and a neon reflection on the walk
+  group.add(box(0.92, 0.02, 0.92, retroMaterial('grate', { color: 0x272b2d }), [-2.4, 0.03, 0.6]));
+  for (let i = 0; i < 3; i++) {
+    group.add(plane(0.9 + i * 0.55, 1.0 + i * 0.5, { name: 'steam', color: 0xc2d2cc, opacity: 0.1 - i * 0.02, transparent: true, unlit: true },
+      [-2.4, 0.7 + i * 0.62, 0.6], [0, 0.25, 0]));
+  }
+  group.add(plane(3.4, 1.7, { name: 'wetwalk', color: 0x2f4240, opacity: 0.32, transparent: true, unlit: true }, [1.4, 0.035, 0.1], [-Math.PI / 2, 0, 0]));
+  group.add(plane(3.4, 1.7, { name: 'wetwalk2', color: 0x3a4a3a, opacity: 0.18, transparent: true, unlit: true }, [1.4, 0.04, 0.1], [-Math.PI / 2, 0, 0]));
+  // trash bag pile by the cans
+  for (let i = 0; i < 4; i++) {
+    group.add(box(0.42 - i * 0.03, 0.34, 0.38, retroMaterial(`bagp${i}`, { color: 0x24261f }), [9.5 + (i % 2) * 0.45 - 0.2, 0.17 + (i > 1 ? 0.28 : 0), -4.85 + (i > 1 ? 0.1 : 0)]));
+  }
+
   const npcs = [
     { kind: 'rae', x: -10.2, z: -4.6, rot: 0.4, talk: 'rae' },
     { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
@@ -399,6 +507,8 @@ export function buildStreet(g) {
       solid(-4.2, -5.2, 1.5, 1.0), solid(-7.5, 0.2, 2.0, 0.7), solid(6.5, -5.8, 2.3, 0.4),
       solid(9.5, -5.6, 0.7, 0.7), solid(-12.6, -5.6, 0.7, 0.7), solid(5.0, -6.2, 1.1, 0.4),
       solid(-5.0, 0.9, 0.5, 0.5),
+      solid(-6.2, -4.7, 0.9, 0.9), solid(8.8, -4.7, 0.9, 0.9), solid(17.6, -4.7, 0.9, 0.9),
+      solid(7.2, -4.9, 0.5, 0.5), solid(-6.6, -4.9, 0.5, 0.5), solid(4.2, 1.1, 0.3, 0.3),
     ],
     spawn: { x: -11, z: -2.6, rot: Math.PI },
     npcs,
