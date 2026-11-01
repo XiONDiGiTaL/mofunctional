@@ -22,6 +22,9 @@ import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
 import { toggleMap } from './ui/map.js';
 import * as life from './systems/life.js';
+import * as romance from './systems/romance.js';
+import * as clinic from './systems/clinic.js';
+import { installDebugMenu } from './ui/debug.js';
 
 class Bus {
   constructor() { this.map = new Map(); }
@@ -62,6 +65,14 @@ class Game {
     this.phone = new Phone(this.uiEl, this);
     this.threads = new Threads(this.uiEl, this);
     this.menu = new Menu(this.uiEl, this);
+
+    // the collapse fade lives above everything, in the UI layer
+    this.fadeEl = document.createElement('div');
+    this.fadeEl.className = 'fadeout';
+    this.uiEl.appendChild(this.fadeEl);
+    this.debugOpen = false;
+    // ~ and the password: a testing tool, hidden in plain sight
+    installDebugMenu(this);
 
     this.world.showMenu();
     this.menu.show();
@@ -121,7 +132,7 @@ class Game {
     this.input.poll(dt);
     this.handleInputEvents();
 
-    if (this.mode === 'play' && !this.paused && !this.phoneOpen && !this.modalOpen) {
+    if (this.mode === 'play' && !this.paused && !this.debugOpen && !this.phoneOpen && !this.modalOpen) {
       const perSecond = CONFIG.time.speeds[this.state.settings.speed] ?? 0;
       this.pendingMinutes += dt * perSecond;
       if (this.pendingMinutes >= 1) {
@@ -151,6 +162,9 @@ class Game {
 
   startNew() {
     this.state = createState();
+    this.state.flags.recovering = false;
+    this.world.collapse?.reset?.();
+    this.fadeIn();
     this.applyPresentation();
     this.mode = 'play';
     this.paused = true;
@@ -175,6 +189,8 @@ class Game {
 
   applyState(data, fromMenu = false) {
     const fresh = createState();
+    this.world.collapse?.reset?.();
+    this.fadeIn();
     const merged = {
       ...fresh,
       ...data,
@@ -306,6 +322,76 @@ class Game {
     if (area === 'apartment') this.toast('Unit 3B. Home, in the legal sense.', 'info');
     if (area === 'bodega') this.toast('Kestrel Bodega. It smells like a grill and lottery tickets.', 'info');
     if (area === 'habibs') this.toast("Habib's Corner. Warm, clean, and he is already asking if you ate.", 'info');
+    if (area === 'park') this.toast('Kestrel Park. Grass, a bent rim, and somebody else\'s music.', 'info');
+    if (area === 'clinic') this.toast('Kestrel Clinic. It smells like clean and paperwork.', 'info');
+  }
+
+  /* ------------------------------ collapse / fade ------------------------------ */
+
+  fadeOut(cb, ms = 420) {
+    if (!this.fadeEl) { if (cb) cb(); return; }
+    this.fadeEl.classList.add('on');
+    setTimeout(() => { if (cb) cb(); }, ms);
+  }
+
+  fadeIn() {
+    if (!this.fadeEl) return;
+    this.fadeEl.classList.remove('on');
+  }
+
+  /**
+   * The collapse, in order: he falls, the screen goes black, the hours go, and he wakes up at home
+   * or at the clinic. `flags.recovering` plus the recovery lock in needs.collapse() keep this from
+   * re-entering itself on the way out, so there is no collapse/recovery loop.
+   */
+  collapseSequence(cause = 'collapse') {
+    const s = this.state;
+    if (this.mode !== 'play' || s.ending || s.flags.recovering) return;
+    s.flags.recovering = true;
+    this.phone.close();
+    this.modal.reset?.() ?? this.modal.close();
+    this.world.haltMo?.();
+    const toClinic = clinic.shouldTakeHimIn(s, cause);
+    const landed = () => {
+      this.fadeOut(() => {
+        const lost = cause === 'overdose' ? 9 * 60 : CONFIG.clinic.collapse.hoursLost * 60;
+        this.advance(lost, { sleeping: true, noCollapse: true });
+        if (s.ending) { s.flags.recovering = false; this.fadeIn(); return; }
+        let report;
+        if (toClinic) {
+          const res = clinic.recoverHere(this, { cause });
+          report = {
+            where: 'clinic',
+            title: 'You Wake Up Somewhere Clean',
+            body: `${res.nurse} is writing on a chart before she notices you are awake. The ceiling is the colour of a hospital ceiling, which is its own colour.\n\nYou lost the night. ${res.fee > 0 ? `${money(res.fee)} for the cot and the blood-pressure cuff.` : res.fee < 0 ? `${money(-res.fee)} went on the hospital bill, because you did not have it.` : 'They did not charge you. Do not get used to it.'} Somebody from the block was called and came, which you will think about later.`,
+          };
+        } else {
+          s.stats.energy = Math.max(s.stats.energy, 34);
+          s.stats.stress = clamp(s.stats.stress + 8);
+          s.stats.hygiene = Math.min(s.stats.hygiene, 44);
+          bump(s, 'morale', -6);
+          report = {
+            where: 'home',
+            title: 'The Floor Was Closer Than It Looked',
+            body: 'You come round on the lino beside the bed with your cheek on something that is probably a sock. The radiator has been going the whole time, which is somehow rude.\n\nThe night is gone. Your back has opinions. Nobody was called, which is either luck or the other thing.',
+          };
+        }
+        s.high.until = s.clock.m;
+        s.high.level = 0;
+        s.flags.recovering = false;
+        s.flags.collapse = false;
+        this.goTo(report.where, null);
+        this.fadeIn();
+        this.openModal({
+          kicker: `D${dayOf(s.clock.m)} · ${hhmm(s.clock.m)}`,
+          title: report.title,
+          body: `${report.body}\n\nEnergy ${Math.round(s.stats.energy)} · stress ${Math.round(s.stats.stress)} · risk ${Math.round(s.stats.risk)}.`,
+          choices: [{ label: 'Get up.', effect: () => {} }],
+        });
+        this.toast('You were out for hours. The clock kept going.', 'bad');
+      });
+    };
+    this.world.playCollapse(landed);
   }
 
   /* ------------------------------ helpers used by systems ------------------------------ */

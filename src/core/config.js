@@ -75,6 +75,10 @@ export const CONFIG = {
     },
     highDurationMinutes: 150,
     highEnergyBonus: 8,
+    // How each invented substance is taken, for the on-screen use animation. Never real
+    // instructions: these are the game's own props (a vial, two pills, a pipe, a dropper).
+    useAnim: { bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop' },
+    useDurationSeconds: { vial: 3.2, pill: 3.6, pipe: 4.2, drop: 3.0 },
     withdrawal: {
       startsAfterMinutes: 10 * 60,
       toleranceHours: 0.35,      // withdrawal starts later as tolerance grows
@@ -129,6 +133,16 @@ export const CONFIG = {
     id_card: { id: 'id_card', name: 'State ID (expired-ish)', kind: 'doc', value: 0 },
     lease:   { id: 'lease',   name: 'Lease — Unit 3B', kind: 'doc', value: 0 },
     grab_bag:{ id: 'grab_bag',name: 'Grab Bag',       kind: 'mystery', price: 20, value: 20 },
+    // ---- gifts. Kinds are 'gift' (given, not eaten) or 'valuable' (Diana's better presents).
+    flowers:      { id: 'flowers',      name: 'Bodega Flowers', kind: 'gift', price: 9, value: 4, morale: 3 },
+    chocolates:   { id: 'chocolates',   name: 'Chocolate Box',  kind: 'gift', price: 7, value: 3, morale: 4 },
+    mixtape:      { id: 'mixtape',      name: 'Handmade Mixtape', kind: 'gift', price: 0, value: 2 },
+    candle:       { id: 'candle',       name: 'Scented Candle', kind: 'gift', price: 6, value: 3, morale: 2 },
+    breath_mints: { id: 'breath_mints', name: 'Roll of Mints',  kind: 'gift', price: 2, value: 1 },
+    soup_can:     { id: 'soup_can',     name: 'Good Soup',      kind: 'gift', price: 4, value: 2, hunger: 12 },
+    batteries:    { id: 'batteries',    name: 'Pack of Batteries', kind: 'gift', price: 5, value: 2 },
+    necklace:     { id: 'necklace',     name: 'Thin Gold Necklace', kind: 'valuable', value: 120 },
+    perfume:      { id: 'perfume',      name: 'Small Perfume',  kind: 'valuable', value: 65 },
   },
 
   bidbay: {
@@ -208,6 +222,137 @@ export const CONFIG = {
     minMinutesBetween: 95,
     chancePerHour: 0.42,
     maxPerDay: 3,
+  },
+
+  /* ------------------------------------------------------------------ rent */
+  /** Early rent: one cycle may be paid ahead, and a live-in partner's share is applied once. */
+  rent: {
+    payAheadCycles: 1,          // how many future cycles may be settled in advance
+    historyLimit: 16,
+  },
+
+  /* -------------------------------------------------- romantic characters */
+  /**
+   * Stephanie, Melanie and Diana: three adults in the neighbourhood, three personalities, three
+   * ways of living in the same one-bedroom. Nothing here is explicit; the interface stays a
+   * dark comedy about time, money and people.
+   *
+   * rentShare is the only place a partner's rent contribution is expressed. It is read once,
+   * by economy.rentPerCycle(), and can never stack: only one partner can be live-in.
+   */
+  partners: {
+    stephanie: {
+      id: 'stephanie', name: 'Stephanie', short: 'STEPH', age: 31,
+      rentShare: 0.15, difficulty: 0.34,
+      blurb: 'Relaxed, low-maintenance, allergic to plans. Dates are easy; the fridge empties.',
+      likes: ['park', 'coffee', 'walk'], dislikes: ['dinner'],
+      chat: [
+        '"Honestly? I was going to stay in tonight, and now I am outside. That is basically my whole personality."',
+        '"You overthink things. I can tell because you are doing it right now, at me."',
+        '"I do not need a plan. I need a bench and somebody who does not narrate the weather."',
+      ],
+      flirt: { base: 62, low: '"You are cute when you are nervous. You are nervous a lot, huh?"', gift: 'He arts and crafts. A mixtape, a note, half a bagel.' },
+      giftPool: ['mixtape', 'chocolates', 'flowers', 'breath_mints'],
+      giftNote: 'She leaves it on the counter with a drawing on the bag.',
+      household: { eatsFood: 2, restocks: 0, sells: 0, giftChance: 0.14 },
+      moveInLine: '"Fine. But I am not folding anything, and your TV is mine now."',
+      cheekLine: '"Come on. Bring the good blanket."',
+    },
+    melanie: {
+      id: 'melanie', name: 'Melanie', short: 'MEL', age: 34,
+      rentShare: 0.25, difficulty: 0.55,
+      blurb: 'Warm, funny, particular. She notices when you tried and when you did not.',
+      likes: ['coffee', 'movie', 'park', 'dinner'], dislikes: ['walk'],
+      chat: [
+        '"I had a whole speech about how I am not looking for anything. Then you knocked on the door with a coffee."',
+        '"You do the thing where you disappear for two days and then act normal. I clocked it."',
+        '"Listen. I like you. That is not a small thing for me, so do not make it weird."',
+      ],
+      flirt: { base: 48, low: '"That was almost charming. Almost is a B-minus, so."', gift: 'She brings something useful: a can opener, batteries, soup.' },
+      giftPool: ['soup_can', 'batteries', 'candle', 'chocolates'],
+      giftNote: 'She says it was on sale. It was not on sale.',
+      household: { eatsFood: 1, restocks: 0, sells: 0, giftChance: 0.24 },
+      moveInLine: '"Three drawers. I am serious about the three drawers."',
+      cheekLine: '"Stay. Do not say anything clever about it."',
+    },
+    diana: {
+      id: 'diana', name: 'Diana', short: 'DI', age: 36,
+      rentShare: 0.5, difficulty: 0.82,
+      blurb: 'Independent, exacting, generous once you have earned it. She does not do half-measures.',
+      likes: ['dinner', 'movie', 'park'], dislikes: ['coffee'],
+      chat: [
+        '"I am not hard to please. I am hard to convince. There is a difference and it is that one takes effort."',
+        '"You cancelled. I am not upset. I am filing it, because I pay attention to patterns."',
+        '"If we are doing this, we are doing it properly. That is the only version of me that shows up."',
+      ],
+      flirt: { base: 34, low: '"Flattery is a first draft. Come back with the real thing."', gift: 'She sells a watch she never wore and puts the cash in the rent envelope.' },
+      giftPool: ['necklace', 'perfume', 'flowers', 'watch'],
+      giftNote: 'She wraps things properly. It is very annoying and very nice.',
+      household: { eatsFood: 0, restocks: 2, sells: 0.2, giftChance: 0.32 },
+      moveInLine: '"I will pay half. I will not be a guest in a place I live in."',
+      cheekLine: '"Come here. And put the phone down, for once."',
+    },
+  },
+
+  romance: {
+    flirtCooldownMinutes: 120,        // you cannot work a room in one afternoon
+    chatMinutes: 10,
+    giftCostMinutes: 25,
+    dateMinutes: 20,                  // the walk/get-ready time around the activity
+    girlfriendDates: 3,               // completed successful dates before she is asked
+    girlfriendAffection: 40,
+    moveInDays: 7,
+    moveInAffection: 55,
+    cheekAffection: { stephanie: 42, melanie: 58, diana: 72 },
+    cheekCooldownMinutes: 24 * 60,
+    afterglowHours: 24,
+    giftCooldownDays: 3,
+    activities: {
+      coffee: { id: 'coffee', name: 'Coffee at the bodega', where: 'bodega', cost: 6, minutes: 45, affection: 9, morale: 5, stress: -3, energy: -2 },
+      dinner: { id: 'dinner', name: 'Dinner at Habib\'s', where: 'habibs', cost: 28, minutes: 90, affection: 16, morale: 10, stress: -6, energy: 4 },
+      park: { id: 'park', name: 'An afternoon in the park', where: 'park', cost: 0, minutes: 75, affection: 12, morale: 9, stress: -9, energy: 3 },
+      walk: { id: 'walk', name: 'A walk down Kestrel Street', where: 'street', cost: 0, minutes: 40, affection: 7, morale: 5, stress: -5, energy: -1 },
+      movie: { id: 'movie', name: 'A movie at home', where: 'apartment', cost: 4, minutes: 110, affection: 13, morale: 8, stress: -7, energy: -3 },
+    },
+    giftItems: ['flowers', 'chocolates', 'mixtape', 'candle', 'breath_mints', 'soup_can', 'batteries', 'necklace', 'perfume', 'watch'],
+  },
+
+  /* --------------------------------------------------------------- clinic */
+  clinic: {
+    name: 'Kestrel Clinic',
+    nurse: 'Nurse Okafor',
+    treatment: { cost: 60, minutes: 90, risk: -22, withdrawal: -30, addiction: -4, morale: 3, stress: -10 },
+    checkIn: { minutes: 10, risk: -4, withdrawal: -10, morale: 5, stress: -6 },
+    collapse: {
+      collapsesBeforeClinic: 2,   // after this many, they take him in rather than leave him home
+      chance: 0.5,                // otherwise it is a coin toss once he is past the first
+      feeIfBroke: 40,             // added to hospital debt when he cannot pay cash
+      hoursLost: 7,
+      lockHours: 5,               // no collapse again straight away (stops the loop)
+    },
+  },
+
+  /* ----------------------------------------------------------- park + social */
+  park: {
+    name: 'Kestrel Park',
+    danceMinutes: 25,
+    danceMorale: 9,
+    danceStress: -8,
+    sitMinutes: 30,
+    sitMorale: 6,
+    hoopsMinutes: 45,
+    hoopsMorale: 11,
+    chessMinutes: 40,
+    chessMorale: 7,
+    musicMinutes: 20,
+    musicMorale: 8,
+    meetChance: 0.34,             // a friend is around, some of the time
+  },
+
+  /* ------------------------------------------------------------- debug menu */
+  debug: {
+    password: 'Moses',
+    moneyPerClick: 1000,
   },
 
   render: {

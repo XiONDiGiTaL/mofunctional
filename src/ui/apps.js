@@ -50,6 +50,14 @@ export const APPS = {
     name: "Rolo's Line", tag: 'wap 1.1 · we dont keep logs (we keep logs)', a: '#9bbc0f', b: '#0f380f',
     icon: svg('<rect x="6.5" y="2.5" width="11" height="19" rx="2"/><path d="M9 6h6v5H9z"/><path d="M9 14h.01M12 14h.01M15 14h.01M9 17h.01M12 17h.01M15 17h.01" stroke-width="2.4"/>'),
   },
+  dates: {
+    name: 'LoveLine', tag: 'somebody on the block', a: '#ff6b8a', b: '#8a1f4a',
+    icon: svg('<path d="M12 20.5S3.5 15 3.5 9.5A4.5 4.5 0 0 1 12 6.8a4.5 4.5 0 0 1 8.5 2.7c0 5.5-8.5 11-8.5 11z"/>'),
+  },
+  clinic: {
+    name: 'Clinic', tag: 'walk-ins · no judgement', a: '#8fd0e0', b: '#26424e',
+    icon: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 7.5v9M7.5 12h9"/>'),
+  },
   system: {
     name: 'Tweaks', tag: 'settings for a life you can’t adjust', a: '#9aa3ad', b: '#3c434b',
     icon: svg('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>'),
@@ -81,6 +89,14 @@ const SERVICES = {
     a: '#ffe066', b: '#c27a00',
     icon: svg('<path d="M13 2.5 5.5 13.5H11l-1 8 7.5-11H12z"/>'),
   },
+  'KESTREL CLINIC': {
+    a: '#8fd0e0', b: '#26424e',
+    icon: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 7.5v9M7.5 12h9"/>'),
+  },
+  'KINGS COUNTY HOSPITAL': {
+    a: '#c8d8e8', b: '#2d4258',
+    icon: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 7.5v9M7.5 12h9"/>'),
+  },
 };
 
 const norm = (name = '') => String(name).toUpperCase().replace(/\(.*?\)/g, '').trim();
@@ -102,7 +118,7 @@ export function serviceAvatar(name, cls = '') {
 }
 
 /** The home-screen layout: the grid, then the dock. */
-export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'fellowship', 'rolo'];
+export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'dates', 'clinic', 'fellowship', 'rolo'];
 
 // Rolo's text thread lives inside Txtr, so it wears Txtr's brand
 APPS.dealer = { ...APPS.messages };

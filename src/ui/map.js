@@ -7,7 +7,7 @@
  * the HUD panel. The look is a late-90s in-car/PDA map: muted blocks, chunky outlines, high-
  * contrast labels on plates, a dither of scanlines, no photographic anything.
  */
-import { STREET, BUILDINGS, LANDMARKS, MEET_SPOT, building } from '../world/plan.js';
+import { STREET, BUILDINGS, LANDMARKS, MEET_SPOT, PARK, building } from '../world/plan.js';
 import * as dealer from '../systems/dealer.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -29,6 +29,8 @@ const GLYPH = {
   door: '<path d="M4 14V2h8v12M9.5 8h.5" fill="none" stroke="currentColor" stroke-width="1.8"/>',
   rolo: '<circle cx="8" cy="5" r="3" fill="currentColor"/><path d="M2.5 15c.5-4 2.5-6 5.5-6s5 2 5.5 6z" fill="currentColor"/>',
   spot: '<circle cx="8" cy="8" r="3.4" fill="currentColor"/>',
+  park: '<path d="M8 14V6" stroke="currentColor" stroke-width="1.9"/><path d="M8 6C5 6 3.5 4.5 3 2c3 0 4.6 1.6 5 4 0-2.6 1.8-4 4-4 .3 2.6-1.3 4-4 4z" fill="currentColor"/>',
+  clinic: '<rect x="2.5" y="3" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 5.5v6M5 8.5h6" stroke="currentColor" stroke-width="1.9"/>',
 };
 const glyph = (id, x, y, size = 14, color = '#fff') =>
   `<svg x="${(x - size / 2).toFixed(1)}" y="${(y - size / 2).toFixed(1)}" width="${size}" height="${size}" viewBox="0 0 16 16" style="color:${color}" overflow="visible">${GLYPH[id] || GLYPH.spot}</svg>`;
@@ -95,6 +97,22 @@ function streetSVG(g, { mini = false, highlight = null } = {}) {
       if (enter) out.push(plate(dx, Y(-4.1), b.area ? 'DOOR' : 'COUNTER', { size: 8, color: '#1a1408', bg: '#f6e2a0' }));
     }
   }
+  // Kestrel Park: across the road, drawn as one park block with its gate on the walk
+  {
+    const px = X(PARK.x0), pw = (PARK.x1 - PARK.x0) * S;
+    const pz = Y(PARK.z0), ph = Math.max(0, (Math.min(zBot, PARK.z1) - PARK.z0)) * S;
+    if (ph > 2) {
+      out.push(`<rect x="${px}" y="${pz}" width="${pw}" height="${ph}" fill="#2f4a2c" stroke="#0a0c0d" stroke-width="2"/>`);
+      if (!mini) {
+        out.push(glyph('park', X((PARK.x0 + PARK.x1) / 2), Y(PARK.z0 + 2.2), 18, '#cfe8bf'));
+        out.push(plate(X((PARK.x0 + PARK.x1) / 2), Y(PARK.z0 + 3.9), 'KESTREL PARK', { size: 10, color: '#dff0d0' }));
+        out.push(plate(X((PARK.x0 + PARK.x1) / 2), Y(PARK.z0 + 5.4), 'BENCHES · HALF-COURT', { size: 7, color: '#9ec08a', bg: 'rgba(8,10,12,.7)' }));
+      }
+    }
+    out.push(`<circle cx="${X(PARK.gate.x)}" cy="${Y(PARK.gate.z)}" r="${mini ? 5 : 11}" fill="#1e3a26" stroke="#8fc07a" stroke-width="1.8"><title>Park gate</title></circle>`);
+    out.push(glyph('park', X(PARK.gate.x), Y(PARK.gate.z), mini ? 8 : 14, '#cfe8bf'));
+    if (!mini) out.push(plate(X(PARK.gate.x), Y(PARK.gate.z) + 24, 'PARK GATE', { size: 8, color: '#dff0d0', bg: '#1e3a26' }));
+  }
   if (!mini) {
     for (const l of LANDMARKS) {
       if (l.z > zBot) continue;
@@ -124,8 +142,11 @@ function streetSVG(g, { mini = false, highlight = null } = {}) {
 
 /* ------------------------------------------------------------------ an interior */
 
-const AREA_NAMES = { apartment: 'Unit 3B · 1120 Kestrel St.', bodega: 'Kestrel Bodega', habibs: "Habib's Corner", church: 'The Golden Fellowship' };
-const AREA_BUILDING = { apartment: 'apartment', bodega: 'bodega', habibs: 'habibs', church: 'church' };
+const AREA_NAMES = {
+  apartment: 'Unit 3B · 1120 Kestrel St.', bodega: 'Kestrel Bodega', habibs: "Habib's Corner",
+  church: 'The Golden Fellowship', park: 'Kestrel Park', clinic: 'Kestrel Clinic',
+};
+const AREA_BUILDING = { apartment: 'apartment', bodega: 'bodega', habibs: 'habibs', church: 'church', clinic: 'clinic', park: null };
 
 function shortLabel(label) {
   return String(label || '')

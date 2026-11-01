@@ -7,7 +7,8 @@
  * (about -6.5) out across the sidewalk (to the curb at 1.3) and the road beyond it.
  */
 export const STREET = {
-  bounds: { minX: -19.2, maxX: 19.2, minZ: -5.6, maxZ: 1.4 },
+  // the block now runs east past Habib's to the clinic, so the walk is longer, not different
+  bounds: { minX: -19.2, maxX: 24.6, minZ: -5.6, maxZ: 1.4 },
   frontZ: -6.5,      // building faces
   curbZ: 1.3,
   roadZ: [1.5, 9.2],
@@ -23,7 +24,19 @@ export const BUILDINGS = [
   { id: 'quikstop', name: 'Quik-Stop #14', short: 'QUIK-STOP', x0: -1.6, x1: 4.6, door: 1.5, area: null, color: '#2f6b5a', icon: 'work' },
   { id: 'church', name: 'The Golden Fellowship', short: 'FELLOWSHIP', x0: 8.8, x1: 14.2, door: 11.5, area: 'church', color: '#a8823a', icon: 'church' },
   { id: 'habibs', name: "Habib's Corner", short: "HABIB'S", x0: 14.6, x1: 19.1, door: 15.7, area: 'habibs', color: '#7a2a2a', icon: 'food' },
+  { id: 'clinic', name: 'Kestrel Clinic', short: 'CLINIC', x0: 19.6, x1: 24.4, door: 21.6, area: 'clinic', color: '#5a7a86', icon: 'clinic' },
 ];
+
+/**
+ * Kestrel Park sits across the road from the block, east of the crosswalk. It is not a separate
+ * map: it is a destination with a gate on Kestrel Street, so the map and the world agree.
+ */
+export const PARK = {
+  name: 'Kestrel Park',
+  x0: 4.2, x1: 13.4, z0: 4.2, z1: 9.4,
+  gate: { x: 9.35, z: 3.2 },
+  gateLabel: 'Cross to Kestrel Park',
+};
 
 /** Things on the walk worth a pin on the map. */
 export const LANDMARKS = [
@@ -33,6 +46,8 @@ export const LANDMARKS = [
   { id: 'dumpster', name: 'Dumpster', x: -4.2, z: -5.2, icon: 'trash' },
   { id: 'payphone', name: 'Payphone', x: 12.9, z: -5.9, icon: 'phone' },
   { id: 'crosswalk', name: 'Crosswalk', x: 9.35, z: 4.6, icon: 'walk' },
+  { id: 'parkgate', name: 'Kestrel Park', x: 9.35, z: 1.1, icon: 'park' },
+  { id: 'clinic', name: 'Kestrel Clinic', x: 21.6, z: -5.2, icon: 'clinic' },
 ];
 
 /** Where the dealer meets Mo: beside the apartment stoop, clear of both doors and the cart. */
@@ -42,6 +57,8 @@ export const building = (id) => BUILDINGS.find((b) => b.id === id);
 
 /** Where Mo stands on the street after leaving `from` (a building's area id). */
 export function streetSpawn(from) {
+  // the park has no frontage on the block: Mo comes back through the gate by the crosswalk
+  if (from === 'park') return { x: PARK.gate.x, z: -1.2, rot: Math.PI };
   const b = BUILDINGS.find((x) => x.area === from) || building('apartment');
   return { x: b.door, z: STREET.outZ, rot: Math.PI };
 }

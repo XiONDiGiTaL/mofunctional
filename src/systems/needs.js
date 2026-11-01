@@ -12,6 +12,7 @@ import { rollEvent } from './events.js';
 import { bidbayTick } from './economy.js';
 import { onNewDayJob } from './jobs.js';
 import { fellowshipNewDay } from './fellowship.js';
+import { applyAfterglow, partnerNewDay } from './romance.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -38,6 +39,7 @@ export function simulate(g, minutes, ctx = {}) {
       onNewDayJob(g, prev);
       fellowshipNewDay(g, d);
       lifeNewDay(g, d);
+      partnerNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
@@ -131,6 +133,9 @@ function applyRates(g, hours, ctx) {
   if (st.hunger <= 1 || st.energy <= 1) riskDrift += S.risk.neglectRise;
   st.risk = clamp(st.risk + riskDrift * hours);
 
+  // --- afterglow: 24 in-game hours of being unreasonably fine ---
+  applyAfterglow(s);
+
   // --- counters ---
   if (st.stress >= N.thresholds.highStress) s.counters.stressHighHours += hours;
   if (st.morale <= 3) s.counters.moraleLowHours = (s.counters.moraleLowHours || 0) + hours;
@@ -151,8 +156,16 @@ function workingStressBonus(s) {
 function collapse(g) {
   const s = g.state;
   if (s.ending) return;
+  if (s.flags.recovering) return;
+  // a recovery lock: without it, a body at zero energy collapsed, woke up, and collapsed again
+  // on the next tick for the rest of the night
+  if (s.clock.m < (s.collapseLockUntil || 0)) return;
   s.counters.collapsed++;
+  s.collapseLockUntil = s.clock.m + CONFIG.clinic.collapse.lockHours * 60;
   logLine(g, 'You black out where you stand.', 'bad');
+  // the world plays the fall, fades, moves him and hands control back (src/main.js)
+  if (g.collapseSequence) { g.collapseSequence('collapse'); return; }
+  // headless fallback (tests, or a build without a world)
   g.toast('You black out. Somewhere, a floor accepts you.', 'bad');
   g.audio.sfx('bad');
   g.advance(4 * 60, { sleeping: true, noCollapse: true });
@@ -214,14 +227,38 @@ export function moveFood(g, itemId, to = 'fridge') {
   return true;
 }
 
+/**
+ * Use one of the fictional substances. The animation comes first and the numbers come after it,
+ * from inside the animation's completion callback — so the player sees Mo take it, and the item
+ * is taken out of his pockets exactly once, before anything can be interrupted.
+ */
 export function useSubstance(g, itemId) {
   const s = g.state;
   const type = S.types[itemId];
   if (!type) return false;
+  if (s.flags.consuming) { g.toast('One thing at a time.', 'info'); return false; }
+  if (s.flags.recovering) { g.toast('Not now. Your hands are not listening.', 'bad'); return false; }
   const entry = s.inventory.find((i) => i.id === itemId && i.qty > 0);
   if (!entry) { g.toast('You are out. That is a fact and it is loud.', 'bad'); return false; }
   entry.qty -= 1;
   if (entry.qty <= 0) s.inventory = s.inventory.filter((i) => i !== entry);
+
+  const style = S.useAnim?.[itemId] || 'pill';
+  const finish = () => applySubstance(g, itemId);
+  if (g.world?.playSubstance) {
+    s.flags.consuming = true;
+    g.world.playSubstance(itemId, style, () => { s.flags.consuming = false; finish(); });
+    return true;
+  }
+  finish();
+  return true;
+}
+
+/** The effects, applied once, after the animation (or immediately when there is no world). */
+function applySubstance(g, itemId) {
+  const s = g.state;
+  const type = S.types[itemId];
+  if (!type) return false;
 
   const toleranceCut = clamp(1 - s.stats.tolerance * S.toleranceEffects.effectCutPerPoint, 0.35, 1);
   for (const [k, v] of Object.entries(type.effects)) {

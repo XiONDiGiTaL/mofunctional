@@ -371,6 +371,13 @@ const CAST = {
   clerk: { height: 1.75, shirt: 0xb8c6d4, pants: 0x2e3238, longSleeves: true },
   // Rolo, the phone dealer: navy hoodie, grey sweats, never in a hurry
   rolo: { height: 1.76, build: 0.96, shirt: 0x1f2c4a, pants: 0x4a4a50, longSleeves: true },
+  // the three women on the block, and the clinic's nurse
+  stephanie: { height: 1.66, build: 0.98, shirt: 0xd9a86a, pants: 0x3a3a44 },
+  melanie: { height: 1.68, build: 1.0, shirt: 0x8a4a5a, pants: 0x2e323a, longSleeves: true },
+  diana: { height: 1.72, build: 1.0, shirt: 0x2e3a4a, pants: 0x24262c, longSleeves: true },
+  nurse: { height: 1.70, build: 1.0, shirt: 0xdfe6e0, pants: 0x5a6a72, longSleeves: true },
+  // an unsaved number: no face, just a grey hood and a question mark
+  unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
 };
 
 export function createMo() {

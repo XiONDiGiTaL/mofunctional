@@ -5,6 +5,7 @@ import { clock } from '../core/state.js';
 import { billInfo } from '../systems/economy.js';
 import { shiftInfo } from '../systems/jobs.js';
 import { TUTORIAL_HINTS } from '../systems/dialogue.js';
+import { afterglowLabel } from '../systems/romance.js';
 import { el } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
 import { MessageFeed } from './feed.js';
@@ -165,7 +166,9 @@ export class HUD {
     let extra = '';
     if (rent.owedCycles > 0) extra = `<span class="bad">Rent overdue: ${money(rent.owed)}</span>`;
     else if (rent.daysLeft <= 2) extra = `<span class="warn">Rent due in ${rent.daysLeft}d (${money(rent.base)})</span>`;
-    this.objectiveEl.innerHTML = `<b>${hint.title}</b>${extra ? `${extra}<br>` : ''}${hint.text}`;
+    const glow = afterglowLabel(s);
+    this.objectiveEl.innerHTML = `<b>${hint.title}</b>${extra ? `${extra}<br>` : ''}
+      ${glow ? `<span class="hud__afterglow">AFTERGLOW · ${glow}</span><br>` : ''}${hint.text}`;
 
     for (const btn of this.el.querySelectorAll('[data-speed]')) {
       btn.classList.toggle('on', Number(btn.dataset.speed) === s.settings.speed);

@@ -2,10 +2,12 @@
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
-import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildMenuWorld } from './areas.js';
+import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildMenuWorld } from './areas.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
+import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
+import { isPartnerId, partnerState } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay } from '../core/util.js';
 import { scheduleTarget } from './schedules.js';
@@ -13,7 +15,7 @@ import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
-  bodega: buildBodega, habibs: buildHabibs,
+  bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic,
 };
 
 export class World {
@@ -82,6 +84,9 @@ export class World {
   clearArea() {
     this.eating?.stop();
     this.handoff?.stop();
+    this.substance?.stop();
+    this.dance?.stop();
+    this.collapse?.stop();
     this.dealerWalker?.remove();
     if (this.titleScene) {
       this.titleScene.dispose();
@@ -175,11 +180,63 @@ export class World {
       rig.root.position.set(npc.x, 0, npc.z);
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
+      // the three women carry a heart until one of them is actually his girlfriend
+      if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
     }
+    this.collapse?.reset();
     this.audioLevel = 0;
     // a dealer who is already waiting is standing there when Mo steps out
     if (!this.dealerWalker) this.dealerWalker = new DealerWalker(this);
     this.dealerWalker.sync(g, true);
+  }
+
+  /**
+   * A heart over one of the three women, the first time Mo sees her: a PS1 heart, two squares and
+   * a diamond, bobbing at head height. It says "you could try", not "she is interested".
+   */
+  addHeart(rig, kind) {
+    const mat = retroMaterial(`heart_${kind}`, { color: 0xff4a7a, emissive: 0.5, unlit: true });
+    const g = new THREE.Group();
+    g.add(box(0.075, 0.075, 0.02, mat, [-0.033, 0.012, 0]));
+    g.add(box(0.075, 0.075, 0.02, mat, [0.033, 0.012, 0]));
+    const tip = box(0.105, 0.105, 0.02, mat, [0, -0.038, 0]);
+    tip.rotation.z = Math.PI / 4;
+    g.add(tip);
+    g.position.set(0, 2.06, 0);
+    rig.root.add(g);
+    rig.heart = g;
+  }
+
+  /** One of the fictional substances, on screen, before any of its numbers move. */
+  playSubstance(itemId, style, onDone) {
+    if (this.mode !== 'play') { onDone?.(); return false; }
+    if (!this.substance) this.substance = new SubstanceUse(this);
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    this.substance.play(itemId, style, onDone);
+    return true;
+  }
+
+  /** The fall. The caller fades the screen and decides where he wakes up. */
+  playCollapse(onDone) {
+    if (!this.collapse) this.collapse = new CollapseFall(this);
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    this.collapse.play(onDone);
+  }
+
+  /** A dance on the spot for `seconds` of real time; game time is the caller's business. */
+  playDance(seconds = 8) {
+    if (this.mode !== 'play') return;
+    if (!this.dance) this.dance = new DanceBeat(this);
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    this.dance.play();
+    clearTimeout(this.danceTimer);
+    this.danceTimer = setTimeout(() => this.dance?.stop(), Math.max(1, seconds) * 1000);
   }
 
   /** Mo's half of the exchange: hand out, hand back, a smile. */
@@ -275,6 +332,8 @@ export class World {
 
   update(dt, g) {
     this.time += dt;
+    // the beat animations need the game (for sound); the world only has the stage
+    this.game = g;
     retroUniforms.time.value = this.time * 1.0;
 
     if (this.mode === 'menu') {
@@ -311,7 +370,9 @@ export class World {
 
   updatePlay(dt, g) {
     const s = g.state;
-    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play' && !this.eating?.active && !this.handoff?.active;
+    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play'
+      && !this.eating?.active && !this.handoff?.active && !this.substance?.active
+      && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming;
 
     // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
     // A positive orbit means "turn the view to the right". Since forward is (sin yaw, cos yaw),
@@ -448,6 +509,9 @@ export class World {
     });
     this.eating?.update(dt);
     this.handoff?.update(dt);
+    this.substance?.update(dt);
+    this.collapse?.update(dt);
+    this.dance?.update(dt);
     this.dealerWalker?.sync(g);
     this.dealerWalker?.update(dt);
 
@@ -455,6 +519,10 @@ export class World {
     for (const rig of this.npcRigs) {
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
       this.patrolNPC(rig, dt, g);
+      if (rig.heart) {
+        rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
+        rig.heart.rotation.y += dt * 1.1;
+      }
       const settled = !rig.walking && !!rig.npcDef?.sit;
       animateNPC(rig, dt, {
         walking: !!rig.walking,

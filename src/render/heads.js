@@ -239,6 +239,28 @@ export const FACE_SPECS = {
     skin: '#ae7f6e', hair: '#3a281c', hairLight: '#5a4230', hairDark: '#1e150e', style: 'side',
     brow: '#30251a', eye: '#3a2c1e', lips: '#93604c', lipsLight: '#b07a62', age: 0.3, glasses: true,
   },
+  // ---- the three women on the block (all adults), painted in the same style as the cast
+  stephanie: {
+    skin: '#d4a582', hair: '#c99a52', hairLight: '#ecc57e', hairDark: '#96702c', style: 'side',
+    brow: '#8a6a34', eye: '#5a6a4a', lips: '#b5716a', lipsLight: '#d1948a', age: 0.2, fem: true, jaw: 0.92,
+  },
+  melanie: {
+    skin: '#b17a56', hair: '#2e1d14', hairLight: '#4e3524', hairDark: '#160f0a', style: 'long',
+    brow: '#241811', eye: '#3a2618', lips: '#9a5348', lipsLight: '#c0756a', age: 0.3, fem: true, jaw: 0.93,
+  },
+  diana: {
+    skin: '#9a6a4c', hair: '#171210', hairLight: '#332a24', hairDark: '#0a0706', style: 'bob',
+    brow: '#1a120c', eye: '#2c2018', lips: '#7f463a', lipsLight: '#a36252', age: 0.4, fem: true, jaw: 0.9,
+  },
+  nurse: {
+    skin: '#c09a80', hair: '#241a14', hairLight: '#40302a', hairDark: '#100b08', style: 'long',
+    brow: '#241a14', eye: '#3a2c22', lips: '#96604f', lipsLight: '#b87a66', age: 0.45, fem: true,
+  },
+  // messages from a number nobody saved: no features to read, on purpose
+  unknown: {
+    skin: '#6a6f6c', hair: '#2a2e2c', hairLight: '#3e4340', hairDark: '#171a18', style: 'beanie',
+    brow: '#1e2220', eye: '#232826', lips: '#5a5f5c', lipsLight: '#6e7472', age: 0.5,
+  },
 };
 
 const toHex = (c) => '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');

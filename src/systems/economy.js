@@ -8,6 +8,24 @@ import { bump } from '../core/state.js';
 
 /* ------------------------------ bills ------------------------------ */
 
+/**
+ * A live-in partner's share of the rent, as a fraction (0 when nobody lives there).
+ * Read from CONFIG.partners — the single source of truth — and clamped to 50%, and only ever
+ * for the one live-in partner, so two contributions can never stack.
+ */
+export function rentShare(s) {
+  const id = s?.romance?.liveIn;
+  const p = id ? CONFIG.partners?.[id] : null;
+  if (!p) return 0;
+  return Math.min(0.5, Math.max(0, Number(p.rentShare) || 0));
+}
+
+/** What one rent cycle actually costs Mo after his partner's contribution. */
+export function rentPerCycle(s) {
+  const base = CONFIG.economy.rent.amount;
+  return Math.round(base * (1 - rentShare(s)) * 100) / 100;
+}
+
 export function billInfo(g, key) {
   const s = g.state;
   const def = CONFIG.economy[key];
@@ -26,16 +44,25 @@ export function billInfo(g, key) {
   const period = def.periodDays;
   const reached = day < first ? -1 : Math.floor((day - first) / period);
   const owedCycles = Math.max(0, reached - st.paidCycle);
-  const nextCycle = Math.max(0, reached + (owedCycles > 0 ? 0 : 1));
+  // A cycle paid in advance keeps its own due date settled: the next unpaid cycle is the one
+  // after the furthest of "now" and "what was already settled". Reading only `reached` here
+  // would show a paid-ahead cycle as due again the moment its day arrived.
+  const nextCycle = owedCycles > 0 ? reached : Math.max(0, reached + 1, (st.paidCycle ?? -1) + 1);
   const nextDueDay = first + nextCycle * period;
+  const share = key === 'rent' ? rentShare(s) : 0;
+  const perCycle = key === 'rent' ? rentPerCycle(s) : def.amount;
   return {
     key,
     name: def.name,
     base: def.amount,
+    perCycle,
+    share,
+    contribution: Math.round(def.amount * share * 100) / 100,
     reached,
     paidCycle: st.paidCycle,
+    paidAhead: key === 'rent' ? Math.max(0, (st.paidCycle ?? -1) - reached) : 0,
     owedCycles,
-    owed: owedCycles * def.amount,
+    owed: Math.round(owedCycles * perCycle * 100) / 100,
     dueDay: reached >= 0 ? first + reached * period : first,
     nextDueDay,
     daysLeft: Math.max(0, nextDueDay - day),
@@ -47,7 +74,10 @@ export function payBill(g, key) {
   const s = g.state;
   const info = billInfo(g, key);
   if (info.owedCycles <= 0) {
-    g.toast(`${info.name}: already settled for this cycle.`, 'info');
+    // rent is the one bill that can be settled before it is due (systems/rent.js owns that)
+    g.toast(key === 'rent'
+      ? `${info.name}: this cycle is settled. Next due Day ${info.nextDueDay} (${money(info.perCycle ?? info.base)}).`
+      : `${info.name}: already settled for this cycle.`, 'info');
     return false;
   }
   if (s.money < info.owed) {
@@ -59,6 +89,16 @@ export function payBill(g, key) {
   // on time = settled the day it fell due or the morning after
   if (key === 'rent' && info.owedCycles === 1 && dayOf(s.clock.m) - info.dueDay <= 1) s.counters.rentPaidOnTime = (s.counters.rentPaidOnTime || 0) + 1;
   s.bills[key].paidCycle = info.reached;
+  // rent keeps a receipt: which cycle, how much, and the partner share applied at the time
+  if (key === 'rent') {
+    const rent = s.bills.rent;
+    rent.history = rent.history || [];
+    rent.history.push({ day: dayOf(s.clock.m), amount: info.owed, cycles: info.owedCycles, forDay: info.dueDay, ahead: false, share: info.share || 0 });
+    const limit = CONFIG.rent?.historyLimit ?? 16;
+    if (rent.history.length > limit) rent.history.splice(0, rent.history.length - limit);
+    s.counters.rentPaid = (s.counters.rentPaid || 0) + 1;
+    s.counters.rentPaidTotal = Math.round(((s.counters.rentPaidTotal || 0) + info.owed) * 100) / 100;
+  }
   s.bills[key].missed = 0;
   g.audio.sfx('cash');
   logLine(g, `Paid ${info.name} (${money(info.owed)}).`, 'good');
@@ -88,10 +128,13 @@ export function onNewDay(g, day, prevDay) {
       if (st.remindedDay !== day) {
         st.remindedDay = day;
         const def = CONFIG.economy[key];
+        const shareNote = key === 'rent' && info.contribution > 0
+          ? `\n\nA household contribution of ${money(info.contribution)} a cycle has already been applied.`
+          : '';
         pushMessage(g, {
           from: key === 'rent' ? 'RAE VELL (LANDLORD)' : key === 'power' ? 'MUNICIPAL POWER' : 'SHALE MOBILE',
           subject: `${def.name} — ${info.owedCycles} cycle${info.owedCycles > 1 ? 's' : ''} past due`,
-          body: `Amount outstanding: ${money(info.owed)}.\n\nThis is a courtesy reminder. The next one is not a courtesy.\n\n— Billing`,
+          body: `Amount outstanding: ${money(info.owed)}.${shareNote}\n\nThis is a courtesy reminder. The next one is not a courtesy.\n\n— Billing`,
         });
         g.toast(`${info.name} is ${money(info.owed)} overdue.`, 'bad');
         g.audio.sfx('alarm');

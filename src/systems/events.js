@@ -4,6 +4,7 @@ import { dayOf, minuteOfDay, chance, pick, money, clamp, randInt } from '../core
 import { addItem, removeItem, countItem, earn, spend, pushMessage, logLine } from '../core/state.js';
 import { bump } from '../core/state.js';
 import { billInfo, payBill } from './economy.js';
+import * as scheduler from './scheduler.js';
 
 const EVENTS = [
   {
@@ -221,38 +222,152 @@ const EVENTS = [
       g.toast(`FeedLove: +${n} followers for no reason you can identify.`, 'good');
     },
   },
+  {
+    id: 'clinic_referral', weight: 4,
+    when: (s) => s.stats.risk > 22 && !s.life?.counselor,
+    run(g) {
+      pushMessage(g, {
+        from: 'KESTREL CLINIC',
+        subject: 'Walk-in hours',
+        body: 'We are the pale building at the east end of Kestrel Street, past Habib\'s. Walk-ins, no appointment, no judgement at the desk.\n\nFirst visit is a conversation. It costs money. It costs less than the alternative, which we are not going to describe in a text message.\n\n— Kestrel Clinic',
+      });
+      g.state.life = g.state.life || {};
+      g.toast('A clinic card is wedged under your door. It has been there a while.', 'event');
+    },
+  },
+  {
+    id: 'park_invite', weight: 6,
+    when: (s) => !s.flags.recovering && (s.npc?.kev ?? 0) > -3,
+    run(g) {
+      g.openModal({
+        kicker: 'KESTREL PARK · MID-AFTERNOON',
+        title: 'Come Outside',
+        body: 'Kev is already at the park. You can hear the boombox through the phone.\n\n"Half-court is free. Bring nothing. You look like you have not been outside since Tuesday."',
+        choices: [
+          {
+            label: 'Go to the park.', sub: '15 min walk · +morale',
+            effect: () => {
+              g.advance(15);
+              g.goTo('park', 'street');
+              bump(g.state, 'morale', 7);
+              bump(g.state, 'stress', -6);
+            },
+          },
+          { label: 'Say you are busy.', sub: 'small -morale', effect: () => { bump(g.state, 'morale', -2); } },
+        ],
+      });
+    },
+  },
+  {
+    id: 'surprise_expense', weight: 4,
+    run(g) {
+      const cost = pick([12, 18, 26, 34]);
+      g.openModal({
+        kicker: 'THE WEEK',
+        title: 'Something Broke',
+        body: `The radiator has started a new noise, which is a noise with intent. The super says it is "a you problem" and hands you a card for a man who does not answer his phone.\n\nA part costs ${money(cost)}. Ignoring it is free and costs something else.`,
+        choices: [
+          { label: `Buy the part — ${money(cost)}.`, sub: 'fixes it · +morale', disabled: g.state.money < cost, effect: () => { spend(g, cost, 'Radiator part'); bump(g.state, 'morale', 4); bump(g.state, 'stress', -5); g.state.flags.pipeFixed = true; g.toast('The radiator stops making the noise. You sit in the silence like it is a rented room.', 'good'); } },
+          { label: 'Put a towel on it and go out.', sub: '+stress, -hygiene over time', effect: () => { bump(g.state, 'stress', 8); bump(g.state, 'hygiene', -5); } },
+        ],
+      });
+    },
+  },
+  {
+    id: 'partner_nudge', weight: 5,
+    when: (s) => !!s.romance?.liveIn || Object.values(s.romance?.partners || {}).some((p) => p && p.girlfriend),
+    run(g) {
+      const s = g.state;
+      const id = s.romance?.liveIn || Object.keys(s.romance?.partners || {}).find((k) => s.romance.partners[k]?.girlfriend);
+      const p = CONFIG.partners?.[id];
+      if (!p) return;
+      pushMessage(g, {
+        from: p.name.toUpperCase(),
+        subject: pick(['you okay?', 'hey', 'checking in']),
+        body: pick([
+          `"You have been quiet. I am not going to make it a thing. I am just saying I noticed."`,
+          `"If today is a bad one, that is allowed. Eat something and text me one word."`,
+          `"I put money in the envelope. Do not argue with me about it in your head."`,
+        ]) + `\n\n— ${p.name[0]}.`,
+      });
+      bump(s, 'morale', 3);
+    },
+  },
+  {
+    id: 'street_music', weight: 5, repeat: true,
+    when: (s) => (s.high?.level ?? 0) < 60,
+    run(g) {
+      const s = g.state;
+      if (g.world?.areaId === 'park') {
+        bump(s, 'morale', 5);
+        bump(s, 'stress', -5);
+        g.toast('Somebody is playing a tape for nobody in particular. It is exactly the right song.', 'good');
+      } else {
+        bump(s, 'morale', 3);
+        bump(s, 'stress', -3);
+        g.toast('A car goes past with the windows down and the song is somehow from your old apartment.', 'info');
+      }
+    },
+  },
 ];
 
+/*
+ * Scheduling. Every event below now goes through systems/scheduler.js, which owns the dice, the
+ * per-event cooldown, the time-of-day window, the once-only flag and the saved history. The
+ * table here is only the extra policy: how rare each event is, and how long before it may come
+ * back. Adding an event means adding it to EVENTS and giving it a line here.
+ */
+const POLICY = {
+  found_money: { cooldownHours: 20 },
+  pipe_leak: { cooldownHours: 72, once: true },
+  food_theft: { cooldownHours: 30 },
+  dale_overtime: { cooldownHours: 30 },
+  nia_call: { cooldownHours: 44, maxPerDay: 1 },            // not every single day
+  addison_flyer: { cooldownHours: 96, once: true },
+  free_sample: { cooldownHours: 26 },
+  bad_batch: { cooldownHours: 60, once: true },
+  cat: { cooldownHours: 120, once: true },
+  neighbor_music: { cooldownHours: 20 },
+  bus_fare: { cooldownHours: 24 },
+  invite_out: { cooldownHours: 30, window: [10 * 60, 21 * 60] },
+  power_flicker: { cooldownHours: 36 },
+  addison_knock: { cooldownHours: 48 },
+  guitar_nostalgia: { cooldownHours: 30 },
+  passing_gift: { cooldownHours: 40 },
+  the_look: { cooldownHours: 26 },
+  followers_spike: { cooldownHours: 24 },
+  clinic_referral: { cooldownHours: 48, once: true },
+  park_invite: { cooldownHours: 30, window: [9 * 60, 20 * 60] },
+  surprise_expense: { cooldownHours: 36 },
+  partner_nudge: { cooldownHours: 40, maxPerDay: 1 },
+  street_music: { cooldownHours: 18, where: ['street', 'park'] },
+};
+
+for (const ev of EVENTS) {
+  const policy = POLICY[ev.id] || {};
+  ev.cooldownHours = ev.cooldownHours ?? policy.cooldownHours ?? 18;
+  ev.window = ev.window ?? policy.window;
+  ev.where = ev.where ?? policy.where;
+  ev.once = ev.once ?? policy.once ?? false;
+  ev.maxPerDay = ev.maxPerDay ?? policy.maxPerDay;
+  // the old `repeat` flag maps onto the scheduler's once-only rule
+  if (ev.repeat === false) ev.once = true;
+}
+
 export function rollEvent(g, hours) {
-  const s = g.state;
-  const cfg = CONFIG.events;
-  const day = dayOf(s.clock.m);
-  if (s.events.todaysDay !== day) {
-    s.events.todaysDay = day;
-    s.events.today = 0;
-  }
-  if (s.events.today >= cfg.maxPerDay) return;
-  if (s.clock.m - s.events.lastAt < cfg.minMinutesBetween) return;
-  const p = cfg.chancePerHour * Math.max(0.15, hours);
-  if (!chance(p)) return;
-  const pool = EVENTS.filter((e) => {
-    if (!e.repeat && s.seenEvents.includes(e.id)) return false;
-    if (e.when && !e.when(s)) return false;
-    return true;
-  });
-  if (!pool.length) return;
-  const chosen = pick(pool);
-  s.seenEvents.push(chosen.id);
-  s.events.today++;
-  s.events.lastAt = s.clock.m;
-  s.events.count++;
-  g.audio.sfx('event');
-  setTimeout(() => chosen.run(g), 60);
+  const chosen = scheduler.roll(g, hours, EVENTS);
+  if (chosen) g.state.events.count = (g.state.events.count || 0) + 1;
+  return chosen;
 }
 
 export function fireEvent(g, id) {
   const e = EVENTS.find((x) => x.id === id);
-  if (e) e.run(g);
+  if (e) scheduler.fire(g, e);
 }
+
+/** Every id, for the debug menu's "trigger a random event" list. */
+export const EVENT_IDS = EVENTS.map((e) => e.id);
+/** The live list, for the debug menu's trigger control. */
+export const EVENTS_LIST = EVENTS;
 
 export const EVENT_COUNT = EVENTS.length;

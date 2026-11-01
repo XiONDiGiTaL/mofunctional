@@ -48,6 +48,13 @@ alley buys them for less, right now. The Civic Relief Program gives food credit 
 and lease. Rent ($420 every 7 days), power and phone bills come due; two missed rent cycles is
 eviction.
 
+**Rent can be paid early.** If nothing is outstanding, the Banking app's rent card and
+Landlordly both offer **PAY EARLY**: it settles the *next* cycle in advance, moves the due date
+on by a week, and the due date finds the cycle already settled, so Mo is never charged twice.
+One cycle ahead at most, and a short lock swallows a double click. Every payment is recorded in
+`bills.rent.history` (day, amount, which cycle, the partner share that applied) and shown in the
+app.
+
 **Eleven endings**, from *functional* and *steady* to *evicted*, *terminated*, *pledged*,
 *snapped* and *overdose*. The night closes with a **Daily Report**: money, energy, hunger,
 stress, dependence and risk for the day just ended.
@@ -62,6 +69,8 @@ stress, dependence and risk for the day just ended.
 | **Kestrel Bodega** | Miguel's: bacon egg and cheese, chopped cheese, loosies, tall boys |
 | **Habib's Corner** | halal, no pork: chicken over rice, the combo plate, falafel, lentil soup |
 | **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge |
+| **Kestrel Clinic** | walk-ins, Nurse Okafor, treatment on cash or on the bill |
+| **Kestrel Park** | across the road: benches, a half-court, chess, a boombox, people |
 
 Every door on the block is built the same way so it can be found at a glance: a recessed door in
 a pale frame, a step and a mat, a lamp over it with the pool of light it throws, and a lit sign.
@@ -76,6 +85,10 @@ rounds with a clipboard); **Dale**, the Quik-Stop manager; **Kev**, the coworker
 the dealer line; and the people who live on the street. Neighbours keep daily schedules (Dale
 opens the store and smokes by the board; Kev drinks on the bench at night; Dex holds the alley
 after dark) and street encounters interrupt with real choices.
+
+Three of the people on the block can be dated — **Stephanie**, **Melanie** and **Diana** — and a
+small heart over their heads is the only thing that marks them out. Everyone else has no heart,
+and no interest.
 
 Every character is built the late-90s console way: lofted faceted limbs with joint caps and a
 low-poly skull wearing one wrap-around face texture. Mo's face comes from his mood sheet; NPC
@@ -168,6 +181,95 @@ and the HUD bars ease up to the new values.
 
 ---
 
+## The clinic
+
+**Kestrel Clinic** is at the east end of the block, past Habib's: pale tile, a red cross, a ramp
+and a sign that says WALK-INS · NO APPOINTMENT NEEDED. The door is on the street like every other
+door. Inside there is a plastic chair, a scale nobody stands on, and **Nurse Okafor**.
+
+- **Treatment** is $60 and 90 minutes: risk and withdrawal come down, dependence comes down a
+  little. If Mo cannot pay, it goes on the **hospital bill** — the clinic does not turn anyone
+  away, it keeps a record instead.
+- **Checking in** is free and takes ten minutes; it slows withdrawal.
+- **The waiting chair** costs 20 minutes and calms him down.
+- One treatment a day. She will not do it twice, and she says so.
+
+**Collapse.** When Mo goes down — energy at zero, an overdose that does not end the run, too long
+awake — he falls, the screen fades to black, hours pass, and he wakes beside his own bed or here.
+After two collapses in a run they start taking him in; before that it is a coin toss, and it is not
+a coin toss at all if he has no home. He loses the hours, the shift, some money, and he wakes up
+in the state that put him there, not refreshed. A collapse locks further collapses out for five
+hours, so it cannot become a loop.
+
+## Kestrel Park
+
+The crosswalk (or the gate interaction on the sidewalk) leads across the road to **Kestrel Park**:
+grass, a path, three benches facing each other so people can talk, a half-court with a bent rim, a
+chess table with a bottle cap for a missing knight, a playground nobody maintains, a boombox on a
+crate, and a few people who are simply there. It is drawn on the map and the minimap from the same
+data the park is built from.
+
+| Interaction | What it does |
+|---|---|
+| **Sit on the bench** | 30 min · morale up, stress down |
+| **Shoot around** | 45 min · the best free morale on the block |
+| **Play chess** | 40 min · against whoever is sitting there; you can win |
+| **The boombox** | 20 min listening — or **dance**, 25 min, morale up and stress down |
+| **Talk to Kev** | he is losing at chess to himself |
+
+Dancing is a real performance on the world stage (`playDance`), not a menu line: Mo moves on the
+spot, the time passes and the stats move with it.
+
+## Love on Kestrel Street
+
+Three adults can be dated: **Stephanie** (31, relaxed, low-maintenance), **Melanie** (34, warm and
+particular) and **Diana** (36, independent and exacting). They are approachable when the heart is
+over their head — the heart means *you could try*, not *she is interested*.
+
+**Meeting them.** Talk, chat, compliment, flirt. Flirting has a cooldown and a personality-shaped
+chance: Stephanie warms quickly, Melanie notices whether Mo tried, Diana does not accept a first
+draft. A refusal is real, and repeated refusals cost affection.
+
+**Dates.** Five, at real places, for real money: coffee at the bodega ($6), dinner at Habib's
+($28), an afternoon in the park (free), a walk down Kestrel Street (free), a movie at home ($4).
+Each takes the evening and moves Mo there. The outcome — great, good, ok, bad — is scored from her
+likes and dislikes, Mo's hygiene, energy, morale and stress, his withdrawal, his balance, how
+recently he took her out, her difficulty and her affection, plus a roll. A bad date ends early,
+costs affection, and **the money does not come back**. The prose for each outcome is written once,
+in `romance.js`, so the phone, the park and the apartment say the same thing.
+
+**Cheeks.** After a good date — or at home later — she may come back to Unit 3B. The door closes,
+the screen fades, and the game moves to the next morning. Nothing explicit is shown; the game has
+never shown that and does not start now. A night that goes well grants the **Afterglow**: 24
+in-game hours with morale pinned at maximum, stress down, and energy, food and hygiene at least
+decent. It is a clock stamp, so it lasts exactly 24 in-game hours, is announced when it ends, and
+cannot be stacked.
+
+**Girlfriend.** Three *successful* dates (failed ones do not count) and enough affection, and Mo
+can ask. She may say not yet, and she means it. Once she says yes she texts him, and keeps
+texting: how the day is going, when she can see him, encouragement when he is struggling.
+
+**Moving in.** After about a week together, with the affection to match, Mo can ask her to move
+in. She becomes a resident of Unit 3B — visible, walking around, sitting down, talking, with her
+own lines — and she stays put across saves and day rollovers.
+
+| | Rent share | In the flat |
+|---|---:|---|
+| **Stephanie** | 15% | eats about two of Mo's things a day; not much else |
+| **Melanie** | 25% | eats one; leaves small useful presents |
+| **Diana** | 50% | restocks the fridge, gifts often, sells her own things |
+
+The share is read inside `economy.rentPerCycle()` from `CONFIG.partners[id].rentShare`, for the
+single live-in partner: one place, applied once, never stacked, never above half. Early payments
+use the same number, so paying ahead while she lives there charges the reduced amount, and the
+household menu shows her share and her habits (Mo can ask her to cover more; she will not love
+it).
+
+**Gifts.** A girlfriend sometimes texts that she left something. A parcel appears on the counter
+in Unit 3B — one pending at a time, a three-day cooldown per partner — and opening it adds the
+item to Mo's pockets exactly once. The pool is hers: mixtapes and chocolates from Stephanie,
+useful things from Melanie, and things Diana wrapped properly.
+
 ## Map and navigation
 
 `M` opens the map (or click the minimap under the HUD panel). It is drawn from the same data the
@@ -227,12 +329,33 @@ Movement is camera-relative: **W always walks into the screen**.
 | `1` `2` `3` | Speed 1× · 2× · 4× |
 | `C` | CRT scanlines |
 | `R` | 4:3 framing |
+| `~` | the hidden debug prompt (below) |
 
 **Gamepad** (standard mapping): left stick / D-pad move, bumpers, triggers and the right stick
 orbit, `A` interact, `B` phone, `START` pause, `X`/`Y` speed. The HUD has buttons for the phone,
 map, pause, speed, CRT and 4:3.
 
 ---
+
+## The debug menu
+
+Press **`~`**, type `Moses`, press Enter. A wrong password closes the prompt with no message, no
+error and no hint that anything exists. The panel is a dark green console in the game's own
+style, and the clock stops while it is open:
+
+- **Condition** — fill everything, move any single need by ±10, clear intoxication, tolerance and
+  withdrawal, or reset dependence and risk.
+- **Money** — $1,000 a click, as many times as you like, straight into the balance.
+- **Time** — set the hour, skip hours, advance a whole day, pause or resume the clock.
+- **World** — teleport to any area, fire any event by id, clear every event cooldown.
+- **Relationships** — affection ±10 for each of the three, girlfriend and live-in flags, a
+  pending present, or a full relationship reset.
+- **Testing** — a collapse, a clinic recovery, an early rent payment, rent marked paid, a date,
+  Cheeks, the Afterglow, the dance, using a substance, a free item, the phone, the daily report.
+
+Every button calls the real system — `rent.payRent`, `clinic.treat`, `romance.startDate`,
+`world.playDance`, `useSubstance` — so what it changes is what a player would get, and it all
+lands in the normal save state.
 
 ## Rendering
 
@@ -255,16 +378,22 @@ src/main.js             orchestrator: loop, state flow, saves, handoff, map togg
 src/core/               config (all balance values), state, input, audio (crossfades
                         + synthesised sfx), save, util
 src/systems/            needs, economy, jobs, events, street, fellowship, dialogue,
-                        endings, dealer (Rolo's orders), soundtrack (music director)
+                        endings, dealer (Rolo's orders), soundtrack (music director),
+                        rent (early pay + history), romance (partners, dates, gifts,
+                        household), clinic (treatment + recovery), sms (sender
+                        identity and replies), scheduler (weights, cooldowns)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,
-                        handoff (Rolo on the street + Mo's smile)
+                        handoff (Rolo on the street + Mo's smile), animations
+                        (substance use, collapse, dancing)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits)
 src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
-                        art), shopmenu, fridge, map, threads, modal, menu, themes
+                        art), shopmenu, fridge, map, threads, modal, menu, themes,
+                        debug (the hidden menu)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
+scripts/test-systems.mjs  headless system checks (npm test)
 docs/                   design notes, devlog, art handoff
 ```
 
@@ -273,11 +402,16 @@ hard-coding numbers.
 
 ```bash
 npm run check    # syntax-checks every module (no dependencies)
+npm test         # headless checks for the systems (no dependencies)
 ```
 
-There is no automated gameplay test suite. Features are checked by playing the build; the
-latest pass covered soundtrack switching, the dealer flow (text, app, meet, edge cases, save
-and reload), entering and leaving every building, and the map against world positions.
+`npm test` runs `scripts/test-systems.mjs` in plain Node against a small game stub: rent
+arithmetic, early payment and the double-payment guards, partner rent shares, date costs and
+outcomes, the Afterglow clock, gifts, household restocking, event cooldowns and the daily cap,
+SMS identities and replies, and clinic treatment and billing. Everything that needs eyes — the
+animations, the world, the interfaces — is still checked by playing the build; the latest pass
+covered soundtrack switching, the dealer flow (text, app, meet, edge cases, save and reload),
+entering and leaving every building, and the map against world positions.
 
 ---
 
@@ -292,6 +426,11 @@ and reload), entering and leaving every building, and the map against world posi
 - The talk prompts for street NPCs sit at their default spots; when a neighbour's schedule moves
   them elsewhere, the prompt stays put.
 - Rolo only meets on Kestrel Street. Ordering from inside a building works; he waits outside.
+- The dating, clinic and park content was verified headlessly (system arithmetic, guards,
+  save-shaped state) and by reading the world code; the animations, the hearts, the live-in
+  partner's wandering and the collapsed-time transition still want a human pass in a browser.
+- A live-in girlfriend walks a short loop in Unit 3B and talks where she stands; she does not
+  path around furniture.
 
 ---
 

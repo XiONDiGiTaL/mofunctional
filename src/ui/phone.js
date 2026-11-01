@@ -15,6 +15,10 @@ import { APPS, HOME_GRID, DOCK, appIcon, serviceAvatar } from './apps.js';
 import { itemIcon } from './icons.js';
 import * as dealer from '../systems/dealer.js';
 import * as life from '../systems/life.js';
+import * as sms from '../systems/sms.js';
+import * as rent from '../systems/rent.js';
+import * as romance from '../systems/romance.js';
+import * as clinic from '../systems/clinic.js';
 import { ENDINGS } from '../systems/endings.js';
 
 const DEFAULT_REPLIES = [
@@ -257,6 +261,7 @@ export class Phone {
       </div>
       <div class="tiny mono-dim">Overdraft: none. Bank policy: "we are not a charity, we are a bank" — the difference is marketing.</div>
       ${this.debtCard()}
+      ${this.rentAheadCard()}
       <div class="app__h">Bills</div>
       <div class="list">${bills}</div>
       <div class="app__h">Recent activity</div>
@@ -422,7 +427,8 @@ export class Phone {
         `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`,
         ...(m.replies || []).map((r) => `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div><img class="chat__face" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></div>`),
       ].join('');
-      const quick = (m.choices && m.choices.length ? m.choices.map((c) => c.label) : DEFAULT_REPLIES);
+      const opts = sms.replyOptions(m, s);
+      const quick = opts.length ? opts.map((o) => o.label) : ['Leave it.'];
       return `${this.header(m.from, `D${m.day}`)}
         <div class="chat">${bubbles}</div>
         <div class="chat__quick">
@@ -643,6 +649,7 @@ export class Phone {
         </div>
       </div>
       ${block(rent, `<div class="tiny ${s.flags.evictionNotice ? 'bad' : 'mono-dim'}">${s.flags.evictionNotice ? 'EVICTION NOTICE POSTED. Two missed cycles ends the lease — and the run.' : `Lease: week to week. Landlord: Rae Vell. Missed cycles: ${s.bills.rent.missed}.`}</div>`)}
+      ${this.rentAheadCard()}
       ${block(power, `<div class="tiny ${s.flags.powerCut ? 'bad' : 'mono-dim'}">${s.flags.powerCut ? 'POWER CUT. The fridge is silent. Showers are cold.' : 'Municipal Power. Billed every 14 days.'}</div>`)}
       ${block(phone, `<div class="tiny mono-dim">Shale Mobile. Unpaid service degrades your signal (cosmetically).</div>`)}
       <div class="app__h">Apartment</div>
@@ -805,6 +812,97 @@ export class Phone {
       ${this.footer()}`;
   }
 
+  /* ------------------------------ RENT, EARLY ------------------------------ */
+
+  /**
+   * Rent on one card: what this cycle costs after a partner's share, what is outstanding, the day
+   * the next one falls due, the one-cycle pay-ahead, and the receipts.
+   */
+  rentAheadCard() {
+    const g = this.g;
+    const s = g.state;
+    const r = rent.rentStatus(g);
+    if (r.noLease) return '';
+    const period = CONFIG.economy.rent.periodDays;
+    const paidCycleDay = r.paidAhead ? r.nextDueDay - period : null;
+    const hist = r.history.slice(0, 4);
+    return `<div class="card rentcard">
+      <div class="kv"><span>Rent this cycle</span><b>${money(r.perCycle)}</b></div>
+      ${r.contribution > 0 ? `<div class="kv"><span>Household contribution (${Math.round(r.share * 100)}%)</span><b class="creditv">-${money(r.contribution)}</b></div>` : ''}
+      <div class="kv"><span>${r.owedCycles ? 'Outstanding' : 'Next due'}</span><b class="${r.owedCycles ? 'bad' : 'creditv'}">${r.owedCycles ? money(r.owed) : `Day ${r.nextDueDay}`}</b></div>
+      ${r.paidAhead ? `<div class="kv"><span>Paid ahead</span><b class="creditv">Day ${paidCycleDay}</b></div>` : ''}
+      <div class="row" style="margin-top:6px">
+        <button class="btn btn--primary btn--sm" data-act="pay" data-arg="rent" ${r.canPayNow ? '' : 'disabled'}>PAY ${r.owedCycles ? money(r.owed) : 'NOW'}</button>
+        <button class="btn btn--gold btn--sm" data-act="rentahead" ${r.canPayAhead ? '' : 'disabled'}>PAY EARLY · ${money(r.aheadCost)}</button>
+      </div>
+      <div class="tiny ${r.paidAhead ? 'creditv' : 'mono-dim'}">${r.paidAhead
+        ? `Day ${paidCycleDay} is settled in advance. Nothing will be charged again when it arrives.`
+        : `Paying early settles Day ${r.aheadForDay} now. Rent stays due Day ${r.nextDueDay} otherwise.`}</div>
+      <div class="app__h">Rent history</div>
+      ${hist.length
+        ? hist.map((h) => `<div class="kv"><span class="tiny">D${h.day} · ${h.ahead ? 'early' : 'paid'} · covers Day ${h.forDay}</span><b>${money(h.amount)}</b></div>`).join('')
+        : '<div class="tiny mono-dim">No rent paid yet. Rae has a clipboard with one name on it.</div>'}
+    </div>`;
+  }
+
+  /* ------------------------------ DATING ------------------------------ */
+
+  datesView() {
+    const g = this.g;
+    const s = g.state;
+    const cards = romance.PARTNER_KEYS.map((id) => {
+      const p = CONFIG.partners[id];
+      const st = romance.partnerState(s, id);
+      const status = st.liveIn ? 'lives with you' : st.girlfriend ? 'your girlfriend' : st.dates ? `${st.dates} date${st.dates === 1 ? '' : 's'} · ${st.failed} that did not land` : 'you have not met';
+      return `<div class="card loveline">
+        <div class="listitem">
+          ${this.senderFace(p.name.toUpperCase())}
+          <div class="grow">
+            <div class="name">${T(p.name)}</div>
+            <div class="meta">${T(status)} · affection ${st.affection}/100</div>
+          </div>
+        </div>
+        <div class="tiny mono-dim">${T(p.blurb)}</div>
+        <div class="row row--wrap" style="margin-top:6px">
+          <button class="btn btn--sm" data-act="datechat" data-arg="${id}">TALK</button>
+          <button class="btn btn--sm" data-act="dateflirt" data-arg="${id}">FLIRT</button>
+          <button class="btn btn--sm btn--primary" data-act="datedate" data-arg="${id}" ${st.met ? '' : 'disabled'}>DATE</button>
+          ${!st.girlfriend ? `<button class="btn btn--sm btn--gold" data-act="dateskin" data-arg="${id}" ${romance.canAskGirlfriend(s, id) ? '' : 'disabled'}>BE MY GIRLFRIEND</button>` : ''}
+          ${st.girlfriend && !st.liveIn ? `<button class="btn btn--sm btn--gold" data-act="datemove" data-arg="${id}" ${romance.canAskMoveIn(s, id) ? '' : 'disabled'}>MOVE IN</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    return `${this.header('LoveLine', 'KESTREL ST.')}
+      ${cards}
+      <div class="tiny mono-dim">She has to be out and about: Stephanie after ten, Melanie through the day, Diana early. The park and the apartment are where you find them.
+      <br><b>${T(romance.afterglowLabel(s) || 'No Afterglow right now.')}</b></div>
+      ${this.footer()}`;
+  }
+
+  /* ------------------------------ CLINIC ------------------------------ */
+
+  clinicView() {
+    const s = this.g.state;
+    const info = clinic.treatmentInfo(this.g);
+    const l = life.lifeState(s);
+    const c = clinic.clinicState(s);
+    const checkedToday = c.lastVisitDay === dayOf(s.clock.m) && l.checkinDay === dayOf(s.clock.m);
+    return `${this.header('Kestrel Clinic', 'WALK-INS')}
+      <div class="card">
+        <div class="kv"><span>${T(clinic.nurseName)}</span><b>in today</b></div>
+        <div class="kv"><span>Treatment</span><b>${money(info.cost)} · ${info.minutes} min</b></div>
+        <div class="kv"><span>Risk</span><b class="${s.stats.risk > 50 ? 'bad' : ''}">${Math.round(s.stats.risk)}%</b></div>
+        <div class="kv"><span>Withdrawal</span><b class="${s.stats.withdrawal > 50 ? 'bad' : ''}">${Math.round(s.stats.withdrawal)}%</b></div>
+        <div class="kv"><span>Hospital bill</span><b class="${l.debt.hospital ? 'bad' : 'creditv'}">${money(l.debt.hospital || 0)}</b></div>
+      </div>
+      <div class="row row--wrap">
+        <button class="btn btn--sm btn--primary" data-act="clincheck" ${checkedToday ? 'disabled' : ''}>CHECK IN (FREE)</button>
+        <button class="btn btn--sm" data-act="clingo">WALK TO THE CLINIC</button>
+      </div>
+      <div class="tiny mono-dim">The clinic is the pale building at the east end of Kestrel Street, past Habib's. Check-in is free, once a day. Treatment is ${money(info.cost)}; if you cannot pay it goes on the bill and the bill grows.</div>
+      ${this.footer()}`;
+  }
+
   /* ------------------------------ ACTIONS ------------------------------ */
 
   get actions() {
@@ -830,16 +928,10 @@ export class Phone {
       recert() { recertCRP(g); },
       utility() { claimUtilityGrant(g); },
       msgopen(arg) { this.msgId = arg; const m = s.messages.find((x) => x.id === arg); if (m) m.read = true; this.g.audio.sfx('ui'); },
-      reply(arg, num) {
-        const m = s.messages.find((x) => x.id === arg);
-        if (!m) return;
-        const pool = m.choices && m.choices.length ? m.choices.map((c) => c.label) : DEFAULT_REPLIES;
-        const text = pool[num] ?? pool[0];
-        // straight onto this thread: recordReply would look the thread up again and post it twice
-        m.replies = m.replies || [];
-        m.replies.push({ text, day: dayOf(s.clock.m) });
-        g.audio.sfx('phone');
-      },
+      // the reply chips come from the sender's category (systems/sms.js), and the chosen one is
+      // applied there: a landlord text can settle the rent, a BidBay text can reprice listings,
+      // and Mo never offers to "talk about this later" to an automated auction notice
+      reply(arg, num) { sms.sendReply(g, s.messages.find((x) => x.id === arg), num); },
       msgback() { this.msgId = null; },
       // Rolo: the thread and the app both go through systems/dealer.js and nothing else
       dealersay(arg) { dealer.smsSend(g, arg); },
@@ -930,7 +1022,15 @@ export class Phone {
       save(arg) { g.saveSlot(Number(arg)); },
       load(arg) { g.loadSlot(Number(arg)); this.close(); },
       quitmenu() { this.close(); g.quitToMenu(); },
-      clinic() { life.clinicCheckIn(g); },
+      clinic() { clinic.checkIn(g); },
+      clincheck() { clinic.checkIn(g); },
+      clingo() { this.close(); g.advance(15); g.goTo('clinic', 'phone'); },
+      rentahead() { const r = rent.payRent(g, { ahead: true }); if (!r.ok && r.reason !== 'nothing due') g.audio.sfx('deny'); },
+      datechat(arg) { const r = romance.chat(g, arg); if (r) g.toast(`${r.name}: ${r.line}`, 'info'); },
+      dateflirt(arg) { const r = romance.flirt(g, arg); if (r?.ok) g.toast(`${r.name}: ${r.line}`, r.delta > 0 ? 'good' : 'bad'); },
+      datedate(arg) { this.close(); romance.openDateMenu(g, arg); },
+      dateskin(arg) { romance.askGirlfriend(g, arg); },
+      datemove(arg) { romance.askMoveIn(g, arg); },
       paydebt(arg, num) { life.payDebt(g, num === 0 ? life.totalDebt(s) : num); },
       rehouse() { if (life.rehouse(g)) this.close(); },
       closebook() {
@@ -964,6 +1064,8 @@ export class Phone {
       system: this.systemView,
       dealer: this.dealerView,
       rolo: this.roloView,
+      dates: this.datesView,
+      clinic: this.clinicView,
     };
   }
 }

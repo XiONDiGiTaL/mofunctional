@@ -10,6 +10,46 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Continuation pass — early rent, clinic, park, dating, debug
+
+Built on top of the existing game without replacing anything. All new balance lives in
+`CONFIG`; all new simulation is headless (`src/systems/`), and the world/UI only call into it.
+
+- **Rent can be paid early.** `src/systems/rent.js` adds `payRent(g, { ahead })` and
+  `rentStatus(g)`. Paying ahead bumps `bills.rent.paidCycle` one cycle, so the due date finds the
+  cycle settled and nothing is charged twice; one cycle ahead maximum (`CONFIG.rent`).
+  `state.rentLock` (300 ms) swallows double clicks. Payments are recorded in
+  `bills.rent.history`, shown in the Banking app card and Landlordly.
+- **Partner rent share.** `economy.rentShare()` / `rentPerCycle()` read
+  `CONFIG.partners[id].rentShare` for the single live-in partner — one place, applied once, never
+  stacked, never above 50%. Early payment, eviction arithmetic and the history all use it.
+- **Substance animations.** `src/world/animations.js`: `SubstanceUse` picks a style from
+  `CONFIG.substances[id].useAnim` (pipe / pill / drink / snort), and effects are applied in the
+  animation's completion callback, so the item is removed once and the high lands after the
+  visible use. Headless fallback applies immediately if there is no world.
+- **Collapse and recovery.** `CollapseFall` plus `main.collapseSequence()`: fall, fade, lost
+  hours, then home (beside the bed) or **Kestrel Clinic** when he has no home or has gone down
+  twice. `clinic.js` owns treatment, the hospital bill, check-in and `shouldTakeHimIn()`; a
+  five-hour lock and `flags.recovering` stop the loop.
+- **Kestrel Clinic** is a real location east of Habib's (plan, street frontage, interior,
+  map glyph, phone app). Nurse Okafor treats for $60/90 min or bills it.
+- **Kestrel Park** is a real location across the road (plan + `PARK` export, half-court, benches,
+  chess table, playground, boombox, NPCs, gate interaction, map). Leisure: sit, hoops, chess,
+  music, **dance** (`playDance`), talk to Kev.
+- **Dating.** `src/systems/romance.js` owns Stephanie, Melanie and Diana: flirt/chat with
+  cooldowns, five priced date activities scored from personality + condition + history, Cheeks
+  (fade to black, next morning), the 24-in-game-hour Afterglow, girlfriend status after three
+  successful dates, gifts (one pending parcel, 3-day per-partner cooldown), moving in, and
+  household behaviour (food, restock, sales). Hearts over the three women only.
+- **SMS identities and replies.** `src/systems/sms.js`: `identityFor()` gives every sender a
+  kind (person / business / service / dealer / unknown) and `replyOptions()` builds replies per
+  category, so BidBay never gets "can we not do this right now".
+- **Event scheduler.** `src/systems/scheduler.js`: weighted rolls, per-event cooldowns, minimum
+  gaps, time windows, area and state gates, per-day caps and a saved `state.sched.log`. `events.js`
+  delegates to it; family calls are no longer daily. Romance invitations use it too.
+- **Hidden debug menu.** `src/ui/debug.js`: `~` → password prompt → `Moses`. Wrong password
+  closes silently. Every action calls the real system.
+
 ### Art pass 3 — NPC face bank (owner priority)
 - NPC portraits and 3D head textures come from `assets/ref/npc_face_bank.png`, baked by
   `scripts/bake-npc-faces.py` into `src/render/npc_faces_data.js` (JPEG data URLs: a 3:4 portrait
@@ -344,6 +384,18 @@ Fixed during verification (keep these in mind — they were real bugs):
   crashed day rollover and the Banking app. Renamed to `phone` and added a fail-soft
   guard in `billInfo()` so an unknown key logs instead of killing the UI.
 
+Verified headlessly in the continuation pass (`npm test`, `scripts/test-systems.mjs`):
+- Rent: due-cycle payment, early payment settling the next cycle, no second charge on the due
+  date, one-cycle-ahead cap, rapid-repeat lock, partner share (15/25/50) applied once.
+- Dates: cost charged, time spent, outcome recorded; a bad date is not refunded.
+- Three successful dates → girlfriend; Afterglow is exactly `afterglowHours` of game minutes and
+  holds morale at max; one pending gift, opened once, one item added; Diana restocks once a day.
+- Scheduler: cooldown blocks, family-call gap, per-day cap never exceeded.
+- SMS: BidBay gets marketplace replies, every sender class has its own replies, unknown numbers
+  get the placeholder, a reply is recorded once.
+- Clinic: treatment lowers risk/withdrawal once a day; unpaid treatment becomes hospital debt;
+  collapse goes to the clinic with no home or after repeated collapses.
+
 Not fully verified (needs human play):
 - Long-run balance across 30 in-game days (numbers are analytic, not playtested).
 - Comfort of movement/camera in a real browser at 60fps on low-end hardware.
@@ -362,13 +414,16 @@ Not fully verified (needs human play):
 - [ ] **Bed/sleep while phone open** — currently sleeping from the Calendar app works
       anywhere; restrict it to the apartment for consistency with the bed interaction.
 - [ ] **Save migration**: `state.v` exists but no migration path. Add one before v3.
+      New state (`state.romance`, `state.sched`, `state.clinic`, `bills.rent.history`) is created
+      lazily, so old saves load; a real migration is still owed.
 
 ### Medium priority
 - [ ] More events: landlord inspection, health clinic visit, a second job offer, a
       roommate subplot, Chairman's vet bill.
 - [ ] Fellowship stage 3 should visibly change NPC dialogue in the street (rumours).
-- [ ] Add a "recovery" path: a clinic appointment chain that reduces addiction but costs
-      days and money (there is a `flags.wantsHelp` hook already set by the paramedic event).
+- [x] Add a "recovery" path: **Kestrel Clinic** is now a real location with paid treatment,
+      free check-ins, a hospital bill, and collapse recovery. A multi-day appointment chain
+      (repeated visits lowering addiction faster) is still not written.
 - [ ] Addison's dance should sync to the music when the menu is active (analyser already
       exposed via `g.audio.level()`).
 - [ ] Add optional 16:9 → 4:3 letterbox framing with animated overscan.

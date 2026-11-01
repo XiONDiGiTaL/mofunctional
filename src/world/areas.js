@@ -16,6 +16,8 @@ import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
 import { signTex } from '../render/signs.js';
 import * as life from '../systems/life.js';
+import * as romance from '../systems/romance.js';
+import * as clinic from '../systems/clinic.js';
 
 const M = {
   floor: retroMaterial('floor', { map: tex('linoleum') }),
@@ -133,6 +135,31 @@ export function buildApartment(g) {
     interactables.push({ id: 'cat', label: 'Pet Chairman', sub: '+morale', x: 0.9, z: 1.9, action: (gg) => { bump(gg.state, 'morale', 6); bump(gg.state, 'stress', -4); gg.advance(5); gg.toast(npcLine('chairman'), 'good'); } });
   }
 
+  // ---- someone lives here now. She is in the room, not in a menu.
+  const liveIn = g.state.romance?.liveIn;
+  const liveDef = liveIn ? CONFIG.partners?.[liveIn] : null;
+  if (liveIn && liveDef) {
+    interactables.push({
+      id: 'partner', label: `Talk to ${liveDef.name}`, sub: 'girlfriend · lives here', x: -1.9, z: 1.5,
+      action: (gg) => partnerMenu(gg, liveIn),
+    });
+  }
+  const gift = g.state.romance?.apartmentGift;
+  if (gift) {
+    const fromName = CONFIG.partners[gift.from]?.name;
+    interactables.push({
+      id: 'gift', label: `Open ${fromName ? `${fromName}'s` : 'the'} present`, sub: 'left on the counter', x: 1.9, z: 1.6,
+      action: (gg) => openGiftMenu(gg),
+    });
+    // the parcel itself: brown paper and too much tape, on the counter
+    group.add(box(0.34, 0.24, 0.28, retroMaterial('parcel', { color: 0xb08a5a }), [1.9, 0.95, 1.6]));
+    group.add(box(0.35, 0.03, 0.1, retroMaterial('parcelribbon', { color: 0xd8d0b8 }), [1.9, 1.06, 1.6]));
+  }
+
+  const npcs = [];
+  if (g.state.flags.cat) npcs.push({ kind: 'cat', x: 0.9, z: 1.9, rot: -0.6 });
+  if (liveIn && liveDef) npcs.push({ kind: liveIn, x: -1.9, z: 1.5, rot: 0.9, talk: liveIn, roam: 1.1 });
+
   return {
     group,
     bounds: { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 },
@@ -142,7 +169,7 @@ export function buildApartment(g) {
       solid(2.9, 2.6, 0.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5, 0.35),
     ],
     spawn: { x: 0, z: 1.15, rot: Math.PI },
-    npcs: g.state.flags.cat ? [{ kind: 'cat', x: 0.9, z: 1.9, rot: -0.6 }] : [],
+    npcs,
     interactables,
     ambient: 'apartment',
   };
@@ -379,6 +406,30 @@ export function buildStreet(g) {
   group.add(box(0.07, 0.5, 0.45, M.metal, [17.2, 0.25, 0.1]));
   group.add(box(0.07, 0.5, 0.45, M.metal, [18.8, 0.25, 0.1]));
 
+  // ---- Kestrel Clinic, east end past Habib's: pale tile, a red cross, a ramp, no attitude
+  const cli = building('clinic');
+  const cliC = (cli.x0 + cli.x1) / 2;
+  facade(cliC, 4.8, 6.2, 0xc2ccce);
+  group.add(box(4.4, 3.0, 0.34, retroMaterial('clinicfront', { color: 0xd8e2e2 }), [cliC, 1.5, -6.48]));
+  group.add(plane(2.8, 1.1, { name: 'clinicwin', map: tex('window'), emissive: 0.5, unlit: true }, [cliC + 0.9, 1.7, -6.3]));
+  group.add(box(4.6, 0.14, 1.1, retroMaterial('clinicawn', { color: 0x9aa8aa }), [cliC, 3.1, -5.95]));
+  group.add(plane(3.6, 0.6, { name: 'clinicsign', map: signTex('signClinic', [{ text: 'KESTREL CLINIC', color: '#f2fbff', size: 13 }, { text: 'WALK-INS · NO APPOINTMENT NEEDED', color: '#bfe6ff', size: 6 }], { w: 160, h: 30, bg: '#26424e', border: '#8fd0e0' }), emissive: 1.0, unlit: true }, [cliC, 3.6, -6.3]));
+  group.add(box(0.5, 0.5, 0.06, retroMaterial('cliniccross', { color: 0xff4a4a, emissive: 0.9, unlit: true }), [cliC - 1.7, 2.3, -6.28]));
+  group.add(box(0.14, 0.36, 0.07, retroMaterial('cliniccross2', { color: 0xffffff, emissive: 0.9, unlit: true }), [cliC - 1.7, 2.3, -6.26]));
+  group.add(box(0.36, 0.14, 0.07, retroMaterial('cliniccross2', { color: 0xffffff, emissive: 0.9, unlit: true }), [cliC - 1.7, 2.3, -6.26]));
+  entrance(cli.door, { door: 0x6a8a90, trim: 0xcfe0e0, light: 0xdff4ff });
+  // the wheelchair ramp beside the step
+  group.add(box(1.6, 0.08, 1.9, M.concrete, [cli.door + 1.5, 0.06, -5.2], [0.09, 0, 0]));
+  group.add(plane(2.4, 1.8, { name: 'clinicpool', color: 0xdff4ff, opacity: 0.14, transparent: true, unlit: true }, [cli.door, 0.035, -5.1], [-Math.PI / 2, 0, 0]));
+
+  // ---- the park gate: a gap in the kerb opposite the crosswalk, with a sign that says so
+  group.add(box(3.2, 0.16, 0.5, M.concrete, [9.35, 0.08, 1.5]));
+  for (const gx of [7.9, 10.8]) {
+    group.add(box(0.16, 1.5, 0.16, M.metal, [gx, 0.75, 1.4]));
+  }
+  group.add(plane(2.6, 0.5, { name: 'parksign', map: signTex('signPark', [{ text: 'KESTREL PARK', color: '#e9f6d8', size: 13 }, { text: 'OPEN DAWN TO DUSK · NO BALLPLAY AFTER DARK', color: '#b8d8a0', size: 5 }], { w: 160, h: 30, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.9, unlit: true }, [9.35, 1.6, 1.35]));
+  group.add(plane(3.4, 1.4, { name: 'parkglow', color: 0xbfe0b0, opacity: 0.12, transparent: true, unlit: true }, [9.35, 0.04, 1.0], [-Math.PI / 2, 0, 0]));
+
   // ---- street life: cardboard, a shopping cart, a sleeping bag that is somebady's home
   group.add(box(1.3, 0.04, 0.9, retroMaterial('cardboard', { color: 0x8a7452 }), [-9.4, 0.02, 0.2]));
   group.add(box(0.8, 0.9, 0.6, retroMaterial('cart', { color: 0x6a6a62 }), [-12.6, 0.45, -5.0]));
@@ -518,6 +569,8 @@ export function buildStreet(g) {
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
     { id: 'kev', label: 'Talk to Kev', sub: 'coworker · loud', x: -1.2, z: -1.2, action: (gg) => talk(gg, 'kev') },
     { id: 'dex', label: 'Talk to Dex', sub: 'the corner · cash only', x: -3.4, z: -3.4, action: (gg) => dexMenu(gg) },
+    { id: 'clinicDoor', label: 'Enter Kestrel Clinic', sub: 'walk-ins · the nurse is in', x: building('clinic').door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('clinic', 'street') },
+    { id: 'parkGate', label: 'Cross to Kestrel Park', sub: 'benches · hoops · people', x: 9.35, z: 0.9, radius: 1.7, action: (gg) => gg.goTo('park', 'street') },
   ];
 
   return {
@@ -1094,4 +1147,418 @@ export function buildHabibs(g) {
     ambient: 'street',
   };
 }
+
+/* ------------------------------ KESTREL PARK ------------------------------ */
+
+/**
+ * Across the road from the crosswalk: grass, a path, benches that face each other so people can
+ * talk, a half-court with a bent rim, a playground nobody maintains, a chess table with a
+ * missing knight, and a boombox somebody left on a crate. Late-90s municipal park, no budget.
+ */
+export function buildPark(g) {
+  const group = new THREE.Group();
+  const S = 17;
+  const grass = retroMaterial('parkgrass', { color: 0x37502f });
+  const pathMat = retroMaterial('parkpath', { color: 0x8f8974 });
+  group.add(plane(S, S, { name: 'parkfloor', color: 0x37502f }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  // the path: a T, so there is a reason to walk in three directions
+  group.add(plane(2.2, S, { name: 'parkpath', color: 0x9a9480 }, [0, 0.01, 0], [-Math.PI / 2, 0, 0]));
+  group.add(plane(S, 1.8, { name: 'parkpath2', color: 0x9a9480 }, [0, 0.012, 0.4], [-Math.PI / 2, 0, 0]));
+  void grass; void pathMat;
+
+  // trees in a rough ring, each with a low planter that reads as a collider
+  const tree = (tx, tz, scale = 1) => {
+    group.add(box(0.9 * scale, 0.3 * scale, 0.9 * scale, M.concrete, [tx, 0.15 * scale, tz]));
+    group.add(box(0.22 * scale, 2.2 * scale, 0.22 * scale, retroMaterial('parktrunk', { color: 0x40301f }), [tx, 1.2 * scale, tz]));
+    for (let i = 0; i < 3; i++) {
+      group.add(box((1.7 - i * 0.45) * scale, 0.9 * scale, (1.7 - i * 0.45) * scale,
+        retroMaterial(`parkleaf${i}`, { color: i % 2 ? 0x3d5832 : 0x2e4a2a }), [tx, (2.2 + i * 0.75) * scale, tz], [0, i * 0.6, 0]));
+    }
+  };
+  tree(-6.8, -3.2); tree(6.6, -1.6); tree(-6.2, 5.4); tree(5.8, 6.0); tree(0.2, -4.6, 0.9);
+
+  // benches, facing the path
+  const bench = (bx, bz, rot = 0) => {
+    const grp = new THREE.Group();
+    grp.add(box(1.9, 0.09, 0.52, M.wood, [0, 0.5, 0]));
+    grp.add(box(1.9, 0.5, 0.09, M.wood, [0, 0.75, -0.24]));
+    grp.add(box(0.09, 0.5, 0.5, M.metal, [-0.86, 0.25, 0]));
+    grp.add(box(0.09, 0.5, 0.5, M.metal, [0.86, 0.25, 0]));
+    grp.position.set(bx, 0, bz);
+    grp.rotation.y = rot;
+    group.add(grp);
+  };
+  bench(-4.4, 1.8, 0.2);
+  bench(4.4, 3.0, -0.3);
+  bench(-1.6, -2.6, Math.PI * 0.05);
+
+  // half-court: asphalt, a bent rim, a backboard with no net
+  group.add(plane(6.4, 5.2, { name: 'court', map: tex('asphalt'), repeat: [2, 2] }, [5.2, 0.015, -4.6], [-Math.PI / 2, 0, 0]));
+  group.add(box(0.16, 3.2, 0.16, M.metal, [5.2, 1.6, -6.6]));
+  group.add(box(1.8, 1.1, 0.08, retroMaterial('backboard', { color: 0xd8d8cc }), [5.2, 3.1, -6.6]));
+  group.add(box(0.06, 0.06, 0.1, retroMaterial('rim', { color: 0xd8622a, emissive: 0.15 }), [5.2, 2.65, -6.35]));
+  group.add(box(0.5, 0.02, 0.04, retroMaterial('rim2', { color: 0xd8622a }), [5.2, 2.62, -6.3], [0, 0, 0.12]));
+
+  // playground: a sandbox, a slide, a swing frame, all slightly wrong
+  group.add(plane(3.6, 3.0, { name: 'sand', color: 0x9a8a62 }, [-5.6, 0.02, -5.6], [-Math.PI / 2, 0, 0]));
+  group.add(box(0.12, 1.8, 0.12, M.metal, [-6.9, 0.9, -6.6]));
+  group.add(box(0.12, 1.8, 0.12, M.metal, [-4.5, 0.9, -6.6]));
+  group.add(box(2.5, 0.1, 0.1, M.metal, [-5.7, 1.78, -6.6]));
+  group.add(box(0.4, 0.06, 0.28, M.metal, [-6.2, 1.2, -6.6]));
+  group.add(box(0.4, 0.06, 0.28, M.metal, [-5.0, 1.2, -6.6]));
+  group.add(box(0.9, 0.08, 1.9, retroMaterial('slide', { color: 0xb5b8b0 }), [-4.4, 0.85, -5.4], [0.35, 0, 0]));
+
+  // chess table with a missing knight; the boombox on a crate by the path
+  group.add(box(0.9, 0.08, 0.9, retroMaterial('chesstable', { color: 0x4a4a3c }), [-2.4, 0.72, -1.2]));
+  group.add(box(0.12, 0.72, 0.12, M.metal, [-2.4, 0.36, -1.2]));
+  for (const [cx, cz] of [[-3.1, -1.2], [-1.7, -1.2]]) group.add(box(0.42, 0.42, 0.42, M.wood, [cx, 0.21, cz]));
+  group.add(box(0.5, 0.3, 0.34, retroMaterial('boombox', { color: 0x2a2c30 }), [1.9, 0.62, 0.9]));
+  group.add(box(0.14, 0.14, 0.02, retroMaterial('boomboxspk', { color: 0x111214 }), [1.76, 0.64, 1.07]));
+  group.add(box(0.14, 0.14, 0.02, retroMaterial('boomboxspk2', { color: 0x111214 }), [2.04, 0.64, 1.07]));
+  group.add(box(0.56, 0.34, 0.4, M.wood, [1.9, 0.17, 0.9]));
+
+  // lamps, a bin, and the gate back to the street
+  for (const lx of [-3.0, 4.2]) {
+    group.add(box(0.14, 3.4, 0.14, M.metal, [lx, 1.7, 6.4]));
+    group.add(box(0.5, 0.1, 0.3, M.lamp, [lx, 3.45, 6.2]));
+    group.add(plane(2.6, 2.0, { name: 'parklamp', color: 0xfff2c4, opacity: 0.14, transparent: true, unlit: true }, [lx, 0.03, 6.2], [-Math.PI / 2, 0, 0]));
+  }
+  group.add(box(0.6, 0.9, 0.6, retroMaterial('parkbin', { color: 0x39443c }), [2.9, 0.45, 6.2]));
+  group.add(box(1.5, 2.3, 0.14, M.door, [0, 1.15, 8.4]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [-0.8, 1.2, 8.36]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [0.8, 1.2, 8.36]));
+  group.add(box(1.7, 0.12, 0.2, M.white, [0, 2.4, 8.36]));
+  group.add(plane(2.6, 0.45, { name: 'parkgate', map: signTex('signParkGate', [{ text: 'KESTREL PARK', color: '#e9f6d8', size: 12 }], { w: 128, h: 24, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.8, unlit: true }, [0, 2.7, 8.3]));
+
+  // ---- people. The three women are here on their own schedules; so is somebody's friend.
+  const npcs = [
+    { kind: 'stephanie', x: -4.4, z: 2.6, rot: 0.4, talk: 'stephanie' },
+    { kind: 'melanie', x: 4.4, z: 3.6, rot: -0.5, talk: 'melanie' },
+    { kind: 'diana', x: -1.0, z: -3.4, rot: 1.6, talk: 'diana' },
+    { kind: 'kev', x: -2.4, z: -0.2, rot: 2.6, talk: 'kev' },
+  ];
+
+  const partnerSpot = { stephanie: [-4.4, 2.6], melanie: [4.4, 3.6], diana: [-1.0, -3.4] };
+  const interactables = [
+    ...Object.entries(partnerSpot).map(([id, [x, z]]) => ({
+      id: `partner_${id}`, label: `Talk to ${CONFIG.partners[id].name}`, sub: 'she is around', x, z, radius: 1.6,
+      action: (gg) => partnerMenu(gg, id),
+    })),
+    { id: 'parkbench1', label: 'Sit on the bench', sub: 'watch the park happen', x: -4.4, z: 1.8, radius: 1.5, action: (gg) => parkSit(gg) },
+    { id: 'parkbench2', label: 'Sit on the bench', sub: 'the other one', x: 4.4, z: 3.0, radius: 1.5, action: (gg) => parkSit(gg) },
+    { id: 'hoops', label: 'Shoot around on the half-court', sub: '45 min · the rim is bent', x: 5.2, z: -4.6, radius: 2.0, action: (gg) => parkHoops(gg) },
+    { id: 'chess', label: 'Play chess at the table', sub: 'the knight is a bottle cap', x: -2.4, z: -0.6, radius: 1.5, action: (gg) => parkChess(gg) },
+    { id: 'boombox', label: 'The boombox on the crate', sub: 'somebody left a tape in it', x: 1.9, z: 1.1, radius: 1.5, action: (gg) => parkMusic(gg) },
+    { id: 'parkmate', label: 'Talk to Kev', sub: 'he is losing at chess to himself', x: -2.4, z: 0.2, radius: 1.5, action: (gg) => { gg.advance(8); bump(gg.state, 'morale', 4); gg.openModal({ kicker: 'KEV · KESTREL PARK', title: 'Park Kev', body: `${npcLine('kev')}\n\nHe has set up a chess board with no opponent and is losing anyway.`, choices: [{ label: 'Sit with him for a bit.', effect: () => { bump(gg.state, 'morale', 5); bump(gg.state, 'stress', -4); gg.advance(15); } }, { label: 'Leave him to it.', effect: () => {} }] }); } },
+    { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'through the gate', x: 0, z: 7.9, radius: 1.4, action: (gg) => gg.goTo('street', 'park') },
+  ];
+
+  return {
+    group,
+    bounds: { minX: -8.2, maxX: 8.2, minZ: -8.0, maxZ: 8.2 },
+    solids: [
+      solid(-6.8, -3.2, 1.0, 1.0), solid(6.6, -1.6, 1.0, 1.0), solid(-6.2, 5.4, 1.0, 1.0),
+      solid(5.8, 6.0, 1.0, 1.0), solid(0.2, -4.6, 0.9, 0.9),
+      solid(-4.4, 1.8, 2.0, 0.7, 0.9), solid(4.4, 3.0, 2.0, 0.7, 0.9), solid(-1.6, -2.6, 2.0, 0.7, 0.9),
+      solid(5.2, -6.6, 0.4, 0.4), solid(-5.6, -5.6, 3.6, 3.0, 0.5), solid(-2.4, -1.2, 1.2, 1.2, 0.85),
+      solid(1.9, 0.9, 0.8, 0.6, 0.85), solid(2.9, 6.2, 0.7, 0.7, 0.9),
+      solid(-3.0, 6.4, 0.4, 0.4), solid(4.2, 6.4, 0.4, 0.4),
+    ],
+    spawn: { x: 0, z: 6.9, rot: Math.PI },
+    npcs,
+    interactables,
+    ambient: 'park',
+  };
+}
+
+/* ------------------------------ KESTREL CLINIC ------------------------------ */
+
+/** Walk-ins, a plastic chair, a scale nobody stands on, and a nurse who has heard it all. */
+export function buildClinic(g) {
+  const group = new THREE.Group();
+  const W = 8, D = 8;
+  group.add(plane(W, D, { name: 'cliflor', map: tex('tile'), repeat: [4, 4] }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(box(W, 2.9, 0.16, { name: 'cliwall', color: 0xd8e2df }, [0, 1.45, -D / 2]));
+  group.add(box(W, 2.9, 0.16, { name: 'cliwall2', color: 0xd8e2df }, [0, 1.45, D / 2]));
+  group.add(box(0.16, 2.9, D, { name: 'cliwall3', color: 0xcfdad7 }, [-W / 2, 1.45, 0]));
+  group.add(box(0.16, 2.9, D, { name: 'cliwall4', color: 0xcfdad7 }, [W / 2, 1.45, 0]));
+  group.add(plane(W, D, { name: 'cliceil', map: tex('ceiling'), repeat: [2, 2] }, [0, 2.9, 0], [Math.PI / 2, 0, 0]));
+
+  // reception counter along the left wall
+  group.add(box(0.9, 1.0, 3.0, retroMaterial('clicounter', { color: 0x8a9a96 }), [-2.9, 0.5, -0.4]));
+  group.add(box(0.96, 0.06, 3.06, M.white, [-2.9, 1.03, -0.4]));
+  group.add(box(0.5, 0.3, 0.4, retroMaterial('clipc', { color: 0x2a2e2c }), [-2.9, 1.2, 0.4]));
+  // a poster of a spine and a hand-washing poster, both very old
+  group.add(plane(1.0, 1.3, { name: 'clispine', color: 0x9ab8c2, emissive: 0.2, unlit: true }, [-2.0, 1.8, -3.55]));
+  group.add(plane(0.9, 1.1, { name: 'cliwash', map: tex('poster') }, [2.4, 1.8, -3.55]));
+  // the examination bay: a curtain rail, a bed, a stool
+  group.add(box(0.06, 2.2, 0.06, M.metal, [1.0, 1.1, 2.4]));
+  group.add(box(0.06, 2.2, 0.06, M.metal, [3.4, 1.1, 2.4]));
+  group.add(box(2.4, 0.06, 0.06, M.metal, [2.2, 2.2, 2.4]));
+  group.add(box(0.05, 1.9, 1.9, retroMaterial('curtain', { color: 0xa8c4c0, opacity: 0.55, transparent: true }), [1.05, 1.15, 1.5]));
+  group.add(box(1.9, 0.14, 0.8, retroMaterial('clibed', { color: 0xdfe6e4 }), [3.0, 0.62, 3.0]));
+  group.add(box(0.16, 0.6, 0.7, M.metal, [2.15, 0.3, 3.0]));
+  group.add(box(0.44, 0.44, 0.44, M.metal, [2.0, 0.22, 2.0]));
+  // waiting chairs
+  for (let i = 0; i < 3; i++) {
+    group.add(box(0.48, 0.08, 0.48, retroMaterial(`clichair${i}`, { color: 0x7a8a88 }), [-0.6 + i * 0.9, 0.46, 1.0]));
+    group.add(box(0.48, 0.5, 0.07, retroMaterial(`clichairb${i}`, { color: 0x7a8a88 }), [-0.6 + i * 0.9, 0.72, 1.24]));
+    group.add(box(0.07, 0.46, 0.46, M.metal, [-0.85 + i * 0.9, 0.23, 1.0]));
+    group.add(box(0.07, 0.46, 0.46, M.metal, [-0.35 + i * 0.9, 0.23, 1.0]));
+  }
+  // water cooler, notice board, lights
+  group.add(box(0.44, 2.0, 0.44, retroMaterial('cooler2', { color: 0xd8e0e2 }), [3.4, 1.0, -1.2]));
+  group.add(box(0.34, 0.4, 0.34, retroMaterial('waterjug', { color: 0x9fd8e0, unlit: true, emissive: 0.15 }), [3.4, 1.9, -1.2]));
+  group.add(plane(1.6, 1.0, { name: 'cliboard', color: 0xe8e4d2 }, [-2.6, 1.7, -3.5]));
+  for (const x of [-1.8, 1.8]) group.add(box(2.0, 0.06, 0.24, M.lamp, [x, 2.8, 0]));
+  // the door out
+  group.add(box(1.2, 2.3, 0.14, retroMaterial('clidoor', { color: 0x6a8a90 }), [0, 1.15, 3.7]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [-0.7, 1.2, 3.66]));
+  group.add(box(0.12, 2.4, 0.2, M.white, [0.7, 1.2, 3.66]));
+  group.add(box(1.5, 0.12, 0.2, M.white, [0, 2.4, 3.66]));
+
+  const interactables = [
+    { id: 'nurse', label: `Speak to ${clinic.nurseName}`, sub: 'treatment · costs money or a bill', x: -1.6, z: -1.2, action: (gg) => clinicMenu(gg) },
+    { id: 'clinicreception', label: 'Reception', sub: 'check in · ask what it costs', x: -2.4, z: 0.2, action: (gg) => clinicReception(gg) },
+    { id: 'clinicchair', label: 'Sit in a waiting chair', sub: '20 min · calm down', x: 0.3, z: 1.0, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -6); bump(gg.state, 'morale', 1); gg.toast('The chair is plastic and the clock is loud. It helps anyway.', 'info'); } },
+    { id: 'clinicexit', label: 'Back out to Kestrel St.', sub: '', x: 0, z: 3.1, radius: 1.1, action: (gg) => gg.goTo('street', 'clinic') },
+  ];
+
+  return {
+    group,
+    bounds: { minX: -3.6, maxX: 3.6, minZ: -3.6, maxZ: 3.6 },
+    solids: [
+      solid(-2.9, -0.4, 1.0, 3.1, 1.25), solid(2.2, 2.7, 2.6, 1.2, 0.9),
+      solid(3.4, -1.2, 0.5, 0.5, 1.9), solid(1.0, 2.4, 0.2, 0.2),
+      solid(-0.6, 1.0, 0.5, 0.5, 0.8), solid(0.3, 1.0, 0.5, 0.5, 0.8), solid(1.2, 1.0, 0.5, 0.5, 0.8),
+    ],
+    spawn: { x: 0, z: 2.2, rot: Math.PI },
+    npcs: [{ kind: 'nurse', x: -1.6, z: -1.9, rot: 0.2, talk: 'nurse' }],
+    interactables,
+    ambient: 'clinic',
+  };
+}
+
+/* ------------------------------ shared menus ------------------------------ */
+
+/** The park bench: sit, watch, breathe. */
+function parkSit(g) {
+  const s = g.state;
+  g.advance(CONFIG.park.sitMinutes);
+  bump(s, 'morale', CONFIG.park.sitMorale);
+  bump(s, 'stress', -6);
+  bump(s, 'energy', 2);
+  bump(s, 'hygiene', -2);
+  g.toast('You sit. A dog investigates your shoe and moves on.', 'good');
+  if (chance(0.4)) g.toast(pick(AMBIENT_LINES), 'info');
+}
+
+/** Basketball with a bent rim and no net. */
+function parkHoops(g) {
+  const s = g.state;
+  g.advance(CONFIG.park.hoopsMinutes, { working: true });
+  const good = chance(0.55 + (s.stats.energy - 50) * 0.002);
+  bump(s, 'morale', good ? CONFIG.park.hoopsMorale : 3);
+  bump(s, 'stress', good ? -9 : -2);
+  bump(s, 'energy', -14);
+  bump(s, 'hygiene', -8);
+  g.audio.sfx(good ? 'confirm' : 'ui');
+  g.toast(good
+    ? 'Three in a row. A kid on the next court says "aight" which is the highest honour available.'
+    : 'The rim is bent and so is everything you throw at it. You still needed the air.', good ? 'good' : 'info');
+}
+
+/** Chess, against whoever is sitting there, with a bottle cap for a knight. */
+function parkChess(g) {
+  const s = g.state;
+  const opp = pick(['an old man', 'a teenager on a bike', 'Kev']);
+  g.advance(CONFIG.park.chessMinutes);
+  const won = chance(0.35);
+  bump(s, 'morale', won ? CONFIG.park.chessMorale + 3 : CONFIG.park.chessMorale);
+  bump(s, 'stress', -7);
+  g.toast(won
+    ? `You beat ${opp}. They take it badly. You take it for the rest of the week.`
+    : `${opp} beats you and explains the whole game afterwards. You are not sure that is allowed.`, won ? 'good' : 'info');
+}
+
+/** The boombox: listen, or dance like it is 1999 because it is. */
+function parkMusic(g) {
+  const s = g.state;
+  g.openModal({
+    kicker: 'KESTREL PARK · THE BOOMBOX',
+    title: 'Side A',
+    body: 'A tape with somebody\'s handwriting on it. The handwriting says "SUMMER" and nothing else. The track has been playing for four bars and it is already good.',
+    choices: [
+      {
+        label: 'Dance. Actually dance.', sub: `${CONFIG.park.danceMinutes} min · +morale · -stress`,
+        effect: () => {
+          g.world?.playDance?.(9);
+          g.advance(CONFIG.park.danceMinutes);
+          bump(s, 'morale', CONFIG.park.danceMorale);
+          bump(s, 'stress', CONFIG.park.danceStress);
+          bump(s, 'hygiene', -3);
+          bump(s, 'energy', -4);
+          g.audio.sfx('confirm');
+          g.toast('You dance. Two people join in. One of them is better than you and knows it.', 'good');
+          s.flags.danced = (s.flags.danced || 0) + 1;
+        },
+      },
+      {
+        label: 'Just listen.', sub: `${CONFIG.park.musicMinutes} min · +morale`,
+        effect: () => {
+          g.advance(CONFIG.park.musicMinutes);
+          bump(s, 'morale', CONFIG.park.musicMorale);
+          bump(s, 'stress', -9);
+          g.toast('You stand next to a boombox for twenty minutes and nobody asks you anything.', 'good');
+        },
+      },
+      { label: 'Leave it playing.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/** The one menu every partner conversation grows out of (park and apartment). */
+export function partnerMenu(g, id) {
+  const p = CONFIG.partners[id];
+  if (!p) return;
+  const s = g.state;
+  const st = romance.partnerState(s, id);
+  if (!st.met) romance.meetPartner(g, id);
+  const atHome = g.world?.areaId === 'apartment' && s.romance?.liveIn === id;
+  const choices = [
+    {
+      label: 'Talk to her.', sub: '+affection · 10 min',
+      effect: () => {
+        const r = romance.chat(g, id);
+        if (r) {
+          bump(s, 'morale', 2);
+          g.openModal({ kicker: p.name.toUpperCase(), title: 'The Conversation', body: `${r.line}\n\nAffection ${st.affection}/100.${st.girlfriend ? ' She is your girlfriend.' : ''}`, choices: [{ label: 'Yeah.', effect: () => {} }] });
+        }
+      },
+    },
+    {
+      label: 'Flirt.', sub: 'she decides how it lands',
+      effect: () => {
+        const r = romance.flirt(g, id);
+        if (r?.ok) g.openModal({ kicker: p.name.toUpperCase(), title: r.delta >= 5 ? 'That Landed' : r.delta > 0 ? 'Polite' : r.delta === 0 ? 'Flat' : 'Not That', body: `${r.line}\n\nAffection ${r.affection}/100.`, choices: [{ label: 'Okay.', effect: () => {} }] });
+      },
+    },
+    {
+      label: 'Ask her on a date.', sub: 'costs money and time',
+      effect: () => dateMenu(g, id),
+    },
+  ];
+  if (st.girlfriend) {
+    choices.push({
+      label: 'Spend the evening in.', sub: 'free · +morale · +affection',
+      effect: () => {
+        g.advance(90, { social: true });
+        romance.partnerState(s, id).affection = Math.min(100, st.affection + 4);
+        bump(s, 'morale', 9);
+        bump(s, 'stress', -8);
+        g.toast(`You and ${p.name} do nothing together, competently.`, 'good');
+      },
+    });
+    if (romance.cheeksAvailable(s, id)) {
+      choices.push({ label: 'Ask her to stay.', sub: 'fade to black · the next morning', effect: () => romance.cheeks(g, id) });
+    }
+    if (atHome) {
+      choices.push({ label: 'Talk about the household.', sub: 'money, food, the radiator', effect: () => householdMenu(g, id) });
+    }
+    if (romance.canAskMoveIn(s, id)) {
+      choices.push({ label: 'Ask her to move in.', sub: 'she would pay her share', effect: () => romance.askMoveIn(g, id) });
+    }
+  } else if (romance.canAskGirlfriend(s, id)) {
+    choices.push({ label: 'Ask her to be your girlfriend.', sub: `${st.dates} dates · affection ${st.affection}`, effect: () => romance.askGirlfriend(g, id) });
+  }
+  choices.push({ label: 'Step away.', sub: '', effect: () => {} });
+
+  const status = st.girlfriend
+    ? (s.romance?.liveIn === id ? 'She lives with you.' : 'She is your girlfriend.')
+    : st.dates > 0 ? `${st.dates} date${st.dates === 1 ? '' : 's'} so far.` : 'You have not been anywhere together yet.';
+  g.openModal({
+    kicker: p.name.toUpperCase(),
+    title: p.name,
+    body: `${p.blurb}\n\n${st.girlfriend ? p.chat[1] : p.chat[0]}\n\nAffection ${st.affection}/100. ${status}`,
+    choices,
+  });
+}
+
+/** Pick where to take her. One planner, in systems/romance.js, used by every interaction. */
+function dateMenu(g, id) {
+  romance.openDateMenu(g, id);
+}
+
+/** At home, with money and food and a radiator between you. */
+function householdMenu(g, id) {
+  const s = g.state;
+  const p = CONFIG.partners[id];
+  const share = Math.round(p.rentShare * 100);
+  g.openModal({
+    kicker: 'UNIT 3B',
+    title: 'Household',
+    body: `${p.name} pays ${share}% of the rent (${money(CONFIG.economy.rent.amount * p.rentShare)} a cycle).\n\nHer habits: ${p.household.eatsFood ? `eats roughly ${p.household.eatsFood} thing(s) of yours a day. ` : ''}${p.household.restocks ? 'Restocks the fridge. ' : ''}${p.household.sells ? 'Sells her own things and leaves the cash. ' : ''}${p.giftNote}`,
+    choices: [
+      { label: 'Ask her to cover more of the rent.', sub: 'she will not love this', effect: () => { bump(s, 'morale', -2); bump(s, 'stress', 3); romance.partnerState(s, id).affection = Math.max(0, romance.partnerState(s, id).affection - 3); g.toast(`${p.name} says the share is the share. She is right and you both know it.`, 'bad'); } },
+      { label: 'Say thank you.', sub: '+affection', effect: () => { romance.partnerState(s, id).affection = Math.min(100, romance.partnerState(s, id).affection + 2); bump(s, 'morale', 3); g.toast('She says "obviously" and does not look up. It counts.', 'good'); } },
+      { label: 'End the conversation.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function openGiftMenu(g) {
+  const res = romance.openGift(g);
+  if (!res) return;
+  g.openModal({
+    kicker: 'UNIT 3B · THE COUNTER',
+    title: 'A Present',
+    body: `${res.from} left you a ${res.name}.\n\nThere is no card. There is a drawing on the bag. You put the drawing on the fridge.`,
+    choices: [{ label: 'Put it away.', effect: () => { bump(g.state, 'morale', 3); } }],
+  });
+}
+
+function clinicMenu(g) {
+  const s = g.state;
+  const info = clinic.treatmentInfo(g);
+  g.openModal({
+    kicker: `KESTREL CLINIC · ${clinic.nurseName.toUpperCase()}`,
+    title: 'Walk-In',
+    body: `${clinic.nurseName} does not look up from the clipboard until she is finished with it. Then she looks at you properly, which is worse.\n\n"Sit. I have twenty minutes and you have a pulse. That is the whole triage system."\n\nRisk ${Math.round(s.stats.risk)}% · withdrawal ${Math.round(s.stats.withdrawal)}% · dependence ${Math.round(s.stats.addiction)}%${info.alreadyToday ? '\n\nShe has already seen you today. She will not do it twice.' : ''}`,
+    choices: [
+      {
+        label: `Get treatment — ${money(info.cost)}`, sub: `${info.minutes} min · risk and withdrawal come down · ${info.affordable ? 'cash' : 'on the hospital bill'}`,
+        disabled: !info.canTreat,
+        effect: () => {
+          const res = clinic.treat(g);
+          if (!res) return;
+          g.openModal({
+            kicker: 'KESTREL CLINIC',
+            title: 'After',
+            body: `A blood-pressure cuff, a blood draw, a lecture that is mostly kindness.\n\n${res.paid ? `${money(res.paid)} paid.` : `${money(res.owed)} on the bill.`} She writes a number on a card: the daily check-in line. "Text it every day. That is the whole program."`,
+            choices: [{ label: 'Take the card.', effect: () => { clinic.checkIn(g); } }],
+          });
+        },
+      },
+      { label: 'Check in on the line instead.', sub: 'free · 10 min · slows withdrawal', effect: () => { clinic.checkIn(g); } },
+      { label: 'Ask what it costs.', sub: '', effect: () => { g.toast(`Treatment is ${money(info.cost)}. If you cannot pay, it goes on the bill and the bill grows.`, 'info'); } },
+      { label: 'Leave.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function clinicReception(g) {
+  const s = g.state;
+  const l = life.lifeState(s);
+  g.openModal({
+    kicker: 'KESTREL CLINIC · RECEPTION',
+    title: 'Sign-In Sheet',
+    body: 'A clipboard on a string. Your name is already on it, in somebody else\'s handwriting.\n\nA notice taped to the glass: WALK-INS WELCOME · NO INSURANCE · NO JUDGEMENT · NO EXCEPTIONS.',
+    choices: [
+      { label: 'Check in for today.', sub: 'free · 10 min', effect: () => { clinic.checkIn(g); } },
+      { label: 'Ask about the hospital bill.', sub: l.debt.hospital ? money(l.debt.hospital) : 'nothing on file', effect: () => { g.toast(l.debt.hospital ? `Kings County has you down for ${money(l.debt.hospital)}. It grows about 1% a day.` : 'Nothing outstanding. Enjoy it.', 'info'); } },
+      { label: 'Sit back down.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
 

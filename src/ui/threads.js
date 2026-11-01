@@ -9,25 +9,17 @@
 import { el } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
 import { serviceAvatar } from './apps.js';
+import { identityFor } from '../systems/sms.js';
 
-const NAME_TO_KIND = {
-  'ADDISON OCTAVIUS': 'addison',
-  'ADDISON': 'addison',
-  'RAE': 'rae',
-  'RAE VELL': 'rae',
-  'DALE': 'dale',
-  'KEV': 'kev',
-  'DEX': 'dex',
-  'NIA': 'nia',
-  'MIGUEL': 'miguel',
-  'HABIB': 'habib',
-  'MOM': 'nia',
-  'MO': 'mo',
-  'ROLO': 'rolo',
+/**
+ * Who is on the other end. One table for the whole game (systems/sms.js), so a thread, the
+ * Messages app and the reply chips can never disagree about who is texting — and a number
+ * nobody has saved gets the unknown-contact face instead of borrowing a neighbour's.
+ */
+export const kindForName = (name = '') => {
+  if (String(name).toUpperCase() === 'MO') return 'mo';
+  return identityFor(name).kind;
 };
-
-// "DALE (QUIK-STOP #14)" is still Dale: the bracketed part is where he texts from, not who he is
-export const kindForName = (name = '') => NAME_TO_KIND[String(name).toUpperCase().replace(/\(.*?\)/g, '').trim()] || 'kev';
 
 export class Threads {
   constructor(root, game) {
