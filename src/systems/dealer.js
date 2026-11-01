@@ -31,7 +31,8 @@ export const DEALER = {
   fee: 4,                 // the walk over is not free
   maxQty: 3,
   meetMinutes: 20,        // game minutes from "bet" to him standing at the hydrant
-  waitMinutes: 180,       // how long he waits before the order is dead
+  waitMinutes: 180,       // how long he stands at the hydrant once he is actually there
+  showUpWindow: 12 * 60,  // how long after he is due he will still turn up for Mo to come out
   products: ['drip', 'mud', 'static', 'bliss'],
 };
 
@@ -112,9 +113,15 @@ function roloLine(g, kind, extra = {}) {
       return 'k';
     case 'where':
       if (!o) return 'where whats? u didnt order nothing';
-      return o.status === 'waiting' ? `outside. ${MEET_SPOT.label}. hoodie` : `on my way. ${MEET_SPOT.label} ~${minuteText(o.meetAt)}`;
+      if (o.status === 'waiting' && o.arrived) return `outside. ${MEET_SPOT.label}. hoodie`;
+      if (o.status === 'waiting') return 'close. go inside somewhere. ill be at the hydrant when u come out';
+      return `on my way. ${MEET_SPOT.label} ~${minuteText(o.meetAt)}`;
     case 'arrived':
       return `here. ${MEET_SPOT.label}. dont keep me standing`;
+    case 'goinside':
+      return `nearly there. dont stand on the corner looking like a cop. go grab a coffee at the quik-stop or something — ill be at ${MEET_SPOT.label} when u come out`;
+    case 'gaveup':
+      return `u never came out. ${extra.id} is off. i got other people`;
     case 'done':
       return 'pleasure. delete this';
     case 'expired':
@@ -257,6 +264,12 @@ export function completeOrder(g) {
 }
 
 /** Game-time upkeep: pending orders arrive, waiting orders expire. Cheap; called often. */
+/**
+ * Game-time upkeep. He becomes due at meetAt, but he only turns up at the hydrant when Mo walks
+ * out onto the street (the street is built fresh): if Mo is already outside, Rolo texts him to go
+ * in somewhere and come back. The three-hour wait starts when he is actually standing there, so
+ * he can never be "outside" without Mo being able to reach him.
+ */
 export function tickDealer(g) {
   const s = g.state;
   if (!s?.dealer) return;
@@ -265,12 +278,22 @@ export function tickDealer(g) {
   const now = s.clock.m;
   if (o.status === 'pending' && now >= o.meetAt) {
     o.status = 'waiting';
-    say(g, 'rolo', roloLine(g, 'arrived'));
+    o.arrived = false;
+    o.expiresAt = now + DEALER.showUpWindow;
+    say(g, 'rolo', roloLine(g, g.world?.areaId === 'street' ? 'goinside' : 'arrived'));
   }
   if (o.status === 'waiting' && now >= o.expiresAt) {
     o.status = 'expired';
     o.closedAt = now;
-    say(g, 'rolo', roloLine(g, 'expired', { id: o.id }));
+    say(g, 'rolo', roloLine(g, o.arrived ? 'expired' : 'gaveup', { id: o.id }));
     g.autosave?.();
   }
+}
+
+/** The world put him at the hydrant: from now he waits his three hours. */
+export function markArrived(g, o) {
+  if (!o || o.status !== 'waiting' || o.arrived) return;
+  o.arrived = true;
+  o.arrivedAt = g.state.clock.m;
+  o.expiresAt = g.state.clock.m + DEALER.waitMinutes;
 }

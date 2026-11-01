@@ -72,12 +72,36 @@ export const CONFIG = {
         tolerance: 2, effects: { energy: 6, hunger: -10, morale: 2, stress: -6, hygiene: -6 },
         flavor: 'Mostly powdered headache with a hint of regret.',
       },
+      // Dex's stock, and nobody else's: uncut. More effect for the money than anything Rolo sells,
+      // much more risk and dependence, and sometimes a bad batch. Only in the alley, only at night.
+      bliss_x: {
+        id: 'bliss_x', name: 'Uncut Bliss', price: 46, addiction: 15, risk: 16, dexOnly: true, badBatch: 0.15,
+        tolerance: 5, effects: { energy: 29, hunger: -9, morale: 26, stress: -27, hygiene: -5 },
+        flavor: 'What Bliss is before somebody makes it safe enough to sell.',
+      },
+      static_x: {
+        id: 'static_x', name: 'Static (double-stack)', price: 29, addiction: 11, risk: 13, dexOnly: true, badBatch: 0.15,
+        tolerance: 4, effects: { energy: 42, hunger: -14, morale: 10, stress: 8, hygiene: -6 },
+        flavor: 'Two lightning bolts pressed into one pill. Your heart counts both.',
+      },
+      mud_x: {
+        id: 'mud_x', name: 'Black Mud', price: 24, addiction: 12, risk: 18, dexOnly: true, badBatch: 0.15,
+        tolerance: 5, effects: { energy: -13, hunger: -13, morale: 16, stress: -38, hygiene: -8 },
+        flavor: 'The heavy blanket. Hard to get out from under.',
+      },
+      drip_x: {
+        id: 'drip_x', name: 'Drip (pure)', price: 12, addiction: 8, risk: 30, dexOnly: true, badBatch: 0.15,
+        tolerance: 3, effects: { energy: 10, hunger: -16, morale: 3, stress: -10, hygiene: -9 },
+        flavor: 'Cheap because the risk is the price.',
+      },
     },
+    // a bad batch from Dex: on top of the dose
+    badBatch: { risk: 12, stress: 10, morale: -6 },
     highDurationMinutes: 150,
     highEnergyBonus: 8,
     // How each invented substance is taken, for the on-screen use animation. Never real
     // instructions: these are the game's own props (a vial, two pills, a pipe, a dropper).
-    useAnim: { bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop' },
+    useAnim: { bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop', bliss_x: 'vial', static_x: 'pill', mud_x: 'pipe', drip_x: 'drop' },
     useDurationSeconds: { vial: 3.2, pill: 3.6, pipe: 4.2, drop: 3.0 },
     withdrawal: {
       startsAfterMinutes: 10 * 60,
@@ -124,6 +148,10 @@ export const CONFIG = {
     static:  { id: 'static',  name: 'Static (pills)', kind: 'substance', price: 22, value: 8 },
     mud:     { id: 'mud',     name: 'Mud',            kind: 'substance', price: 18, value: 6 },
     drip:    { id: 'drip',    name: 'Drip (cut)',     kind: 'substance', price: 9,  value: 3 },
+    bliss_x: { id: 'bliss_x', name: 'Uncut Bliss',            kind: 'substance', price: 46, value: 16 },
+    static_x:{ id: 'static_x',name: 'Static (double-stack)',  kind: 'substance', price: 29, value: 10 },
+    mud_x:   { id: 'mud_x',   name: 'Black Mud',              kind: 'substance', price: 24, value: 8 },
+    drip_x:  { id: 'drip_x',  name: 'Drip (pure)',            kind: 'substance', price: 12, value: 4 },
     tv:      { id: 'tv',      name: '22" CRT Television', kind: 'valuable', value: 95,  weight: 5 },
     guitar:  { id: 'guitar',  name: 'Bolt-On Guitar', kind: 'valuable', value: 150, weight: 4 },
     watch:   { id: 'watch',   name: "Grandad's Watch", kind: 'valuable', value: 60,  weight: 1 },
@@ -207,6 +235,70 @@ export const CONFIG = {
       { id: 5, label: 'Signed', note: 'The pledge. The end of the sentence.' },
     ],
     recruitChancePerVisit: 0.5,
+    // The extortion, and the cure that comes with it. The deeper Mo goes, the more Addison takes
+    // (the tithe on everything he earns rises with his stage) and the less Mo uses: the schedule,
+    // the watching and the people do what the clinic does, at a price. Going all the way in ends
+    // the game — clean, housed, employed, more than functional, and no longer his own.
+    titheByStage: { 3: 0.10, 4: 0.20 },
+    recovery: {
+      perService: { 2: { addiction: -4, withdrawal: -15 }, 3: { addiction: -6, withdrawal: -20, tolerance: -1 }, 4: { addiction: -9, withdrawal: -25, tolerance: -1 } },
+      dailyWithdrawal: { 3: -6, 4: -10 },   // the routine itself, every day once he tithes
+    },
+  },
+
+  // FeedLove's HEARTS tab (systems/dating.js): most strangers say no; the three answer
+  dating: {
+    strangersPerDay: 7,
+    heartsPerDay: 10,
+    heartMinutes: 4,
+    strangerGhostChance: 7,     // percent: a "match" that never writes back
+    partnerShowChance: 0.55,    // each of the three, per day, until matched
+    matchAffection: 6,
+    names: ['Tasha', 'Marisol', 'Jen', 'Keisha', 'Danielle', 'Yolanda', 'Brianna', 'Nicole', 'Carmen', 'Lisa', 'Monique', 'Gina', 'Tiffany', 'Rosa', 'Kim', 'Angela', 'Shanice', 'Dana'],
+    hoods: ['Bed-Stuy', 'Bushwick', 'Crown Heights', 'Flatbush', 'Sunset Park', 'the Bronx', 'Jackson Heights', 'Astoria', 'Harlem', 'Red Hook'],
+    bios: [
+      'looking for a man with a car AND a plan',
+      'no broke men. no men with "projects." no men.',
+      "if you can't cook don't message me",
+      'fluent in sarcasm. allergic to cheap dates.',
+      'just here to see who from high school got fat',
+      "6ft or don't bother. i am 5'1.",
+      'my ex is in this app. hi derek.',
+      'want someone who has their life together (be honest)',
+      'gemini. that is the whole bio.',
+      'nurse. 12 hour shifts. do not waste my 4 free minutes.',
+      'looking for my future husband (has dental)',
+      'if your pics are in a bathroom mirror, keep scrolling',
+    ],
+    tints: ['#c86a8a', '#7a6ac8', '#c8a06a', '#6ac8a8', '#c86a6a', '#6a9ac8'],
+    rejectLines: [
+      '"lol no"',
+      'She unmatched you before the heart finished animating.',
+      '"do you have a car?" You do not. She does not ask anything else.',
+      'Left on read. Read at 1:14 AM. Read again at 1:16.',
+      '"is that a Quik-Stop vest in your pic"',
+      "Her friend replied for her: \"she's good thanks\"",
+      '"my cousin dated you. no."',
+      'Your heart was "received." That is all you will ever know.',
+      '"you look like you owe somebody money" — accurate, unkind.',
+      "\"maybe if you smiled in a photo that wasn't a mugshot angle\"",
+    ],
+    ghostLines: [
+      'A match! She said "hey". You said "hey". She was never heard from again.',
+      'A match. Three messages in, she asks if you have a brother. You do not. Silence.',
+      'Match. She sends a link to a pyramid scheme. You decline. She unmatches.',
+    ],
+    partnerHood: { stephanie: 'Kestrel St.', melanie: 'Kestrel St.', diana: 'Park Slope' },
+    partnerBio: {
+      stephanie: 'no plans, no problem. bench > restaurant. say something funny.',
+      melanie: "teacher. likes effort. likes the park on a good day. will notice if you're late.",
+      diana: 'independent. busy. consistent men only. impress me with a plan, not a pickup line.',
+    },
+    partnerOpener: {
+      stephanie: "ok you're funny looking in a good way. hi",
+      melanie: 'you hearted me at 2am. bold. hi.',
+      diana: 'I read your profile twice. Once to laugh and once to decide. Hello, Mo.',
+    },
   },
 
   social: {

@@ -674,11 +674,11 @@ function dexMenu(g) {
   g.openModal({
     kicker: 'DEX — THE ALLEY',
     title: 'Cash Only',
-    body: `"Evening."\n\nHe does not look up. He is doing something with a bag that is not your business.\n\n${CONFIG.substances.note}\n\nAll of it raises risk. Risk at 100 ends the run.`,
+    body: `"Evening."\n\nHe does not look up. He is doing something with a bag that is not your business.\n\n"The phone guy sells the cut stuff. This is before it gets cut. Night only. You want safe, go to church."\n\n${CONFIG.substances.note}\n\nAll of it raises risk; the uncut raises it a lot, and sometimes the batch is wrong.`,
     choices: [
-      ...['bliss', 'static', 'mud', 'drip'].map((id) => ({
+      ...['bliss_x', 'static_x', 'mud_x', 'drip_x', 'bliss', 'static', 'mud', 'drip'].map((id) => ({
         label: `Buy ${types[id].name} — ${money(types[id].price)}`,
-        sub: `risk +${types[id].risk} · addiction +${types[id].addiction}`,
+        sub: `${types[id].dexOnly ? 'UNCUT · Dex only · ' : ''}risk +${types[id].risk} · addiction +${types[id].addiction}${types[id].badBatch ? ' · bad batches happen' : ''}`,
         disabled: s.money < types[id].price,
         effect: () => {
           if (s.money < types[id].price) return;

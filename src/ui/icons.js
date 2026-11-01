@@ -49,6 +49,7 @@ const BY_KIND = {
 
 /** The icon for an item id, wrapped in a tile; `kind` picks the fallback for unknown ids. */
 export function itemIcon(id, kind = '') {
-  const art = ART[id] || BY_KIND[kind] || ART.grab_bag;
+  // Dex's uncut versions wear the art of what they are cut from
+  const art = ART[id] || ART[String(id).replace(/_x$/, '')] || BY_KIND[kind] || ART.grab_bag;
   return `<span class="itemicon itemicon--${id}">${art}</span>`;
 }

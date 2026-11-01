@@ -126,8 +126,8 @@ function streetSVG(g, { mini = false, highlight = null } = {}) {
   if (o) {
     const waiting = o.status === 'waiting';
     out.push(`<circle cx="${X(MEET_SPOT.x)}" cy="${Y(MEET_SPOT.z)}" r="${mini ? 5 : 13}" fill="none" stroke="#9bbc0f" stroke-width="2" stroke-dasharray="${waiting ? '0' : '4 3'}" class="${waiting ? 'mapping' : ''}"/>`);
-    out.push(glyph(waiting ? 'rolo' : 'spot', X(MEET_SPOT.x), Y(MEET_SPOT.z), mini ? 8 : 15, '#9bbc0f'));
-    if (!mini) out.push(plate(X(MEET_SPOT.x), Y(MEET_SPOT.z) + 26, waiting ? `ROLO · ${o.id}` : `MEET ${o.id}`, { size: 9, color: '#0f380f', bg: '#9bbc0f' }));
+    out.push(glyph(waiting && o.arrived ? 'rolo' : 'spot', X(MEET_SPOT.x), Y(MEET_SPOT.z), mini ? 8 : 15, '#9bbc0f'));
+    if (!mini) out.push(plate(X(MEET_SPOT.x), Y(MEET_SPOT.z) + 26, waiting ? (o.arrived ? `ROLO · ${o.id}` : 'GO INSIDE · HE COMES') : `MEET ${o.id}`, { size: 9, color: '#0f380f', bg: '#9bbc0f' }));
   }
   // Mo
   const w = g?.world;

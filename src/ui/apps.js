@@ -38,9 +38,10 @@ export const APPS = {
     name: 'Landlordly', tag: 'the smart home that knows you owe', a: '#ff7a59', b: '#b3261e',
     icon: svg('<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M13.6 12.4c-.4-.6-1-.9-1.7-.9-1 0-1.7.6-1.7 1.3 0 1.8 3.6.9 3.6 2.8 0 .8-.8 1.4-1.9 1.4-.8 0-1.5-.4-1.9-1M12 10.6v1M12 17v1"/>'),
   },
+  // a heart, not a camera: FeedLove is social media and love, and it should not look like anyone's logo
   social: {
-    name: 'FeedLove', tag: 'be seen, briefly', a: '#ffcf4a', b: '#d6249f', ring: true,
-    icon: svg('<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17 7h.01" stroke-width="2.6"/>'),
+    name: 'FeedLove', tag: 'be seen, briefly · be loved, rarely', a: '#ff6a86', b: '#a3123a', ring: true,
+    icon: svg('<path d="M12 20.5s-7.5-4.6-7.5-10.1A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1z" fill="currentColor" stroke="none"/><path d="M8.6 9.6a2 2 0 0 1 2-1.6" stroke="#ffd0da" stroke-width="1.4"/>'),
   },
   fellowship: {
     name: 'Blessed+', tag: 'salvation, now ad-supported', a: '#ffd86b', b: '#6a2bb0',

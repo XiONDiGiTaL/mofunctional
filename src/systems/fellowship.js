@@ -3,6 +3,7 @@ import { CONFIG } from '../core/config.js';
 import { dayOf, minuteOfDay, money, hhmm } from '../core/util.js';
 import { earn, spend, logLine, pushMessage } from '../core/state.js';
 import { bump } from '../core/state.js';
+import { clamp } from '../core/util.js';
 import { SERVICE_SERMONS, ADDISON_TALK } from './dialogue.js';
 
 const F = CONFIG.fellowship;
@@ -80,7 +81,7 @@ export function visitFellowship(g) {
       } : null,
       stage >= 4 ? {
         label: 'Sign the pledge.',
-        sub: 'This is an ending. There is no undo.',
+        sub: 'He gets clean, gets kept, and his story ends here.',
         effect: () => offerPledge(g),
       } : null,
       { label: 'Just talk. Twenty minutes.', sub: '+morale, -20 min', effect: () => { g.advance(20); bump(s, 'morale', 3); bump(s, 'stress', -3); } },
@@ -106,6 +107,16 @@ function attendService(g) {
     g.toast('A hand rests gently on your shoulder for the entire closing prayer.', 'bad');
     pushMessage(g, { from: 'THE GOLDEN FELLOWSHIP', subject: 'A gentle accounting', body: `Outstanding tithe: ${money(s.fellowship.titheOwed)}.\n\nWe do not chase. We simply notice, and we are very good at noticing.\n\n— Stewardship Office` });
     return;
+  }
+
+  // It works. That is the trouble with it: the hours, the eyes on him and the people waiting for
+  // him to show up do what nothing else has, and they bill him for it.
+  const fix = F.recovery?.perService?.[Math.min(4, s.fellowship.stage)];
+  if (fix) {
+    s.stats.addiction = clamp(s.stats.addiction + (fix.addiction || 0));
+    s.stats.withdrawal = clamp(s.stats.withdrawal + (fix.withdrawal || 0));
+    if (fix.tolerance) s.stats.tolerance = clamp(s.stats.tolerance + fix.tolerance);
+    logLine(g, 'Left the service wanting it less.', 'event');
   }
 
   if (s.fellowship.stage >= 2) {
@@ -153,7 +164,7 @@ function offerPledge(g) {
     choices: [
       {
         label: 'Sign it.',
-        sub: 'Ending: A Perfectly White Suit',
+        sub: 'Ending: Fully Functional',
         effect: () => {
           s.fellowship.stage = 5;
           s.fellowship.pledged = true;
@@ -162,6 +173,9 @@ function offerPledge(g) {
           bump(s, 'stress', -25);
           g.audio.sfx('sting');
           logLine(g, 'Signed the Fellowship pledge.', 'event');
+          // The one exit the game takes on its own: being saved. It is not the good ending — the
+          // game is about Mo keeping his own life together, and this is someone else doing it.
+          setTimeout(() => g.finishEnding?.('pledge'), 400);
         },
       },
       {
@@ -198,6 +212,9 @@ export function fellowshipNewDay(g, day) {
   if (s.fellowship.stage >= 3 && s.fellowship.titheOwed > 0) {
     bump(s, 'stress', 4);
   }
+  // the routine: calls, rides, somebody asking where he was last night
+  const daily = F.recovery?.dailyWithdrawal?.[Math.min(4, s.fellowship.stage)];
+  if (daily && s.fellowship.stage < 5) s.stats.withdrawal = clamp(s.stats.withdrawal + daily);
 }
 
 export const fellowshipStage = (s) => F.stages[s.fellowship.stage] || F.stages[0];

@@ -20,6 +20,9 @@ import * as sms from '../src/systems/sms.js';
 import * as clinic from '../src/systems/clinic.js';
 import * as life from '../src/systems/life.js';
 import { migrate, SAVE_VERSION } from '../src/systems/migrate.js';
+import * as dating from '../src/systems/dating.js';
+import * as dealer from '../src/systems/dealer.js';
+import { earn } from '../src/core/state.js';
 
 let passed = 0;
 let failed = 0;
@@ -542,6 +545,92 @@ check('turning points wait while a fall or a dose is mid-animation', () => {
   g.state.stats.risk = 100;
   g.state.flags.recovering = true;
   eq(life.checkTurningPoints(g), false, 'no hospital mid-recovery');
+  return true;
+});
+
+/* ------------------------------------------------------------------ FeedLove dating */
+
+check('dating: strangers almost always say no; the three always match and become contacts', () => {
+  let rejects = 0;
+  let strangers = 0;
+  for (let day = 1; day <= 12; day++) {
+    const g = stubGame();
+    g.state.clock.m = (day - 1) * 1440 + 10 * 60;
+    for (const p of dating.profilesToday(g.state)) {
+      const res = dating.sendHeart(g, p.id);
+      if (!res.ok) continue;
+      if (p.partner) {
+        eq(res.result, 'match', `${p.partner} matches`);
+        eq(romance.partnerState(g.state, p.partner).met, true, 'becomes a contact');
+        if (!g.state.messages.some((m) => m.from === CONFIG.partners[p.partner].name.toUpperCase())) throw new Error('no text with her number');
+      } else {
+        strangers++;
+        if (res.result === 'reject') rejects++;
+      }
+    }
+  }
+  if (rejects / strangers < 0.8) throw new Error(`strangers said no only ${rejects}/${strangers}`);
+  return true;
+});
+
+check('dating: a heart a profile, and a daily cap', () => {
+  const g = stubGame();
+  const profs = dating.profilesToday(g.state);
+  dating.sendHeart(g, profs[0].id);
+  eq(dating.sendHeart(g, profs[0].id).ok, false, 'no second heart on one profile');
+  dating.datingState(g.state).hearts = CONFIG.dating.heartsPerDay;
+  eq(dating.sendHeart(g, profs[1].id).ok, false, 'capped');
+  return true;
+});
+
+/* ------------------------------------------------------------------ Rolo arrival */
+
+check('rolo: due while Mo is outside, he does not expire before he has actually turned up', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 200;
+  g.threads = { push() {} };
+  dealer.placeOrder(g, 'mud', 1, 'app');
+  const o = dealer.activeOrder(s);
+  s.clock.m = o.meetAt;
+  dealer.tickDealer(g);
+  eq(o.status, 'waiting', 'due');
+  eq(!!o.arrived, false, 'not at the hydrant yet');
+  s.clock.m += dealer.DEALER.waitMinutes + 30;   // past the old three-hour window
+  dealer.tickDealer(g);
+  eq(o.status, 'waiting', 'still coming');
+  dealer.markArrived(g, o);
+  s.clock.m += dealer.DEALER.waitMinutes - 1;
+  dealer.tickDealer(g);
+  eq(o.status, 'waiting', 'waits three hours once there');
+  s.clock.m += 2;
+  dealer.tickDealer(g);
+  eq(o.status, 'expired', 'then gives up');
+  return true;
+});
+
+/* ------------------------------------------------------------------ Dex + the Fellowship */
+
+check('dex: uncut stock hits harder, risks more, and only Dex sells it', () => {
+  const T = CONFIG.substances.types;
+  for (const base of ['bliss', 'static', 'mud', 'drip']) {
+    const x = T[`${base}_x`];
+    if (!x || !x.dexOnly || !CONFIG.items[`${base}_x`]) throw new Error(`${base}_x missing`);
+    if (!(x.risk > T[base].risk && x.addiction > T[base].addiction)) throw new Error(`${base}_x not riskier`);
+    if (dealer.catalog().some((p) => p.id === `${base}_x`)) throw new Error('Rolo sells Dex stock');
+  }
+  return true;
+});
+
+check('fellowship: the inner circle tithes a fifth', () => {
+  const g = stubGame();
+  g.state.fellowship.stage = 4;
+  earn(g, 100, 'test');
+  near(g.state.fellowship.titheOwed, 20, 0.01, 'tithe');
+  g.state.fellowship.stage = 3;
+  g.state.fellowship.titheOwed = 0;
+  earn(g, 100, 'test');
+  near(g.state.fellowship.titheOwed, 10, 0.01, 'tithe');
   return true;
 });
 

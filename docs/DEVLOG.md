@@ -10,6 +10,26 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Owner direction pass — the Fellowship ending, FeedLove dating, Dex, Rolo's arrival
+
+- **History**: 696f145 (authored by the Codebuff workspace with Codebuff trailers) was re-authored
+  as XiØN and main force-pushed with a lease; all commits are XiØN only.
+- **docs/WISHLIST.md**: the owner's full feature list and direction, with status. Read it first.
+- **The Fellowship** (`CONFIG.fellowship.titheByStage`, `.recovery`): the tithe rises with stage
+  (10% → 20%); services from stage 2 lower dependence/withdrawal/tolerance; from stage 3 the
+  routine eases withdrawal daily. Signing the pledge calls `finishEnding('pledge')`, rewritten as
+  **Fully Functional** — the ironic, not-good ending. It is the only ending the game takes itself.
+- **FeedLove**: heart icon and red palette (no Instagram look-alike). New `systems/dating.js` and
+  the HEARTS tab: daily seeded stack, ten hearts a day, strangers mostly reject, the three match →
+  `romance.meetPartner`, a text with her number, TEXT / ASK OUT from the app.
+- **Dex**: schedule 18:00-04:00 with an `away` row; away NPCs are hidden and their talk prompt
+  skipped. Uncut stock `bliss_x/static_x/mud_x/drip_x` (`dexOnly`, `badBatch` 15%,
+  `CONFIG.substances.badBatch`), sold only by Dex; Rolo's catalog unchanged.
+- **Rolo's arrival**: due → he appears only on a fresh street load (Mo goes inside and comes out);
+  if Mo is outside he is texted to go in. `o.arrived` / `markArrived`; the three-hour wait starts
+  at arrival; `showUpWindow` (12 h) before he gives up on Mo coming out. Map and phone show it.
+- 36 system checks (dating, Rolo arrival, Dex stock, tithe by stage).
+
 ### Pass after the continuation — locks, the course, migration, Quik-Stop interior
 
 Picked up at 696f145. Everything below was verified in a browser (the game loop stepped at a
@@ -394,6 +414,13 @@ re-tune rent, or the game becomes a walk.
 ---
 
 ## 5. Verification log
+
+Owner direction pass (browser, stepped loop; plus npm test 36/36, check 56/56):
+- Rolo ordered while on the street: due → text "go grab a coffee", no rig; into the Quik-Stop and
+  back out → standing at the hydrant, Meet Rolo prompt, 179 min left.
+- Dex at 13:00 hidden with no prompt; at 21:00 in the alley; menu lists the four uncut items.
+- Pledge at the inner circle → "Fully Functional" ending screen.
+- FeedLove HEARTS: 8 profiles, a stranger rejected, Melanie matched → contact + number text.
 
 Pass after the continuation (browser, game loop stepped at 60 fps; plus `npm test`):
 - `npm run check` 55/55, `npm test` 31/31.

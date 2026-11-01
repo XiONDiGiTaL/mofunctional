@@ -752,6 +752,7 @@ export class World {
     let best = null;
     let bestDist = Infinity;
     for (const it of this.interactables) {
+      if (it.hidden) continue;
       const d = Math.hypot(it.x - this.mo.root.position.x, it.z - this.mo.root.position.z);
       if (d < (it.radius || 1.75) && d < bestDist) {
         best = it;
@@ -846,6 +847,14 @@ export class World {
     // their street spot, walk to the edge of the room and stand there pacing; off the street,
     // a scheduled character keeps to their own patch like everyone else.
     const target = g && this.areaId === 'street' && !def.debug ? scheduleTarget(def.kind, minuteOfDay(g.state.clock.m)) : null;
+    // off the block (Dex by day): not drawn, not talkable; back exactly where he works when he returns
+    const away = !!target?.away;
+    if (rig.root.visible === away) {
+      rig.root.visible = !away;
+      if (rig.talkIt) rig.talkIt.hidden = away;
+      if (!away && target) rig.root.position.set(target.x, 0, target.z);
+    }
+    if (away) { rig.walking = false; return; }
     if (target) {
       const dx = target.x - rig.root.position.x;
       const dz = target.z - rig.root.position.z;

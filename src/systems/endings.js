@@ -60,18 +60,21 @@ You keep waking up at 8:45 out of habit. That is the cruelest part. The habit ou
   },
   pledge: {
     id: 'pledge', kicker: 'THE GOLDEN FELLOWSHIP — INNER CIRCLE', tone: 'gold',
-    title: 'A Perfectly White Suit',
+    title: 'Fully Functional',
     body: (s) => `You sign the pledge with a gold pen that is heavier than it looks.
 
-Addison puts both hands on your shoulders and says your name like it is a title. The room claps. Somebody has been clapping the whole time, actually, and nobody knows who.
+And it works. That is the part nobody warns you about. You stop using; there is no time to, and somebody is always there. You sleep at night. You eat three meals in a room with a long table. You are back on the schedule at the Quik-Stop and Dale says you are the best he has had. Your rent is paid, by direct arrangement, out of your pay, along with the fifth that goes to the Fellowship and the bit more they call "fellowship".
 
-They take a tenth of everything. They take a bit more than a tenth, but they call the extra "fellowship". You have a bed, three meals, a role, and a schedule that is not yours. You are, technically, functional. You are, technically, kept.
+You are more than functional. You are an example. Addison mentions you by name on Sundays.
 
-Mo — the one with the jokes, the guitar, the awful timing — is asked to hold a candle and stand where the camera can see him.`,
+Nobody asks how you are, because they already know: you are fine. Mo — the one with the jokes, the guitar, the awful timing, the one who was keeping it together on his own, badly, every day — is asked to hold a candle and stand where the camera can see him.
+
+This is the ending where someone else saved him. It was never the point.`,
     stats: (s) => [
       ['Days survived', s.counters.daysSurvived],
       ['Tithe owed', money(s.fellowship.titheOwed)],
       ['Services attended', s.counters.sundaysAttended],
+      ['Dependence when he signed', `${Math.round(s.stats.addiction)}%`],
     ],
   },
   empty: {

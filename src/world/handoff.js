@@ -12,7 +12,7 @@
  */
 import { createNPC, animateNPC } from './characters.js';
 import * as heads from '../render/heads.js';
-import { activeOrder } from '../systems/dealer.js';
+import { activeOrder, markArrived } from '../systems/dealer.js';
 import { MEET_SPOT, STREET } from './plan.js';
 
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
@@ -36,7 +36,13 @@ export class DealerWalker {
     if (w.areaId !== 'street') { this.remove(); return; }
     const o = activeOrder(g.state);
     const waiting = o && o.status === 'waiting';
-    if (waiting && !this.rig) this.spawn(o, fresh);
+    // He turns up when Mo comes out onto the street (a fresh load), standing at the hydrant — or
+    // straight away if he was already there when the street was last built. He never pops in
+    // behind the camera while Mo is standing around, which read as "he says he's here but isn't".
+    if (waiting && !this.rig && (fresh || o.arrived)) {
+      this.spawn(o, true);
+      markArrived(g, o);
+    }
     if (this.rig && !this.leaving && (!waiting || o.id !== this.orderId)) this.leave();
   }
 

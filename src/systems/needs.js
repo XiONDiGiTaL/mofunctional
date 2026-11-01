@@ -262,6 +262,15 @@ function applySubstance(g, itemId) {
   const type = S.types[itemId];
   if (!type) return false;
   onRelapse(g);
+  // Dex's uncut stock: every so often the batch is wrong, on top of everything else
+  if (type.badBatch && Math.random() < type.badBatch) {
+    const b = S.badBatch || { risk: 12, stress: 10, morale: -6 };
+    bump(s, 'risk', b.risk);
+    bump(s, 'stress', b.stress);
+    bump(s, 'morale', b.morale);
+    logLine(g, `${type.name}: a bad batch.`, 'bad');
+    g.toast('Something in it was wrong. Your heart says so, loudly.', 'bad');
+  }
 
   const toleranceCut = clamp(1 - s.stats.tolerance * S.toleranceEffects.effectCutPerPoint, 0.35, 1);
   for (const [k, v] of Object.entries(type.effects)) {

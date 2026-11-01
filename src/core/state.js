@@ -157,7 +157,9 @@ export function earn(g, amount, label) {
   g.state.money = Math.round((g.state.money + amount) * 100) / 100;
   g.state.counters.moneyEarned += Math.max(0, amount);
   if (g.state.fellowship && g.state.fellowship.stage >= 3 && amount > 0) {
-    g.state.fellowship.titheOwed = Math.round((g.state.fellowship.titheOwed + amount * CONFIG.fellowship.titheRate) * 100) / 100;
+    // the tenth becomes a fifth once he is in the inner circle
+    const rate = CONFIG.fellowship.titheByStage?.[Math.min(4, g.state.fellowship.stage)] ?? CONFIG.fellowship.titheRate;
+    g.state.fellowship.titheOwed = Math.round((g.state.fellowship.titheOwed + amount * rate) * 100) / 100;
   }
   g.state.ledger.push({ day: dayOf(g.state.clock.m), label, amount });
   if (g.state.ledger.length > 80) g.state.ledger.shift();

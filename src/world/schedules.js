@@ -28,9 +28,10 @@ export const STREET_SCHEDULES = {
     { from: 16 * 60, to: 22 * 60, x: -11.8, z: -3.6, note: 'watching the building' },
     { from: 22 * 60, to: 8 * 60, x: -12.0, z: -2.4, note: 'inside' },
   ],
+  // Dex is only out after dark (his alley trade is 18:00-04:00); by day he is not on the block
   dex: [
-    { from: 20 * 60, to: 4 * 60, x: -4.2, z: -4.2, note: 'the alley' },
-    { from: 4 * 60, to: 20 * 60, x: -3.4, z: -3.4, note: 'gone' },
+    { from: 18 * 60, to: 4 * 60, x: -4.2, z: -4.2, note: 'the alley' },
+    { from: 4 * 60, to: 18 * 60, x: -4.2, z: -4.2, note: 'gone', away: true },
   ],
   homeless: [
     { from: 0, to: 7 * 60, x: -9.6, z: 0.4, note: 'asleep on the cardboard' },

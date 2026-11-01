@@ -40,7 +40,14 @@ them above water to make rent, keep the job, and not die.
 after his last dose (later as tolerance grows; on day one, mid-afternoon), raising stress and
 dragging energy and morale; sleep slows it down and does not compound it. The substances (Bliss, Static, Mud, Drip) are **invented** and described only in
 mechanical terms. Using one relieves withdrawal and lifts some stats, raises dependence,
-tolerance and risk, and does less each time. Risk at 100 ends the run.
+tolerance and risk, and does less each time. Risk at the ceiling is an overdose: the ER, not an
+ending.
+
+**Two dealers.** Rolo (by phone, any time) sells the ordinary, cut versions. **Dex** is in the
+alley only after dark, 18:00–04:00 — by day he is not on the block at all — and he sells what
+Rolo does not: *uncut* Bliss, double-stacked Static, Black Mud and pure Drip. More effect for the
+money, much more risk and dependence, and roughly one batch in seven is wrong, which spikes risk
+and stress on top of the dose.
 
 **Money.** The Quik-Stop shift pays hourly (late arrivals are docked; three strikes and he is
 fired). The job board has odd jobs for cash today. BidBay sells his things over time; Dex in the
@@ -55,8 +62,9 @@ One cycle ahead at most, and a short lock swallows a double click. Every payment
 `bills.rent.history` (day, amount, which cycle, the partner share that applied) and shown in the
 app.
 
-**Eleven endings**, from *functional* and *steady* to *evicted*, *terminated*, *pledged*,
-*snapped* and *overdose*. The night closes with a **Daily Report**: money, energy, hunger,
+**No game over.** Nothing ends the run on its own except one thing: being saved by the
+Fellowship (below). Otherwise the run ends when the player chooses to close the book, and the
+epilogue fits where Mo's life stands then. The night closes with a **Daily Report**: money, energy, hunger,
 stress, dependence and risk for the day just ended.
 
 ### Places
@@ -68,7 +76,7 @@ stress, dependence and risk for the day just ended.
 | **Quik-Stop #14** | a real convenience store, open all night: two aisles, coolers, coffee, the register, customers; the time clock is behind the EMPLOYEES ONLY door |
 | **Kestrel Bodega** | Miguel's: bacon egg and cheese, chopped cheese, loosies, tall boys |
 | **Habib's Corner** | halal, no pork: chicken over rice, the combo plate, falafel, lentil soup |
-| **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge |
+| **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge — the one ending that takes the game away |
 | **Kestrel Clinic** | walk-ins, Nurse Okafor, treatment on cash or on the bill |
 | **Kestrel Park** | across the road: benches, a half-court, chess, a boombox, people |
 
@@ -113,7 +121,7 @@ due next), an icon grid and a dock. Every app is a parody with its own name, ico
 | **GrubHope** | groceries for cash or Civic Relief credit, relief programs |
 | **Pocket Lint** | inventory as illustrated tiles; eat, drink, smoke or sell from here |
 | **Landlordly** | a thermostat dial that counts down the days to rent |
-| **FeedLove** | a profile, followers, posting for likes |
+| **FeedLove** | the social app (a heart, not a camera): posting for likes, and **HEARTS**, its dating side |
 | **Blessed+** | the Fellowship's "live" Sunday stream and the tithe |
 | **Rolo's Line** | the dealer app (below) |
 | **Tweaks** | skin, interface scale, camera distance and height, volume, saves, run stats |
@@ -143,10 +151,13 @@ one order system (`src/systems/dealer.js`): the same catalog, prices, validation
   quantity (1–3), see the total against Mo's balance, and place the order. Afterwards the app
   shows the order card: ID, status (*en route* → *waiting outside* → *completed*), ETA and
   location.
-- **The meet.** About 20 game minutes after the order, Rolo walks in along the curb and waits at
-  the hydrant beside the 1120 stoop — clear of every door — with a **Meet Rolo** interaction on
-  him. He shows on the map and the minimap. Walk up, hand over the cash, and Mo's hand goes out,
-  comes back, and he smiles. Rolo walks off the block.
+- **The meet.** About 20 game minutes after the order he is due. He does not appear out of thin
+  air behind the camera: if Mo is standing on the street when Rolo gets close, Rolo texts him to
+  go in somewhere (a coffee at the Quik-Stop, the bodega, home) and he is at the hydrant beside
+  the 1120 stoop when Mo comes back out. If Mo was already inside, Rolo is simply there when he
+  steps out. Rolo then waits three game hours — counted from when he is actually standing there —
+  with a **Meet Rolo** interaction on him, on the map and the minimap. Walk up, hand over the
+  cash, and Mo's hand goes out, comes back, and he smiles. Rolo walks off the block.
 - **Prices** are the fictional substances' base prices plus a $4 walk fee. Payment is **cash on
   meet**.
 
@@ -229,11 +240,32 @@ data the park is built from.
 Dancing is a real performance on the world stage (`playDance`), not a menu line: Mo moves on the
 spot, the time passes and the stats move with it.
 
+## The Golden Fellowship
+
+Addison Octavius is the antagonist, but not a villain in the usual sense: he extorts Mo for
+money. From the tithing stage he takes a tenth of everything Mo earns, and a fifth once Mo is in
+the inner circle. The terrible part is that it works. Every service from "Attendee" on brings
+dependence and withdrawal down, and once Mo tithes, the routine itself (the calls, the rides,
+somebody asking where he was) eases withdrawal every day. The deeper he goes, the cleaner he gets
+and the more of his money and his say they take.
+
+Signing the pledge ends the game: **Fully Functional**. Mo stops using, is housed, employed and
+more than functional — and none of it is his. It is the ending where someone else saved him, which
+is not what this game is about. Walking out instead keeps the run going.
+
 ## Love on Kestrel Street
 
 Three adults can be dated: **Stephanie** (31, relaxed, low-maintenance), **Melanie** (34, warm and
 particular) and **Diana** (36, independent and exacting). They are approachable when the heart is
 over their head — the heart means *you could try*, not *she is interested*.
+
+**FeedLove HEARTS.** The social app has a dating side. Every morning it deals a fresh stack of
+profiles — strangers from around the boroughs, and, until he has matched with them, Stephanie,
+Melanie and Diana. Sending a heart takes a few minutes and there are ten a day. Strangers almost
+always say no (unmatched before the heart finishes animating; "do you have a car?"; left on read
+at 1:14 AM); the rare match ghosts him. The three answer: they match, send their number, appear
+in Txtr as contacts, and from the app he can text them or ask them out through the same date
+planner as everywhere else.
 
 **Meeting them.** Talk, chat, compliment, flirt. Flirting has a cooldown and a personality-shaped
 chance: Stephanie warms quickly, Melanie notices whether Mo tried, Diana does not accept a first

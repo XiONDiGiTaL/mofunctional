@@ -15,6 +15,7 @@ import { APPS, HOME_GRID, DOCK, appIcon, serviceAvatar } from './apps.js';
 import { itemIcon } from './icons.js';
 import * as dealer from '../systems/dealer.js';
 import * as life from '../systems/life.js';
+import * as dating from '../systems/dating.js';
 import * as sms from '../systems/sms.js';
 import * as rent from '../systems/rent.js';
 import * as romance from '../systems/romance.js';
@@ -497,7 +498,7 @@ export class Phone {
   }
 
   orderCard(o) {
-    const stat = { pending: 'EN ROUTE', waiting: 'WAITING OUTSIDE', completed: 'COMPLETED', cancelled: 'CANCELLED', expired: 'EXPIRED' }[o.status] || o.status;
+    const stat = o.status === 'waiting' && !o.arrived ? 'NEARLY THERE' : ({ pending: 'EN ROUTE', waiting: 'WAITING OUTSIDE', completed: 'COMPLETED', cancelled: 'CANCELLED', expired: 'EXPIRED' }[o.status] || o.status);
     return `<div class="ordercard ordercard--${o.status}">
       <div class="row row--between"><b>${T(o.id)}</b><span class="pill pill--live">${stat}</span></div>
       <div>${o.qty}x ${T(o.name)} · <b>$${o.total.toFixed(2)}</b> cash on meet</div>
@@ -528,7 +529,7 @@ export class Phone {
         ${o ? `
           <div class="wap__h">-- ORDER STATUS --</div>
           ${this.orderCard(o)}
-          <div class="wap__p">${o.status === 'waiting' ? `He is outside: ${T(o.spot.label)}. Walk up and talk to him. Pay on meet.` : 'He is walking over. Status updates here and by text.'}</div>
+          <div class="wap__p">${o.status === 'waiting' ? (o.arrived ? `He is outside: ${T(o.spot.label)}. Walk up and talk to him. Pay on meet.` : 'He is close. Step inside somewhere — the Quik-Stop, the bodega, home — and he will be at the hydrant when you come out.') : 'He is walking over. Status updates here and by text.'}</div>
           <button class="wap__btn" data-act="wapcancel">[0] CANCEL ORDER</button>
         ` : `
           <div class="wap__h">-- MENU -- (prices incl. walk)</div>
@@ -707,7 +708,12 @@ export class Phone {
     const g = this.g;
     const s = g.state;
     const posts = s.feedPosts || [];
-    return `${this.header('FeedLove', `${s.social.followers} FOLLOWERS`)}
+    const tabs = `<div class="feedtabs">
+        <button class="${this.feedTab !== 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="feed">FEED</button>
+        <button class="${this.feedTab === 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="hearts">♥ HEARTS</button>
+      </div>`;
+    if (this.feedTab === 'hearts') return `${this.header('FeedLove', 'HEARTS')}${tabs}${this.heartsView()}${this.footer()}`;
+    return `${this.header('FeedLove', `${s.social.followers} FOLLOWERS`)}${tabs}
       <div class="profile profile--feed">
         <span class="profile__ring"><img src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></span>
         <div class="profile__stats">
@@ -725,6 +731,45 @@ export class Phone {
       </div>
       <div class="tiny mono-dim">Posting costs 10 minutes and may produce: one like, one insult, or an unexpected $12 from a stranger.</div>
       ${this.footer()}`;
+  }
+
+  /** FeedLove HEARTS: today's stack of profiles. Strangers mostly say no; the three answer. */
+  heartsView() {
+    const s = this.g.state;
+    const d = dating.datingState(s);
+    const left = CONFIG.dating.heartsPerDay - (d.day === dayOf(s.clock.m) ? d.hearts : 0);
+    const matched = romance.PARTNER_KEYS.filter((id) => d.matched[id] || romance.partnerState(s, id).met);
+    const card = (p) => {
+      const res = d.results[p.id];
+      const avatar = p.partner
+        ? `<img class="dprof__img" src="${portraitURL(p.partner, 'content')}" alt="" />`
+        : `<span class="dprof__img dprof__img--anon" style="--t:${p.tint}">${T(p.name[0])}</span>`;
+      const verdict = res === 'match' ? '<span class="dprof__res dprof__res--match">MATCH · numbers swapped</span>'
+        : res === 'ghost' ? '<span class="dprof__res">matched, then nothing</span>'
+          : res === 'reject' ? '<span class="dprof__res dprof__res--no">no</span>' : '';
+      return `<div class="dprof">
+        ${avatar}
+        <div class="grow"><div class="name">${T(p.name)}, ${p.age} <span class="tiny mono-dim">· ${T(p.hood)}</span></div>
+        <div class="meta">${T(p.bio)}</div>${verdict}</div>
+        ${res ? '' : `<button class="btn btn--sm btn--primary" data-act="heart" data-arg="${p.id}" ${left <= 0 ? 'disabled' : ''}>♥</button>`}
+      </div>`;
+    };
+    return `
+      ${this.heartNote ? `<div class="card dnote">${T(this.heartNote)}</div>` : ''}
+      ${matched.length ? `<div class="app__h">Your matches</div>
+      <div class="list">${matched.map((id) => {
+        const p = CONFIG.partners[id];
+        const st = romance.partnerState(s, id);
+        return `<div class="listitem dmatch">
+          <img class="chat__face" src="${portraitURL(id, 'content')}" alt="" />
+          <div class="grow"><div class="name">${T(p.name)} ${st.girlfriend ? '<span class="pill">girlfriend</span>' : ''}</div><div class="meta">${st.dates} date${st.dates === 1 ? '' : 's'} · in your Txtr contacts</div></div>
+          <button class="btn btn--sm" data-act="dmchat" data-arg="${id}">TEXT</button>
+          <button class="btn btn--sm btn--primary" data-act="dmdate" data-arg="${id}">ASK OUT</button>
+        </div>`;
+      }).join('')}</div>` : ''}
+      <div class="app__h">Today's stack · ${Math.max(0, left)} hearts left</div>
+      <div class="list">${dating.profilesToday(s).map(card).join('')}</div>
+      <div class="tiny mono-dim">A heart takes ${CONFIG.dating.heartMinutes} minutes of staring. New faces every morning.</div>`;
   }
 
   /* ------------------------------ FELLOWSHIP ------------------------------ */
@@ -968,7 +1013,7 @@ export class Phone {
         g.openModal({
           kicker: 'INVENTORY',
           title: def ? def.name : arg,
-          body: 'This is a fictional substance that exists only in this game.\n\nUsing it raises addiction and risk. Risk at 100 ends the run. Your tolerance blunts the effect each time, so the same dose does less and costs more.',
+          body: 'This is a fictional substance that exists only in this game.\n\nUsing it raises addiction and risk. Risk at the ceiling is an overdose and a night in the ER. Your tolerance blunts the effect each time, so the same dose does less and costs more.',
           choices: [
             { label: 'Use it.', sub: 'risk +' + (CONFIG.substances.types[arg]?.risk ?? 0), effect: () => useSubstance(g, arg) },
             { label: 'Put it back.', effect: () => {} },
@@ -1040,6 +1085,16 @@ export class Phone {
       quitmenu() { this.close(); g.quitToMenu(); },
       clinic() { clinic.checkIn(g); },
       clincheck() { clinic.checkIn(g); },
+      feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
+      heart(arg) {
+        const res = dating.sendHeart(g, arg);
+        if (res.ok) this.heartNote = res.result === 'match' ? `It's a match. ${res.line}` : res.line;
+      },
+      dmchat(arg) {
+        const res = romance.chat(g, arg);
+        if (res) this.heartNote = `${res.name}: ${res.line.replace(/^"|"$/g, '')}`;
+      },
+      dmdate(arg) { this.close(); romance.openDateMenu(g, arg); },
       clingo() { this.close(); g.advance(15); g.goTo('clinic', 'phone'); },
       rentahead() { const r = rent.payRent(g, { ahead: true }); if (!r.ok && r.reason !== 'nothing due') g.audio.sfx('deny'); },
       datechat(arg) { const r = romance.chat(g, arg); if (r) g.toast(`${r.name}: ${r.line}`, 'info'); },

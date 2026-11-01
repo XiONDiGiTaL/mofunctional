@@ -303,13 +303,13 @@
 .profile__ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--screen); display: block; }
 .profile__open { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: #1f6f3c; color: #d6ffe4; font-size: 9px; font-weight: 700; letter-spacing: .06em; }
 .papp--jobs .card { background: rgba(61, 155, 255, .08); }
-.profile--feed .profile__ring { width: 66px; height: 66px; background: conic-gradient(from 210deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #feda75); }
+.profile--feed .profile__ring { width: 66px; height: 66px; background: conic-gradient(from 210deg, #ffb3c1, #ff6a86, #a3123a, #ff6a86, #ffb3c1); }
 .profile__stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
 .profile__stats span { font-size: 9.5px; color: rgba(255, 255, 255, .7); }
 .profile__stats b { font-family: var(--display); font-size: 15px; }
-.papp--social .btn--primary { background: linear-gradient(90deg, #f58529, #dd2a7b, #8134af); color: #fff; }
+.papp--social .btn--primary { background: linear-gradient(180deg, #ff6a86, #a3123a); color: #fff; }
 .post .post__heart { color: #ff3b6b; }
-.papp--social .app__header--brand { background: linear-gradient(90deg, rgba(245, 133, 41, .35), rgba(221, 42, 123, .35), rgba(129, 52, 175, .35)), var(--screen); }
+.papp--social .app__header--brand { background: linear-gradient(180deg, rgba(163, 18, 58, .55), rgba(163, 18, 58, .15)), var(--screen); }
 
 /* BidBay: white-label marketplace energy */
 .papp--bidbay .app__header--brand { background: linear-gradient(180deg, #f4f5f8, #dfe2ea); }
@@ -712,3 +712,17 @@
   .debug { padding: 1vh 1vw; }
   .debug__grid { grid-template-columns: 1fr; }
 }
+
+/* ------------------------------------------------------------------ FeedLove hearts (dating) */
+.feedtabs { display: flex; gap: 6px; margin-bottom: 4px; }
+.feedtabs button { flex: 1; border: 0; border-radius: 999px; padding: 6px 0; cursor: pointer; font-family: var(--ui); font-weight: 700; font-size: 10px; letter-spacing: .14em; color: #ffd0da; background: rgba(255, 106, 134, .12); }
+.feedtabs button.on { background: linear-gradient(180deg, #ff6a86, #a3123a); color: #fff; }
+.dprof { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: rgba(255, 255, 255, .045); }
+.dprof__img { flex: none; width: 46px; height: 46px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #ff6a86; }
+.dprof__img--anon { display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 18px; color: #fff; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--t) 70%, #fff), var(--t)); box-shadow: 0 0 0 2px rgba(255, 255, 255, .15); }
+.dprof .meta { font-size: 10px; line-height: 1.35; }
+.dprof__res { display: inline-block; margin-top: 3px; padding: 0 7px; border-radius: 999px; font-size: 9px; font-weight: 700; letter-spacing: .06em; background: rgba(255, 255, 255, .1); color: #cfc8d4; }
+.dprof__res--no { background: rgba(255, 90, 90, .18); color: #ffb3aa; }
+.dprof__res--match { background: #ff6a86; color: #fff; }
+.dmatch { align-items: center; gap: 8px; }
+.dnote { font-size: 11px; color: #ffe0e6; box-shadow: inset 3px 0 0 #ff6a86; }
