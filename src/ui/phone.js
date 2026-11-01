@@ -3,7 +3,7 @@ import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { money, hhmm, dayOf, minuteOfDay, duration, clamp } from '../core/util.js';
 import { clock, inventoryList, countItem, pushMessage, hasItem, unreadMessages } from '../core/state.js';
 import { bump } from '../core/state.js';
-import { billInfo, payBill, buyFood, applyForCRP, recertCRP, claimUtilityGrant, listItem, cancelListing, buyGrabBag, GROCERY } from '../systems/economy.js';
+import { billInfo, payBill, setAutopay, buyFood, applyForCRP, recertCRP, claimUtilityGrant, listItem, cancelListing, buyGrabBag, GROCERY } from '../systems/economy.js';
 import { eat, useSubstance, sleep, soberUp } from '../systems/needs.js';
 import { shiftInfo, doOddJob, oddJobsAvailable, applyForJob, quitJob, callOut, workShift } from '../systems/jobs.js';
 import { fellowshipStage, serviceWindow } from '../systems/fellowship.js';
@@ -292,6 +292,10 @@ export class Phone {
       <div class="tiny mono-dim">Overdraft: none. Bank policy: "we are not a charity, we are a bank" — the difference is marketing.</div>
       ${this.debtCard()}
       ${this.rentAheadCard()}
+      <div class="card autopay">
+        <div class="grow"><b>AutoPay</b><div class="tiny mono-dim">${s.autopay?.on ? 'On: rent, power and phone are paid the day they are due, if the money is there. You get a text either way.' : 'Off: you pay each bill yourself.'}</div></div>
+        <button class="toggle ${s.autopay?.on ? 'on' : ''}" data-act="autopay" aria-label="AutoPay"><i></i></button>
+      </div>
       <div class="app__h">Bills</div>
       <div class="list">${bills}</div>
       <div class="app__h">Recent activity</div>
@@ -1324,6 +1328,7 @@ export class Phone {
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
       hookup(arg) { this.close(); dating.hookupMenu(g, arg); },
       blocktab(arg) { this.blockTab = arg; },
+      autopay() { setAutopay(g, !s.autopay?.on); g.toast(s.autopay.on ? 'Shale Pay AutoPay is on.' : 'AutoPay is off. Every bill is yours again.', 'info'); },
       casgame(arg) { this.casinoGame = arg; },
       casbet(arg, num) { this.casinoBet = num; },
       casspin() { this.casLast = casino.spin(g, this.casinoBet || CONFIG.casino.bets[0]) || this.casLast; },

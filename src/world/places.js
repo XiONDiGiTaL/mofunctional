@@ -338,8 +338,8 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     door(1, 0.4, `${fl}D`, (gg) => knock(gg, f, `${fl}D`));
   }
   if (f === 1) {
-    npcs.push({ kind: 'tenant_m', x: -0.5, z: 1.0, rot: 1.4, talk: 'wu_couple', still: true });
-    npcs.push({ kind: 'tenant_f', x: 0.5, z: 1.1, rot: -1.6, talk: null, still: true });
+    npcs.push({ kind: 'tenant_m', x: -0.5, z: 1.0, rot: 1.4, talk: 'wu_couple', still: true, act: 'argue', side: 0 });
+    npcs.push({ kind: 'tenant_f', x: 0.5, z: 1.1, rot: -1.6, talk: null, still: true, act: 'argue', side: 1 });
     interactables.push({ id: 'wu_couple', label: 'Ray & Denise', sub: 'mid-argument (always)', x: 0, z: 1.05, radius: 1.3, action: (gg) => coupleMenu(gg) });
   }
   if (f === 3) {
@@ -483,6 +483,7 @@ export function buildAvenue(g) {
     { kind: 'passer_m2', x: 0, z: -2.6, walker: [-15, 15] },
     { kind: pick(['w0', 'w3', 'w8', 'w12', 'w19']), x: -2, z: -1.0, walker: [-15, 15] },
     { kind: 'passer_m', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true },
+    { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
   ];
   const s = g.state;
   const interactables = [

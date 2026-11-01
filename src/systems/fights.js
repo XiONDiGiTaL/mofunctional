@@ -54,6 +54,17 @@ export function startMugging(g) {
   return { hp: C().thugHits, line: pick(THUG_LINES) };
 }
 
+/** Meatball to the rescue: the mugger runs, nobody gets hurt, a dog gets a reputation. */
+export function dogSave(g, name) {
+  const s = g.state;
+  const f = fightState(s);
+  f.won += 1;
+  f.dogSaves = (f.dogSaves || 0) + 1;
+  bump(s, 'morale', 12);
+  bump(s, 'stress', -4);
+  logLine(g, `${name} ran a mugger off.`, 'good');
+}
+
 /** Hand over some cash. Smaller than being robbed; safer than a fight. */
 export function payOff(g) {
   const s = g.state;

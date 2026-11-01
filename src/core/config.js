@@ -407,6 +407,12 @@ export const CONFIG = {
     ],
   },
 
+  // Meatball, the stray on Kestrel
+  dog: {
+    likePerMeal: 20,       // five meals and he is yours
+    followAt: 60,          // past this he trots along beside Mo on the street
+  },
+
   // HardLuck Bet, the casino app
   casino: {
     bets: [1, 5, 20, 100],

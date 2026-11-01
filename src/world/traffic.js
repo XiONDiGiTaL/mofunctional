@@ -22,14 +22,21 @@ export class Traffic {
     for (let i = 0; i < 2; i++) this.spawn(cfg.x0 + (cfg.x1 - cfg.x0) * (0.25 + i * 0.45));
   }
 
+  /** A particular vehicle (the patrol car) instead of a random one. */
+  spawnSpecial(type) {
+    this.special = type;
+    this.spawn();
+    this.special = null;
+  }
+
   spawn(atX = null) {
     const { lanes, x0, x1 } = this.cfg;
     const lane = lanes[Math.floor(Math.random() * lanes.length)];
     const startX = atX ?? (lane.dir > 0 ? x0 - 6 : x1 + 6);
     // do not drop a car on top of another in its lane
     if (this.cars.some((c) => c.lane === lane && Math.abs(c.x - startX) < 9)) return;
-    const bus = Math.random() < (this.cfg.bus ?? 0.06);
-    const mesh = bus ? buildVehicle('bus') : randomCar();
+    const bus = !this.special && Math.random() < (this.cfg.bus ?? 0.06);
+    const mesh = this.special ? buildVehicle(this.special) : bus ? buildVehicle('bus') : randomCar();
     mesh.rotation.y = lane.dir > 0 ? 0 : Math.PI;
     mesh.position.set(startX, 0, lane.z);
     this.world.root.add(mesh);
@@ -37,7 +44,7 @@ export class Traffic {
     const solid = { x: startX, z: lane.z, w: len, d: width, h: 1.4, moving: true };
     this.world.area.solids = this.world.area.solids || [];
     this.world.area.solids.push(solid);
-    const cruise = bus ? 5.2 : 6.5 + Math.random() * 3.5;
+    const cruise = bus ? 5.2 : this.special === 'police' ? 3.2 : 6.5 + Math.random() * 3.5;
     this.cars.push({ mesh, lane, x: startX, speed: cruise, cruise, len, solid, stopped: 0, honked: 0, bus });
   }
 
@@ -85,6 +92,9 @@ export class Traffic {
       c.x += d * c.speed * dt;
       c.mesh.position.x = c.x;
       c.solid.x = c.x;
+      // the light bar: red, blue, red, blue
+      const flash = c.mesh.userData.flash;
+      if (flash) { const on = Math.floor(performance.now() / 260) % 2; flash[0].visible = !!on; flash[1].visible = !on; }
       // stopped for Mo: wait a beat, then lean on the horn
       if (moAhead < 6 && c.speed < 0.3) {
         c.stopped += dt;

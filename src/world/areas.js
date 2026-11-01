@@ -507,8 +507,9 @@ export function buildStreet(g) {
     }
   };
   fireEscape(-11.9, 2.9, 3);
-  fireEscape(1.5, 2.4, 2);
-  fireEscape(11.5, 3.2, 3);
+  // off to the side and above the awning, so it never sits in front of QUIK-STOP #14; the church
+  // has no fire escape at all (it had one straight across the cross and the sign)
+  fireEscape(4.95, 4.45, 1);
 
   // rooftop machinery: a water tower, a few AC boxes, an aerial forest
   group.add(box(2.0, 1.9, 2.0, retroMaterial('tank', { color: 0x4a3f33 }), [-12.8, 8.6, -7.4]));
@@ -611,7 +612,30 @@ export function buildStreet(g) {
     group.add(box(0.42 - i * 0.03, 0.34, 0.38, retroMaterial(`bagp${i}`, { color: 0x24261f }), [9.5 + (i % 2) * 0.45 - 0.2, 0.17 + (i > 1 ? 0.28 : 0), -4.85 + (i > 1 ? 0.1 : 0)]));
   }
 
+  const hourNow = minuteOfDay(g.state.clock.m) / 60;
+  const between = (a, b) => (a < b ? hourNow >= a && hourNow < b : hourNow >= a || hourNow < b);
+  // street life (world/streetlife.js acts): the dice crew at the lot after dark, smokers outside
+  // the Quik-Stop and the bodega, somebody on the bench, people walking to somewhere else
+  const life = [
+    ...(between(17, 4) ? [
+      { kind: 'passer_m', x: 29.1, z: -4.1, rot: 2.2, still: true, act: 'dice' },
+      { kind: 'squeak', x: 30.3, z: -4.9, rot: -2.4, still: true, act: 'dice' },
+      { kind: 'unknown', x: 29.0, z: -5.3, rot: 0.6, still: true, act: 'watch' },
+      { kind: 'passer_m2', x: 30.7, z: -3.6, rot: -1.0, still: true, act: 'watch' },
+    ] : []),
+    ...(between(7, 23) ? [
+      { kind: 'tenant_m', x: 3.9, z: -4.9, rot: -0.35, still: true, act: 'smoke' },
+      { kind: 'w8', x: -14.4, z: -4.6, rot: 0.3, still: true, act: 'smoke' },
+    ] : []),
+    ...(between(8, 20) ? [{ kind: 'passer_m2', x: 16.9, z: -4.4, rot: Math.PI, still: true, pose: 'sit' }] : []),
+    ...(between(6, 24) ? [
+      { kind: 'passer_m', x: -18, z: -2.2, walker: [-24, 30] },
+      { kind: pick(['w0', 'w12', 'w19', 'w3']), x: 12, z: -0.9, walker: [-24, 30] },
+      { kind: 'tenant_f', x: 22, z: -3.0, walker: [-24, 30] },
+    ] : []),
+  ];
   const npcs = [
+    ...life,
     { kind: 'rae', x: -11.8, z: -3.6, rot: 0.4, talk: 'rae' },
     { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
     { kind: 'kev', x: -1.2, z: -1.2, rot: -1.2, talk: 'kev' },

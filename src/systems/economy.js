@@ -116,10 +116,41 @@ export function payBill(g, key) {
   return true;
 }
 
+/**
+ * Shale Pay AutoPay: when it is on, every bill that is due (rent, power, phone) is paid on its
+ * own if the balance covers it, with a text from Shale Pay for each payment; if it does not, a
+ * text saying so (once a day per bill), and the bill waits like any other.
+ */
+export function runAutopay(g) {
+  const s = g.state;
+  if (!s.autopay?.on) return;
+  const day = dayOf(s.clock.m);
+  s.autopay.nsfDay = s.autopay.nsfDay || {};
+  for (const key of ['rent', 'power', 'phone']) {
+    const info = billInfo(g, key);
+    if (info.owedCycles <= 0) continue;
+    if (s.money >= info.owed) {
+      if (payBill(g, key)) {
+        pushMessage(g, { from: 'SHALE PAY', subject: 'AutoPay', body: `AutoPay paid ${info.name}: ${money(info.owed)}.\nAvailable balance: ${money(s.money)}.\n\nYou did not have to think about it. That is the product.`, kind: 'autopay' });
+      }
+    } else if (s.autopay.nsfDay[key] !== day) {
+      s.autopay.nsfDay[key] = day;
+      pushMessage(g, { from: 'SHALE PAY', subject: 'Insufficient funds', body: `AutoPay could not pay ${info.name}: ${money(info.owed)} due, ${money(s.money)} available.\n\nWe will try again tomorrow. We are a bank, not a miracle.`, kind: 'autopay' });
+    }
+  }
+}
+
+export function setAutopay(g, on) {
+  const s = g.state;
+  s.autopay = { ...(s.autopay || {}), on: !!on };
+  if (on) runAutopay(g);
+}
+
 export function onNewDay(g, day, prevDay) {
   const s = g.state;
   s.events.today = 0;
   s.social.lastPost = s.social.lastPost || 0;
+  runAutopay(g);
 
   for (const key of ['rent', 'power', 'phone']) {
     const info = billInfo(g, key);

@@ -10,6 +10,17 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### AutoPay, street life, Meatball
+
+- `economy.runAutopay/setAutopay` (`state.autopay`): on the new day (and when switched on) pays
+  due bills through `payBill`, texts from SHALE PAY; insufficient funds once per bill per day.
+- `world/streetlife.js`: `applyAct` (dice, watch, argue on a shared clock, smoke), a billboarded
+  smoke pool, Meatball (`state.dog`: feed twice a day, +20 like, follows at 60, `fights.dogSave`
+  at 100), events (patrol car via `Traffic.spawnSpecial('police')`, a bike, flavour toasts).
+  Street NPC defs by hour in buildStreet; walkers wait for Mo.
+- Fire escapes: the Quik-Stop's is off to the side above the awning; the Fellowship's is gone.
+- 56 checks.
+
 ### Cars and traffic
 
 - `world/vehicles.js`: extruded side-profile bodies (compact, sedan, taxi, coupe, convertible,

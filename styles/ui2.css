@@ -859,3 +859,10 @@
 /* ------------------------------------------------------------------ HailMary */
 .ride__card { display: flex; flex-direction: column; gap: 5px; border-color: #ff6ab0; }
 .ride__card--here { background: rgba(255, 106, 176, .14); }
+
+/* ------------------------------------------------------------------ Shale Pay AutoPay */
+.autopay { display: flex; align-items: center; gap: 10px; }
+.toggle { flex: none; position: relative; width: 44px; height: 24px; border: 0; border-radius: 999px; cursor: pointer; background: rgba(255, 255, 255, .15); transition: background .15s; }
+.toggle i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .15s; }
+.toggle.on { background: #2bd2c4; }
+.toggle.on i { left: 23px; }

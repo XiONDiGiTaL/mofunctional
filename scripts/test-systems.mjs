@@ -12,7 +12,7 @@
  */
 import { CONFIG } from '../src/core/config.js';
 import { createState, clock, bump } from '../src/core/state.js';
-import { billInfo, rentPerCycle, rentShare } from '../src/systems/economy.js';
+import { billInfo, rentPerCycle, rentShare, runAutopay, setAutopay } from '../src/systems/economy.js';
 import * as rent from '../src/systems/rent.js';
 import * as romance from '../src/systems/romance.js';
 import * as scheduler from '../src/systems/scheduler.js';
@@ -940,6 +940,25 @@ check('road: parked cars stay off both crosswalks; a HailMary pickup lands in a 
     const p = rides.pickupFor(g);
     eq(ROAD.parkedNear.every((c) => Math.abs(c.x - p.x) > 4.5), true, `pickup at ${p.x.toFixed(1)} clear`);
   }
+  return true;
+});
+
+check('autopay: pays a due bill and texts; short of money it texts insufficient funds once a day', () => {
+  const g = stubGame();
+  g.audio = { sfx() {} };
+  g.state.clock.m = 7 * 1440 + 8 * 60; // rent has come due
+  const due = billInfo(g, 'rent');
+  eq(due.owedCycles > 0, true, 'rent is due');
+  g.state.money = 1;
+  setAutopay(g, true);
+  const nsf = g.state.messages.filter((m) => m.from === 'SHALE PAY' && /could not pay/.test(m.body)).length;
+  eq(nsf >= 1, true, 'insufficient funds text');
+  runAutopay(g);
+  eq(g.state.messages.filter((m) => m.from === 'SHALE PAY' && /could not pay/.test(m.body)).length, nsf, 'once a day');
+  g.state.money = 5000;
+  runAutopay(g);
+  eq(billInfo(g, 'rent').owedCycles, 0, 'paid');
+  eq(g.state.messages.some((m) => m.from === 'SHALE PAY' && /AutoPay paid/.test(m.body)), true, 'paid text');
   return true;
 });
 

@@ -100,6 +100,7 @@ const SPECS = {
  */
 export function buildVehicle(type = 'sedan', color = 0x5a6a78) {
   if (type === 'bus') return buildBus();
+  if (type === 'police') return buildPolice();
   const taxi = type === 'taxi';
   const spec = SPECS[taxi ? 'sedan' : type] || SPECS.sedan;
   const g = new THREE.Group();
@@ -145,6 +146,19 @@ export function buildVehicle(type = 'sedan', color = 0x5a6a78) {
     for (let i = 0; i < 6; i++) add(g, boxGeo(0.18, 0.08, 0.01), mat('checker', { color: i % 2 ? 0x111111 : 0xf2c42a }), -1.2 + i * 0.36, 0.58, spec.width / 2 + 0.005);
   }
   g.userData = { len: spec.len, width: spec.width, type };
+  return g;
+}
+
+/** A 90s patrol car: a white sedan, a blue stripe, a light bar that flashes (userData.flash). */
+function buildPolice() {
+  const g = buildVehicle('sedan', 0xf2f2f0);
+  const w = SPECS.sedan.width;
+  for (const s of [-1, 1]) add(g, boxGeo(3.4, 0.1, 0.01), mat('pol_stripe', { color: 0x1e3a8a }), 0, 0.62, s * (w / 2 + 0.006));
+  const red = mat('pol_red', { color: 0xff2a2a, emissive: 1.2, unlit: true });
+  const blue = mat('pol_blue', { color: 0x2a5aff, emissive: 1.2, unlit: true });
+  const a = add(g, boxGeo(0.3, 0.14, 0.5), red, -0.3, 1.47, -0.3);
+  const b = add(g, boxGeo(0.3, 0.14, 0.5), blue, -0.3, 1.47, 0.3);
+  g.userData = { ...g.userData, type: 'police', flash: [a, b] };
   return g;
 }
 

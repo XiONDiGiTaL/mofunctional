@@ -97,6 +97,10 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Walk across the street at the crosswalks; the parked car moved off the crossing | done |
 | HailMary car service: a car that shows up at the curb, destinations, "it's up the road" pushback | done |
 | Low-poly vehicle models from the owner's sheet; parked cars searchable at night; traffic that stops and honks, solid | done |
+| Shale Pay AutoPay with payment and insufficient-funds texts | done |
+| Dice crew at the lot; the couple argue in turns; smokers with smoke; walkers; bench sitter; patrol cars and other visible events | done |
+| Meatball the stray: feed, loyalty meter, follows, ally in muggings | done |
+| Fire escapes moved off the Quik-Stop and Fellowship signs | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

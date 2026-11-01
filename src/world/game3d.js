@@ -9,6 +9,7 @@ import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
 import { RideCar } from './ridecar.js';
 import { Traffic } from './traffic.js';
+import { StreetLife, applyAct, dogState } from './streetlife.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
@@ -103,6 +104,8 @@ export class World {
     this.rideCar?.remove();
     this.traffic?.remove();
     this.traffic = null;
+    this.streetLife?.remove();
+    this.streetLife = null;
     this.crossing = null;
     if (this.titleScene) {
       this.titleScene.dispose();
@@ -262,6 +265,8 @@ export class World {
     this.rideCar.sync(g, true);
     // cars up and down the road, where there is a road
     this.traffic = this.area.traffic ? new Traffic(this, this.area.traffic) : null;
+    // smoke, the dog, the things that happen
+    this.streetLife = new StreetLife(this, g);
   }
 
   /**
@@ -503,6 +508,13 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
           if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
           setTimeout(() => this.fightMeter.open({ hp: fight.hp, onSwing: (landed) => fights.exchange(g, fight, landed), done: end }), 60);
         } },
+        ...(dogState(s).like >= 100 && (this.areaId === 'street' || this.areaId === 'park') ? [{
+          label: `Whistle for ${dogState(s).name}.`, sub: 'he comes', effect: () => {
+            fights.dogSave(g, dogState(s).name);
+            this.thugLeaving = true;
+            g.toast(`${dogState(s).name} comes out of nowhere, all teeth and bad intentions. The guy in the hood is gone before the dog gets there. ${dogState(s).name} gets a hero's ear scratch.`, 'good');
+          },
+        }] : []),
         { label: 'Hand over some cash.', sub: 'about a quarter of it', effect: () => { const n = fights.payOff(g); g.toast(`$${n.toFixed(2)}. He counts it in front of you, which is the insulting part.`, 'bad'); end('paid'); } },
         { label: 'Run.', sub: 'if your legs are up to it', effect: () => {
           if (fights.tryRun(g)) { g.toast('You run. You run like 1993. He does not bother.', 'info'); end('ran'); }
@@ -845,6 +857,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.rideCar?.sync(g);
     this.rideCar?.update(dt);
     this.traffic?.update(dt, g);
+    this.streetLife?.update(dt, g);
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
@@ -864,6 +877,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
         sitting: pose === 'sit' || (settled && mod < 22 * 60 && mod >= 7 * 60),
         sleeping: pose === 'sleep' || (settled && (mod >= 22 * 60 || mod < 7 * 60)),
       });
+      if (rig.npcDef?.act) applyAct(rig, dt, this.streetLife);
     }
     // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
     if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();
@@ -1144,6 +1158,10 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const tx = rig.walkDir > 0 ? x1 : x0;
       const dx = tx - rig.root.position.x;
       if (Math.abs(dx) < 0.3) { rig.walkDir *= -1; return; }
+      // somebody in the way (Mo): stop and wait, like people do
+      const mo = this.mo.root.position;
+      const ahead = (mo.x - rig.root.position.x) * Math.sign(dx);
+      if (ahead > 0 && ahead < 1.2 && Math.abs(mo.z - rig.root.position.z) < 0.7) { rig.walking = false; return; }
       rig.walking = true;
       rig.root.position.x += Math.sign(dx) * 1.1 * dt;
       rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.sign(dx) > 0 ? Math.PI / 2 : -Math.PI / 2) * Math.min(1, dt * 6);

@@ -84,6 +84,8 @@ stress, dependence and risk for the day just ended.
 | **1104 Kestrel St.** | the walk-up west of the bodega: a lobby and four floors of hallway, real minutes on the stairs. A man asleep by the steps, Ray & Denise arguing on two, Mrs. Petrakis's soup in 3B, Squeak selling from his coat on four (a few items a day, hallway prices), Stephanie's door in 5C, the roof, and a knock on every door |
 | **Ashby Avenue** | by the B44 from the stop on Kestrel (or a 45-minute walk): people walking somewhere else, a newsstand (papers, scratch-offs), Ashby Pawn & Gold (sell a valuable now, cheap), a sax player |
 | **The road** | walkable now: cars parked along both curbs (new low-poly models — 90s compact, sedan, taxi, sports coupe, convertible, exotic GT, and the B44 bus — in street colours), and traffic in both lanes that keeps its distance, stops for Mo when he is in the road, leans on the horn, and drives on. Cars are solid. At night, the cars on the near curb can be tried: mostly locked, sometimes loose change, food, cigarettes or something worth selling, sometimes the alarm |
+| **Street life** | people walking to somewhere else (they wait for Mo instead of walking through him), smokers outside the Quik-Stop and the bodega with smoke you can see, somebody on the bench, a dice crew crouched over crates at the lot after dark, and things that happen where Mo can see them: a patrol car rolling by with its lights going, a kid on a bike, a split grocery bag |
+| **Meatball** | a stray dog who walks the block. Feed him (two meals a day) and he likes Mo more; past halfway he trots along beside him; at full, Mo can whistle for him when somebody tries to mug him on the street or in the park |
 | **The lot** | past the clinic: chain-link, a burnt-out Buick, a graffiti wall, a dice game after dark, and a crosswalk to the park's new east gate |
 | **Lucia's** | a red-sauce trattoria on Ashby: sit-down meals, and the best date on the list |
 
@@ -121,7 +123,7 @@ due next), an icon grid and a dock. Every app is a parody with its own name, ico
 | App | What it is |
 |---|---|
 | **Txtr** | messages; companies text with their app icon, people with their face; Rolo is pinned |
-| **Shale Pay** | the bank: a debit card with the live balance, bills, recent activity |
+| **Shale Pay** | the bank: a debit card with the live balance, bills, recent activity, and an **AutoPay** toggle that pays rent, power and phone the day they fall due if the balance covers them (a Shale Pay text for every payment, and an insufficient-funds text when it does not) |
 | **LinkedOut** | the Quik-Stop shift, strikes, odd jobs |
 | **BidBay** | list valuables at a price you set; a mystery grab bag |
 | **iDread** | the week ahead (shifts, rent, power, service) and sleep |
