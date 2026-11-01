@@ -1296,7 +1296,6 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     for (const rig of this.npcRigs) {
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
       this.patrolNPC(rig, dt, g);
-      if (rig.sax) animateSax(rig, dt);
       if (rig.talkIt) { rig.talkIt.x = rig.root.position.x; rig.talkIt.z = rig.root.position.z; }
       if (rig.heart) {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
@@ -1312,6 +1311,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
         sleeping: pose === 'sleep' || (settled && (mod >= 22 * 60 || mod < 7 * 60)),
       });
       if (rig.npcDef?.act) applyAct(rig, dt, this.streetLife);
+      // after the idle cycle, or it takes the arms back down to his sides
+      if (rig.sax) animateSax(rig, dt);
     }
     // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
     if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();

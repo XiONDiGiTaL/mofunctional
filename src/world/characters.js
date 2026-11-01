@@ -536,34 +536,65 @@ export function applyOutfit(rig, outfit) {
 }
 
 /** A saxophone, in his hands, because a man playing one without one is just a man standing. */
+/**
+ * Angles that put each fist on the horn, solved from the rig's own bone lengths (shoulder at
+ * 0.385 k, upper arm 0.27 k, elbow to fist 0.30 k) so the hands land on the tube instead of
+ * floating beside it. The elbows stay on their own side of the body.
+ */
+const SAX_ARMS = {
+  L: { px: -0.69, pz: 0.38, ex: -1.16, ez: 0.91 },
+  R: { px: -0.47, pz: 0.69, ex: -1.78, ez: -0.96 },
+};
+
+/** Hang the horn off his chest at the mouth end, bell down by his right hip. */
 export function addSaxophone(rig) {
   if (!rig || rig.saxProp) return null;
   const k = rig.k || 1;
   const brass = retroMaterial('saxBrass', { color: 0xc8a03a, ambient: 0.9 });
   const dark = retroMaterial('saxDark', { color: 0x26262a });
   const sax = new THREE.Group();
-  sax.add(box(0.055 * k, 0.62 * k, 0.055 * k, brass, [0, 0.3 * k, 0]));
-  sax.add(box(0.17 * k, 0.2 * k, 0.17 * k, brass, [0.05 * k, 0.02 * k, 0]));
-  sax.add(box(0.08 * k, 0.05 * k, 0.08 * k, dark, [0.05 * k, 0.13 * k, 0]));
-  for (let i = 0; i < 5; i++) sax.add(box(0.075 * k, 0.018 * k, 0.075 * k, dark, [0, 0.14 * k + i * 0.1 * k, 0.035 * k]));
-  sax.position.set(0.17 * k, 0.3 * k, 0.17 * k);
-  sax.rotation.set(-0.5, 0, 0.32);
+  // body: straight off the mouthpiece, swelling into the bell
+  sax.add(loft(R([
+    [0.0, 0.05, 0.05], [-0.1, 0.056, 0.058], [-0.24, 0.074, 0.076],
+    [-0.36, 0.098, 0.1], [-0.43, 0.135, 0.128, 0.012], [-0.47, 0.185, 0.165, 0.03],
+  ], k), brass, 8));
+  // mouthpiece, its ring, and the dark rim of the bell
+  sax.add(box(0.04 * k, 0.075 * k, 0.04 * k, dark, [0, 0.02 * k, 0]));
+  sax.add(box(0.052 * k, 0.018 * k, 0.052 * k, brass, [0, -0.028 * k, 0]));
+  sax.add(box(0.17 * k, 0.016 * k, 0.15 * k, dark, [0, -0.478 * k, 0.03 * k]));
+  // keys down the front of the tube
+  for (let i = 0; i < 5; i++) sax.add(box(0.06 * k, 0.02 * k, 0.028 * k, dark, [0, (-0.13 - i * 0.055) * k, 0.042 * k]));
+  sax.position.set(0.1 * k, 0.49 * k, 0.2 * k);
+  sax.rotation.set(-0.295, 0, 0.185);
   rig.torso.add(sax);
   rig.saxProp = sax;
   rig.saxT = 0;
-  if (rig.armL) rig.armL.pivot.rotation.set(-1.05, 0, -0.22);
-  if (rig.armR) rig.armR.pivot.rotation.set(-0.78, 0, 0.18);
+  poseSax(rig, 0);
   return sax;
+}
+
+/** Both arms up on the instrument: left hand on the upper keys, right around the lower body. */
+function poseSax(rig, t) {
+  const breath = Math.sin(t * 1.7) * 0.022;
+  const pump = Math.sin(t * 5.3);
+  const L = SAX_ARMS.L;
+  const Rr = SAX_ARMS.R;
+  rig.armL.pivot.rotation.set(L.px + breath, 0, L.pz);
+  rig.armL.elbow.rotation.set(L.ex + pump * 0.05, 0, L.ez);
+  rig.armR.pivot.rotation.set(Rr.px + breath, 0, Rr.pz);
+  rig.armR.elbow.rotation.set(Rr.ex + pump * 0.085, 0, Rr.ez);
+  rig.torso.rotation.y = Math.sin(t * 1.1) * 0.055;
+  rig.torso.rotation.z = breath * 0.5;
+  rig.head.rotation.x = 0.1 + breath * 0.8;
+  rig.head.rotation.y = Math.sin(t * 0.5) * 0.09;
+  rig.head.rotation.z = Math.sin(t * 0.8) * 0.035;
+  if (rig.saxProp) rig.saxProp.rotation.z = 0.185 + pump * 0.014;
 }
 
 /** The same song, every day, a little better than it needs to be. */
 export function animateSax(rig, dt) {
   rig.saxT = (rig.saxT || 0) + dt;
-  const t = rig.saxT;
-  if (rig.armR) rig.armR.pivot.rotation.x = -0.78 + Math.sin(t * 5.2) * 0.09;
-  if (rig.armL) rig.armL.pivot.rotation.x = -1.05 + Math.sin(t * 5.2 + 0.7) * 0.06;
-  if (rig.torso) rig.torso.rotation.y = Math.sin(t * 1.7) * 0.05;
-  if (rig.saxProp) rig.saxProp.rotation.z = 0.32 + Math.sin(t * 5.2) * 0.03;
+  poseSax(rig, rig.saxT);
 }
 
 export function createAddison() {
