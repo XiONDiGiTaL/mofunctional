@@ -710,7 +710,7 @@ export class Phone {
     const posts = s.feedPosts || [];
     const tabs = `<div class="feedtabs">
         <button class="${this.feedTab !== 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="feed">FEED</button>
-        <button class="${this.feedTab === 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="hearts">♥ HEARTS</button>
+        <button class="feedtabs__hearts ${this.feedTab === 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="hearts">♥ HEARTS · DATING</button>
       </div>`;
     if (this.feedTab === 'hearts') return `${this.header('FeedLove', 'HEARTS')}${tabs}${this.heartsView()}${this.footer()}`;
     return `${this.header('FeedLove', `${s.social.followers} FOLLOWERS`)}${tabs}
@@ -920,6 +920,10 @@ export class Phone {
       </div>`;
     }).join('');
     return `${this.header('LoveLine', 'KESTREL ST.')}
+      <button class="card dfind" data-act="openhearts">
+        <b>♥ Find someone on FeedLove HEARTS</b>
+        <span class="tiny">today's stack of profiles · send hearts · swap numbers</span>
+      </button>
       ${cards}
       <div class="tiny mono-dim">She has to be out and about: Stephanie after ten, Melanie through the day, Diana early. The park and the apartment are where you find them.
       <br><b>${T(romance.afterglowLabel(s) || 'No Afterglow right now.')}</b></div>
@@ -1086,6 +1090,7 @@ export class Phone {
       clinic() { clinic.checkIn(g); },
       clincheck() { clinic.checkIn(g); },
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
+      openhearts() { this.app = 'social'; this.msgId = null; this.feedTab = 'hearts'; this.heartNote = ''; },
       heart(arg) {
         const res = dating.sendHeart(g, arg);
         if (res.ok) this.heartNote = res.result === 'match' ? `It's a match. ${res.line}` : res.line;

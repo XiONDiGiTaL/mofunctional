@@ -717,6 +717,10 @@
 .feedtabs { display: flex; gap: 6px; margin-bottom: 4px; }
 .feedtabs button { flex: 1; border: 0; border-radius: 999px; padding: 6px 0; cursor: pointer; font-family: var(--ui); font-weight: 700; font-size: 10px; letter-spacing: .14em; color: #ffd0da; background: rgba(255, 106, 134, .12); }
 .feedtabs button.on { background: linear-gradient(180deg, #ff6a86, #a3123a); color: #fff; }
+.feedtabs button.feedtabs__hearts:not(.on) { box-shadow: inset 0 0 0 1px #ff6a86; color: #fff; }
+.card.dfind { display: block; width: 100%; text-align: left; cursor: pointer; border: 1px solid #ff6a86; background: linear-gradient(180deg, #ff6a86, #a3123a); color: #fff; font-family: var(--ui); }
+.dfind b { display: block; font-size: 12px; margin-bottom: 2px; }
+.card.dfind:hover { filter: brightness(1.12); }
 .dprof { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: rgba(255, 255, 255, .045); }
 .dprof__img { flex: none; width: 46px; height: 46px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #ff6a86; }
 .dprof__img--anon { display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 18px; color: #fff; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--t) 70%, #fff), var(--t)); box-shadow: 0 0 0 2px rgba(255, 255, 255, .15); }

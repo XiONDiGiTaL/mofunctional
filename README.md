@@ -259,7 +259,7 @@ Three adults can be dated: **Stephanie** (31, relaxed, low-maintenance), **Melan
 particular) and **Diana** (36, independent and exacting). They are approachable when the heart is
 over their head — the heart means *you could try*, not *she is interested*.
 
-**FeedLove HEARTS.** The social app has a dating side. Every morning it deals a fresh stack of
+**FeedLove HEARTS.** The social app has a dating side: open FeedLove and tap **♥ HEARTS · DATING** at the top, or the **Find someone** banner at the top of LoveLine. Every morning it deals a fresh stack of
 profiles — strangers from around the boroughs, and, until he has matched with them, Stephanie,
 Melanie and Diana. Sending a heart takes a few minutes and there are ten a day. Strangers almost
 always say no (unmatched before the heart finishes animating; "do you have a car?"; left on read
@@ -440,6 +440,7 @@ src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (
                         debug (the hidden menu)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
 scripts/test-systems.mjs  headless system checks (npm test)
+scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)
 docs/                   design notes, devlog, art handoff
 ```
 
@@ -447,7 +448,8 @@ Balance lives in `src/core/config.js`. Gameplay code reads from `CONFIG` rather 
 hard-coding numbers.
 
 ```bash
-npm run check    # syntax-checks every module (no dependencies)
+npm run stamp    # after changing any JS/CSS: re-stamps index.html so players get the new files
+npm run check    # syntax-checks every module and fails if index.html is not stamped
 npm test         # headless checks for the systems (no dependencies)
 ```
 
