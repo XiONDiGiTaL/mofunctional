@@ -7,7 +7,7 @@ import { countItem, inventoryList, addItem, removeItem, hasItem } from '../core/
 import { bump } from '../core/state.js';
 import { money, chance, pick, clamp, randInt, minuteOfDay, dayOf, hhmm } from '../core/util.js';
 import { eat, sleep, useSubstance, soberUp } from '../systems/needs.js';
-import { visitFellowship, serviceWindow } from '../systems/fellowship.js';
+import { visitFellowship, serviceWindow, donate } from '../systems/fellowship.js';
 import { workShift, callOut, quitJob, applyForJob, doOddJob, oddJobsAvailable, shiftInfo } from '../systems/jobs.js';
 import { buyFood, sellToDex, buyGrabBag, billInfo } from '../systems/economy.js';
 import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
@@ -1281,7 +1281,7 @@ export function buildChurch(g) {
 
   const interactables = [
     { id: 'addison', label: 'Speak with Addison Octavius', sub: 'he is expecting you', x: 0, z: -4.6, action: (gg) => visitFellowship(gg) },
-    { id: 'donate', label: 'Put money in the donation box', sub: '$10 · +morale, +favour', x: -2.6, z: -4.4, action: (gg) => { if (gg.state.money < 10) { gg.toast('You cannot donate what you do not have. He would understand.', 'bad'); return; } gg.spendMoney(10, 'Fellowship donation'); bump(gg.state, 'morale', 4); gg.state.npc.addison++; gg.toast('The box makes a sound like a swallow.', 'event'); } },
+    { id: 'donate', label: 'Put money in the donation box', sub: '$10 · +morale, +favour', x: -2.6, z: -4.4, action: (gg) => { if (gg.state.money < 10) { gg.toast('You cannot donate what you do not have. He would understand.', 'bad'); return; } if (donate(gg, 10)) gg.toast('The box makes a sound like a swallow.', 'event'); } },
     { id: 'candle', label: 'Light a candle', sub: '10 min · +morale', x: 1.5, z: -5.0, action: (gg) => { gg.advance(10); bump(gg.state, 'morale', 4); bump(gg.state, 'stress', -5); gg.toast('You light one. You do not know who it is for. That is fine.', 'good'); } },
     { id: 'cot', label: 'Ask about a cot', sub: 'a night here · it is never free', x: 4.4, z: 3.0, action: (gg) => cotMenu(gg) },
     { id: 'restroom', label: 'Wash up in the restroom', sub: '20 min · +hygiene', x: -4.4, z: 3.0, action: (gg) => life.washUp?.(gg, 'church') },

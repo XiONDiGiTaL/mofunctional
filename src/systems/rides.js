@@ -176,3 +176,12 @@ export function ride(g, destId) {
   else g.goTo(dest.area, dest.from);
   return { fare, dest, line: pick(C().rideLines) };
 }
+
+/**
+ * How fast the car is allowed to roll `elapsed` seconds into the pull-off: it starts under a walk
+ * and gains CONFIG.rides.chaseRamp a second, up to chaseSpeed. Mo walks 2.45.
+ */
+export function pullOffCruise(elapsed) {
+  const R = CONFIG.rides;
+  return Math.min(R.chaseSpeed, 1.0 + Math.max(0, elapsed) * (R.chaseRamp ?? 0.3));
+}

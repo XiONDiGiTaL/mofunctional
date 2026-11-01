@@ -6,7 +6,7 @@ import { bump } from '../core/state.js';
 import { billInfo, payBill, setAutopay, buyFood, applyForCRP, recertCRP, claimUtilityGrant, listItem, cancelListing, buyGrabBag, GROCERY } from '../systems/economy.js';
 import { eat, useSubstance, sleep, soberUp } from '../systems/needs.js';
 import { shiftInfo, doOddJob, oddJobsAvailable, applyForJob, quitJob, callOut, workShift } from '../systems/jobs.js';
-import { fellowshipStage, serviceWindow } from '../systems/fellowship.js';
+import { fellowshipStage, serviceWindow, donate, donationProgress } from '../systems/fellowship.js';
 import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
 import { kindForName } from './threads.js';
@@ -1012,7 +1012,8 @@ export class Phone {
         <button class="btn btn--sm" data-act="textaddison">TEXT ADDISON</button>
         ${CONFIG.church.donations.map((n) => `<button class="btn btn--sm btn--gold" data-act="churchdonate" data-arg="${n}" ${s.money < n ? 'disabled' : ''}>GIVE $${n}</button>`).join('')}
       </div>
-      <div class="tiny mono-dim">Visiting takes real time. Services are Sunday 11:00. Standing with the Shepherd: ${s.npc.addison}. Giving from the app counts the same as the box, and it counts on any day of the week.</div>
+      <div class="tiny mono-dim">Visiting takes real time. Services are Sunday 11:00. Standing with the Shepherd: ${s.npc.addison || 0}. Giving from the app counts the same as the box, on any day of the week: it pays your tithe first, and every ${money(CONFIG.fellowship.donationPerStep)} after that counts as a Sunday toward your stage.</div>
+      ${(() => { const p = donationProgress(s); return `<div class="tiny mono-dim">Given so far: ${money(p.donated)}${p.toNext != null ? ` · ${money(p.toNext)} to the next step` : ' · they could not love you more, officially'}</div>`; })()}
       ${this.footer()}`;
   }
 
@@ -1445,11 +1446,9 @@ export class Phone {
         const amt = Number(arg) || CONFIG.church.donations[0];
         const st = g.state;
         if (st.money < amt) { g.toast('You cannot give what you do not have. He would understand. Understanding is free.', 'bad'); return; }
-        g.spendMoney(amt, 'Fellowship donation');
-        const stand = Math.max(1, Math.round(amt / 10));
-        st.npc.addison += stand;
-        bump(st, 'morale', amt >= 50 ? 8 : 4);
-        g.toast(`The app says THANK YOU and then asks if you would like to round up. Standing with the Shepherd: ${st.npc.addison}.`, 'event');
+        // one giving system: the app, the box and Blessed+ all go through fellowship.donate, which
+        // pays the tithe, raises the tally and moves the stage (the tally alone moved nothing)
+        donate(g, amt);
       },
       hometab(arg) { this.homeTab = arg || 'street'; },
       fanssub() { const r = fans.subscribe(g); if (!r.ok && r.reason === 'short') return; },

@@ -289,6 +289,7 @@ export function buildSubway(g) {
     interactables,
     tick,
     ambient: 'street',
+    title: 'Kestrel St Station',
     enterToast: 'The Kestrel St station. Warm air, tile, and the sound of something arriving in the dark.',
   };
 }
@@ -328,6 +329,9 @@ export function buildParkSlope(g) {
   // diner
   group.add(box(4.4, 2.2, 0.12, retroMaterial('ps_diner', { color: 0x8a2a26, emissive: 0.15 }), [4, 1.4, -5.4]));
   group.add(plane(2.6, 0.4, { name: 'ps_dinersign', map: signTex('signDiner', [{ text: 'SLOPE DINER', color: '#fff0c0', size: 10 }], { w: 96, h: 18, bg: '#5a1a16' }), emissive: 0.9, unlit: true }, [4, 2.7, -5.3]));
+  // the dog-walker board, taped to the lamp post by the diner
+  group.add(box(0.5, 0.7, 0.03, retroMaterial('ps_dogboard', { color: 0xe8e2c8 }), [6, 1.7, 0.92]));
+  group.add(plane(0.46, 0.18, { name: 'ps_dogsign', map: signTex('signDogs', [{ text: 'WALKERS WANTED', color: '#1a1a1a', size: 8 }], { w: 96, h: 22, bg: '#e8e2c8' }), unlit: true, emissive: 0.4 }, [6, 1.92, 0.94], [0, 0, 0]));
   // the stairwell down to the Basement, with a bouncer-shaped shadow
   group.add(box(2.2, 0.2, 1.6, M.concrete, [13, 0.1, -4.4]));
   for (let i = 0; i < 5; i++) group.add(box(2.0, 0.14, 0.3, M.concrete, [13, 0.07 + i * 0.14, -4.4 + i * 0.3]));
@@ -340,7 +344,12 @@ export function buildParkSlope(g) {
   const interactables = [
     { id: 'ps_subway', label: 'Down to the station', sub: 'the Kestrel St line', x: -17.5, z: 0.6, radius: 1.7, action: (gg) => gg.goTo('subway', 'parkslope') },
     { id: 'ps_thrift', label: 'Second Chances thrift', sub: 'other people\'s clothes, cheap', x: -9, z: -4.6, radius: 1.6, action: (gg) => wardrobeMenu(gg) },
-    { id: 'ps_diner', label: 'Slope Diner', sub: 'coffee and a plate · $9', x: 4, z: -4.6, radius: 1.6, action: (gg) => diner(gg) },
+    { id: 'ps_diner', label: 'Slope Diner', sub: 'coffee, a plate · they need a dishwasher', x: 4, z: -4.6, radius: 1.6, action: (gg) => diner(gg) },
+    { id: 'ps_dogs', label: 'The dog-walker board', sub: 'tear-off tabs · cash for walks', x: 6, z: 0.2, radius: 1.3, action: (gg) => gg.openModal({
+      kicker: 'PARK SLOPE', title: 'WALKERS NEEDED',
+      body: 'Handwritten, laminated, the tabs half torn off. "Responsible adult to walk three very good boys. Cash. References optional if you are nice to them."',
+      choices: [slopeJob(gg, 'dogs', 'Walk the dogs.'), { label: 'Not today.', effect: () => {} }],
+    }) },
     { id: 'ps_club', label: 'Down the stairwell · The Basement', sub: 'fights · cash · one a night', x: 13, z: -3.7, radius: 1.5, action: (gg) => gg.goTo('basement', 'parkslope') },
     { id: 'ps_marcy', label: 'Through the gate · Marcy Houses', sub: 'the projects · do not go in stupid', x: 19.6, z: -1.4, radius: 1.8, action: (gg) => gg.goTo('projects', 'parkslope') },
     { id: 'ps_labor', label: 'Day labor pickup', sub: 'a guy in a van · $45 · 3 hours · once a day', x: -2.5, z: 0.2, radius: 1.5, action: (gg) => dayLabor(gg) },
@@ -384,22 +393,51 @@ export function buildParkSlope(g) {
     interactables,
     tick,
     ambient: 'street',
+    title: 'Park Slope',
     enterToast: 'Park Slope. Somebody waters flowers here on purpose.',
   };
 }
 
 /* ---------------------------------------------------------------- Park Slope menus */
 
+/** One shift of Park Slope cash work: once a day, in its hours, paid on the spot. */
+function slopeJob(g, id, label) {
+  const J = CONFIG.slopeJobs[id];
+  const s = g.state;
+  s.gigs = s.gigs || {};
+  const day = dayOf(s.clock.m);
+  const m = minuteOfDay(s.clock.m);
+  const done = s.gigs[id] === day;
+  const open = m >= J.from * 60 && m <= J.to * 60;
+  const pad = (h) => String(h).padStart(2, '0');
+  return {
+    label,
+    sub: done ? 'done for today' : !open ? `hiring ${pad(J.from)}:00 to ${pad(J.to)}:00` : `${J.hours} h · ${money(J.pay)} cash`,
+    disabled: done || !open || s.stats.energy < 15,
+    effect: () => {
+      s.gigs[id] = day;
+      g.advance(J.hours * 60);
+      bump(s, 'energy', -J.energy);
+      bump(s, 'hunger', -J.hours * 4);
+      if (J.morale) bump(s, 'morale', J.morale);
+      g.earnMoney(J.pay, J.name);
+      logLine(g, `${J.name}: ${money(J.pay)}.`, 'good');
+      g.toast(J.line, 'good');
+    },
+  };
+}
+
 function diner(g) {
   const s = g.state;
   const price = 9;
-  if (s.money < price) { g.toast('Nine dollars for a plate. You have less than a plate.', 'bad'); return; }
+  // the door is open to anybody: a man with two dollars can still buy a coffee or ask for work
   g.openModal({
     kicker: 'PARK SLOPE · SLOPE DINER', title: 'Counter',
     body: 'A man in an apron is doing three things at once and none of them to you. The special is on a card that has been rewritten so many times the paper is soft.',
     choices: [
-      { label: 'Eggs, potatoes, coffee.', sub: `${money(price)} · +hunger, +morale`, effect: () => { g.spendMoney(price, 'Slope Diner'); g.advance(30); bump(s, 'hunger', 34); bump(s, 'morale', 7); bump(s, 'energy', 12); g.audio.sfx('eat'); g.toast('The potatoes have something on them that is not salt and he will not say what.', 'good'); } },
+      { label: 'Eggs, potatoes, coffee.', sub: `${money(price)} · +hunger, +morale`, disabled: s.money < price, effect: () => { g.spendMoney(price, 'Slope Diner'); g.advance(30); bump(s, 'hunger', 34); bump(s, 'morale', 7); bump(s, 'energy', 12); g.audio.sfx('eat'); g.toast('The potatoes have something on them that is not salt and he will not say what.', 'good'); } },
       { label: 'Just coffee.', sub: '$2 · +energy', disabled: s.money < 2, effect: () => { g.spendMoney(2, 'Slope Diner coffee'); g.advance(12); bump(s, 'energy', 10); g.toast('It is good coffee. That is the whole review.', 'good'); } },
+      slopeJob(g, 'dishes', 'Ask about the dishwasher job.'),
       { label: 'Look at the card and leave.', effect: () => {} },
     ],
   });
@@ -515,6 +553,7 @@ export function buildBasement(g) {
     ],
     tick,
     ambient: 'street',
+    title: 'The Basement',
     enterToast: 'The Basement. It smells like wet concrete and other people\'s effort.',
   };
   void s;
@@ -584,6 +623,7 @@ export function buildProjects(g) {
     ],
     tick,
     ambient: 'street',
+    title: 'Marcy Houses',
     enterToast: 'The Marcy Houses. The buildings are the same colour as the sky and about as friendly.',
   };
   void s;

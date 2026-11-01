@@ -10,6 +10,30 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Review of the district / HailMary chase work, and fixes on top
+
+- HailMary pull-off: rolls west (the way it leaves) instead of east then U-turning; keeps its
+  heading when parked (it snapped to east on arrival); its camera solid follows it; the whole
+  wait, grace window and chase pause while any menu is open; "Get in" during the pull-off counts
+  as the catch and sits at the door with the catch's 1.5 m reach; Mo's reply and the stumble share
+  one feed line. While the car is on screen it holds `ride.leaveAt` open: the 15 game-minute
+  limit (about 7 real seconds at 1x) used to cancel the ride before the two-minute wait or the
+  chase could ever happen. `rides.pullOffCruise` with `CONFIG.rides.chaseRamp` 0.3: a committed
+  run from up to ~5 m back catches it as late as ~4.4 s (at the old 0.4, never after ~3.1 s).
+- Fight meter: no swings once a fight is decided (each extra swing paid the purse or loot again).
+- Brawl: `chain` (not an item) is `necklace`; a body is searchable once a day, not once a run per
+  key; loot toasts show item names. Women and anyone Mo is seeing run at the first punch (a
+  partner loses 60 affection; a girlfriend or live-in breaks up). The dog and the bike kid are
+  reachable targets (kick: like down, the dog runs; the kid is refused). Fled people's prompts use
+  `hidden`. A chasing cop runs at `brawl.copSpeed` 2.2, gives up after 4 s more than 12 m behind,
+  and is removed on an area change (the old rig could arrest Mo in the next room). Punch on L3.
+- One giving system: the Blessed+ app buttons and the church box go through `fellowship.donate`,
+  which pays the tithe first, keeps the Shepherd's tally and moves the stage (the tally alone moved
+  nothing). The phone and laptop close before a substance or a loosie. Area loads clear the
+  consuming lock and let go of a held hand. The HUD clears the unavailable style with the prompt.
+- Park Slope: a dishwashing shift at the Slope Diner and a dog-walker board (`CONFIG.slopeJobs`);
+  the diner no longer turns away a man who can afford coffee. District areas have titles.
+
 ### Quality of life
 
 - Prompts: World collects every interactable in reach (`nearList`, `pickIndex`), `X`/pad X

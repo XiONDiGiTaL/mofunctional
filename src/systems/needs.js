@@ -219,6 +219,8 @@ export function eat(g, itemId, from = 'inventory') {
   if (def.kind === 'food') s.counters.meals++;
   const verb = def.kind === 'food' ? 'Ate' : itemId === 'loosies' ? 'Smoked' : 'Drank';
   logLine(g, `${verb} ${def.name}.`, 'good');
+  // a smoke is worth watching: the phone goes in the pocket first
+  if (itemId === 'loosies' && g.phone?.isOpen) g.phone.close();
   g.world?.playEat?.(itemId, (name) => g.audio?.sfx?.(name));
   g.advance(def.kind === 'food' ? 15 : 8);
   if (def.kind === 'food' && s.flags.tutorial === 1) { s.flags.tutorial = 2; g.bus.emit('tutorial'); }
@@ -275,6 +277,9 @@ export function useSubstance(g, itemId) {
   if (g.modalOpen) g.modal?.close?.();
   const finish = () => { applySubstance(g, itemId); g.world?.witnessed?.(g); };
   if (g.world?.playSubstance) {
+    // put the phone (or the laptop) away first, so the player watches it happen
+    if (g.laptop?.isOpen) g.laptop.close();
+    if (g.phone?.isOpen) g.phone.close();
     s.flags.consuming = true;
     g.world.playSubstance(itemId, style, () => { s.flags.consuming = false; finish(); });
     return true;

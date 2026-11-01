@@ -35,7 +35,7 @@ export const BINDINGS = [
   { id: 'orbitR', label: 'Turn camera right', key: 'KeyE', extra: [], pad: 'RB / RT / right stick' },
   { id: 'camreset', label: 'Reset camera', key: 'KeyV', extra: [], pad: 'R3 (click right stick)' },
   { id: 'interact', label: 'Interact / confirm', key: 'KeyF', extra: ['Space', 'Enter'], pad: 'A' },
-  { id: 'punch', label: 'Throw a punch', key: 'KeyZ', extra: [], pad: '—' },
+  { id: 'punch', label: 'Throw a punch', key: 'KeyZ', extra: [], pad: 'L3 (click left stick)' },
   { id: 'cycle', label: 'Next thing in reach', key: 'KeyX', extra: [], pad: 'X' },
   { id: 'map', label: 'Map', key: 'KeyM', extra: [], pad: '—' },
   { id: 'today', label: 'Today panel', key: 'KeyT', extra: [], pad: '—' },
@@ -259,6 +259,7 @@ export class InputSystem {
       this.edge('X', 'cycle');
       this.edge('BACK', 'crt');
       this.edge('R3', 'camreset');
+      this.edge('L3', 'punch');
     }
 
     // normalise the move vector so diagonals are not faster

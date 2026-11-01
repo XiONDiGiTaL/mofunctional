@@ -142,6 +142,64 @@ function attendService(g) {
   g.audio.sfx('confirm');
 }
 
+/**
+ * A gift through Blessed+, any day of the week. Addison notices money the way other people notice
+ * weather. It pays down an outstanding tithe first; the rest is goodwill, and every
+ * CONFIG.fellowship.donationPerStep of goodwill counts as a Sunday toward the next stage (up to the
+ * Inner Circle; the pledge itself is still only offered in person). Returns false if Mo is short.
+ */
+export function donate(g, amount) {
+  const s = g.state;
+  const f = s.fellowship;
+  if (s.fellowship.pledged || amount <= 0 || s.money < amount) return false;
+  spend(g, amount, 'Blessed+ gift');
+  const toTithe = Math.min(f.titheOwed || 0, amount);
+  f.titheOwed = Math.round(((f.titheOwed || 0) - toTithe) * 100) / 100;
+  f.donated = Math.round(((f.donated || 0) + amount - toTithe) * 100) / 100;
+  f.lastDonationDay = dayOf(s.clock.m);
+  // the Shepherd's own tally of who gives (shown in the app), a point per ten dollars
+  s.npc = s.npc || {};
+  s.npc.addison = (s.npc.addison || 0) + Math.max(1, Math.round(amount / 10));
+  bump(s, 'morale', amount >= 50 ? 8 : 4);
+  if (f.stage === 0) {
+    f.stage = 1;
+    s.flags.metAddison = true;
+    pushMessage(g, { from: 'ADDISON OCTAVIUS', subject: 'We noticed', body: `A gift from a stranger is the best kind, because it means you are not a stranger anymore.
+
+Come by. Sunday, 11:00. Your seat has your name on it.
+
+Salt & gold,
+Addison` });
+  }
+  const step = F.donationPerStep || 60;
+  const stage = Math.min(4, Math.max(f.stage, 1 + (s.counters.sundaysAttended || 0) + Math.floor((f.donated || 0) / step)));
+  if (stage > f.stage) {
+    f.stage = stage;
+    const label = F.stages[stage].label;
+    g.toast(`Fellowship: you are now "${label}". Generosity is a kind of attendance, apparently.`, 'gold');
+    logLine(g, `Fellowship stage: ${label}.`, 'event');
+    pushMessage(g, { from: 'ADDISON OCTAVIUS', subject: `Welcome to ${label}`, body: `The Stewardship Office tells me your name came up today. Twice. In a good way.
+
+Salt & gold,
+Addison` });
+    if (stage === 4) bump(s, 'stress', 8);
+  } else {
+    g.toast(toTithe ? `Gift received. ${money(toTithe)} went to your tithe first. Addison would want you to know that.` : `Gift received. A notification says Addison "hearted" it.`, 'gold');
+  }
+  logLine(g, `Gave ${money(amount)} through Blessed+.`, 'info');
+  g.audio?.sfx?.('cash');
+  return true;
+}
+
+/** How far a gift is from the next stage, for the app: { donated, toNext } (toNext null at the top). */
+export function donationProgress(s) {
+  const f = s.fellowship;
+  const step = F.donationPerStep || 60;
+  const donated = f.donated || 0;
+  if (f.stage >= 4 || f.pledged) return { donated, toNext: null };
+  return { donated, toNext: Math.round((step - (donated % step)) * 100) / 100 };
+}
+
 function settleTithe(g) {
   const s = g.state;
   const owed = s.fellowship.titheOwed;

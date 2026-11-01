@@ -20,6 +20,7 @@ export class FightMeter {
     this.pos = 0;
     this.dir = 1;
     this.locked = 0;
+    this.finished = false;
     this.el = document.createElement('div');
     this.el.className = 'fightm';
     this.el.innerHTML = `<div class="fightm__box">
@@ -39,7 +40,9 @@ export class FightMeter {
     const showEnergy = () => { enEl.textContent = `${Math.max(0, Math.round(g.state.stats.energy))} energy`; };
     showEnergy();
     const swing = () => {
-      if (this.locked > 0 || !this.el) return;
+      // once the fight is decided the meter takes no more swings: each extra one called done()
+      // again, and every done() paid the purse (or the loot) again
+      if (this.locked > 0 || !this.el || this.finished) return;
       this.locked = 0.45;
       const landed = this.pos >= zone.a && this.pos <= zone.b;
       g.world?.playPunch?.(landed);
@@ -49,6 +52,7 @@ export class FightMeter {
       showEnergy();
       msg.textContent = landed ? 'That one landed.' : 'He hits back. Hard.';
       if (st.over) {
+        this.finished = true;
         setTimeout(() => { this.close(); done(st.over); }, 500);
       }
     };

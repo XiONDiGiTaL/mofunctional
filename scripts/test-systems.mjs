@@ -14,6 +14,9 @@ import { buildGrid, findPath } from '../src/world/pathing.js';
 import { openAt, closedReason } from '../src/world/hours.js';
 import { todayItems, wouldMiss } from '../src/ui/today.js';
 import { groupOf } from '../src/ui/notify.js';
+import * as brawlSys from '../src/systems/brawl.js';
+import { donate } from '../src/systems/fellowship.js';
+import { pullOffCruise } from '../src/systems/rides.js';
 import { ICON_IDS, itemIcon } from '../src/ui/icons.js';
 import { moveFood, fridgeCount } from '../src/systems/needs.js';
 import { BINDINGS, keysFor, rebind, resetBindings } from '../src/core/input.js';
@@ -1571,6 +1574,59 @@ check('icons: every item has its own art, and every icon is a well-formed svg', 
   const missing = Object.keys(CONFIG.items).filter((id) => !ICON_IDS.includes(id));
   eq(missing.join(','), '', 'items without art');
   for (const id of ICON_IDS) eq(/^<span class="itemicon[^"]*"><svg viewBox="0 0 64 64"[\s\S]*<\/svg><\/span>$/.test(itemIcon(id)), true, id);
+  return true;
+});
+
+check('Blessed+: a gift pays the tithe first, then counts toward standing', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 500;
+  s.fellowship.stage = 1;
+  s.fellowship.titheOwed = 10;
+  eq(donate(g, 70), true, 'given');
+  eq(s.fellowship.titheOwed, 0, 'tithe paid first');
+  eq(s.fellowship.donated, 60, 'the rest is goodwill');
+  eq(s.fellowship.stage, 2, 'a Sunday\'s worth of goodwill moves him up');
+  eq(donate(g, 9999), false, 'not more than he has');
+  return true;
+});
+
+check('brawl: a body can be searched once a day, and pockets hold real items', () => {
+  const g = stubGame();
+  const s = g.state;
+  const r1 = brawlSys.loot(g, { kind: 'thug', key: 'street_thug' });
+  eq(r1.ok, true, 'first search');
+  eq(brawlSys.loot(g, { kind: 'thug', key: 'street_thug' }).ok, false, 'not twice the same day');
+  s.clock.m += 1440;
+  eq(brawlSys.loot(g, { kind: 'thug', key: 'street_thug' }).ok, true, 'a new day, a new thug');
+  for (let i = 0; i < 60; i++) {
+    s.clock.m += 1440;
+    const r = brawlSys.loot(g, { kind: 'thug', key: 'street_thug' });
+    for (const id of r.ids || []) eq(!!CONFIG.items[id], true, `${id} is a real item`);
+  }
+  eq(brawlSys.runsAtOnce({ partner: true }), true, 'someone he is seeing runs');
+  return true;
+});
+
+check('HailMary: the pull-off stays under his walk long enough to catch it at four seconds', () => {
+  // the car's real per-frame motion against Mo at 2.45 m/s, door reach 1.5 m
+  const dt = 1 / 60;
+  const reach = CONFIG.rides.doorReach;
+  const catchAt = (gap) => {
+    let car = 0, sp = 0, mo = -gap, v = 2.45;
+    for (let t = 0; t < CONFIG.rides.graceSeconds; t += dt) {
+      sp = Math.min(pullOffCruise(t), sp + 6 * dt);
+      car += sp * dt;
+      if (Math.abs(t - 2.5) < dt / 2) v *= 0.6;
+      v += (2.45 - v) * Math.min(1, dt * 11);
+      mo += v * dt;
+      if (car - mo < reach) return t;
+    }
+    return null;
+  };
+  eq(catchAt(1) !== null, true, 'at the door when it starts');
+  eq(catchAt(4.97) > 4, true, 'a committed run from five metres back still makes it after four seconds');
+  eq(catchAt(7), null, 'from seven metres back it is gone');
   return true;
 });
 

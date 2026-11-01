@@ -10,7 +10,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { signTex } from '../render/signs.js';
 import { CONFIG } from '../core/config.js';
-import { rideState, DESTINATIONS, fareTo, tooClose, ride, noShowRide } from '../systems/rides.js';
+import { rideState, DESTINATIONS, fareTo, tooClose, ride, noShowRide, pullOffCruise } from '../systems/rides.js';
 import { money, pick } from '../core/util.js';
 import { buildVehicle } from './vehicles.js';
 import { ROAD } from './plan.js';
@@ -42,7 +42,7 @@ const SHOUT_AT = [1.2, 3.2];
 /** What Mo yells back, once, a beat after the first earful. */
 const MO_REPLY = [
   '"I am coming! I am COMING!"',
-  '"Wait — WAIT —"',
+  '"Wait! WAIT!"',
   '"You saw me! You SAW me standing there!"',
   '"Five more seconds! FIVE!"',
 ];
@@ -98,7 +98,9 @@ export class RideCar {
     this.leaving = false;
     this.interact = {
       id: 'ridecar', label: 'Get in the black car', sub: `HailMary · ${r.driver}`, x: r.x, z: 0.9, radius: 1.8,
-      action: (gg) => rideMenu(gg),
+      // reaching the door mid-pull-off is the same thing as catching it: the car stops first, so
+      // the destination menu never opens on a car that is still driving away
+      action: (gg) => { if (this.grace >= 0) this.caught(gg); rideMenu(gg); },
     };
     w.interactables.push(this.interact);
     // a low-poly arrow over the roof: a black car among black cars is not a landmark
@@ -132,6 +134,8 @@ export class RideCar {
     this.replied = false;
     this.tripped = false;
     this.speed = 0;
+    // it drives in from the east heading west, and keeps facing west at the curb
+    this.heading = Math.PI;
     this.parked = !!inPlace;
     this.waitT = 0;
     this.bob = 0;
@@ -179,8 +183,26 @@ export class RideCar {
     this.tripped = false;
   }
 
+  /** Caught mid-pull-off: it stops where he reached it, the door is open and the clock is fresh. */
+  caught(g) {
+    if (this.grace < 0 || !this.car) return;
+    const late = this.grace <= CONFIG.rides.graceSeconds * 0.4;
+    this.grace = -1;
+    this.waitT = 0;
+    this.lastCall = false;
+    this.speed = 0;
+    this.baseX = this.car.position.x;
+    this.targetX = this.baseX;
+    if (this.solid) this.solid.x = this.baseX;
+    if (this.interact) { this.interact.z = 0.9; this.interact.radius = 1.8; }
+    g?.toast?.(late ? `${pick(CHASE_LINES)} (${this.driver})` : 'You caught it. The door is open.', 'good');
+  }
+
   update(dt, g) {
     if (!this.car) return;
+    // a menu on screen holds the whole scene, the car's clock and its pull-off included: the wait,
+    // the grace window and the chase all used to run on behind the destination menu
+    if (g?.uiBusy) return;
     const p = this.car.position;
     const dx = this.targetX - p.x;
     // it pulls in and out under acceleration instead of hitting nine metres a second the frame it
@@ -191,19 +213,32 @@ export class RideCar {
       // at three or four seconds is still there for a man who committed on the first frame, and
       // gone for one who stood at the kerb deciding
       const elapsed = CONFIG.rides.graceSeconds - this.grace;
-      const cruise = Math.min(CONFIG.rides.chaseSpeed, 1.0 + elapsed * 0.40);
+      const cruise = pullOffCruise(elapsed);
       this.speed = Math.min(cruise, (this.speed || 0) + 6 * dt);
-      this.targetX = p.x + 3;
-      if (p.x < this.baseX + 14) p.x += Math.min(3, this.speed * dt);
+      // west, the way it leaves the block: rolling east and then turning round to leave was a
+      // U-turn in the middle of Kestrel Street
+      this.targetX = p.x - 3;
+      if (p.x > this.baseX - 14) p.x -= Math.min(3, this.speed * dt);
     } else {
       const want = this.leaving ? 8.5 : Math.min(6, 1.2 + Math.abs(dx) * 0.5);
       this.speed = Math.min(want, (this.speed || 0) + (this.leaving ? 4 : 6) * dt);
       if (Math.abs(dx) > 0.05) p.x += Math.sign(dx) * Math.min(Math.abs(dx), this.speed * dt);
       else { p.x = this.targetX; this.speed = 0; }
     }
-    this.car.rotation.y = this.leaving || dx < 0 ? Math.PI : 0;
-    // the prompt follows the car while it is rolling off, since the curb point is now behind it
-    if (this.interact) this.interact.x = p.x;
+    // face the way it is moving; at rest it keeps the last heading (it used to snap round to east
+    // the moment it parked, because a parked car has no dx)
+    if (this.leaving || chasing) this.heading = Math.PI;
+    else if (Math.abs(dx) > 0.05) this.heading = dx < 0 ? Math.PI : 0;
+    this.car.rotation.y = this.heading;
+    // the prompt follows the car while it is rolling off, and while it rolls it sits at the door
+    // with the catch's own reach, so "Get in" is lit exactly when a catch would count
+    if (this.interact) {
+      this.interact.x = p.x;
+      this.interact.z = chasing ? DOOR_Z : 0.9;
+      this.interact.radius = chasing ? CONFIG.rides.doorReach : 1.8;
+    }
+    // the camera's wall goes where the car goes
+    if (this.solid) this.solid.x = p.x;
     // parked: a honk, an arrow, and the engine idling until he gets in or the clock runs out
     const arrived = !this.leaving && Math.abs(dx) < 0.12;
     if (arrived && !this.parked) {
@@ -228,6 +263,12 @@ export class RideCar {
       } else if (this.flash.visible) this.flash.visible = false;
     }
     if (this.parked && !this.leaving) {
+      // while the car is here on screen its own real-time clock is the one that counts: the
+      // game-time limit (rides.waitMinutes, 15 game minutes, about 7 real seconds at 1x) used to
+      // cancel the ride long before the two-minute wait or the pull-off could happen. The game
+      // clock still applies when Mo is somewhere else and the car is not drawn.
+      const r = rideState(g.state);
+      if (r.status === 'waiting') r.leaveAt = Math.max(r.leaveAt || 0, g.state.clock.m + 2);
       this.waitT = (this.waitT || 0) + dt;
       // thirty seconds out: a second honk and the headlights, so leaving is not a surprise
       if (!this.lastCall && CONFIG.rides.waitSeconds - this.waitT <= 30) {
@@ -243,10 +284,9 @@ export class RideCar {
           this.shout = 0;
           this.replied = false;
           this.tripped = false;
-          this.targetX = this.baseX + 3;
-          if (this.interact) this.interact.radius = 2.4;
+          this.targetX = this.baseX - 3;
           g?.audio?.sfx?.('honk');
-          g?.toast?.(`${this.driver || 'Your driver'} is pulling off — run.`, 'bad');
+          g?.toast?.(`${this.driver || 'Your driver'} is pulling off. Run.`, 'bad');
         } else {
           this.grace -= dt;
           const into = CONFIG.rides.graceSeconds - this.grace;
@@ -257,34 +297,20 @@ export class RideCar {
             this.flashT = 1.4;
             g?.audio?.sfx?.('honk');
           }
-          // he gives the driver some of it back, and the kerb takes it out of him
-          if (!this.replied && into >= REPLY_AT) {
-            this.replied = true;
-            g?.toast?.(`You: ${pick(MO_REPLY)}`, 'info');
-          }
+          // he gives the driver some of it back, and the kerb takes it out of him: one line in the
+          // feed for both, so five seconds do not fill it with five messages
+          if (!this.replied && into >= REPLY_AT) this.replied = true;
           if (!this.tripped && into >= STUMBLE_AT) {
             this.tripped = true;
             const v = this.world.vel;
             if (v) { v.x *= 0.6; v.z *= 0.6; }
-            g?.toast?.('You catch a boot on the kerb and stumble.', 'bad');
+            g?.toast?.(`You: ${pick(MO_REPLY)} Your boot catches the kerb and you stumble.`, 'bad');
           }
           // at the door, alongside it: standing behind the car or at the far kerb does not count
           const mo = this.world.mo?.root?.position;
           const near = mo && Math.hypot(mo.x - this.car.position.x, mo.z - DOOR_Z) < CONFIG.rides.doorReach;
           if (near) {
-            // caught: it stops where it is and the door is open, with a fresh clock
-            const late = this.grace <= CONFIG.rides.graceSeconds * 0.4;
-            this.grace = -1;
-            this.waitT = 0;
-            this.lastCall = false;
-            // it stops where he reached it; no walk back to the old kerb
-            this.baseX = this.car.position.x;
-            this.targetX = this.baseX;
-            if (this.solid) this.solid.x = this.baseX;
-            if (this.interact) this.interact.radius = 1.8;
-            g?.toast?.(late
-              ? `${pick(CHASE_LINES)} — ${this.driver}`
-              : 'You caught it. The door is open.', 'good');
+            this.caught(g);
           } else if (this.grace <= 0) {
             const res = noShowRide(g);
             if (res) {

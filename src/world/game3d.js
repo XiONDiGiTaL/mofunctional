@@ -20,9 +20,10 @@ import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
 import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
-import { isPartnerId, partnerState, PARTNER_KEYS, homeChat } from '../systems/romance.js';
+import { isPartnerId, partnerState, PARTNER_KEYS, homeChat, breakUp } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
-import { clamp, lerp, minuteOfDay, dayOf, money, hhmm } from '../core/util.js';
+import { clamp, lerp, minuteOfDay, dayOf, money, hhmm, pick } from '../core/util.js';
+import { faceSpec } from '../render/heads.js';
 import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, PARTNER_HOME_SPOTS, strangerRunIns, strangerTarget } from './schedules.js';
 import { ceilingFor, armLength, armMax, eyeHeight, liftFor } from './cameraLimits.js';
 import { strangerMenu, strangerLabel, niaMenu } from './encounters.js';
@@ -103,6 +104,10 @@ export class World {
   }
 
   clearArea() {
+    // a chase does not follow him through a door: the old rig used to keep walking at his new
+    // coordinates and could arrest him in a room the cop was never in
+    if (this.chaseRig) { this.chaseRig.root.parent?.remove(this.chaseRig.root); this.chaseRig = null; }
+    this.chaseLost = 0;
     this.eating?.stop();
     this.handoff?.stop();
     this.affection?.stop();
@@ -158,6 +163,10 @@ export class World {
   }
 
   loadArea(id, g, spawnId = null) {
+    // a new place lets go of anything that had hold of Mo in the old one (the phone can move him
+    // mid-anything); an in-flight lock surviving the move is a man who can never walk again
+    if (this.affection?.holding) this.affection.letGo?.();
+    if (g?.state?.flags) g.state.flags.consuming = false;
     this.clearArea();
     this.moveTarget = null;
     this.vel.set(0, 0, 0);
@@ -730,7 +739,27 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if ((this.punchCool || 0) > 0) return;
     this.punchCool = 0.34;
     this.punchT = 0.34;
+    // the dog and the kid on the bike are not in the NPC list, so they used to be unreachable:
+    // the kid's refusal never fired and the dog could not be kicked at all
+    const pos = this.mo.root.position;
+    const near = (o) => o && Math.hypot(o.root.position.x - pos.x, o.root.position.z - pos.z) < CONFIG.brawl.range;
+    const bike = this.streetLife?.bike;
+    const dog = this.streetLife?.dog;
     const rig = this.punchTarget();
+    const rigD = rig ? Math.hypot(rig.root.position.x - pos.x, rig.root.position.z - pos.z) : Infinity;
+    if (near(bike) && Math.hypot(bike.root.position.x - pos.x, bike.root.position.z - pos.z) < rigD) {
+      const res = brawl.strike(g, { kind: 'kid' });
+      this.punchT = 0;
+      g.toast(res.line, 'bad');
+      return;
+    }
+    if (near(dog) && Math.hypot(dog.root.position.x - pos.x, dog.root.position.z - pos.z) < rigD) {
+      const res = brawl.strike(g, { kind: 'dog' });
+      dog.scared = 6;
+      g.audio?.sfx?.('deny');
+      g.toast(res.line, 'bad');
+      return;
+    }
     if (!rig) {
       bump(g.state, 'energy', -1);
       g.toast('You swing at the air. The air takes it personally and does nothing.', 'info');
@@ -742,6 +771,22 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!rig.npcId) rig.npcId = `${def.kind || 'passer'}-${(this.npcSerial = (this.npcSerial || 0) + 1)}`;
     const key = rig.npcId;
     const maxHp = rig.brawlHpMax || brawl.hpFor(def);
+    // most women on the block run at the first punch; somebody he is seeing does not stay that
+    const fem = !!faceSpec(def.kind || '')?.fem;
+    if (fem || brawl.runsAtOnce(def)) {
+      brawl.beginSwing(g.state);
+      if (def.partner && CONFIG.partners?.[def.kind]) {
+        const p = partnerState(g.state, def.kind);
+        p.affection = Math.max(0, p.affection - 60);
+        if (p.girlfriend || p.liveIn) breakUp(g, def.kind);
+      }
+      bump(g.state, 'morale', -6);
+      g.audio?.sfx?.('deny');
+      g.toast(pick(['She screams and runs, and every window on the block is looking at you now.', 'She is gone before your arm comes back. The whole block heard her.', '"CRAZY!" she yells over her shoulder, to everybody, not to you.']), 'bad');
+      this.startFlee(rig);
+      if (this.copNear?.(12)) this.startChase(g, 'cop');
+      return;
+    }
     const res = brawl.strike(g, { ...def, key, hp: rig.brawlHp, maxHp, label: def.label || def.name || def.kind });
     if (typeof res.hp === 'number') { rig.brawlHp = res.hp; rig.brawlHpMax = maxHp; }
     // somebody with a counter to lose does the one thing that actually costs him: they call it in
@@ -869,7 +914,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     rig.brawlHpMax = undefined;
     rig.root.rotation.set(0, rig.root.rotation.y, 0);
     rig.root.position.y = 0;
-    if (rig.talkIt) rig.talkIt.visible = true;
+    if (rig.talkIt) rig.talkIt.hidden = false;
   }
 
   /** Send somebody running: not away from him, but to the end of the street. */
@@ -881,7 +926,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     rig.flee = 7;
     rig.fleeX = edge;
     rig.gone = false;
-    if (rig.talkIt) rig.talkIt.visible = false;
+    // the prompt list reads `hidden`; `visible` left a talk prompt standing where she used to be
+    if (rig.talkIt) rig.talkIt.hidden = true;
   }
 
   /** A cop has decided the conversation is over. */
@@ -939,9 +985,22 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const dz = p.z - rig.root.position.z;
     const d = Math.hypot(dx, dz);
     rig.root.rotation.y = Math.atan2(dx, dz);
-    const step = Math.min(d, 2.4 * dt);
+    // a touch slower than a sober, rested Mo (2.45): running works if he has the legs for it,
+    // and a tired or high Mo (who walks slower) gets caught
+    const step = Math.min(d, CONFIG.brawl.copSpeed * dt);
     if (d > 0.0001) { rig.root.position.x += (dx / d) * step; rig.root.position.z += (dz / d) * step; }
-    if (d < 1.15) this.caught(g);
+    animateNPC(rig, dt * 1.4, { walking: true });
+    if (g.uiBusy) return;
+    if (d < 1.15) { this.caught(g); return; }
+    // far enough for long enough, and they give it up
+    this.chaseLost = d > CONFIG.brawl.loseDistance ? (this.chaseLost || 0) + dt : 0;
+    if (this.chaseLost > CONFIG.brawl.loseSeconds) {
+      rig.root.parent?.remove(rig.root);
+      this.npcRigs = this.npcRigs.filter((r) => r !== rig);
+      this.chaseRig = null;
+      this.chaseLost = 0;
+      g.toast('You lose him. Your heart does not get the message for a while.', 'good');
+    }
   }
 
   caught(g) {

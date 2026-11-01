@@ -232,6 +232,8 @@ export const CONFIG = {
     serviceMinutes: 150,
     serviceStart: 11 * 60,        // Sunday
     serviceDay: 0,                // 0 = Sunday
+    // Blessed+ gifts: this much goodwill counts as one Sunday toward the next stage
+    donationPerStep: 60,
     stages: [
       { id: 0, label: 'Stranger', note: 'You have not been invited yet.' },
       { id: 1, label: 'Invited', note: 'A pamphlet is burning a hole in your pocket.' },
@@ -398,7 +400,9 @@ export const CONFIG = {
     waitSeconds: 120,      // real seconds the car sits at the curb before it gives up on him
     graceSeconds: 5,       // ...and how long it keeps rolling while he sprints for it
     doorReach: 1.5,        // how close to the door, not the roof, counts as caught
-    chaseSpeed: 3.0,       // ...and what it is doing by the end of the window (Mo walks 2.45)
+    chaseSpeed: 3.0,
+    chaseRamp: 0.3,        // m/s added per second of pull-off: under his 2.45 until ~4.8 s, so a
+                           // committed run from up to ~5 m back still reaches the door       // ...and what it is doing by the end of the window (Mo walks 2.45)
 
     minutes: 14,
     drivers: ['Vinnie', 'Sal\'s cousin Vinnie', 'a man named Dutch', 'Ozzie', 'Big Ray (not 2A Ray)'],
@@ -718,7 +722,15 @@ export const CONFIG = {
     downSeconds: 120,        // real seconds on the pavement before somebody gets up
     reportAfter: 3,          // hits on the same shopkeeper before the phone comes out
     alertMinutes: [3, 10],   // and how long the cruiser takes to find the block
+    copSpeed: 2.2,           // a chasing cop: under Mo's 2.45, over his tired or high walk
+    loseDistance: 12,        // this far ahead...
+    loseSeconds: 4,          // ...for this long, and the cop gives up
 
+  },
+  // cash work in Park Slope, once a day each, between `from` and `to` (24 h clock)
+  slopeJobs: {
+    dishes: { name: 'Dishwashing at the Slope Diner', from: 7, to: 15, hours: 4, pay: 52, energy: 20, line: 'Four hours of egg on plates and a radio playing the same oldies station. The cook pays you out of the register and gives you a plate for the road.' },
+    dogs: { name: 'Walking three good boys', from: 8, to: 17, hours: 2, pay: 30, energy: 10, morale: 6, line: 'Three dogs, six leashes worth of tangle, and the best two hours of your week.' },
   },
   // the subway: one fare, one train every so often, and a real wait if he misses it
   subway: { fare: 1.5, everySeconds: 46, dockSeconds: 18, rideMinutes: [6, 12] },

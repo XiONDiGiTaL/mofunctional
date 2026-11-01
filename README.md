@@ -130,7 +130,8 @@ end. It just makes Monday harder.
 | **Kestrel Park** | Across the crosswalk. Benches, a half-court with a bent rim, chess, and a boombox somebody left a tape in. |
 | **1104 Kestrel St.** | The five-floor walk-up next door. Arguing neighbours, soup on three, a man selling things from his coat on four, and a roof. |
 | **The Golden Fellowship** | Sunday service with Addison Octavius. They will help Mo. That is what worries us. |
-| **Ashby Avenue** | One bus ride away: the newsstand, a pawn shop, Lucia's trattoria, the 84th Precinct and Dee's Wash & Fold. |
+| **Ashby Avenue** | One bus ride away: the newsstand, a sax player who means it, a pawn shop, Lucia's trattoria, the 84th Precinct and Dee's Wash & Fold. |
+| **Kestrel St Station** | Down the stairs on Kestrel or on Ashby. The platform runs under both, so it is also the short way between them. |
 
 <p align="center">
   <img src="assets/img/guide/park.jpg" alt="Kestrel Park: paths, benches, trees and the boombox on its crate" width="49%">
@@ -139,6 +140,34 @@ end. It just makes Monday harder.
 
 Every door is lit and signed, every shop keeps real opening hours, and the bodega closes when the
 bodega closes. Plan accordingly.
+
+## Under the street, and past it
+
+<img src="assets/img/guide/subway.jpg" alt="The Kestrel St Station platform: tiled walls, steel columns, the yellow edge strip and a rat crossing in front of Mo" width="100%">
+
+Take the stairs on Kestrel or on Ashby and you are on the platform: steel columns, tiled walls,
+somebody asleep on a bench, and rats that walk the edge like they paid the fare. A train comes in,
+opens its doors and waits a little while. Get on before it goes and it takes you to Kestrel St,
+Ashby Avenue or **Park Slope** for $1.50.
+
+<p align="center">
+  <img src="assets/img/guide/parkslope.jpg" alt="A Park Slope sidewalk lined with brownstones, trees and people walking" width="49%">
+  <img src="assets/img/guide/projects.jpg" alt="The courtyard at the Marcy Houses at dusk, with the man on the bench" width="49%">
+</p>
+
+| In Park Slope | Why you go |
+|---|---|
+| **Second Chances** | A thrift store. Other people's clothes, cheap, and they go in the closet at home. |
+| **Slope Diner** | Eggs, potatoes and coffee, and a dishwashing shift if you ask before 15:00. |
+| **The dog-walker board** | Two hours with three very good boys, for cash and the best mood of your week. |
+| **The day labor van** | Shows up at seven. Three hours of somebody else's furniture for $45. |
+| **The Basement** | Down the stairwell: an underground fight club. More on that below. |
+| **Marcy Houses** | Through the gate at the east end. High risk, high reward. More on that below too. |
+
+### Dressing Mo
+
+Whatever you buy at Second Chances waits in the **closet** in Unit 3B, where Mo can change into
+it. His face and hair stay his own.
 
 ### Things happen on the street
 
@@ -176,7 +205,7 @@ Press `TAB`. Everything Mo does with money, people or plans goes through here.
 | **HailMary** | A car service. Ask for a ride up the block and the driver will tell you to walk. |
 | **TradeHarder** | Stocks from 1999 and real estate on Kestrel Street. |
 | **Amazin'** | Order things, they arrive tomorrow. |
-| **Blessed+** | The Fellowship's livestream. Pass the plate. |
+| **Blessed+** | The Fellowship's livestream. Give any day of the week: a gift pays your tithe first, then counts toward your standing with Addison. |
 | **Tweaks** | Skins, scale, notifications, sound and saves. |
 
 There are seven colour skins (Functional, Amber, Ice, VHS, Primo, Bodega and Graphite), and the
@@ -208,7 +237,10 @@ The board stays open so a breakfast run is three clicks, not three trips.
   the street, a ring on the minimap and a heading like "Habib's Corner · 7 m east".
 - **The prompt** at the bottom of the screen tells you what `F` will do, and why it will not when
   something is closed. With several things in reach, `X` picks the next one.
-- **The B44 bus** runs to Ashby Avenue from the stop on Kestrel. HailMary is faster and judges you.
+- **The B44 bus** runs to Ashby Avenue from the stop on Kestrel. HailMary is faster and judges you,
+  and if you take too long to reach the curb it pulls off. Run for it and you might still catch the
+  door.
+- **The train** runs under Kestrel and Ashby, and out to Park Slope.
 - **Speed up time** with `1`, `2` and `3`. The game warns you if something is due within the hour.
 
 ---
@@ -237,6 +269,38 @@ The block changes at night. The alley has a man named Dex who only appears after
 game sets up at the lot, cops walk the park, and somebody in a grey hood might want your wallet.
 You can pay, run, or fight with a timing meter, and a loyal dog changes the odds.
 
+### Throwing hands
+
+Press `Z` and Mo throws a punch at whoever is closest. The block reacts the way the block would:
+
+- **Most people run.** Some square up and swing back. Dealers and hard cases always do.
+- **Knock somebody out** and you can go through their pockets. They get up again in a couple of
+  minutes, and they will remember your face.
+- **Shopkeepers do not fight.** Hit one enough and they pick up the phone, and a cruiser finds
+  the block a few minutes later.
+- **Cops** take a punch personally. A sober, rested Mo can outrun one. A tired one gets the cuffs
+  and a night in holding.
+- **Children are off limits.** Mo has done a lot of things. Not that.
+- **Meatball** will forgive a kick eventually. He will not forget it soon.
+
+And a word to the wise: using anything inside the 84th Precinct is exactly as good an idea as it
+sounds.
+
+### The Basement
+
+<img src="assets/img/guide/basement.jpg" alt="The Basement: a ring under bare bulbs, a FIGHT NIGHT sign and the booker at his table" width="100%">
+
+Down a stairwell in Park Slope there is a ring under bare bulbs and a man with a cash box. One
+fight a night. Put the other man down and the purse is yours. Go down yourself and you wake up
+in the clinic with the next day already started without you.
+
+### The Marcy Houses
+
+Through the gate at the east end of Park Slope. The man on the bench sells the strong stuff, the
+courtyard has people who do not like visitors, and some of them are carrying. Swinging first at
+a man with a gun can end the run for good, and you go back to your last save. Beat one anyway and
+his pockets are yours. The gun stays where it fell. Mo has his reasons.
+
 Some nights are better spent at home with the door locked and a bowl of instant ramen.
 
 ---
@@ -252,6 +316,7 @@ Movement is camera-relative: `W` always walks into the screen. Click the floor a
 | `V` | Reset the camera behind Mo | R3 |
 | `F` / `Space` / `Enter` | Interact, confirm | A |
 | `X` | Next thing in reach | X |
+| `Z` | Throw a punch (or a kick, if it is the dog) | L3 |
 | `TAB` | Phone | B |
 | `M` | Map | |
 | `T` | Fold the Today panel | |
@@ -274,7 +339,8 @@ sound effect volume, camera distance and height, and the full controller referen
 4. **Opening hours are real.** The bodega closes at 23:00, Habib's at 2:00. The Quik-Stop never
    closes, which is both a comfort and a warning.
 5. **Do not trust a deal that sounds too good after midnight.** It is not.
-6. **Sell the TV.** You were never going to watch it.
+6. **The Basement pays, the clinic charges.** Fight rested or do not fight.
+7. **Sell the TV.** You were never going to watch it.
 
 ---
 

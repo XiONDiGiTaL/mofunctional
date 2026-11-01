@@ -41,6 +41,11 @@ export function brawlState(s) {
 }
 
 /** What kind of person is on the other end of this. */
+/** Kinds that run screaming at the first punch rather than taking two to decide. */
+export function runsAtOnce(def = {}) {
+  return !!(def.fem || def.partner || def.stranger || def.sister);
+}
+
 export function classify(kind = '', def = {}) {
   const k = String(kind || '').toLowerCase();
   if (def.cop || COP_KINDS.has(k)) return 'cop';
@@ -218,19 +223,21 @@ export function loot(g, target = {}) {
   const kind = classify(target.kind, target);
   const id = target.key || target.kind || 'somebody';
   if (kind === 'kid') return { ok: false, reason: 'no' };
-  if (b.searched[id]) return { ok: false, reason: 'searched' };
+  // once a day per body: the fixed keys the street fights use ('street_thug') used to be searchable
+  // exactly once for the whole run
+  if (b.searched[id] === dayOf(s.clock.m)) return { ok: false, reason: 'searched' };
   b.searched[id] = dayOf(s.clock.m);
   const found = [];
   let cash = 0;
   if (kind === 'dealer') { cash = 8 + Math.round(Math.random() * 42); if (Math.random() < 0.5) found.push(pick(['mud', 'static'])); }
-  else if (kind === 'tough') { cash = 20 + Math.round(Math.random() * 90); if (Math.random() < 0.45) found.push(pick(['mud_x', 'static_x'])); if (Math.random() < 0.3) found.push(pick(['watch', 'chain'])); }
+  else if (kind === 'tough') { cash = 20 + Math.round(Math.random() * 90); if (Math.random() < 0.45) found.push(pick(['mud_x', 'static_x'])); if (Math.random() < 0.3) found.push(pick(['watch', 'necklace'])); }
   else if (kind === 'cop') { cash = 0; }
   else { cash = Math.round(Math.random() * 14); if (Math.random() < 0.25) found.push('loosies'); }
   if (cash > 0) g.earnMoney(cash, 'somebody\'s pockets');
   for (const id2 of found) addItem(s, id2, 1);
   bump(s, 'morale', cash > 0 ? 2 : 0);
   logLine(g, `Searched a knocked-out ${kind === 'civilian' ? 'man' : kind}${cash ? `: ${money(cash)}` : ''}.`, 'bad');
-  return { ok: true, cash, items: found };
+  return { ok: true, cash, items: found.map((i) => CONFIG.items[i]?.name || i), ids: found };
 }
 
 /** The armed thug's gun: he will not carry it, and the refusal is the character beat. */

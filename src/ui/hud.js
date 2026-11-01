@@ -230,7 +230,8 @@ export class HUD {
 
   setPrompt(prompt) {
     if (!prompt) {
-      this.promptEl.classList.remove('show');
+      // the "unavailable" style keeps the pill visible on its own, so it goes too
+      this.promptEl.classList.remove('show', 'prompt--off');
       return;
     }
     // [F] (or Ⓐ on a pad) and the action; when it cannot be done, why; when there is more than one

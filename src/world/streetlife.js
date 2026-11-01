@@ -382,6 +382,18 @@ export class StreetLife {
     const d = dogState(s);
     const mo = this.world.mo.root.position;
     const p = dog.root.position;
+    // kicked: he runs from Mo for a few seconds and does not come back to heel for a while
+    if (dog.scared > 0) {
+      dog.scared -= dt;
+      const ang = Math.atan2(p.x - mo.x, p.z - mo.z);
+      p.x += Math.sin(ang) * 4 * dt;
+      p.z = Math.max(-4.2, Math.min(0.9, p.z + Math.cos(ang) * 4 * dt));
+      dog.root.rotation.y = Math.atan2(-Math.cos(ang), Math.sin(ang));
+      dog.t += dt * 14;
+      dog.legs.forEach((leg, i) => { leg.rotation.z = Math.sin(dog.t + (i % 2 ? Math.PI : 0)) * 0.6; });
+      dog.target = null;
+      return;
+    }
     let tx, tz;
     const moDist = Math.hypot(mo.x - p.x, mo.z - p.z);
     if (d.like >= CONFIG.dog.followAt && moDist < 14 && mo.z < 1.4) {
