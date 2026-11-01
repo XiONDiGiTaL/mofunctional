@@ -18,6 +18,7 @@ import * as rent from './rent.js';
 import * as romance from './romance.js';
 import * as clinic from './clinic.js';
 import * as life from './life.js';
+import { STRANGERS } from '../core/strangers.js';
 
 /** Senders that are people, with the face the UI should draw. */
 const PEOPLE = {
@@ -67,6 +68,9 @@ export function identityFor(from) {
   const n = norm(key);
   if (PEOPLE[n]) return { from: key, ...PEOPLE[n] };
   if (BUSINESS[n]) return { from: key, ...BUSINESS[n] };
+  // the FeedLove women who gave Mo their number: their own face, their own thread
+  const w = STRANGERS.find((x) => x.name.toUpperCase() === n);
+  if (w) return { from: key, category: 'personal', kind: w.id, name: w.name };
   // a raw phone number, or a name nobody saved
   return { from: key, category: 'unknown', kind: 'unknown', name: key || 'Unknown number' };
 }

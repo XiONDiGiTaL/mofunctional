@@ -765,3 +765,5 @@
 .nstoop__cat { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #8fd06a; }
 .nstoop--lore summary { cursor: pointer; }
 .nstoop--lore div { margin-top: 5px; opacity: .9; }
+
+.chat__day { text-align: center; font-size: 9px; letter-spacing: .16em; opacity: .5; margin: 10px 0 4px; }

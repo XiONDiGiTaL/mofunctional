@@ -180,7 +180,8 @@ export class World {
         this.root.add(rig.root);
         this.npcRigs.push(rig);
       }
-      rig.root.position.set(npc.x, 0, npc.z);
+      const row = id === 'street' && !npc.debug ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
+      rig.root.position.set(row && !row.away ? row.x : npc.x, 0, row && !row.away ? row.z : npc.z);
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
       // the three women carry a heart until one of them is actually his girlfriend
@@ -724,11 +725,14 @@ export class World {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
         rig.heart.rotation.y += dt * 1.1;
       }
+      // a pose comes from the schedule row he is standing at (Gus on his cardboard), or from a
+      // seat the area gave him; never in mid-air on the walk between them
       const settled = !rig.walking && !!rig.npcDef?.sit;
+      const pose = rig.walking ? null : rig.pose;
       animateNPC(rig, dt, {
         walking: !!rig.walking,
-        sitting: settled && mod < 22 * 60 && mod >= 7 * 60,
-        sleeping: settled && (mod >= 22 * 60 || mod < 7 * 60),
+        sitting: pose === 'sit' || (settled && mod < 22 * 60 && mod >= 7 * 60),
+        sleeping: pose === 'sleep' || (settled && (mod >= 22 * 60 || mod < 7 * 60)),
       });
     }
     // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
@@ -785,7 +789,9 @@ export class World {
     // after a swing lets go it gets a moment to come home before another may start, or the
     // release and a fresh search hand the view back and forth around the zero line
     this.swingRest = Math.max(0, (this.swingRest || 0) - dt);
-    if (!orbiting && !holdSwing && room < 1.1 && this.swingRest <= 0) {
+    // Indoors the swing is off: between shelf ends and walls it kept finding a "better" angle a
+    // few frames apart and the view hunted. A cramped room gets a shorter, higher arm instead.
+    if (!interior && !orbiting && !holdSwing && room < 1.1 && this.swingRest <= 0) {
       let bestRoom = 0;
       let bestOff = 0;
       for (let step = 1; step <= 9 && bestRoom < 1.2; step++) {
@@ -823,10 +829,10 @@ export class World {
     const armYaw = this.camYaw + this.camSwing;
     const backX = -Math.sin(armYaw);
     const backZ = -Math.cos(armYaw);
-    const b = this.area.bounds;
+    const b = this.area.camBounds || this.area.bounds;
     // in fast, out slow: a wall shortening the arm is urgent, opening back up is not, and easing
     // both ways at one rate made the camera pump in and out as he clipped past a corner
-    const boomRate = room < this.camBoom ? 16 : 4.5;
+    const boomRate = room < this.camBoom ? 10 : 3.5;
     this.camBoom += (room - this.camBoom) * (1 - Math.exp(-boomRate * dt));
     // the ease is for comfort, not for passing through things: if the eased length would put the
     // eye inside furniture this frame, take the clear length now (out stays eased)
@@ -837,7 +843,7 @@ export class World {
     }
     // a shortened arm lifts a little to look over his shoulder; while swinging there is a side
     // view coming, so do not climb into a top-down in the meantime
-    const liftPerMetre = swinging ? 0.1 : 0.28;
+    const liftPerMetre = swinging ? 0.1 : interior ? 0.42 : 0.28;
     const targetHeight = restHeight + impairment * 0.06 + (boomMax - this.camBoom) * liftPerMetre;
     this.boomHeight += (targetHeight - this.boomHeight) * (1 - Math.exp(-6 * dt));
 
@@ -923,7 +929,7 @@ export class World {
   /** Longest arm, in metres, that fits along `yaw` without leaving the room or hitting something. */
   armRoom(yaw, boomMax, clearance) {
     if (!this.area) return boomMax;
-    const b = this.area.bounds;
+    const b = this.area.camBounds || this.area.bounds;
     const bx = -Math.sin(yaw);
     const bz = -Math.cos(yaw);
     // March out from Mo and stop at the first thing in the way, like a ray. Searching inward from
@@ -990,6 +996,7 @@ export class World {
       if (!away && target) rig.root.position.set(target.x, 0, target.z);
     }
     if (away) { rig.walking = false; return; }
+    rig.pose = target?.pose || null;
     if (target) {
       const dx = target.x - rig.root.position.x;
       const dz = target.z - rig.root.position.z;
@@ -1059,6 +1066,9 @@ export class World {
     if (!this.area?.solids) return false;
     for (const b of this.area.solids) {
       if ((b.h ?? 2.4) < 1.5) continue; // below the eye: the camera looks over it
+      // a lamp post or a sign pole: the arm passing behind one for a frame is less jarring than
+      // the arm snapping short and easing back out every time he walks past it
+      if (Math.max(b.w, b.d) <= 0.5) continue;
       if (Math.abs(x - b.x) < b.w / 2 + 0.08 && Math.abs(z - b.z) < b.d / 2 + 0.08) return true;
     }
     return false;

@@ -202,7 +202,8 @@ export function pushMessage(g, { from, subject, body, choices = null, id = uid()
     read: false,
     choices,
   });
-  if (g.state.messages.length > 40) g.state.messages.pop();
+  // threads read better with history; this is still small (a few KB in the save)
+  if (g.state.messages.length > 150) g.state.messages.pop();
   g.bus.emit('message', { from, subject, body, id });
   return id;
 }

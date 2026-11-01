@@ -20,6 +20,9 @@ import * as social from '../systems/social.js';
 import * as block from '../systems/block.js';
 import { postImage } from './feedart.js';
 import * as sms from '../systems/sms.js';
+
+/** One thread per contact: "RAE", "RAE VELL" and "RAE VELL (LANDLORD)" are the same person. */
+const threadKeyOf = (m) => String(sms.identityFor(m.from).name || m.from || '').toUpperCase();
 import * as rent from '../systems/rent.js';
 import * as romance from '../systems/romance.js';
 import * as clinic from '../systems/clinic.js';
@@ -437,23 +440,40 @@ export class Phone {
   messagesView() {
     const s = this.g.state;
     if (this.msgId) {
-      const m = s.messages.find((x) => x.id === this.msgId);
-      if (!m) { this.msgId = null; return this.messagesView(); }
-      m.read = true;
-      const face = this.senderFace(m.from);
-      const bubbles = [
-        `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`,
-        ...(m.replies || []).map((r) => `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div><img class="chat__face" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></div>`),
-      ].join('');
-      const opts = sms.replyOptions(m, s);
+      // one conversation per person: every text from them, oldest first, with Mo's replies in place
+      const key = this.msgId;
+      const msgs = s.messages.filter((x) => threadKeyOf(x) === key).reverse();
+      if (!msgs.length) { this.msgId = null; return this.messagesView(); }
+      const last = msgs[msgs.length - 1];
+      const face = this.senderFace(last.from);
+      const mo = `<img class="chat__face" src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" />`;
+      let day = null;
+      const bubbles = msgs.map((m) => {
+        m.read = true;
+        const sep = m.day !== day ? `<div class="chat__day">DAY ${m.day}</div>` : '';
+        day = m.day;
+        return sep + `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`
+          + (m.replies || []).map((r) => `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div>${mo}</div>`).join('');
+      }).join('');
+      const opts = sms.replyOptions(last, s);
       const quick = opts.length ? opts.map((o) => o.label) : ['Leave it.'];
-      return `${this.header(m.from, `D${m.day}`)}
+      return `${this.header(last.from, `${msgs.length} message${msgs.length === 1 ? '' : 's'}`)}
         <div class="chat">${bubbles}</div>
         <div class="chat__quick">
-          ${quick.map((q, i) => `<button class="chat__chip" data-act="reply" data-arg="${m.id}" data-num="${i}">${T(q)}</button>`).join('')}
+          ${quick.map((q, i) => `<button class="chat__chip" data-act="reply" data-arg="${last.id}" data-num="${i}">${T(q)}</button>`).join('')}
         </div>
         <button class="btn btn--ghost" data-act="msgback">◀ INBOX</button>
         ${this.footer()}`;
+    }
+    // the inbox: one row per person, newest conversation first
+    const threads = [];
+    const seenKeys = new Map();
+    for (const m of s.messages) {
+      const k = threadKeyOf(m);
+      if (!seenKeys.has(k)) { seenKeys.set(k, { key: k, latest: m, unread: 0, count: 0 }); threads.push(seenKeys.get(k)); }
+      const t = seenKeys.get(k);
+      t.count += 1;
+      if (!m.read) t.unread += 1;
     }
     const unread = unreadMessages(s);
     const ds = dealer.dealerState(s);
@@ -477,11 +497,11 @@ export class Phone {
             <div class="meta">${T(lastLine ? lastLine.text.split('\n')[0] : 'tap to text. he answers.').slice(0, 54)}</div>
           </div>
         </button>
-        ${s.messages.length ? s.messages.map((m) => `
-          <button class="listitem chatlist" data-act="msgopen" data-arg="${m.id}" style="text-align:left;cursor:pointer;width:100%">
+        ${threads.length ? threads.map(({ key, latest: m, unread: n }) => `
+          <button class="listitem chatlist" data-act="msgopen" data-arg="${T(key)}" style="text-align:left;cursor:pointer;width:100%">
             ${this.senderFace(m.from)}
             <div class="grow">
-              <div class="name">${m.read ? '' : '<span class="bad">● </span>'}${T(m.from)}</div>
+              <div class="name">${n ? '<span class="bad">● </span>' : ''}${T(m.from)}${n > 1 ? ` <span class="pill">${n}</span>` : ''}</div>
               <div class="meta">${T((m.replies && m.replies.length ? m.replies[m.replies.length - 1].text : m.body)).slice(0, 54)}</div>
             </div>
           </button>`).join('') : '<div class="empty">No messages. Everyone is giving you space. That is what that is.</div>'}
@@ -1106,7 +1126,13 @@ export class Phone {
       applycrp() { applyForCRP(g); },
       recert() { recertCRP(g); },
       utility() { claimUtilityGrant(g); },
-      msgopen(arg) { this.msgId = arg; const m = s.messages.find((x) => x.id === arg); if (m) m.read = true; this.g.audio.sfx('ui'); },
+      // arg is a thread key (a contact); an old message id still opens that message's thread
+      msgopen(arg) {
+        const byId = s.messages.find((x) => x.id === arg);
+        this.msgId = byId ? threadKeyOf(byId) : arg;
+        for (const m of s.messages) if (threadKeyOf(m) === this.msgId) m.read = true;
+        this.g.audio.sfx('ui');
+      },
       // the reply chips come from the sender's category (systems/sms.js), and the chosen one is
       // applied there: a landlord text can settle the rent, a BidBay text can reprice listings,
       // and Mo never offers to "talk about this later" to an automated auction notice

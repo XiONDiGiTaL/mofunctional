@@ -35,12 +35,13 @@ export const STREET_SCHEDULES = {
     { from: 18 * 60, to: 4 * 60, x: -4.2, z: -4.2, note: 'the alley' },
     { from: 4 * 60, to: 18 * 60, x: -4.2, z: -4.2, note: 'gone', away: true },
   ],
+  // Gus lies down only on his cardboard (pose 'sleep'); everywhere else he is on his feet
   homeless: [
-    { from: 0, to: 7 * 60, x: -9.6, z: 0.4, note: 'asleep on the cardboard' },
+    { from: 0, to: 7 * 60, x: -9.5, z: 0.25, note: 'asleep on the cardboard', pose: 'sleep' },
     { from: 7 * 60, to: 9 * 60, x: -13.7, z: -3.6, note: 'waiting outside the bodega' },
     { from: 9 * 60, to: 18 * 60, x: -9.0, z: -1.4, note: 'asking, politely' },
     { from: 18 * 60, to: 22 * 60, x: -12.2, z: -3.0, note: 'sorting cans' },
-    { from: 22 * 60, to: 24 * 60, x: -9.6, z: 0.4, note: 'bedding down' },
+    { from: 22 * 60, to: 24 * 60, x: -9.5, z: 0.25, note: 'bedding down', pose: 'sleep' },
   ],
   junkie: [
     { from: 0, to: 6 * 60, x: -12.4, z: -4.2, note: 'leaning on the cart' },

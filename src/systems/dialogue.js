@@ -60,6 +60,18 @@ export const NPC_BANTER = {
     '"Chairman has knocked your only glass off the counter. He is watching to see what you do."',
     '"Chairman purrs at a volume that suggests he is aware of your finances."',
   ],
+  homeless: [
+    '"Gus. Like the wind, but less reliable."',
+    '"I was a merchant marine. Then a cook. Then an umpire, one year, minor league. I called a man out who is now a dentist. He still sends me a card."',
+    '"Rae is a good man in a bad hat. Tell him I said the hat part."',
+    '"The cat at the bodega is the fourth cat. They are all named Gato. I knew all four."',
+    '"You got that look. The Tuesday look. It passes. Most of the time."',
+  ],
+  junkie: [
+    '"You got a dollar? Not for that. For a coffee. For a coffee, man."',
+    '"I\'m good. I\'m good. Are you good? You look like me last year."',
+    '"Don\'t buy from the alley guy at night. I mean it. I\'m the guy telling you."',
+  ],
   nia: [
     '"I\'m not judging. I\'m just standing here looking at you in a way that resembles judging."',
     '"Mom asks about you every Sunday. I\'ve started lying. I don\'t like how good I\'ve gotten."',

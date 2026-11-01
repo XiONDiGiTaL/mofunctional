@@ -550,7 +550,7 @@ export function buildStreet(g) {
     { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
     { kind: 'kev', x: -1.2, z: -1.2, rot: -1.2, talk: 'kev' },
     { kind: 'dex', x: -3.4, z: -3.4, rot: 1.4, talk: 'dex', live: true },
-    { kind: 'homeless', x: -9.6, z: 0.4, rot: 1.2, talk: 'homeless', sit: true },
+    { kind: 'homeless', x: -9.6, z: 0.4, rot: 1.2, talk: 'homeless' },
     { kind: 'junkie', x: -12.4, z: -4.2, rot: 2.2, talk: 'junkie' },
   ];
 
@@ -561,7 +561,7 @@ export function buildStreet(g) {
     { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: building('church').door, z: STREET.doorZ, radius: 1.7, action: (gg) => gg.goTo('church', 'street') },
     { id: 'bodega', label: 'Enter Kestrel Bodega', sub: 'Miguel · BEC · loosies', x: bod.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('bodega', 'street') },
     { id: 'habibs', label: "Enter Habib's Corner", sub: 'halal · chicken over rice', x: hab.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('habibs', 'street') },
-    { id: 'homelessMan', label: 'Talk to the man on the cardboard', sub: 'he is awake', x: -9.6, z: 0.4, action: (gg) => talk(gg, 'homeless') },
+    { id: 'homelessMan', label: 'Talk to Gus', sub: 'the man on the cardboard', x: -9.6, z: 0.4, action: (gg) => talk(gg, 'homeless') },
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
     { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
@@ -577,6 +577,10 @@ export function buildStreet(g) {
   return {
     group,
     bounds: { ...STREET.bounds },
+    // Mo walks the sidewalk, but the camera may hang out over the road (and a little past the
+    // block's ends): the curb is not a wall. Treating it as one collapsed the arm whenever he
+    // stood near the street and set off the sideways swing.
+    camBounds: { minX: STREET.bounds.minX - 2, maxX: STREET.bounds.maxX + 2, minZ: STREET.bounds.minZ, maxZ: STREET.roadZ[1] - 0.2 },
     solids: [
       solid(-4.2, -5.2, 1.5, 1.0, 1.0), solid(-7.5, 0.2, 2.0, 0.7, 0.9), solid(6.5, -5.8, 2.3, 0.4),
       solid(9.5, -5.6, 0.7, 0.7, 0.9), solid(-13.5, -5.7, 0.7, 0.7, 0.9), solid(5.0, -6.2, 1.1, 0.4), solid(-12.6, -5.0, 0.8, 0.6, 0.95),
@@ -842,6 +846,14 @@ function bench(g) {
 const NPC_VOICE = { rae: 1.2, dale: 0.82, dex: 0.72, kev: 1.3, nia: 1.36, addison: 0.9, chairman: 1.7 };
 
 /** Every spoken line comes out as wordless mumble — the words live in the text. */
+const GUS_STORIES = [
+  'Gus tells you about the blackout of 1977, when the whole avenue went dark and Kestrel was the only block where nobody broke a window. "Nothing worth taking," he says. "Also, Miguel\'s father with a bat."',
+  'Gus tells you the hydrant by 1120 has been painted gold four times. "The church does it. The city undoes it. Like a marriage."',
+  'Gus tells you about calling a man out at second base in 1981. The man is a dentist now. Gus still gets a Christmas card. "He was out," Gus says. "He knows it."',
+  'Gus tells you the Fellowship building was a movie theater. The last picture it showed was a kung fu movie. "Best night that place ever had."',
+  'Gus tells you which window on the third floor of 1120 used to be his. He does not say why it is not anymore. You do not ask.',
+];
+
 function speak(g, id, words = 10) {
   g.audio?.mumble?.('word '.repeat(Math.max(3, words)), { pitch: NPC_VOICE[id] ?? 1 });
 }
@@ -884,6 +896,41 @@ function talk(g, id) {
       choices: [
         { label: 'Ask about extra hours.', sub: 'possible overtime', effect: () => { g.advance(15); if (shiftInfo(g).today) g.toast('"Come in early. I\'ll find something."', 'good'); else g.toast('"Nothing right now. Check the board."', 'info'); } },
         { label: 'Nod and leave.', sub: '', effect: () => {} },
+      ],
+    });
+  } else if (id === 'homeless') {
+    // Gus: a dollar, a story, or leave him be. Asleep, he is asleep.
+    const mod = minuteOfDay(s.clock.m);
+    if (mod < 7 * 60 || mod >= 22 * 60) {
+      g.openModal({
+        kicker: 'GUS', title: 'Asleep',
+        body: 'He is asleep on the cardboard with one arm over his face and the other around a bag he would fight you for. He says something without waking up. It sounds like "strike three."',
+        choices: [{ label: 'Let him sleep.', effect: () => {} }],
+      });
+      return;
+    }
+    g.openModal({
+      kicker: 'GUS · KESTREL ST.',
+      title: 'Gus',
+      body: `${npcLine('homeless')}
+
+He knows every name on the block. He says yours like he has been waiting to.`,
+      choices: [
+        { label: 'Give him a dollar.', sub: '$1 · +morale', disabled: s.money < 1, effect: () => { g.spendMoney(1, 'Gus'); bump(s, 'morale', 4); life.trust(s, 'homeless', 1); g.toast('"God bless. Or whoever is on shift."', 'good'); } },
+        { label: 'Ask him about the block.', sub: '20 min · a story · +morale', effect: () => { g.advance(20); bump(s, 'morale', 6); bump(s, 'stress', -5); g.toast(pick(GUS_STORIES), 'good'); } },
+        { label: 'Nod and keep walking.', sub: '', effect: () => {} },
+      ],
+    });
+  } else if (id === 'junkie') {
+    g.openModal({
+      kicker: 'THE CORNER',
+      title: 'Someone You Nod At',
+      body: `${npcLine('junkie')}
+
+His hands do not stop moving. He is wearing two jackets in a way that means he owns two jackets.`,
+      choices: [
+        { label: 'Give him a dollar for a coffee.', sub: '$1', disabled: s.money < 1, effect: () => { g.spendMoney(1, 'coffee money'); bump(s, 'morale', 2); g.toast('He actually buys a coffee. You watch him do it.', 'good'); } },
+        { label: 'Nod.', sub: '', effect: () => {} },
       ],
     });
   } else if (id === 'kev') {
