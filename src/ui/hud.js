@@ -162,7 +162,11 @@ export class HUD {
       this.minimapEl.innerHTML = renderMinimap(g);
     }
 
-    const hint = TUTORIAL_HINTS[Math.min(5, s.flags.tutorial)] || TUTORIAL_HINTS[5];
+    let hint = TUTORIAL_HINTS[Math.min(5, s.flags.tutorial)] || TUTORIAL_HINTS[5];
+    // no job, no shift: the hint should not send him to clock in at a store that let him go
+    if (hint.title === 'GO TO WORK' && !s.job?.employed) {
+      hint = { title: 'FIND WORK', text: 'You are not on the schedule at Quik-Stop #14. Ask Dale for your job back, take an odd job off the board, or look on LinkedOut.' };
+    }
     let extra = '';
     if (rent.owedCycles > 0) extra = `<span class="bad">Rent overdue: ${money(rent.owed)}</span>`;
     else if (rent.daysLeft <= 2) extra = `<span class="warn">Rent due in ${rent.daysLeft}d (${money(rent.base)})</span>`;

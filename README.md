@@ -7,7 +7,9 @@ A dark-comedy **life-management simulation** set on one block of New York City i
 week-to-week lease, a phone full of people who want things, and a dependence that has been
 quietly rewriting his week. Rent is due on Day 7. He does not have it.
 
-Built with Three.js and vanilla JavaScript ES modules. No backend, no build step, no install.
+Developed by **XiØN** (xiondigital). Inspired by 90s-era console games, life in New York, and
+the circumstances that people in the inner city know all too well. Built with Three.js and
+vanilla JavaScript ES modules. No backend, no build step, no install.
 
 ![Kestrel Street outside the bodega](assets/img/street_bodega.jpg)
 
@@ -547,6 +549,14 @@ when the game saved — so a reload can never leave Mo frozen.
   path around furniture.
 
 ---
+
+## Disclaimer
+
+MO: FUNCTIONAL is a work of fiction. It is a game about life choices — work and life balance,
+time management, money, and what a week costs when it gets away from you. In real life, drug
+use is not okay and this game does not condone it. If you or someone you know is struggling with
+substance use, please get help: in the US, the SAMHSA National Helpline is free, confidential and
+open 24/7 at **1-800-662-4357**; elsewhere, contact your local health service or a doctor.
 
 ## Notes
 

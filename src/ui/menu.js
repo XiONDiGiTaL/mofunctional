@@ -268,11 +268,14 @@ export class Menu {
         <div class="modal__kicker">CREDITS</div>
         <h2 class="modal__title">MO: FUNCTIONAL</h2>
         <div style="font-size:12px;line-height:1.8;color:#bcd4c1">
-          <p><b>Design, code, world, writing</b><br>Built in the Freebuff coding agent for XiØN.</p>
+          <p><b>Developed by</b><br>XiØN (xiondigital).</p>
+          <p><b>Inspired by</b><br>90s-era console games, life in New York, and the circumstances that people in the inner city know all too well.</p>
           <p><b>Engine</b><br>Three.js r169, hand-written 90s-era shader pass (affine UVs, vertex snapping, ordered dither, fog), procedural canvas textures, procedural audio.</p>
           <p><b>Music</b><br>"Mo Functional — Main Menu" supplied with the project, used as the menu theme.</p>
           <p><b>Character reference</b><br>Mo's face is reconstructed from the supplied reference image as a low-poly approximation. Addison Octavius is an original fictional character inspired by a wardrobe reference — no real person, organisation or affiliation.</p>
+          <p><b>A work of fiction</b><br>MO: FUNCTIONAL is a work of fiction. Every character, business and place in it is invented, and any resemblance to real people is coincidental. It is a game about life choices: work and life balance, managing your time and money, and what the week costs when it gets away from you.</p>
           <p><b>Content note</b><br>Addiction, poverty and housing insecurity are depicted as mechanical systems, in a dark comedy register. All substances are fictional. There are no instructions for anything.</p>
+          <p><b>In real life</b><br>Drug use is not okay, and this game does not condone it. If you or someone you know is struggling with substance use, please reach out for help: in the US, the SAMHSA National Helpline is free, confidential and open 24/7 at <b>1-800-662-4357</b>. Outside the US, contact your local health service or a doctor you trust. Asking for help is the functional thing to do.</p>
           <p><b>Home</b><br><a href="https://xiondigital.net" target="_blank" rel="noopener">xiondigital.net</a> &middot; <a href="https://xiondigital.net/arcade/" target="_blank" rel="noopener">the arcade</a></p>
           <p class="tiny mono-dim">${esc(CONFIG.meta.repo)}</p>
         </div>

@@ -9,7 +9,8 @@
 export const STREET = {
   // the block now runs east past Habib's to the clinic, so the walk is longer, not different
   // and west past the bodega to 1104, the walk-up
-  bounds: { minX: -25.4, maxX: 24.6, minZ: -5.6, maxZ: 1.4 },
+  // ...and east past the clinic to the vacant lot and the crosswalk to the park's east gate
+  bounds: { minX: -25.4, maxX: 31.4, minZ: -5.6, maxZ: 1.4 },
   frontZ: -6.5,      // building faces
   curbZ: 1.3,
   roadZ: [1.5, 9.2],
@@ -50,6 +51,8 @@ export const LANDMARKS = [
   { id: 'crosswalk', name: 'Crosswalk', x: 9.35, z: 4.6, icon: 'walk' },
   { id: 'parkgate', name: 'Kestrel Park', x: 9.35, z: 1.1, icon: 'park' },
   { id: 'clinic', name: 'Kestrel Clinic', x: 21.6, z: -5.2, icon: 'clinic' },
+  { id: 'lot', name: 'The lot', x: 27.6, z: -3.6, icon: 'board' },
+  { id: 'eastgate', name: 'Park · east gate', x: 28.4, z: 1.1, icon: 'park' },
 ];
 
 /** Where the dealer meets Mo: beside the apartment stoop, clear of both doors and the cart. */
@@ -61,6 +64,8 @@ export const building = (id) => BUILDINGS.find((b) => b.id === id);
 export function streetSpawn(from) {
   // off the B44, at the stop by the job board
   if (from === 'bus') return { x: 6.6, z: -3.6, rot: Math.PI / 2 };
+  // back across the road from the park's east gate, at the lot's crosswalk
+  if (from === 'eastgate') return { x: 28.4, z: -0.4, rot: Math.PI };
   // the park has no frontage on the block: Mo comes back through the gate by the crosswalk
   if (from === 'park') return { x: PARK.gate.x, z: -1.2, rot: Math.PI };
   const b = BUILDINGS.find((x) => x.area === from) || building('apartment');

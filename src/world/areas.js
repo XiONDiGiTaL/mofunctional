@@ -276,6 +276,31 @@ export function buildStreet(g) {
   };
   facade(-9.8, 6.6, 7.5, 0xc8c0b4);   // 1120 Kestrel: the tall walk-up
   facade(-16.5, 5.2, 4.6, 0x9c8a76);  // the bodega's own low building, darker brick
+  // ---- the vacant lot past the clinic: chain-link, a burnt-out Buick, a wall the kids paint, a
+  // dice game when it is late enough, and a crosswalk over to the park's east gate
+  group.add(plane(12, 16, { name: 'streetsw_e', map: tex('sidewalk'), repeat: [4, 5] }, [29, 0, -1.4], [-Math.PI / 2, 0, 0]));
+  group.add(plane(12, 8, { name: 'streetasph_e', map: tex('asphalt'), repeat: [4, 3] }, [29, -0.01, 5.2], [-Math.PI / 2, 0, 0]));
+  group.add(box(12, 0.18, 0.4, M.concrete, [29, 0.09, 1.3]));
+  group.add(plane(6.6, 5.6, { name: 'lotdirt', color: 0x4a4436 }, [28.1, 0.02, -4.2], [-Math.PI / 2, 0, 0]));
+  const chain = retroMaterial('chainlink', { color: 0x8a9096, opacity: 0.55, transparent: true });
+  group.add(box(6.8, 2.4, 0.04, chain, [28.1, 1.2, -6.9]));
+  group.add(box(0.04, 2.4, 1.4, chain, [24.8, 1.2, -6.2]));
+  for (const x of [24.8, 26.5, 28.2, 29.9, 31.4]) group.add(box(0.07, 2.5, 0.07, M.metal, [x, 1.25, -6.9]));
+  group.add(box(7.5, 5.5, 1.0, retroMaterial('lotwall', { map: tex('brick'), color: 0x7a6a62 }), [28.1, 2.75, -7.6]));
+  group.add(plane(5.2, 2.2, { name: 'lotgraffiti', map: signTex('lotGraf', [{ text: 'KESTREL 4 LIFE', color: '#ff5ab0', size: 13 }, { text: 'RIP SAL (HE IS FINE)', color: '#5ae0ff', size: 8 }, { text: 'DEX OWES ME $20', color: '#ffe05a', size: 7 }], { w: 160, h: 64, bg: '#2a2422', border: '#2a2422' }), emissive: 0.25 }, [28.1, 1.9, -7.08]));
+  // the Buick: a body, a roof, no wheels, the windows long gone
+  group.add(box(2.2, 0.7, 1.1, retroMaterial('buick', { color: 0x3a2a22 }), [26.0, 0.55, -3.0], [0, 0.35, 0]));
+  group.add(box(1.2, 0.5, 1.0, retroMaterial('buickroof', { color: 0x2a1e18 }), [26.1, 1.1, -3.0], [0, 0.35, 0]));
+  for (const [x, z] of [[25.4, -3.6], [26.6, -2.4]]) group.add(box(0.5, 0.3, 0.5, retroMaterial('cinder', { color: 0x8a8478 }), [x, 0.15, z]));
+  // the crates the dice game happens on
+  group.add(box(0.7, 0.5, 0.7, M.wood, [29.6, 0.25, -4.6]));
+  group.add(box(0.5, 0.4, 0.5, M.wood, [30.4, 0.2, -4.0]));
+  // the crosswalk over to the park, and a sign so it reads as a way somewhere
+  for (let i = 0; i < 7; i++) group.add(box(0.5, 0.012, 1.1, M.white, [28.4, 0.012, 2.0 + i * 1.0]));
+  group.add(box(0.1, 2.4, 0.1, M.metal, [27.4, 1.2, 1.0]));
+  group.add(plane(1.4, 0.4, { name: 'eastgatesign', map: signTex('signEastGate', [{ text: 'KESTREL PARK', color: '#e9f6d8', size: 8 }, { text: 'EAST GATE →', color: '#8fc07a', size: 6 }], { w: 64, h: 20, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.8, unlit: true }, [27.4, 2.3, 1.06]));
+  facade(34.5, 6.0, 7.0, 0x8a8478);   // and the block beyond, which is somebody else's block
+
   // 1104 Kestrel, the walk-up west of the bodega: five floors, fire escape, a buzzer panel
   facade(-22.45, 5.7, 9.2, 0xa89a9e);
   facade(-29.0, 7.0, 6.0, 0x8a8076);  // and the block keeps going past it
@@ -581,6 +606,8 @@ export function buildStreet(g) {
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
     { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
+    { id: 'eastgate', label: 'Cross to the park · east gate', sub: 'past the lot', x: 28.4, z: 0.9, radius: 1.5, action: (gg) => gg.goTo('park', 'eastgate') },
+    { id: 'lotdice', label: 'The dice game by the wall', sub: 'late · $5 a roll · nobody asks your name', x: 29.9, z: -3.6, radius: 1.5, action: (gg) => lotDice(gg) },
     { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 6.6, z: -4.8, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
@@ -871,6 +898,36 @@ const GUS_STORIES = [
   'Gus tells you which window on the third floor of 1120 used to be his. He does not say why it is not anymore. You do not ask.',
 ];
 
+/** Street craps against the lot wall, after dark: $5 a roll, even money, and a crowd that remembers. */
+function lotDice(g) {
+  const s = g.state;
+  const mod = minuteOfDay(s.clock.m);
+  if (mod >= 4 * 60 && mod < 17 * 60) {
+    g.openModal({ kicker: 'THE LOT', title: 'Nobody Here', body: 'Two crates, a chalk circle and a lot of cigarette butts. The game is a night thing. Come back after five.', choices: [{ label: 'Okay.', effect: () => {} }] });
+    return;
+  }
+  g.openModal({
+    kicker: 'THE LOT · AFTER DARK', title: 'Dice',
+    body: 'Four guys around a chalk circle, a tall one holding the bank in a rubber band. "Five a roll. Seven or eleven, you double it. Two, three, twelve, the bank eats. Anything else, roll again till you hit it or seven."',
+    choices: [
+      { label: 'Roll for $5.', sub: 'about even money · 5 min', disabled: s.money < 5, effect: () => {
+        if (!g.spendMoney(5, 'dice')) return;
+        g.advance(5, { social: true });
+        const d = () => 1 + Math.floor(Math.random() * 6);
+        let roll = d() + d();
+        let win = null;
+        if (roll === 7 || roll === 11) win = true;
+        else if ([2, 3, 12].includes(roll)) win = false;
+        else { const point = roll; for (let i = 0; i < 30 && win === null; i++) { roll = d() + d(); if (roll === point) win = true; else if (roll === 7) win = false; } }
+        if (win) { g.earnMoney(10, 'dice'); bump(s, 'morale', 4); g.toast('Your number comes back around. The tall one peels you a ten like it physically hurts him.', 'good'); }
+        else { bump(s, 'stress', 2); g.toast('Seven. The circle groans for you, briefly, then forgets you.', 'bad'); }
+      } },
+      { label: 'Just watch.', sub: '15 min · +morale', effect: () => { g.advance(15, { social: true }); bump(s, 'morale', 3); g.toast('A man wins three in a row and then loses everything explaining his system.', 'info'); } },
+      { label: 'Walk away.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
 function speak(g, id, words = 10) {
   g.audio?.mumble?.('word '.repeat(Math.max(3, words)), { pitch: NPC_VOICE[id] ?? 1 });
 }
@@ -906,13 +963,20 @@ function talk(g, id) {
       ],
     });
   } else if (id === 'dale') {
+    // what Mo can ask Dale depends on whether he still works for him
+    const employed = !!s.job.employed;
     g.openModal({
       kicker: 'DALE — QUIK-STOP #14',
-      title: 'Counter Talk',
-      body: `${npcLine('dale')}\n\nHe has a coffee cup with a bite mark on the rim. It is not his bite mark. Nobody mentions it.`,
-      choices: [
+      title: employed ? 'Counter Talk' : 'Former Employee',
+      body: employed
+        ? `${npcLine('dale')}\n\nHe has a coffee cup with a bite mark on the rim. It is not his bite mark. Nobody mentions it.`
+        : `Dale looks at you the way he looks at the slushie machine when it makes the noise. "${s.job.quit ? 'You quit.' : 'You\'re not on the schedule.'} You know that, right?"`,
+      choices: employed ? [
         { label: 'Ask about extra hours.', sub: 'possible overtime', effect: () => { g.advance(15); if (shiftInfo(g).today) g.toast('"Come in early. I\'ll find something."', 'good'); else g.toast('"Nothing right now. Check the board."', 'info'); } },
         { label: 'Nod and leave.', sub: '', effect: () => {} },
+      ] : [
+        { label: 'Ask for your job back.', sub: s.job.fired ? 'he remembers why' : 'he might', effect: () => { applyForJob(g); } },
+        { label: 'Say you were just passing.', sub: '', effect: () => { g.toast('"You were just passing my counter. In my store. Okay."', 'info'); } },
       ],
     });
   } else if (id === 'homeless') {
@@ -1309,6 +1373,7 @@ export function buildPark(g) {
     { id: 'boombox', label: 'The boombox on the crate', sub: 'somebody left a tape in it', x: 1.9, z: 1.1, radius: 1.5, action: (gg) => parkMusic(gg) },
     { id: 'parkmate', label: 'Talk to Kev', sub: 'he is losing at chess to himself', x: -2.4, z: 0.2, radius: 1.5, action: (gg) => { gg.advance(8); bump(gg.state, 'morale', 4); gg.openModal({ kicker: 'KEV · KESTREL PARK', title: 'Park Kev', body: `${npcLine('kev')}\n\nHe has set up a chess board with no opponent and is losing anyway.`, choices: [{ label: 'Sit with him for a bit.', effect: () => { bump(gg.state, 'morale', 5); bump(gg.state, 'stress', -4); gg.advance(15); } }, { label: 'Leave him to it.', effect: () => {} }] }); } },
     { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'through the gate', x: 0, z: 7.9, radius: 1.1, action: (gg) => gg.goTo('street', 'park') },
+    { id: 'parkeast', label: 'East gate · to the lot', sub: 'out by the clinic end', x: 7.7, z: 1.6, radius: 1.1, action: (gg) => gg.goTo('street', 'eastgate') },
   ];
 
   return {
@@ -1324,6 +1389,7 @@ export function buildPark(g) {
     ],
     // a step inside the gate, past the exit's prompt (arriving inside it made F walk him back out)
     spawn: { x: 0, z: 6.5, rot: Math.PI },
+    spawnFor: (from) => (from === 'eastgate' ? { x: 6.6, z: 1.6, rot: -Math.PI / 2 } : { x: 0, z: 6.5, rot: Math.PI }),
     npcs,
     interactables,
     ambient: 'park',
