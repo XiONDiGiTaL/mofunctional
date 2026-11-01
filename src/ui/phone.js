@@ -23,6 +23,8 @@ import { postImage } from './feedart.js';
 import { installSites, siteActions, stoopPostBody } from './sites.js';
 import { goals, addGoal, confirmSleep } from './today.js';
 import * as notify from './notify.js';
+import * as relations from '../systems/relations.js';
+import { slotLine, slotInfo as autoInfo } from '../core/save.js';
 import * as sms from '../systems/sms.js';
 import * as fans from '../systems/fans.js';
 
@@ -40,6 +42,14 @@ const DEFAULT_REPLIES = [
   "can we not do this right now",
   "i'll call you later",
 ];
+
+/** "+18 food · +2 energy · −1 mood": what eating, drinking or smoking it does, from its numbers. */
+export function effectLine(def) {
+  if (!def) return '';
+  const parts = [['hunger', 'food'], ['energy', 'energy'], ['morale', 'mood'], ['stress', 'stress'], ['hygiene', 'hygiene']]
+    .filter(([k]) => def[k]).map(([k, n]) => `${def[k] > 0 ? '+' : '−'}${Math.abs(def[k])} ${n}`);
+  return parts.join(' · ');
+}
 
 const T = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -706,8 +716,19 @@ export class Phone {
 
   inventoryView() {
     const s = this.g.state;
-    const items = inventoryList(s);
-    return `${this.header('Pocket Lint', `${items.length} ITEMS`)}
+    // sorted the way he asked: by kind, by what it is worth, or by name
+    const sort = s.settings.invSort || 'kind';
+    const KIND_ORDER = { food: 0, comfort: 1, substance: 2, valuable: 3, gift: 4, mystery: 5, doc: 6 };
+    const items = inventoryList(s).sort((a, b) => sort === 'value' ? (b.def.value || 0) * b.qty - (a.def.value || 0) * a.qty
+      : sort === 'name' ? a.def.name.localeCompare(b.def.name)
+        : (KIND_ORDER[a.def.kind] ?? 9) - (KIND_ORDER[b.def.kind] ?? 9) || a.def.name.localeCompare(b.def.name));
+    const count = items.reduce((n, i) => n + i.qty, 0);
+    const resale = items.filter((i) => ['valuable', 'gift'].includes(i.def.kind)).reduce((n, i) => n + (i.def.value || 0) * i.qty, 0);
+    const fridge = (s.fridge || []).reduce((n, i) => n + i.qty, 0);
+    const sortBtn = (id, label) => `<button class="btn btn--sm ${sort === id ? 'btn--primary' : ''}" data-act="invsort" data-arg="${id}">${label}</button>`;
+    return `${this.header('Pocket Lint', `${count} ITEMS`)}
+      <div class="card inv__summary"><span><b>${count}</b> in your pockets</span><span>resale about <b>${money(resale)}</b></span><span><b>${fridge}</b> in the fridge</span></div>
+      <div class="row row--wrap">${sortBtn('kind', 'BY KIND')}${sortBtn('value', 'BY VALUE')}${sortBtn('name', 'A–Z')}</div>
       <div class="list list--tiles">
         ${items.length ? items.map((i) => {
           const def = i.def;
@@ -719,7 +740,8 @@ export class Phone {
             ${itemIcon(i.id, def.kind)}
             <div class="grow">
               <div class="name">${T(def.name)} ${i.qty > 1 ? `x${i.qty}` : ''}</div>
-              <div class="meta">${def.kind}${def.value ? ` · value ${money(def.value)}` : ''}${def.price ? ` · ${money(def.price)}` : ''}</div>
+              <div class="meta">${def.kind}${def.value ? ` · resale ${money(def.value)}${i.qty > 1 ? ` (${money(def.value * i.qty)} all)` : ''}` : ''}</div>
+              ${effectLine(def) ? `<div class="meta inv__fx">${effectLine(def)}</div>` : ''}
             </div>
             ${buttons}
           </div>`;
@@ -1041,10 +1063,11 @@ export class Phone {
       </div>
       <div class="app__h">Save / Load</div>
       <div class="list">
+        ${(() => { const a = autoInfo('auto'); return a ? `<div class="listitem"><div class="grow"><div class="name">Autosave <span class="tiny mono-dim">automatic</span></div><div class="meta">${slotLine(a)}</div></div><button class="btn btn--sm" data-act="load" data-arg="auto">LOAD</button></div>` : ''; })()}
         ${[1, 2, 3].map((n) => {
           const info = g.slotInfo ? g.slotInfo(n) : null;
           return `<div class="listitem">
-            <div class="grow"><div class="name">Slot ${n}</div><div class="meta">${info ? `Day ${info.day} · ${money(info.money)}` : 'empty'}</div></div>
+            <div class="grow"><div class="name">Slot ${n}</div><div class="meta">${slotLine(info)}</div></div>
             <button class="btn btn--sm" data-act="save" data-arg="${n}">SAVE</button>
             <button class="btn btn--sm" data-act="load" data-arg="${n}" ${info ? '' : 'disabled'}>LOAD</button>
           </div>`;
@@ -1127,7 +1150,16 @@ export class Phone {
         </div>
       </div>`;
     }).join('');
+    const waiting = relations.waitingOnMo(s, notify.groupOf);
+    const lately = relations.recentChanges(s);
+    const digest = `<div class="card reldigest">
+        <div class="app__h">Waiting on you</div>
+        ${waiting.map((w) => `<${w.act ? 'button' : 'div'} class="relrow" ${w.act ? `data-act="${w.act}" ${w.arg ? `data-arg="${w.arg}"` : ''}` : ''}><b>${T(w.who)}</b> ${T(w.text)}</${w.act ? 'button' : 'div'}>`).join('') || '<div class="tiny mono-dim">Nobody is waiting on an answer.</div>'}
+        <div class="app__h">Lately</div>
+        ${lately.map((c) => `<div class="relrow relrow--${c.tone}"><b>${T(c.who)}</b> ${T(c.text)}</div>`).join('') || '<div class="tiny mono-dim">Nothing has moved in the last few days.</div>'}
+      </div>`;
     return `
+      ${digest}
       <button class="card dfind" data-act="openhearts">
         <b>♥ Find someone on FeedLove HEARTS</b>
         <span class="tiny">today's stack of profiles · send hearts · swap numbers</span>
@@ -1429,13 +1461,14 @@ export class Phone {
       sfxvolume(arg, num, elem) { g.setSfxVolume?.(elem ? Number(elem.value) / 100 : (s.settings.sfxVolume ?? 0.5)); },
       mute() { g.setMuted?.(!s.settings.muted); },
       save(arg) { g.saveSlot(Number(arg)); },
-      load(arg) { g.loadSlot(Number(arg)); this.close(); },
+      load(arg) { g.loadSlot(arg === 'auto' ? 'auto' : Number(arg)); this.close(); },
       quitmenu() { this.close(); g.quitToMenu(); },
       clinic() { clinic.checkIn(g); },
       clincheck() { clinic.checkIn(g); },
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
       hookup(arg) { this.close(); dating.hookupMenu(g, arg); },
       blocktab(arg) { this.blockTab = arg; },
+      invsort(arg) { s.settings.invSort = arg; },
       notifopen(arg) { this.app = 'messages'; this.actions.msgopen.call(this, arg); },
       notifread() { for (const m of s.messages) m.read = true; },
       setnotif(arg, num, el) { s.settings[el.dataset.key] = arg; },

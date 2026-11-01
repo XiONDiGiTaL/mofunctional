@@ -411,6 +411,9 @@ export const CONFIG = {
     ],
   },
 
+  // the fridge in Unit 3B
+  fridge: { capacity: 24 },
+
   // Dee's Wash & Fold on Ashby
   laundromat: {
     washCost: 3,

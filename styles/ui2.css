@@ -954,3 +954,41 @@
 .notif--info i { background: #5ab0ff; color: #fff; }
 .notif__clear { all: unset; cursor: pointer; align-self: flex-end; font-size: 8px; letter-spacing: .14em; opacity: .6; padding: 2px 4px; }
 .feed__clear { pointer-events: auto; border: 0; border-radius: 999px; padding: 4px 9px; margin-left: 6px; font: 700 9px/1 var(--mono, monospace); letter-spacing: .12em; cursor: pointer; color: #cfd8d0; background: rgba(0, 0, 0, .55); }
+
+/* ------------------------------------------------------------------ Pocket Lint */
+.inv__summary { display: flex; justify-content: space-between; gap: 6px; font-size: 10px; flex-wrap: wrap; }
+.inv__fx { color: #9fd8a8; }
+
+.fridge__cap { font-style: normal; font-size: 10px; opacity: .7; margin-left: 6px; }
+.fridge__cap.full { color: #ff9a8a; opacity: 1; }
+.menucard__meta { font-size: 9px; opacity: .6; letter-spacing: .03em; }
+.menucard__meta em { font-style: normal; }
+
+/* LoveLine: who is waiting, what moved */
+.reldigest .app__h { margin-top: 2px; }
+.relrow { all: unset; display: block; font-size: 11px; line-height: 1.4; padding: 3px 0; border-bottom: 1px dotted rgba(255, 255, 255, .08); }
+button.relrow { cursor: pointer; }
+button.relrow:hover { color: #ffd24a; }
+.relrow b { color: #f2ecd6; }
+.relrow--good b::before { content: '▲ '; color: #7fd18b; }
+.relrow--bad b::before { content: '▼ '; color: #ff9a8a; }
+
+/* ------------------------------------------------------------------ options (pause menu) */
+.options { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(4, 6, 8, .72); padding: 16px; }
+.options__panel { width: min(640px, 100%); max-height: 88vh; overflow-y: auto; background: #12161a; border: 1px solid rgba(255, 210, 74, .35); border-radius: 10px; padding: 14px 16px; color: #e6e0cc; font-size: 12px; }
+.options__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.options__head b { letter-spacing: .18em; color: #ffd24a; }
+.options__head span { flex: 1; font-size: 10px; opacity: .55; }
+.options section { padding: 8px 0; border-top: 1px dotted rgba(255, 255, 255, .1); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.options h3 { margin: 0; font-size: 10px; letter-spacing: .16em; color: #ffd24a; }
+.options label { display: grid; grid-template-columns: 110px 44px 1fr; align-items: center; gap: 8px; width: 100%; }
+.options label em { font-style: normal; opacity: .7; }
+.options__note { margin: 0; font-size: 10px; opacity: .6; }
+.options table { width: 100%; border-collapse: collapse; }
+.options th { text-align: left; font-size: 9px; letter-spacing: .1em; opacity: .5; font-weight: 400; padding: 2px 4px; }
+.options td { padding: 2px 4px; border-bottom: 1px dotted rgba(255, 255, 255, .06); }
+.options__pad { opacity: .65; font-size: 10px; }
+.keycap { all: unset; display: inline-block; min-width: 22px; text-align: center; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .06); font-size: 11px; font-style: normal; cursor: pointer; }
+.keycap--fixed { cursor: default; opacity: .6; }
+.keycap--wait { border-color: #ffd24a; color: #ffd24a; }
+@media (max-width: 560px) { .options label { grid-template-columns: 1fr 40px; } .options label input { grid-column: 1 / -1; } }

@@ -13,6 +13,7 @@ import { bidbayTick } from './economy.js';
 import { onNewDayJob } from './jobs.js';
 import { fellowshipNewDay } from './fellowship.js';
 import { applyAfterglow, partnerNewDay } from './romance.js';
+import { relationsNewDay } from './relations.js';
 import { clinicNewDay, onRelapse } from './clinic.js';
 import { sisterNewDay, sisterTick } from './sister.js';
 import { healthTick } from './health.js';
@@ -45,6 +46,7 @@ export function simulate(g, minutes, ctx = {}) {
       onNewDayJob(g, prev);
       fellowshipNewDay(g, d);
       lifeNewDay(g, d);
+      relationsNewDay(s, d);
       partnerNewDay(g, d);
       clinicNewDay(g, d);
       sisterNewDay(g, d);
@@ -224,9 +226,20 @@ export function eat(g, itemId, from = 'inventory') {
 }
 
 /** Move one of `itemId` between his pockets and the fridge (to: 'fridge' | 'inventory'). */
-export function moveFood(g, itemId, to = 'fridge') {
+export const fridgeCount = (s) => (s.fridge || []).reduce((n, i) => n + i.qty, 0);
+
+/** Move one (or `qty`, or everything with qty = Infinity) between pockets and fridge. */
+export function moveFood(g, itemId, to = 'fridge', qty = 1) {
+  let moved = 0;
+  while (moved < qty && moveOne(g, itemId, to)) moved += 1;
+  return moved > 0;
+}
+
+function moveOne(g, itemId, to) {
   const s = g.state;
   s.fridge = s.fridge || [];
+  // the fridge holds what a fridge holds
+  if (to === 'fridge' && fridgeCount(s) >= CONFIG.fridge.capacity) return false;
   const src = to === 'fridge' ? s.inventory : s.fridge;
   const entry = src.find((i) => i.id === itemId && i.qty > 0);
   if (!entry) return false;

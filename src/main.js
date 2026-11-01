@@ -23,7 +23,8 @@ import { ENDINGS } from './systems/endings.js';
 import { InputSystem } from './core/input.js';
 import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
-import { toggleMap } from './ui/map.js';
+import { toggleMap, mapTitle } from './ui/map.js';
+import { showOptions } from './ui/options.js';
 import * as life from './systems/life.js';
 import { migrate } from './systems/migrate.js';
 import * as romance from './systems/romance.js';
@@ -129,6 +130,7 @@ class Game {
     if (inp.take('interact')) this.world.tryInteract(this);
     if (inp.take('cycle')) this.world.cycleTarget?.();
     if (inp.take('today')) this.hud.toggleToday?.();
+    if (inp.take('camreset')) this.setCamera('reset');
     if (inp.take('crt')) this.toggleCRT();
     if (inp.take('ratio')) this.toggle43();
     if (inp.take('speed1')) this.setSpeed(1);
@@ -295,6 +297,7 @@ class Game {
         choices: [
           { label: 'Resume.', effect: () => { this.paused = false; } },
           { label: `Save to slot 1.`, sub: 'overwrites slot 1', effect: () => { this.saveSlot(1); this.paused = false; } },
+          { label: 'Options.', sub: 'sound · camera · controls and key remapping', effect: () => { setTimeout(() => showOptions(this), 0); } },
           { label: 'How to play.', effect: () => { this.menu.showHelp(); this.paused = true; } },
           { label: 'Quit to main menu.', effect: () => { this.quitToMenu(); } },
         ],
@@ -570,6 +573,7 @@ class Game {
   /* ------------------------------ saves / presentation ------------------------------ */
 
   saveSlot(n) {
+    this.state.savedWhere = mapTitle(this);
     const ok = saveGame(n, this.state);
     this.toast(ok ? `Saved to slot ${n}.` : 'Save failed (storage blocked).', ok ? 'good' : 'bad');
     this.audio.sfx(ok ? 'confirm' : 'deny');
@@ -585,6 +589,7 @@ class Game {
 
   autosave() {
     if (this.mode !== 'play') return;
+    this.state.savedWhere = mapTitle(this);
     doAutosave(this.state);
   }
 
@@ -660,7 +665,8 @@ class Game {
   /** Follow-camera rig, set from the phone's System app. Values are multipliers on the arm. */
   setCamera(key, value) {
     const s = this.state.settings;
-    if (key === 'reset') { s.camDist = 1; s.camHeight = 1; return; }
+    // reset: default distance and height, and the camera swung back round behind Mo
+    if (key === 'reset') { s.camDist = 1; s.camHeight = 1; this.world?.resetCamera?.(); return; }
     const pct = clamp(Number(value) || 100, 50, 160) / 100;
     if (key === 'dist') s.camDist = clamp(pct, 0.7, 1.4);
     if (key === 'height') s.camHeight = clamp(pct, 0.8, 1.35);

@@ -14,6 +14,10 @@ import { buildGrid, findPath } from '../src/world/pathing.js';
 import { openAt, closedReason } from '../src/world/hours.js';
 import { todayItems, wouldMiss } from '../src/ui/today.js';
 import { groupOf } from '../src/ui/notify.js';
+import { moveFood, fridgeCount } from '../src/systems/needs.js';
+import { BINDINGS, keysFor, rebind, resetBindings } from '../src/core/input.js';
+import { saveAge, slotLine } from '../src/core/save.js';
+import { relationsNewDay, recentChanges } from '../src/systems/relations.js';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { CONFIG } from '../src/core/config.js';
 import { createState, clock, bump, addItem, countItem } from '../src/core/state.js';
@@ -1510,6 +1514,55 @@ check('notifications: landlord and bills are urgent, people are social, services
   eq(groupOf({ from: 'RAE VELL (LANDLORD)', subject: '', body: 'rent' }), 'urgent', 'landlord');
   eq(groupOf({ from: 'NIA', subject: '', body: 'hi' }), 'social', 'sister');
   eq(groupOf({ from: 'BIDBAY', subject: '', body: 'listing' }), 'info', 'service');
+  return true;
+});
+
+check('fridge: ALL moves a stack, and a full fridge refuses more', () => {
+  const g = stubGame();
+  g.state.inventory = [{ id: 'ramen', qty: 30 }];
+  g.state.fridge = [];
+  eq(moveFood(g, 'ramen', 'fridge', Infinity), true, 'moved');
+  eq(fridgeCount(g.state), CONFIG.fridge.capacity, 'filled to capacity');
+  eq(g.state.inventory.find((i) => i.id === 'ramen')?.qty, 30 - CONFIG.fridge.capacity, 'the rest stays in pockets');
+  eq(moveFood(g, 'ramen', 'fridge'), false, 'full');
+  eq(moveFood(g, 'ramen', 'inventory', Infinity), true, 'take all');
+  eq(fridgeCount(g.state), 0, 'empty');
+  return true;
+});
+
+check('keys: a remap swaps with whatever held the key; Tab and Esc cannot be taken', () => {
+  const set = {};
+  eq(keysFor(set, 'interact')[0], 'KeyF', 'default');
+  eq(rebind(set, 'interact', 'KeyM'), true, 'rebound');
+  eq(keysFor(set, 'interact')[0], 'KeyM', 'interact on M');
+  eq(keysFor(set, 'map')[0], 'KeyF', 'map took F');
+  eq(keysFor(set, 'interact').includes('Space'), true, 'extras stay');
+  eq(rebind(set, 'map', 'Tab'), false, 'Tab refused');
+  const used = BINDINGS.map((b) => keysFor(set, b.id)[0]);
+  eq(new Set(used).size, used.length, 'no two actions share a key');
+  resetBindings(set);
+  eq(keysFor(set, 'map')[0], 'KeyM', 'reset');
+  return true;
+});
+
+check('saves: the slot line has day, time, place, money and age', () => {
+  const line = slotLine({ day: 4, time: '14:20', where: 'Kestrel Street', money: 38.4, savedAt: Date.now() - 12 * 60000 });
+  eq(line, 'Day 4 · 14:20 · Kestrel Street · $38 · saved 12 min ago', 'line');
+  eq(saveAge(Date.now() - 3 * 86400000), '3 days ago', 'days');
+  eq(slotLine(null), 'empty', 'empty');
+  return true;
+});
+
+check('relations: affection moves and trust shifts are reported, trust as words only', () => {
+  const g = stubGame();
+  const s = g.state;
+  relationsNewDay(s, 1);
+  romance.partnerState(s, 'stephanie').affection += 10;
+  life.trust(s, 'habib', 2);
+  const ch = recentChanges(s);
+  eq(ch.some((c) => /affection \+10/.test(c.text)), true, 'affection');
+  const h = ch.find((c) => c.who === 'Habib');
+  eq(!!h && /warmer/.test(h.text) && !/\d/.test(h.text.replace(/\d+ days/, '')), true, 'trust in words');
   return true;
 });
 

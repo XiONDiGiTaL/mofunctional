@@ -1,7 +1,7 @@
 /** Main menu (audio-reactive), settings, saves, intro and ending screens. */
 import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { money, dayOf, el, esc } from '../core/util.js';
-import { loadGame, allSlots } from '../core/save.js';
+import { loadGame, allSlots, slotInfo, slotLine } from '../core/save.js';
 import { INTRO_TEXT, HELP_TEXT } from '../systems/dialogue.js';
 import { ENDINGS } from '../systems/endings.js';
 import { THEMES, SCALES } from './themes.js';
@@ -159,14 +159,14 @@ export class Menu {
 
   showLoad() {
     const slots = allSlots();
-    const auto = loadGame('auto');
+    const auto = slotInfo('auto');
     const body = `
       ${auto ? `<div class="row row--between" style="padding:6px 0;border-bottom:1px dotted #223428">
-        <span>Autosave <span class="tiny mono-dim">Day ${dayOf(auto.clock.m)} · ${money(auto.money)}</span></span>
+        <span><b style="color:#ffd24a">AUTOSAVE</b> <span class="tiny mono-dim">saved on its own as you play · ${slotLine(auto)}</span></span>
         <button class="btn btn--sm btn--primary" data-slot="auto">LOAD</button>
       </div>` : ''}
       ${slots.map((s, i) => `<div class="row row--between" style="padding:6px 0;border-bottom:1px dotted #223428">
-        <span>Slot ${i + 1} ${s ? `<span class="tiny mono-dim">Day ${s.day} · ${money(s.money)}</span>` : '<span class="tiny mono-dim">empty</span>'}</span>
+        <span>Slot ${i + 1} <span class="tiny mono-dim">${slotLine(s)}</span></span>
         <button class="btn btn--sm" data-slot="${i + 1}" ${s ? '' : 'disabled'}>LOAD</button>
       </div>`).join('')}`;
     const overlay = el(`<div class="screen">

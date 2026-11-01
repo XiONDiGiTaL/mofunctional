@@ -11,6 +11,10 @@
  *   phone     TAB / B
  *   pause     ESC / START
  *   speed     1 2 3, D-pad up/down on the pad
+ *
+ * The keyboard half is remappable: each action in BINDINGS has a primary key the player can
+ * change (saved as `settings.keys[action]`) and fixed extras (the arrows, Space and Enter) that
+ * always work. TAB and ESC never move, so the phone and the pause menu can always be reached.
  */
 
 const PAD_BUTTON = {
@@ -21,12 +25,58 @@ const PAD_BUTTON = {
   UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15,
 };
 
-const MOVE_KEYS = {
-  forward: ['KeyW', 'ArrowUp'],
-  back: ['KeyS', 'ArrowDown'],
-  left: ['KeyA', 'ArrowLeft'],
-  right: ['KeyD', 'ArrowRight'],
-};
+/** [{ id, label, key (default primary), extra (always bound), pad (reference only) }] */
+export const BINDINGS = [
+  { id: 'forward', label: 'Walk forward', key: 'KeyW', extra: ['ArrowUp'], pad: 'Left stick / D-pad up' },
+  { id: 'back', label: 'Walk back', key: 'KeyS', extra: ['ArrowDown'], pad: 'Left stick / D-pad down' },
+  { id: 'left', label: 'Walk left', key: 'KeyA', extra: ['ArrowLeft'], pad: 'Left stick / D-pad left' },
+  { id: 'right', label: 'Walk right', key: 'KeyD', extra: ['ArrowRight'], pad: 'Left stick / D-pad right' },
+  { id: 'orbitL', label: 'Turn camera left', key: 'KeyQ', extra: [], pad: 'LB / LT / right stick' },
+  { id: 'orbitR', label: 'Turn camera right', key: 'KeyE', extra: [], pad: 'RB / RT / right stick' },
+  { id: 'camreset', label: 'Reset camera', key: 'KeyV', extra: [], pad: 'R3 (click right stick)' },
+  { id: 'interact', label: 'Interact / confirm', key: 'KeyF', extra: ['Space', 'Enter'], pad: 'A' },
+  { id: 'cycle', label: 'Next thing in reach', key: 'KeyX', extra: [], pad: 'X' },
+  { id: 'map', label: 'Map', key: 'KeyM', extra: [], pad: '—' },
+  { id: 'today', label: 'Today panel', key: 'KeyT', extra: [], pad: '—' },
+  { id: 'speed1', label: 'Time: normal', key: 'Digit1', extra: [], pad: '—' },
+  { id: 'speed2', label: 'Time: fast', key: 'Digit2', extra: [], pad: 'Y' },
+  { id: 'speed3', label: 'Time: fastest', key: 'Digit3', extra: [], pad: '—' },
+  { id: 'crt', label: 'CRT filter', key: 'KeyC', extra: [], pad: 'BACK' },
+  { id: 'ratio', label: '4:3 frame', key: 'KeyR', extra: [], pad: '—' },
+];
+export const FIXED_KEYS = [['Phone', 'Tab', 'B'], ['Pause / close', 'Escape', 'START']];
+const BY_ID = Object.fromEntries(BINDINGS.map((b) => [b.id, b]));
+
+/** The keys that trigger an action right now: the player's primary (or the default) plus the extras. */
+export function keysFor(settings, id) {
+  const b = BY_ID[id];
+  if (!b) return [];
+  return [settings?.keys?.[id] || b.key, ...b.extra];
+}
+
+/** "W", "Space", "1", "←" for a KeyboardEvent.code. */
+export function keyName(code = '') {
+  const arrows = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+  if (arrows[code]) return arrows[code];
+  return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ');
+}
+
+/**
+ * Bind `code` as the primary key of `id`. Whatever action held it before swaps to this action's
+ * old key, so no two actions ever share one. Tab and Escape cannot be taken.
+ */
+export function rebind(settings, id, code) {
+  if (!BY_ID[id] || !code || code === 'Tab' || code === 'Escape') return false;
+  settings.keys = settings.keys || {};
+  const old = settings.keys[id] || BY_ID[id].key;
+  for (const b of BINDINGS) {
+    if (b.id !== id && (settings.keys[b.id] || b.key) === code) settings.keys[b.id] = old;
+  }
+  settings.keys[id] = code;
+  return true;
+}
+
+export function resetBindings(settings) { settings.keys = {}; }
 
 export class InputSystem {
   constructor(game) {
@@ -66,16 +116,11 @@ export class InputSystem {
         if (gate) gate.click();
         return;
       }
-      if (g.mode !== 'play' || g.phoneOpen || g.modalOpen) return;
-      if (code === 'KeyF' || code === 'Space' || code === 'Enter') this.events.push('interact');
-      if (code === 'KeyC') this.events.push('crt');
-      if (code === 'KeyR') this.events.push('ratio');
-      if (code === 'Digit1') this.events.push('speed1');
-      if (code === 'Digit2') this.events.push('speed2');
-      if (code === 'Digit3') this.events.push('speed3');
-      if (code === 'KeyM') this.events.push('map');
-      if (code === 'KeyX') this.events.push('cycle');      // the next thing in reach
-      if (code === 'KeyT') this.events.push('today');      // the Today panel
+      if (g.mode !== 'play' || g.phoneOpen || g.modalOpen || this.capturing) return;
+      const set = g.state?.settings;
+      for (const id of ['interact', 'crt', 'ratio', 'speed1', 'speed2', 'speed3', 'map', 'cycle', 'today', 'camreset']) {
+        if (keysFor(set, id).includes(code)) this.events.push(id);
+      }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -152,18 +197,19 @@ export class InputSystem {
   poll(dt) {
     const g = this.g;
     const k = this.keys;
-    const held = (names) => names.some((n) => k.has(n));
+    const set = g.state?.settings;
+    const held = (id) => keysFor(set, id).some((n) => k.has(n));
 
     let mx = 0;
     let my = 0;
-    if (held(MOVE_KEYS.forward)) my += 1;
-    if (held(MOVE_KEYS.back)) my -= 1;
-    if (held(MOVE_KEYS.right)) mx += 1;
-    if (held(MOVE_KEYS.left)) mx -= 1;
+    if (held('forward')) my += 1;
+    if (held('back')) my -= 1;
+    if (held('right')) mx += 1;
+    if (held('left')) mx -= 1;
 
     let cam = 0;
-    if (k.has('KeyQ')) cam -= 1;
-    if (k.has('KeyE')) cam += 1;
+    if (held('orbitL')) cam -= 1;
+    if (held('orbitR')) cam += 1;
 
     // ---- gamepad
     const pad = this.gamepad();
@@ -211,6 +257,7 @@ export class InputSystem {
       this.edge('Y', 'speed2');
       this.edge('X', 'cycle');
       this.edge('BACK', 'crt');
+      this.edge('R3', 'camreset');
     }
 
     // normalise the move vector so diagonals are not faster

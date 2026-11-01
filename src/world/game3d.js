@@ -732,6 +732,14 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   /** The next interactable in reach (X / the pad's X). */
+  /** Swing the camera back behind Mo, the way it sits when he walks into a room. */
+  resetCamera() {
+    if (!this.mo) return;
+    this.camYaw = this.mo.root.rotation.y;
+    this.camSwing = 0;
+    this.tilt = 0;
+  }
+
   cycleTarget() {
     if (!this.nearList || this.nearList.length < 2) return;
     this.pickIndex = ((this.pickIndex || 0) + 1) % this.nearList.length;

@@ -494,6 +494,9 @@ Movement is camera-relative: **W always walks into the screen**.
 | `F` / `Space` / `Enter` | Interact with whatever is near |
 | `TAB` | Phone |
 | `M` | Map |
+| `X` | Next thing in reach |
+| `T` | Today panel |
+| `V` | Reset the camera behind Mo |
 | `ESC` | Pause, or close what is open |
 | `1` `2` `3` | Speed 1× · 2× · 4× |
 | `C` | CRT scanlines |
@@ -502,7 +505,10 @@ Movement is camera-relative: **W always walks into the screen**.
 
 **Gamepad** (standard mapping): left stick / D-pad move, bumpers, triggers and the right stick
 orbit, `A` interact, `B` phone, `START` pause, `X`/`Y` speed. The HUD has buttons for the phone,
-map, pause, speed, CRT and 4:3.
+map, pause, speed, CRT and 4:3. `R3` resets the camera.
+
+Every key above except `TAB` and `ESC` can be remapped from **ESC → Options**, which also has the
+music and sound-effect volumes, the camera sliders and a full controller reference.
 
 ---
 

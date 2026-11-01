@@ -5,11 +5,16 @@
  * modals. Escape, the × or "step outside" puts it away.
  */
 import { itemIcon } from './icons.js';
+import { effectLine } from './phone.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cash = (n) => `$${Number(n || 0).toFixed(2)}`;
 
 let open = null;
+
+const have = (g, id) => (g.state.inventory.find((i) => i.id === id)?.qty || 0) + (g.state.fridge || []).filter((i) => i.id === id).reduce((n, i) => n + i.qty, 0);
+/** What a dollar buys: food per dollar for food, so the cheap filling thing is easy to spot. */
+const perDollar = (it) => (it.def.hunger && it.price > 0 ? `${(it.def.hunger / it.price).toFixed(1)} food per $` : "");
 
 /**
  * shop: the SHOPS entry; items: [{ id, def, price, note, gains: [[label, tone]] }];
@@ -41,12 +46,13 @@ export function showShopMenu(g, { shop, items, portrait, buy }) {
             ${itemIcon(it.id, it.def.kind)}
             <b class="menucard__name">${esc(it.def.name)}</b>
             <span class="menucard__note">${esc(it.note)}</span>
-            <span class="menucard__chips">${it.gains.map(([t, tone]) => `<i class="chip chip--${tone}">${esc(t)}</i>`).join('')}</span>
+            <span class="menucard__chips">${it.gains.length ? it.gains.map(([t, tone]) => `<i class="chip chip--${tone}">${esc(t)}</i>`).join('') : `<i class="chip">${esc(effectLine(it.def) || 'no effect on Mo')}</i>`}</span>
+            <span class="menucard__meta"><em data-have="${it.id}">you have ${have(g, it.id)}</em>${perDollar(it) ? ` · ${perDollar(it)}` : ''}</span>
             <span class="menucard__stamp">BAGGED</span>
           </button>`).join('')}
       </div>
       <footer class="shopmenu__foot">
-        <span>Click an item to buy it. Everything goes straight in your pocket.</span>
+        <span>Click an item to buy it. Price, what it does and how many you already have are on the card.</span>
         <button class="btn btn--sm" data-close>Step back outside</button>
       </footer>
     </div>`;
@@ -56,6 +62,8 @@ export function showShopMenu(g, { shop, items, portrait, buy }) {
     for (const card of wrap.querySelectorAll('[data-buy]')) {
       const it = items.find((x) => x.id === card.dataset.buy);
       card.classList.toggle('menucard--broke', g.state.money < it.price);
+      const h = card.querySelector('[data-have]');
+      if (h) h.textContent = `you have ${have(g, it.id)}`;
     }
   };
   wrap.addEventListener('click', (e) => {

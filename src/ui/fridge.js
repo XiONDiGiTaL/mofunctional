@@ -33,6 +33,7 @@ function shelf(list, side) {
       <div class="fridge__btns">
         <button class="btn btn--sm btn--primary" data-eat="${id}" data-from="${side}">${def.kind === 'food' ? 'EAT' : id === 'loosies' ? 'SMOKE' : 'DRINK'}</button>
         <button class="btn btn--sm" data-move="${id}" data-to="${side === 'fridge' ? 'inventory' : 'fridge'}">${side === 'fridge' ? 'TAKE' : 'STORE'}</button>
+        ${qty > 1 ? `<button class="btn btn--sm" data-move="${id}" data-to="${side === 'fridge' ? 'inventory' : 'fridge'}" data-all>ALL</button>` : ''}
       </div>
     </div>`).join('');
 }
@@ -52,11 +53,13 @@ export function showFridge(g) {
           <button class="fridge__x" data-close aria-label="Close">×</button>
         </header>
         <div class="fridge__cols">
-          <section class="fridge__col fridge__col--cold"><h3>In the fridge</h3>${shelf(s.fridge || [], 'fridge')}</section>
+          <section class="fridge__col fridge__col--cold"><h3>In the fridge <em class="fridge__cap ${needs.fridgeCount(s) >= CONFIG.fridge.capacity ? 'full' : ''}">${needs.fridgeCount(s)} / ${CONFIG.fridge.capacity}</em></h3>${shelf(s.fridge || [], 'fridge')}</section>
           <section class="fridge__col"><h3>In your pockets</h3>${shelf(s.inventory, 'inventory')}</section>
         </div>
         <footer class="fridge__foot">
           <span>Store food here to keep it for later. Eat from either side.</span>
+          <button class="btn btn--sm" data-storeall>Store all food</button>
+          <button class="btn btn--sm" data-takeall>Take everything</button>
           <button class="btn btn--sm" data-pantry>Order groceries</button>
           <button class="btn btn--sm" data-close>Close the door</button>
         </footer>
@@ -66,7 +69,23 @@ export function showFridge(g) {
     if (e.target.closest('[data-close]') || e.target === wrap) { closeFridge(g); return; }
     if (e.target.closest('[data-pantry]')) { closeFridge(g); g.openPhone?.('pantry'); return; }
     const mv = e.target.closest('[data-move]');
-    if (mv) { needs.moveFood?.(g, mv.dataset.move, mv.dataset.to); render(); return; }
+    if (mv) {
+      const ok = needs.moveFood?.(g, mv.dataset.move, mv.dataset.to, mv.hasAttribute('data-all') ? Infinity : 1);
+      if (!ok && mv.dataset.to === 'fridge') g.toast(`The fridge is full (${CONFIG.fridge.capacity}). Eat something, it is right there.`, 'info');
+      render();
+      return;
+    }
+    if (e.target.closest('[data-storeall]')) {
+      for (const it of [...g.state.inventory]) if (CONFIG.items[it.id]?.kind === 'food') needs.moveFood(g, it.id, 'fridge', Infinity);
+      if (needs.fridgeCount(g.state) >= CONFIG.fridge.capacity) g.toast('The fridge is full. The rest stays in your pockets.', 'info');
+      render();
+      return;
+    }
+    if (e.target.closest('[data-takeall]')) {
+      for (const it of [...(g.state.fridge || [])]) needs.moveFood(g, it.id, 'inventory', Infinity);
+      render();
+      return;
+    }
     const eat = e.target.closest('[data-eat]');
     if (eat) {
       closeFridge(g);

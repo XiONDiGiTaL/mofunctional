@@ -11,6 +11,7 @@ import { el } from '../core/util.js';
 import { portraitURL } from '../render/faces.js';
 import { MessageFeed } from './feed.js';
 import { renderMinimap } from './map.js';
+import { keysFor, keyName } from '../core/input.js';
 
 export class HUD {
   constructor(root, game) {
@@ -234,8 +235,9 @@ export class HUD {
     }
     // [F] (or Ⓐ on a pad) and the action; when it cannot be done, why; when there is more than one
     // thing in reach, which one this is and the key that moves to the next
-    const key = prompt.pad ? 'Ⓐ' : 'F';
-    const cyc = prompt.count > 1 ? `<span class="prompt__cycle"><kbd>${prompt.pad ? 'Ⓧ' : 'X'}</kbd>${prompt.index + 1}/${prompt.count}</span>` : '';
+    const set = this.g?.state?.settings;
+    const key = prompt.pad ? 'Ⓐ' : keyName(keysFor(set, 'interact')[0]);
+    const cyc = prompt.count > 1 ? `<span class="prompt__cycle"><kbd>${prompt.pad ? 'Ⓧ' : keyName(keysFor(set, 'cycle')[0])}</kbd>${prompt.index + 1}/${prompt.count}</span>` : '';
     this.promptEl.classList.toggle('prompt--off', !!prompt.unavailable);
     this.promptEl.innerHTML = prompt.unavailable
       ? `<kbd>${key}</kbd>${escapeHtml(prompt.label)}<small class="prompt__why">Unavailable: ${escapeHtml(prompt.unavailable)}</small>${cyc}`

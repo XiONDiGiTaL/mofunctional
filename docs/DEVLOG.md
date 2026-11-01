@@ -26,7 +26,18 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
   feedBubbles / textPopups / placeToasts; feed counts unseen, CLEAR button.
 - `world/pathing.js`: 25 cm walkability grid per interior, BFS + line-of-sight smoothing;
   patrolIdle uses it indoors.
-- 85 checks.
+- Inventory: sort by kind / value / A–Z (`settings.invSort`), item count, resale estimate,
+  effect lines (`effectLine` in phone.js). Fridge: `CONFIG.fridge.capacity` 24, `moveFood(g, id,
+  to, qty)`, ALL per item, Store all food / Take everything.
+- Shop board: "you have N" (pockets + fridge) and food per dollar on each card.
+- Saves: `savedWhere`, `slotInfo` time/where/auto, `saveAge`, `slotLine`; autosave labelled in
+  the load screen and in Tweaks.
+- `systems/relations.js`: daily snapshot (`relSnaps`), recentChanges (trust as words only),
+  waitingOnMo; LoveLine opens with "Waiting on you" and "Lately".
+- `ui/options.js` from the pause menu: music / SFX, camera distance/height + reset, controls table
+  with gamepad column. `input.js` BINDINGS, keysFor, rebind (swaps), resetBindings;
+  `settings.keys`; V / R3 reset the camera (`world.resetCamera`); HUD prompt shows bound keys.
+- 89 checks.
 
 ### Dee's Wash & Fold
 
