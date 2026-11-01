@@ -1550,11 +1550,37 @@ export function buildPark(g) {
     group.add(plane(2.6, 2.0, { name: 'parklamp', color: 0xfff2c4, opacity: 0.14, transparent: true, unlit: true }, [lx, 0.03, 6.2], [-Math.PI / 2, 0, 0]));
   }
   group.add(box(0.6, 0.9, 0.6, retroMaterial('parkbin', { color: 0x39443c }), [2.9, 0.45, 6.2]));
-  group.add(box(1.5, 2.3, 0.14, M.door, [0, 1.15, 8.4]));
-  group.add(box(0.12, 2.4, 0.2, M.white, [-0.8, 1.2, 8.36]));
-  group.add(box(0.12, 2.4, 0.2, M.white, [0.8, 1.2, 8.36]));
-  group.add(box(1.7, 0.12, 0.2, M.white, [0, 2.4, 8.36]));
-  group.add(plane(2.6, 0.45, { name: 'parkgate', map: signTex('signParkGate', [{ text: 'KESTREL PARK', color: '#e9f6d8', size: 12 }], { w: 128, h: 24, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.8, unlit: true }, [0, 2.7, 8.3]));
+  // ---- the edges. This used to be a single door standing on the grass, which read as a garden
+  // shed with delusions; a park leaves through a fence with a gate standing open in it.
+  const iron = retroMaterial('parkiron', { color: 0x23282a, ambient: 0.65 });
+  const stone = retroMaterial('parkstone', { color: 0x6f6a60, map: tex('concrete') });
+  const fenceX = (x0, x1, z) => {
+    for (let x = x0; x <= x1 + 0.01; x += 0.55) group.add(box(0.05, 1.5, 0.05, iron, [x, 0.75, z]));
+    group.add(box(x1 - x0, 0.07, 0.09, iron, [(x0 + x1) / 2, 1.45, z]));
+    group.add(box(x1 - x0, 0.05, 0.07, iron, [(x0 + x1) / 2, 0.55, z]));
+  };
+  const fenceZ = (z0, z1, x) => {
+    for (let z = z0; z <= z1 + 0.01; z += 0.55) group.add(box(0.05, 1.5, 0.05, iron, [x, 0.75, z]));
+    group.add(box(0.09, 0.07, z1 - z0, iron, [x, 1.45, (z0 + z1) / 2]));
+    group.add(box(0.07, 0.05, z1 - z0, iron, [x, 0.55, (z0 + z1) / 2]));
+  };
+  const pier = (px, pz) => {
+    group.add(box(0.5, 2.5, 0.5, stone, [px, 1.25, pz]));
+    group.add(box(0.62, 0.14, 0.62, stone, [px, 2.55, pz]));
+    group.add(box(0.1, 0.1, 0.1, M.lamp, [px, 2.72, pz]));
+  };
+  // north edge, with the gate to Kestrel Street standing open
+  fenceX(-8.1, -1.8, 8.2);
+  fenceX(1.8, 8.1, 8.2);
+  pier(-1.8, 8.2); pier(1.8, 8.2);
+  for (const sx of [-1, 1]) group.add(box(1.0, 1.35, 0.06, iron, [sx * 2.45, 0.68, 8.06], [0, sx * 1.3, 0]));
+  group.add(plane(2.7, 0.46, { name: 'parkgate', map: signTex('signParkGate', [{ text: 'KESTREL PARK', color: '#e9f6d8', size: 12 }, { text: 'EST. 1911', color: '#a8d092', size: 6 }], { w: 128, h: 26, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.8, unlit: true }, [0, 2.95, 8.2]));
+  // east edge, with its own opening through to the vacant lot
+  fenceZ(-8.0, 0.95, 8.2);
+  fenceZ(2.25, 8.1, 8.2);
+  pier(8.2, 0.95); pier(8.2, 2.25);
+  group.add(plane(1.9, 0.4, { name: 'parklotgate', map: signTex('signLotGate', [{ text: 'TO THE LOT', color: '#e9f6d8', size: 10 }], { w: 96, h: 26, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.8, unlit: true }, [8.14, 2.1, 1.6], [0, -Math.PI / 2, 0]));
+  // and a lamp on each pier light, so the gate is findable after dark
 
   // ---- people. The three women come and go on their own schedules (world/schedules.js, placed
   // by the world, not here); Kev is just here.
@@ -1576,8 +1602,8 @@ export function buildPark(g) {
     { id: 'chess', label: 'Play chess at the table', sub: 'the knight is a bottle cap', x: -2.4, z: -0.6, radius: 1.5, action: (gg) => parkChess(gg) },
     { id: 'boombox', label: 'The boombox on the crate', sub: 'somebody left a tape in it', x: 1.9, z: 1.1, radius: 1.5, action: (gg) => parkMusic(gg) },
     { id: 'parkmate', label: 'Talk to Kev', sub: 'he is losing at chess to himself', x: -2.4, z: 0.2, radius: 1.5, action: (gg) => { gg.advance(8); bump(gg.state, 'morale', 4); gg.openModal({ kicker: 'KEV · KESTREL PARK', title: 'Park Kev', body: `${npcLine('kev')}\n\nHe has set up a chess board with no opponent and is losing anyway.`, choices: [{ label: 'Sit with him for a bit.', effect: () => { bump(gg.state, 'morale', 5); bump(gg.state, 'stress', -4); gg.advance(15); } }, { label: 'Leave him to it.', effect: () => {} }] }); } },
-    { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'through the gate', x: 0, z: 7.9, radius: 1.1, action: (gg) => gg.goTo('street', 'park') },
-    { id: 'parkeast', label: 'East gate · to the lot', sub: 'out by the clinic end', x: 7.7, z: 1.6, radius: 1.1, action: (gg) => gg.goTo('street', 'eastgate') },
+    { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'out through the open gate', x: 0, z: 7.7, radius: 1.5, action: (gg) => gg.goTo('street', 'park') },
+    { id: 'parkeast', label: 'East gate · to the lot', sub: 'out by the clinic end', x: 7.4, z: 1.6, radius: 1.5, action: (gg) => gg.goTo('street', 'eastgate') },
   ];
 
   return {
