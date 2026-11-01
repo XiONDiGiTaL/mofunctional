@@ -7,8 +7,10 @@
  * The interaction ("Get in the black car") sits on the sidewalk beside it.
  */
 import * as THREE from '../../vendor/three.module.js';
-import { retroMaterial, box } from '../render/retro.js';
-import { rideState, DESTINATIONS, fareTo, tooClose, ride } from '../systems/rides.js';
+import { retroMaterial, box, plane } from '../render/retro.js';
+import { signTex } from '../render/signs.js';
+import { CONFIG } from '../core/config.js';
+import { rideState, DESTINATIONS, fareTo, tooClose, ride, noShowRide } from '../systems/rides.js';
 import { money } from '../core/util.js';
 import { buildVehicle } from './vehicles.js';
 import { ROAD } from './plan.js';
@@ -29,6 +31,9 @@ export class RideCar {
     this.interact = null;
     this.leaving = false;
     this.targetX = 0;
+    this.marker = null;
+    this.parked = false;
+    this.waitT = 0;
   }
 
   /** Called on area load (fresh) and every frame. */
@@ -54,6 +59,24 @@ export class RideCar {
       action: (gg) => rideMenu(gg),
     };
     w.interactables.push(this.interact);
+    // a low-poly arrow over the roof: a black car among black cars is not a landmark
+    const yellow = retroMaterial('rideArrow', { color: 0xffd85a, emissive: 1.2, unlit: true });
+    const marker = new THREE.Group();
+    marker.add(box(0.1, 0.4, 0.1, yellow, [0, 0.32, 0]));
+    marker.add(box(0.28, 0.28, 0.1, yellow, [0, 0.05, 0], [0, 0, Math.PI / 4]));
+    marker.add(plane(1.3, 0.34, {
+      name: 'rideGetIn',
+      map: signTex('rideGetIn', [{ text: 'GET IN', color: '#1a1208', size: 14 }], { w: 96, h: 26, bg: '#ffe066', border: '#1a1208' }),
+      emissive: 1, unlit: true,
+    }, [0, 0.82, 0]));
+    marker.position.set(0, 2.3, 0);
+    marker.visible = !!inPlace;
+    this.car.add(marker);
+    this.marker = marker;
+    this.speed = 0;
+    this.parked = !!inPlace;
+    this.waitT = 0;
+    this.bob = 0;
     // to the camera the parked car is a wall: the arm stops short of it instead of looking at
     // Mo through the roof
     this.solid = { x: r.x, z: LANE_Z, w: 4.2, d: 1.8, h: 1.6, camOnly: true };
@@ -63,6 +86,8 @@ export class RideCar {
 
   leave() {
     this.leaving = true;
+    this.parked = false;
+    if (this.marker) this.marker.visible = false;
     if (this.solid) {
       const list = this.world.area?.solids || [];
       const i = list.indexOf(this.solid);
@@ -83,16 +108,51 @@ export class RideCar {
     if (this.interact) this.leave();
     if (this.car?.parent) this.car.parent.remove(this.car);
     this.car = null;
+    this.marker = null;
     this.leaving = false;
+    this.parked = false;
+    this.waitT = 0;
   }
 
-  update(dt) {
+  update(dt, g) {
     if (!this.car) return;
     const p = this.car.position;
     const dx = this.targetX - p.x;
-    const speed = this.leaving ? 9 : Math.min(9, 1.2 + Math.abs(dx) * 1.4); // brakes as it pulls in
-    if (Math.abs(dx) > 0.05) p.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
+    // it pulls in and out under acceleration instead of hitting nine metres a second the frame it
+    // spawns and then stopping dead, which read as a jump cut rather than a car
+    const want = this.leaving ? 8.5 : Math.min(6, 1.2 + Math.abs(dx) * 0.5);
+    this.speed = Math.min(want, (this.speed || 0) + (this.leaving ? 4 : 6) * dt);
+    if (Math.abs(dx) > 0.05) p.x += Math.sign(dx) * Math.min(Math.abs(dx), this.speed * dt);
+    else { p.x = this.targetX; this.speed = 0; }
     this.car.rotation.y = this.leaving || dx < 0 ? Math.PI : 0;
+    // parked: a honk, an arrow, and the engine idling until he gets in or the clock runs out
+    const arrived = !this.leaving && Math.abs(dx) < 0.12;
+    if (arrived && !this.parked) {
+      this.parked = true;
+      this.waitT = 0;
+      g?.audio?.sfx?.('honk2');
+    }
+    if (this.marker) {
+      this.bob = (this.bob || 0) + dt;
+      this.marker.visible = !!this.parked && !this.leaving;
+      if (this.marker.visible) {
+        this.marker.position.y = 2.3 + Math.sin(this.bob * 3.1) * 0.09;
+        // the label turns to the camera; a sign edge-on is just a yellow line
+        this.marker.rotation.y = (this.world.camYaw || 0) - this.car.rotation.y;
+      }
+    }
+    if (this.parked && !this.leaving) {
+      this.waitT = (this.waitT || 0) + dt;
+      if (this.waitT >= CONFIG.rides.waitSeconds) {
+        const res = noShowRide(g);
+        if (res) {
+          g?.toast?.(res.refunded > 0
+            ? `The car pulls away. ${money(res.refunded)} goes back on the card.`
+            : 'The car pulls away. You were not charged. Check your messages.', 'bad');
+        }
+        this.leave();
+      }
+    }
     if (this.leaving && Math.abs(dx) < 0.1) this.remove();
   }
 }

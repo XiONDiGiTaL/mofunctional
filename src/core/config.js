@@ -395,6 +395,8 @@ export const CONFIG = {
     cancelFee: 5,
     eta: [4, 10],
     waitMinutes: 15,
+    waitSeconds: 120,      // real seconds the car sits at the curb before it gives up on him
+
     minutes: 14,
     drivers: ['Vinnie', 'Sal\'s cousin Vinnie', 'a man named Dutch', 'Ozzie', 'Big Ray (not 2A Ray)'],
     pushback: [

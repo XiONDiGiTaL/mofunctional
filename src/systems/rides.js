@@ -101,7 +101,7 @@ export function tickRide(g) {
   if (r.status === 'coming' && s.clock.m >= r.arriveAt) {
     r.status = 'waiting';
     r.leaveAt = s.clock.m + C().waitMinutes;
-    pushMessage(g, { from: 'HAILMARY', subject: 'ride', body: `Your driver has arrived. Black car at the curb. ${r.driver} waits ${C().waitMinutes} minutes, and he means it.` });
+    pushMessage(g, { from: 'HAILMARY', subject: 'ride', body: `Your driver has arrived. Black car at the curb, arrow over the roof. ${r.driver} waits ${C().waitMinutes} minutes, and he means it.` });
   }
   if (r.status === 'waiting' && s.clock.m >= r.leaveAt) {
     r.status = 'none';
@@ -109,6 +109,26 @@ export function tickRide(g) {
     if (fee > 0) s.money = Math.round((s.money - fee) * 100) / 100;
     pushMessage(g, { from: 'HAILMARY', subject: 'ride', body: `Your driver left. No-show fee: ${money(C().cancelFee)}. ${r.driver} has left you a one-star rating.` });
   }
+}
+
+/**
+ * Mo never made it to the curb. The ride is cancelled, anything that was actually put on the card
+ * goes back on it, and the app tells him so in the same breath as the rating.
+ */
+export function noShowRide(g) {
+  const s = g.state;
+  const r = rideState(s);
+  if (r.status !== 'waiting') return null;
+  const back = Math.max(0, Number(r.charged) || 0);
+  if (back > 0) { s.money = Math.round((s.money + back) * 100) / 100; r.charged = 0; }
+  r.status = 'none';
+  r.noShows = (r.noShows || 0) + 1;
+  pushMessage(g, {
+    from: 'HAILMARY', subject: 'ride',
+    body: `You did not reach the car in time and the ride is cancelled. ${back > 0 ? `${money(back)} has been refunded to your card.` : 'You were not charged.'} ${r.driver} has left you a one-star rating and a message that just says "wow".`,
+  });
+  logLine(g, 'Missed the HailMary car.', 'bad');
+  return { refunded: back, driver: r.driver };
 }
 
 /** The fare to a destination from here: base, plus a per-block hop when it is across town. */

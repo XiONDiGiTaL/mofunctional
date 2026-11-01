@@ -1423,7 +1423,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.dealerWalker?.sync(g);
     this.dealerWalker?.update(dt);
     this.rideCar?.sync(g);
-    this.rideCar?.update(dt);
+    this.rideCar?.update(dt, g);
     this.traffic?.update(dt, g);
     this.streetLife?.update(dt, g);
     this.updateChase(dt, g);
