@@ -624,7 +624,7 @@ export function buildAvenue(g) {
     { kind: 'w14', x: 6, z: -0.6, walker: [-15, 15] },
     { kind: 'passer_m2', x: 0, z: -2.6, walker: [-15, 15] },
     { kind: pick(['w0', 'w3', 'w8', 'w12', 'w19']), x: -2, z: -1.0, walker: [-15, 15] },
-    { kind: 'passer_m', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true },
+    { kind: 'passer_m', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true, sax: true },
     { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
     { kind: 'cop', x: -13.9, z: -5.0, rot: 0.3, still: true, act: 'talk' },
     { kind: 'cop2', x: -11.0, z: -5.2, rot: -0.4, still: true },
@@ -645,6 +645,7 @@ export function buildAvenue(g) {
       { label: 'Keep walking.', sub: '', effect: () => {} },
     ] }) },
     { id: 'av_bus', label: 'The bus stop', sub: 'B44 back to Kestrel', x: 12.5, z: 0.0, radius: 1.5, action: (gg) => busMenu(gg, 'avenue') },
+    { id: 'av_subway', label: 'Down to the Ashby Ave station', sub: 'the line · Kestrel St, Park Slope', x: 14.8, z: 1.0, radius: 1.7, action: (gg) => gg.goTo('subway', 'avenue') },
   ];
   let timer = 10;
   const tick = (gg, dt) => {
@@ -678,7 +679,7 @@ export function buildAvenue(g) {
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
     solids: [solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
+    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.6, z: 1.2, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
     interactables,
     tick,
