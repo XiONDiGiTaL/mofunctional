@@ -407,6 +407,14 @@ export const CONFIG = {
     ],
   },
 
+  // the 84th Precinct
+  police: {
+    highLine: 25,          // high enough that a cop notices
+    fine: 250,
+    parkChance: 0.55,      // a patrol in the park on a given night visit
+    seeRange: 6,
+  },
+
   // Meatball, the stray on Kestrel
   dog: {
     likePerMeal: 20,       // five meals and he is yours

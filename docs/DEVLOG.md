@@ -10,6 +10,22 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Keys in dialogs, the bus stop, the police, the payphone, night scenes
+
+- `Modal`: a highlighted choice (`.choice--sel`), F/Enter/Space/E pick it, W/S/arrows move it,
+  1-9 pick directly; ignored for 200 ms after opening, for key repeats, in text boxes and while an
+  overlay (fight meter, shop board) owns the keys.
+- Bus stop moved to the curb by the park crosswalk (shelter, bench, B44 sign; the traffic light
+  moved to the crosswalk corner); spawn, landmark and Kev's lunch spot follow.
+- `systems/police.js` (search once a night when high; book: confiscate every substance, fine
+  up to $250, a night in holding, out at the precinct). World: `copNear`, `copStop`,
+  `toHolding`; muggings in sight of a cop are broken up. Park patrols at night
+  (`CONFIG.police.parkChance`). `buildPrecinct` and a precinct front on Ashby; rides go there.
+- New painted kinds: drifter, hall_m, hall_f, cop, cop2, inmate. Acts: pee (stream prop),
+  lean, kneel (mosaic prop), phone, talk.
+- The payphone menu (coin return, the stash behind the box, Dex's ringing call).
+- 57 checks.
+
 ### AutoPay, street life, Meatball
 
 - `economy.runAutopay/setAutopay` (`state.autopay`): on the new day (and when switched on) pays

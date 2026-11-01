@@ -101,6 +101,11 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Dice crew at the lot; the couple argue in turns; smokers with smoke; walkers; bench sitter; patrol cars and other visible events | done |
 | Meatball the stray: feed, loyalty meter, follows, ally in muggings | done |
 | Fire escapes moved off the Quik-Stop and Fellowship signs | done |
+| F / Enter / Space confirm the highlighted choice; W/S or arrows move it; 1-9 pick | done |
+| Bus stop at the curb by the crosswalk | done |
+| Night: the alley pee, the censored stairwell couple | done |
+| Park cops at night, searches when high, booking, the 84th Precinct on Ashby | done |
+| The payphone: coin return, stash, Dex's night calls | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

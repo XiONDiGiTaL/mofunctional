@@ -476,6 +476,12 @@ const CAST = {
   waiter: { height: 1.78, build: 0.98, shirt: 0xf2efe6, pants: 0x141418, longSleeves: true },
   passer_m: { height: 1.8, build: 1.04, shirt: 0x2a4a7a, pants: 0x3a3a40, longSleeves: true },
   passer_m2: { height: 1.74, build: 0.98, shirt: 0x8a7a5a, pants: 0x4a4436, longSleeves: true },
+  drifter: { height: 1.74, build: 0.92, shirt: 0x4a4436, pants: 0x3a362c, longSleeves: true },
+  hall_m: { height: 1.8, build: 1.0, shirt: 0x2a2c34, pants: 0x3a4a66, longSleeves: true },
+  hall_f: { height: 1.66, build: 0.96, shirt: 0x8a2a5a, pants: 0x1a1a1e },
+  cop: { height: 1.82, build: 1.1, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
+  cop2: { height: 1.76, build: 1.04, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
+  inmate: { height: 1.76, build: 1.0, shirt: 0xd86a1a, pants: 0xd86a1a },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
 };

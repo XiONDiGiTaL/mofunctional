@@ -401,11 +401,18 @@ export function buildStreet(g) {
   group.add(box(1.8, 0.5, 0.08, M.wood, [-7.5, 0.75, -0.05]));
   group.add(box(0.08, 0.5, 0.5, M.metal, [-8.35, 0.25, 0.2]));
   group.add(box(0.08, 0.5, 0.5, M.metal, [-6.65, 0.25, 0.2]));
-  // bus stop
-  group.add(box(2.2, 2.2, 0.08, { name: 'glass', color: 0x8fb0b8, opacity: 0.35, transparent: true, unlit: true }, [6.5, 1.2, -5.8]));
-  group.add(box(0.1, 2.4, 0.1, M.metal, [5.4, 1.2, -5.8]));
-  group.add(box(0.1, 2.4, 0.1, M.metal, [7.6, 1.2, -5.8]));
-  group.add(box(1.2, 0.5, 0.08, retroMaterial('bussign', { color: 0x2a4a6a, emissive: 0.15 }), [7.6, 2.6, -5.8]));
+  // the B44 stop, out at the curb by the crosswalk corner: a glass shelter facing the road, a
+  // bench under it, a roof, and the sign on its pole at the kerb
+  group.add(box(2.2, 2.2, 0.08, { name: 'glass', color: 0x8fb0b8, opacity: 0.35, transparent: true, unlit: true }, [4.6, 1.2, -0.45]));
+  for (const x of [3.5, 5.7]) {
+    group.add(box(0.1, 2.4, 0.1, M.metal, [x, 1.2, -0.45]));
+    group.add(box(0.1, 2.4, 0.1, M.metal, [x, 1.2, 0.75]));
+  }
+  group.add(box(2.4, 0.08, 1.4, M.metal, [4.6, 2.42, 0.15]));
+  group.add(box(1.8, 0.08, 0.4, M.wood, [4.6, 0.46, -0.2]));
+  group.add(box(0.08, 2.8, 0.08, M.metal, [6.0, 1.4, 1.05]));
+  group.add(box(0.7, 0.5, 0.06, retroMaterial('bussign', { color: 0x2a4a6a, emissive: 0.25 }), [6.0, 2.6, 1.05]));
+  group.add(plane(0.6, 0.18, { name: 'b44sign', map: signTex('signB44', [{ text: 'B44', color: '#ffffff', size: 10 }], { w: 32, h: 12, bg: '#2a4a6a', border: '#2a4a6a' }), emissive: 0.9, unlit: true }, [6.0, 2.6, 1.09]));
   // job board
   group.add(box(1.0, 1.4, 0.1, M.wood, [5.0, 0.9, -6.2]));
   group.add(plane(0.85, 1.2, { name: 'jobposter', map: tex('poster') }, [5.0, 0.95, -6.13]));
@@ -542,10 +549,11 @@ export function buildStreet(g) {
   for (let i = 0; i < 7; i++) {
     group.add(box(0.52, 0.02, 6.4, retroMaterial('zebra', { color: 0xa8a492 }), [6.2 + i * 1.05, 0.02, 4.6]));
   }
-  group.add(box(0.16, 3.2, 0.16, M.metal, [4.2, 1.6, 1.1]));
-  group.add(box(0.32, 0.86, 0.3, retroMaterial('tlight', { color: 0x20262a }), [4.2, 3.1, 1.1]));
-  group.add(box(0.13, 0.13, 0.03, retroMaterial('tred', { color: 0xff5a4a, emissive: 1, unlit: true }), [4.2, 3.36, 0.93]));
-  group.add(box(0.13, 0.13, 0.03, retroMaterial('tgrn', { color: 0x2a3a2a }), [4.2, 3.02, 0.93]));
+  // the light moves to the crosswalk corner, past the bus shelter
+  group.add(box(0.16, 3.2, 0.16, M.metal, [6.6, 1.6, 1.1]));
+  group.add(box(0.32, 0.86, 0.3, retroMaterial('tlight', { color: 0x20262a }), [6.6, 3.1, 1.1]));
+  group.add(box(0.13, 0.13, 0.03, retroMaterial('tred', { color: 0xff5a4a, emissive: 1, unlit: true }), [6.6, 3.36, 0.93]));
+  group.add(box(0.13, 0.13, 0.03, retroMaterial('tgrn', { color: 0x2a3a2a }), [6.6, 3.02, 0.93]));
 
   // parked cars: the first thing that makes a street look inhabited
   const car = (cx, cz, tint, nose) => {
@@ -628,6 +636,8 @@ export function buildStreet(g) {
       { kind: 'w8', x: -14.4, z: -4.6, rot: 0.3, still: true, act: 'smoke' },
     ] : []),
     ...(between(8, 20) ? [{ kind: 'passer_m2', x: 16.9, z: -4.4, rot: Math.PI, still: true, pose: 'sit' }] : []),
+    // late: somebody in the alley corner, facing the wall, doing what the alley gets used for
+    ...(between(23, 4) && Math.random() < 0.6 ? [{ kind: 'drifter', x: -5.0, z: -6.0, rot: Math.PI, still: true, act: 'pee', talk: 'alleypee' }] : []),
     ...(between(6, 24) ? [
       { kind: 'passer_m', x: -18, z: -2.2, walker: [-24, 30] },
       { kind: pick(['w0', 'w12', 'w19', 'w3']), x: 12, z: -0.9, walker: [-24, 30] },
@@ -661,7 +671,9 @@ export function buildStreet(g) {
     ...ROAD.parkedNear.map((p, i) => ({ id: `parkedcar${i}`, label: 'Try the parked car', sub: `${p.type === 'convertible' ? 'the top is down. bold.' : 'see if anybody left it open'}`, x: p.x, z: 1.05, radius: 1.3, action: (gg) => searchCar(gg, i, p) })),
     // across the road on foot, at the far curb: the park gate
     { id: 'parkGateFar', label: 'Into Kestrel Park', sub: 'through the gate', x: 9.35, z: 10.2, radius: 1.6, action: (gg) => gg.goTo('park', 'street') },
-    { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 6.6, z: -4.8, action: (gg) => busMenu(gg, 'street') },
+    { id: 'alleypee', label: 'The man in the alley', sub: 'facing the wall', x: -5.0, z: -5.2, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'THE ALLEY · LATE', title: 'No', body: 'This isn\'t my business.\n\nNothing in the alley after midnight is anybody\'s business.', choices: [{ label: 'Keep walking.', effect: () => {} }] }) },
+    { id: 'payphone', label: 'The payphone', sub: 'coin return · the gap behind the box', x: 12.9, z: -5.3, radius: 1.2, action: (gg) => payphone(gg) },
+    { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 4.6, z: 0.35, radius: 1.5, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
@@ -683,7 +695,7 @@ export function buildStreet(g) {
     traffic: { lanes: [{ z: ROAD.laneEastZ, dir: 1 }, { z: ROAD.laneWestZ, dir: -1 }], x0: STREET.bounds.minX - 4, x1: STREET.bounds.maxX + 4, rate: [3, 9], bus: 0.07 },
     solids: [
       ...parkedSolids,
-      solid(-4.2, -5.2, 1.5, 1.0, 1.0), solid(-7.5, 0.2, 2.0, 0.7, 0.9), solid(6.5, -5.8, 2.3, 0.4),
+      solid(-4.2, -5.2, 1.5, 1.0, 1.0), solid(-7.5, 0.2, 2.0, 0.7, 0.9), solid(4.6, -0.45, 2.3, 0.3),
       solid(9.5, -5.6, 0.7, 0.7, 0.9), solid(-13.5, -5.7, 0.7, 0.7, 0.9), solid(5.0, -6.2, 1.1, 0.4), solid(-12.6, -5.0, 0.8, 0.6, 0.95),
       solid(-5.0, 0.9, 0.5, 0.5, 0.65),
       solid(-6.2, -4.7, 0.9, 0.9), solid(8.8, -4.7, 0.9, 0.9), solid(17.6, -4.7, 0.9, 0.9),
@@ -982,6 +994,65 @@ function lotDice(g) {
       { label: 'Just watch.', sub: '15 min · +morale', effect: () => { g.advance(15, { social: true }); bump(s, 'morale', 3); g.toast('A man wins three in a row and then loses everything explaining his system.', 'info'); } },
       { label: 'Walk away.', sub: '', effect: () => {} },
     ],
+  });
+}
+
+/**
+ * The payphone outside the Fellowship: the coin return (change, sometimes), the gap behind the
+ * box (somebody's stash, sometimes), and at night, now and then, it rings: Dex, with a deal that
+ * goes in the coin slot. Each of the first two once a day.
+ */
+function payphone(g) {
+  const s = g.state;
+  s.payphone = s.payphone || {};
+  const day = dayOf(s.clock.m);
+  const mod = minuteOfDay(s.clock.m);
+  const night = mod >= 21 * 60 || mod < 4 * 60;
+  const ringing = night && s.payphone.ringDay !== day && Math.random() < 0.3;
+  const choices = [];
+  if (ringing) {
+    choices.push({
+      label: 'Answer it.', sub: 'it is ringing', effect: () => {
+        s.payphone.ringDay = day;
+        const type = pick(['static', 'drip', 'mud']);
+        const t = CONFIG.substances.types[type];
+        const price = Math.round(t.price * 0.85);
+        g.openModal({
+          kicker: 'THE PAYPHONE · LATE', title: 'Dex',
+          body: `"It's me. Don't say my name on a payphone." A pause. "Behind the box. ${t.name}. ${money(price)} in the coin slot, all of it, don't count it out loud. Then hang up and walk."`,
+          choices: [
+            { label: `Feed the slot ${money(price)} and reach behind the box.`, sub: `risk +${t.risk}`, disabled: s.money < price, effect: () => { if (!g.spendMoney(price, 'the payphone')) return; addItem(s, type, 1); bump(s, 'risk', 2); g.toast('Behind the box, taped to the back: exactly what he said. The phone rings again. You do not answer it.', 'info'); } },
+            { label: 'Hang up.', sub: '', effect: () => { g.toast('You hang up. It rings once more, angrily, and stops.', 'info'); } },
+          ],
+        });
+      },
+    });
+  }
+  choices.push({
+    label: 'Check the coin return.', sub: 'once a day', disabled: s.payphone.coinDay === day,
+    effect: () => {
+      s.payphone.coinDay = day;
+      g.advance(1);
+      if (Math.random() < 0.4) { const c = Math.round((0.1 + Math.random() * 1.6) * 100) / 100; g.earnMoney(c, 'payphone coin return'); g.toast(`${money(c)} in the coin return. Somebody's call did not go through. Yours did.`, 'good'); }
+      else g.toast('Empty. Sticky. You wipe your finger on your jeans.', 'info');
+    },
+  });
+  choices.push({
+    label: 'Feel around behind the box.', sub: 'once a day · people stash things', disabled: s.payphone.stashDay === day,
+    effect: () => {
+      s.payphone.stashDay = day;
+      g.advance(2);
+      const r = Math.random();
+      if (r < 0.15) { const type = pick(['drip', 'static']); addItem(s, type, 1); bump(s, 'risk', 2); g.toast(`Taped behind the box: a ${CONFIG.substances.types[type].name}. Somebody's stash. Now yours, until somebody comes looking.`, 'bad'); }
+      else if (r < 0.4) { const c = Math.round((1 + Math.random() * 6) * 100) / 100; g.earnMoney(c, 'behind the payphone'); g.toast(`A folded ${money(c)} wedged behind the box. A tip, or a mistake.`, 'good'); }
+      else g.toast('Gum, a bottle cap, and a business card for a lawyer who will "fight for you." Nothing else.', 'info');
+    },
+  });
+  choices.push({ label: 'Leave it.', sub: '', effect: () => {} });
+  g.openModal({
+    kicker: 'KESTREL ST. · THE PAYPHONE', title: 'The Payphone',
+    body: ringing ? 'It is ringing. At this hour, on this block, that is never a wrong number.' : 'A payphone with a cord somebody tried to cut and gave up on. A sticker on it says "THIS PHONE DOES NOT ACCEPT INCOMING CALLS." It accepts them.',
+    choices,
   });
 }
 
@@ -1461,8 +1532,15 @@ export function buildPark(g) {
 
   // ---- people. The three women come and go on their own schedules (world/schedules.js, placed
   // by the world, not here); Kev is just here.
+  const parkHour = minuteOfDay(g.state.clock.m) / 60;
+  const patrol = (parkHour >= 21 || parkHour < 4) && Math.random() < CONFIG.police.parkChance;
   const npcs = [
     { kind: 'kev', x: -2.4, z: -0.2, rot: 2.6, talk: 'kev' },
+    // a two-cop patrol on the paths, some nights
+    ...(patrol ? [
+      { kind: 'cop', x: -4, z: -0.6, walker: [-6.5, 6.5] },
+      { kind: 'cop2', x: 3, z: 3.2, walker: [-6.5, 6.5] },
+    ] : []),
   ];
 
   const interactables = [

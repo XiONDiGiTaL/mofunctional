@@ -87,6 +87,62 @@ export function applyAct(rig, dt, life) {
     }
     return;
   }
+  if (act === 'pee') {
+    // facing the alley wall, hands in front, a slow sway, and a thin stream to the ground
+    rig.armL.pivot.rotation.x = -0.45; rig.armL.elbow.rotation.x = -0.7; rig.armL.pivot.rotation.z = 0.25;
+    rig.armR.pivot.rotation.x = -0.45; rig.armR.elbow.rotation.x = -0.7; rig.armR.pivot.rotation.z = -0.25;
+    rig.head.rotation.x = -0.25 + Math.sin(t * 0.7) * 0.06;
+    rig.root.rotation.z = Math.sin(t * 0.9) * 0.025;
+    if (!rig.prop) {
+      const m = retroMaterial('pee', { color: 0xe8d04a, emissive: 0.4, unlit: true, opacity: 0.55, transparent: true });
+      rig.prop = box(0.025, 0.86, 0.025, m, [0, 0.43, 0.32]);
+      rig.prop.rotation.x = 0.35;
+      rig.root.add(rig.prop);
+      rig.puddle = box(0.4, 0.005, 0.3, retroMaterial('puddle', { color: 0x8a7a3a, opacity: 0.45, transparent: true }), [0, 0.006, 0.55]);
+      rig.root.add(rig.puddle);
+    }
+    rig.prop.scale.x = 0.7 + Math.sin(t * 30) * 0.3;
+    return;
+  }
+  if (act === 'lean') {
+    // back to the wall, head back, hands flat on the wall behind him
+    rig.head.rotation.x = -0.35 + Math.sin(t * 2.6) * 0.05;
+    rig.armL.pivot.rotation.x = 0.35; rig.armL.pivot.rotation.z = -0.35; rig.armL.elbow.rotation.x = -0.2;
+    rig.armR.pivot.rotation.x = 0.35; rig.armR.pivot.rotation.z = 0.35; rig.armR.elbow.rotation.x = -0.2;
+    rig.torso.rotation.x = -0.08;
+    return;
+  }
+  if (act === 'kneel') {
+    // on her knees, bobbing; the mosaic in front of her does the rest of the work
+    rig.hips.position.y = 0.48 + Math.sin(t * 5.2) * 0.02;
+    rig.legL.pivot.rotation.x = 0.1; rig.legR.pivot.rotation.x = 0.1;
+    rig.legL.knee.rotation.x = 1.55; rig.legR.knee.rotation.x = 1.55;
+    rig.torso.rotation.x = 0.32 + Math.sin(t * 5.2) * 0.14;
+    rig.head.rotation.x = -0.15 + Math.sin(t * 5.2 + 0.4) * 0.12;
+    rig.armL.pivot.rotation.x = -0.9; rig.armL.elbow.rotation.x = -0.5;
+    rig.armR.pivot.rotation.x = -0.9; rig.armR.elbow.rotation.x = -0.5;
+    if (!rig.prop) {
+      rig.prop = box(0.4, 0.42, 0.42, retroMaterial('mosaic', { map: mosaicTexture(), emissive: 0.35, unlit: true }), [0, 0.95, 0.42]);
+      rig.root.add(rig.prop);
+    }
+    rig.prop.position.y = 0.95 + Math.sin(t * 5.2) * 0.02;
+    return;
+  }
+  if (act === 'phone') {
+    // a receiver to the ear, the other hand flat on the glass or the counter
+    rig.armR.pivot.rotation.x = -1.25; rig.armR.pivot.rotation.z = -0.55; rig.armR.elbow.rotation.x = -2.1;
+    rig.armL.pivot.rotation.x = -0.6; rig.armL.elbow.rotation.x = -0.6;
+    rig.head.rotation.z = 0.12;
+    rig.head.rotation.x = Math.sin(t * 2.2) * 0.07;
+    return;
+  }
+  if (act === 'talk') {
+    // a quieter argue: one hand going, nodding
+    rig.armR.pivot.rotation.x = -0.5 + Math.sin(t * 4) * 0.25;
+    rig.armR.elbow.rotation.x = -0.9;
+    rig.head.rotation.x = Math.sin(t * 3.4) * 0.08;
+    return;
+  }
   if (act === 'smoke') {
     // a drag every few seconds: hand up, hold, hand down, a breath of smoke
     const cyc = t % 5.5;
@@ -100,6 +156,22 @@ export function applyAct(rig, dt, life) {
     if (cyc < 1) rig.puffed = false;
     if (Math.random() < dt * 0.8) life?.puff(rig, 0.3, true); // the cigarette itself
   }
+}
+
+/** A pixel mosaic, the way TV blurs what it cannot show: big squares of skin and shadow. */
+let mosaicTex = null;
+function mosaicTexture() {
+  if (mosaicTex) return mosaicTex;
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 8;
+  const x = c.getContext('2d');
+  const tones = ['#c8906a', '#a8724e', '#8a5a3a', '#d8a888', '#6a4a3a', '#b88262', '#2a2c34', '#8a2a5a'];
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { x.fillStyle = tones[Math.floor(Math.random() * tones.length)]; x.fillRect(i, j, 1, 1); }
+  mosaicTex = new THREE.CanvasTexture(c);
+  mosaicTex.magFilter = THREE.NearestFilter;
+  mosaicTex.minFilter = THREE.NearestFilter;
+  mosaicTex.colorSpace = THREE.SRGBColorSpace;
+  return mosaicTex;
 }
 
 /* ------------------------------------------------------------------ the dog */

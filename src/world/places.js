@@ -342,6 +342,16 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     npcs.push({ kind: 'tenant_f', x: 0.5, z: 1.1, rot: -1.6, talk: null, still: true, act: 'argue', side: 1 });
     interactables.push({ id: 'wu_couple', label: 'Ray & Denise', sub: 'mid-argument (always)', x: 0, z: 1.05, radius: 1.3, action: (gg) => coupleMenu(gg) });
   }
+  // late, at the far end of the third-floor hall by the stairs: two people who could not wait for
+  // an apartment. A mosaic covers the part the game does not show.
+  if (f === 2) {
+    const m = minuteOfDay(s.clock.m);
+    if (m >= 21 * 60 || m < 4 * 60) {
+      npcs.push({ kind: 'hall_m', x: 1.42, z: -1.8, rot: -Math.PI / 2, still: true, act: 'lean', talk: 'wu_couple2' });
+      npcs.push({ kind: 'hall_f', x: 0.86, z: -1.8, rot: Math.PI / 2, still: true, act: 'kneel' });
+      interactables.push({ id: 'wu_couple2', label: 'The two by the stairs', sub: 'very busy', x: 1.0, z: -1.8, radius: 1.4, action: (gg) => gg.openModal({ kicker: '1104 KESTREL · 3RD FLOOR', title: 'No', body: 'This isn\'t my business.', choices: [{ label: 'Walk past, eyes on the ceiling.', effect: () => {} }] }) });
+    }
+  }
   if (f === 3) {
     npcs.push({ kind: 'squeak', x: -0.9, z: -2.2, rot: 0.6, talk: 'wu_squeak', still: true });
     interactables.push({ id: 'wu_squeak', label: 'Talk to Squeak', sub: 'the hallway, at hallway prices', x: -0.9, z: -2.2, radius: 1.2, action: (gg) => squeakMenu(gg) });
@@ -452,7 +462,7 @@ export function buildAvenue(g) {
       group.add(plane(0.9, 1.0, { name: 'av_win', map: tex('window'), emissive: Math.random() < 0.4 ? 0.45 : 0.08, unlit: true }, [x - w / 2 + 1.1 + c * 2.2, 1.4 + r * 1.7, -6.38]));
     }
   };
-  facade(-12.5, 8, 12, 0xb0a48c);
+  void 0; // the 84th Precinct stands at -12.5 (built below)
   facade(-4.5, 7, 9, 0x9a5a4a);
   facade(3.0, 7, 14, 0xc8c0b0);
   facade(10.5, 7, 10, 0x8a8478);
@@ -461,6 +471,15 @@ export function buildAvenue(g) {
   group.add(box(1.2, 2.3, 0.12, retroMaterial('av_ldoor', { color: 0x5a2a1a }), [-4.5, 1.15, -6.32]));
   group.add(plane(3.2, 0.7, { name: 'av_lsign', map: signTex('signLucias', [{ text: "Lucia's", color: '#ffe9b0', size: 16 }, { text: 'TRATTORIA · SINCE 1961', color: '#e8c070', size: 6 }], { w: 128, h: 32, bg: '#3a1a12', border: '#c8a050' }), emissive: 1, unlit: true }, [-4.5, 3.6, -6.3]));
   group.add(plane(2.6, 2.0, { name: 'av_lpool', color: 0xffd9a0, opacity: 0.16, transparent: true, unlit: true }, [-4.5, 0.035, -5.0], [-Math.PI / 2, 0, 0]));
+  // the 84th Precinct: a stone front, two green lamps by the door, a cop or two on the steps
+  group.add(box(7.6, 9.0, 1.3, retroMaterial('av_pct', { color: 0x8a8a84, map: tex('concrete') }), [-12.5, 4.5, -7.0]));
+  group.add(box(1.4, 2.4, 0.12, retroMaterial('av_pctdoor', { color: 0x2a2a30 }), [-12.5, 1.2, -6.32]));
+  for (const x of [-13.6, -11.4]) {
+    group.add(box(0.12, 0.6, 0.12, M.metal, [x, 2.2, -6.2]));
+    group.add(box(0.32, 0.36, 0.32, retroMaterial('av_pctlamp', { color: 0x4ae07a, emissive: 1.2, unlit: true }), [x, 2.65, -6.2]));
+  }
+  group.add(plane(3.2, 0.6, { name: 'av_pctsign', map: signTex('signPct', [{ text: '84TH PRECINCT', color: '#f2f2f0', size: 11 }, { text: 'POLICE · COURTESY · PROFESSIONALISM · PAPERWORK', color: '#b8c8e8', size: 5 }], { w: 160, h: 28, bg: '#1e2a4a', border: '#b8c8e8' }), emissive: 0.9, unlit: true }, [-12.5, 3.0, -6.3]));
+  for (let i = 0; i < 3; i++) group.add(box(2.4 - i * 0.3, 0.12, 0.4, M.concrete, [-12.5, 0.06 + i * 0.12, -5.9 + i * 0.3]));
   // the pawn shop, gold letters on black
   group.add(box(1.1, 2.3, 0.12, M.door, [10.5, 1.15, -6.32]));
   group.add(plane(3.0, 0.6, { name: 'av_psign', map: signTex('signPawn', [{ text: 'ASHBY PAWN & GOLD', color: '#ffd23a', size: 10 }, { text: 'WE BUY ANYTHING (ALMOST)', color: '#e8e0c0', size: 6 }], { w: 128, h: 28, bg: '#0e0e0e', border: '#ffd23a' }), emissive: 1, unlit: true }, [10.5, 3.0, -6.3]));
@@ -484,10 +503,13 @@ export function buildAvenue(g) {
     { kind: pick(['w0', 'w3', 'w8', 'w12', 'w19']), x: -2, z: -1.0, walker: [-15, 15] },
     { kind: 'passer_m', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true },
     { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
+    { kind: 'cop', x: -13.9, z: -5.0, rot: 0.3, still: true, act: 'talk' },
+    { kind: 'cop2', x: -11.0, z: -5.2, rot: -0.4, still: true },
   ];
   const s = g.state;
   const interactables = [
     { id: 'av_lucias', label: "Enter Lucia's", sub: 'tablecloths · red sauce · a waiter in a vest', x: -4.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('restaurant', 'avenue') },
+    { id: 'av_precinct', label: 'Enter the 84th Precinct', sub: 'the desk sergeant has seen everything', x: -12.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('precinct', 'avenue') },
     { id: 'av_pawn', label: 'Ashby Pawn & Gold', sub: 'sell something, fast and cheap', x: 10.5, z: -5.2, radius: 1.5, action: (gg) => pawnMenu(gg) },
     { id: 'av_news', label: 'The newsstand', sub: `a paper · ${money(0.5)}`, x: 3.0, z: -2.5, radius: 1.3, action: (gg) => newsstand(gg) },
     { id: 'av_sax', label: 'The sax player', sub: 'plays one song very well', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'ASHBY AVE.', title: 'The Sax Player', body: 'He plays the same song every day and every day it is better than it needs to be. His case has four dollars and a subway token in it.', choices: [
@@ -517,7 +539,7 @@ export function buildAvenue(g) {
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
     solids: [solid(3.0, -3.8, 2.2, 1.4), solid(12.5, 0.6, 0.3, 0.3)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
+    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
     interactables,
     tick,
@@ -648,4 +670,96 @@ export function buildRestaurant(g) {
     ambient: 'street',
     enterToast: "Lucia's. Tablecloths, candles in bottles, Sinatra on the speaker, and a waiter who has seen everything.",
   };
+}
+
+/* ================================================================== THE 84TH PRECINCT */
+
+/**
+ * The front room of the 84th: a high front desk with a sergeant behind it, desks with cops doing
+ * paperwork, cops walking through, a cop taking a statement from somebody who is still upset about
+ * it, and at the back, behind a glass partition, inmates on the wall phones talking to the people
+ * who came to see them.
+ */
+export function buildPrecinct(g) {
+  const group = new THREE.Group();
+  const W = 12, D = 10;
+  group.add(plane(W, D, { name: 'pct_floor', map: tex('tile'), repeat: [6, 5] }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(plane(W, D, { name: 'pct_ceil', map: tex('ceiling'), repeat: [3, 3] }, [0, 3.0, 0], [Math.PI / 2, 0, 0]));
+  const wall = retroMaterial('pct_wall', { color: 0xa8b8a8 });
+  group.add(box(W, 3.0, 0.16, wall, [0, 1.5, -D / 2]));
+  group.add(box(W, 3.0, 0.16, wall, [0, 1.5, D / 2]));
+  group.add(box(0.16, 3.0, D, wall, [-W / 2, 1.5, 0]));
+  group.add(box(0.16, 3.0, D, wall, [W / 2, 1.5, 0]));
+  for (const x of [-3.5, 0, 3.5]) group.add(box(1.2, 0.06, 0.3, M.lamp, [x, 2.96, 0]));
+  // the front desk, high, with the sergeant behind it
+  group.add(box(3.6, 1.25, 0.8, M.wood, [-3.2, 0.62, 2.0]));
+  group.add(box(3.7, 0.08, 0.9, retroMaterial('pct_desktop', { color: 0x3a2a1a }), [-3.2, 1.28, 2.0]));
+  // three desks, chairs, typewriters, the paperwork that never ends
+  const desks = [[1.4, 0.2], [3.8, 0.2], [3.8, 2.4]];
+  for (const [x, z] of desks) {
+    group.add(box(1.4, 0.75, 0.8, M.wood, [x, 0.375, z]));
+    group.add(box(0.4, 0.18, 0.3, retroMaterial('pct_type', { color: 0x2a2c30 }), [x, 0.85, z - 0.1]));
+    group.add(box(0.3, 0.05, 0.4, M.white, [x + 0.45, 0.78, z]));
+    group.add(box(0.5, 0.45, 0.5, M.metal, [x, 0.225, z + 0.75]));
+  }
+  // the glass partition at the back, the booths, the wall phones
+  group.add(box(W - 0.4, 1.0, 0.2, M.concrete, [0, 0.5, -2.6]));
+  group.add(box(W - 0.4, 1.7, 0.04, { name: 'pct_glass', color: 0x9fc0c8, opacity: 0.3, transparent: true, unlit: true }, [0, 1.85, -2.6]));
+  for (let i = 0; i < 4; i++) {
+    const x = -4.2 + i * 2.8;
+    group.add(box(0.06, 2.7, 1.0, M.metal, [x - 1.4, 1.35, -2.6]));
+    group.add(box(0.14, 0.24, 0.08, retroMaterial('pct_phone', { color: 0x1a1a1a }), [x + 0.5, 1.4, -2.48]));
+    group.add(box(0.14, 0.24, 0.08, retroMaterial('pct_phone', { color: 0x1a1a1a }), [x + 0.5, 1.4, -2.72]));
+    for (const z of [-1.9, -3.3]) group.add(box(0.45, 0.45, 0.45, M.metal, [x, 0.22, z]));
+  }
+  group.add(plane(2.4, 0.4, { name: 'pct_sign', map: signTex('pctVisit', [{ text: 'VISITATION · 15 MIN · NO CONTACT', color: '#f2f2f0', size: 7 }], { w: 128, h: 18, bg: '#1e2a4a', border: '#b8c8e8' }), emissive: 0.8, unlit: true }, [0, 2.8, -2.5]));
+  group.add(plane(1.0, 1.3, { name: 'pct_wanted', map: tex('poster') }, [W / 2 - 0.1, 1.7, 1.0], [0, -Math.PI / 2, 0]));
+  group.add(box(1.2, 2.3, 0.12, retroMaterial('pct_door', { color: 0x2a2a30 }), [0, 1.15, D / 2 - 0.1]));
+  group.add(box(2.2, 0.45, 0.5, M.wood, [3.6, 0.22, D / 2 - 0.6]));
+
+  const npcs = [
+    { kind: 'cop', x: -3.2, z: 1.3, rot: Math.PI, still: true, talk: 'pct_sgt' },
+    { kind: 'cop2', x: 1.4, z: 0.95, rot: Math.PI, still: true, pose: 'sit' },
+    { kind: 'cop', x: 3.8, z: 0.95, rot: Math.PI, still: true, pose: 'sit' },
+    { kind: 'cop2', x: 3.8, z: 3.15, rot: Math.PI, still: true, act: 'talk' },
+    { kind: 'tenant_f', x: 3.8, z: 3.9, rot: 0, still: true, act: 'argue', side: 1 },
+    { kind: 'cop', x: -2, z: -1.4, walker: [-5, 5] },
+    // the visit: inmates on the far side of the glass, family on this side
+    { kind: 'inmate', x: -4.2, z: -3.3, rot: 0, still: true, pose: 'sit', act: 'phone' },
+    { kind: 'w12', x: -4.2, z: -1.9, rot: Math.PI, still: true, pose: 'sit', act: 'phone' },
+    { kind: 'inmate', x: 1.4, z: -3.3, rot: 0, still: true, pose: 'sit', act: 'phone' },
+    { kind: 'tenant_m', x: 1.4, z: -1.9, rot: Math.PI, still: true, pose: 'sit', act: 'phone' },
+    { kind: 'junkie', x: 3.3, z: 4.4, rot: Math.PI, still: true, pose: 'sit' },
+  ];
+  const interactables = [
+    { id: 'pct_sgt', label: 'The desk sergeant', sub: 'he is busy (he is not busy)', x: -3.2, z: 2.9, radius: 1.4, action: (gg) => sergeant(gg) },
+    { id: 'pct_visit', label: 'The visiting booths', sub: 'phones, glass, fifteen minutes', x: -1.0, z: -1.5, radius: 1.5, action: (gg) => gg.openModal({ kicker: '84TH PRECINCT', title: 'Visiting', body: 'A woman with her hand flat on the glass is telling a man in orange that the baby said "dada." He says "for real?" three times. Nobody else in the room is talking.', choices: [{ label: 'Give them the room.', effect: () => { bump(gg.state, 'morale', -2); } }] }) },
+    { id: 'pct_bench', label: 'Sit on the bench', sub: 'everybody waits here', x: 3.6, z: 4.0, radius: 1.2, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -2); gg.toast('Twenty minutes on the bench. A man next to you is "just waiting for his cousin." He has been waiting since Tuesday.', 'info'); } },
+    { id: 'pct_exit', label: 'Out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('avenue', 'precinct') },
+  ];
+  return {
+    group,
+    bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -2.3, maxZ: D / 2 - 0.3 },
+    solids: [solid(-3.2, 2.0, 3.6, 0.8, 1.3), ...desks.map(([x, z]) => solid(x, z, 1.4, 0.8, 0.8)), solid(3.6, D / 2 - 0.6, 2.2, 0.5, 0.5)],
+    spawn: { x: 0, z: D / 2 - 1.6, rot: Math.PI },
+    npcs,
+    interactables,
+    ambient: 'street',
+    enterToast: 'The 84th Precinct. Fluorescent light, a typewriter going, and a smell of coffee that has been on since 1986.',
+  };
+}
+
+function sergeant(g) {
+  const s = g.state;
+  const booked = s.police?.bookings || 0;
+  g.openModal({
+    kicker: '84TH PRECINCT · THE DESK', title: 'Sergeant Lombardi',
+    body: booked
+      ? `He does not look up. "Your property? Confiscated means confiscated. You want it back, become a different person and ask again." He has ${booked > 1 ? 'a file on you now. It is getting thicker.' : 'your name on a form, misspelled.'}`
+      : '"You reporting something or turning yourself in? Because the line for both is that bench."',
+    choices: [
+      { label: 'Ask about the neighbourhood.', sub: '10 min', effect: () => { g.advance(10); g.toast(pick(['"The alley on Kestrel? We know. Everybody knows. The guy is only there after six, like a vampire with a pager."', '"The park at night is a bad idea with good lighting. Go home."', '"Golden Fellowship? Not a crime to sell tote bags. Yet."']), 'info'); } },
+      { label: 'Never mind.', sub: '', effect: () => {} },
+    ],
+  });
 }

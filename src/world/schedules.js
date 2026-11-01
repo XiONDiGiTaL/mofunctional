@@ -19,7 +19,7 @@ export const STREET_SCHEDULES = {
   ],
   kev: [
     { from: 7 * 60, to: 12 * 60, x: -1.2, z: -1.2, note: 'loud, early' },
-    { from: 12 * 60, to: 13 * 60, x: 6.6, z: -4.8, note: 'lunch at the bus stop' },
+    { from: 12 * 60, to: 13 * 60, x: 5.2, z: 0.15, note: 'lunch at the bus stop' },
     { from: 13 * 60, to: 19 * 60, x: 1.4, z: -4.2, note: 'working' },
     { from: 19 * 60, to: 23 * 60, x: -6.4, z: -2.6, note: 'drinking a tall boy on the bench' },
     { from: 23 * 60, to: 7 * 60, x: -1.2, z: -1.2, note: 'home' },

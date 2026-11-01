@@ -44,7 +44,7 @@ export const PARK = {
 /** Things on the walk worth a pin on the map. */
 export const LANDMARKS = [
   { id: 'board', name: 'Job board', x: 5.0, z: -5.4, icon: 'board' },
-  { id: 'busstop', name: 'Bus stop', x: 6.6, z: -5.2, icon: 'bus' },
+  { id: 'busstop', name: 'Bus stop', x: 4.6, z: 0.4, icon: 'bus' },
   { id: 'bench', name: 'Bench', x: -7.5, z: 0.2, icon: 'bench' },
   { id: 'dumpster', name: 'Dumpster', x: -4.2, z: -5.2, icon: 'trash' },
   { id: 'payphone', name: 'Payphone', x: 12.9, z: -5.9, icon: 'phone' },
@@ -85,7 +85,7 @@ export const building = (id) => BUILDINGS.find((b) => b.id === id);
 /** Where Mo stands on the street after leaving `from` (a building's area id). */
 export function streetSpawn(from) {
   // off the B44, at the stop by the job board
-  if (from === 'bus') return { x: 6.6, z: -3.6, rot: Math.PI / 2 };
+  if (from === 'bus') return { x: 4.6, z: 0.9, rot: Math.PI };
   // back across the road from the park's east gate, at the lot's crosswalk
   if (from === 'eastgate') return { x: 28.4, z: -0.4, rot: Math.PI };
   // the park has no frontage on the block: Mo comes back through the gate by the crosswalk

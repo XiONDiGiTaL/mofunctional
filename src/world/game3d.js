@@ -4,7 +4,8 @@ import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../r
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
-import { buildWalkup, buildAvenue, buildRestaurant } from './places.js';
+import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct } from './places.js';
+import * as police from '../systems/police.js';
 import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
 import { RideCar } from './ridecar.js';
@@ -25,7 +26,7 @@ import { maybeStreetEvent } from '../systems/street.js';
 const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
-  walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant,
+  walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct,
 };
 
 export class World {
@@ -470,6 +471,45 @@ export class World {
 
   holdingHands(kind) { return !!this.affection?.isHolding(kind); }
 
+  /** Is a cop within `range` metres of Mo? */
+  copNear(range = 6) {
+    const mo = this.mo.root.position;
+    return this.npcRigs.some((r) => (r.npcDef?.kind === 'cop' || r.npcDef?.kind === 'cop2') && r.root.visible && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range);
+  }
+
+  /** "Turn around." A search; booked if he is holding. */
+  copStop(g) {
+    this.haltMo();
+    const res = police.search(g);
+    if (!res.booked) {
+      g.openModal({ kicker: 'POLICE · A FLASHLIGHT IN YOUR FACE', title: 'Stopped', body: police.copLine('clean'), choices: [{ label: 'Go home.', effect: () => {} }] });
+      return;
+    }
+    g.openModal({
+      kicker: 'POLICE · A FLASHLIGHT IN YOUR FACE', title: 'Booked',
+      body: `${police.copLine('booked')}\n\nConfiscated: ${res.items.join(', ')}.\nFine: $${res.fine.toFixed(2)}.`,
+      choices: [{ label: 'Get in the car.', effect: () => this.toHolding(g, res) }],
+    });
+  }
+
+  /** A night in holding at the 84th, then out the front door onto Ashby in the morning. */
+  toHolding(g, res) {
+    const s = g.state;
+    const done = () => {
+      const now = s.clock.m;
+      const morning = (Math.floor(now / 1440) + (now % 1440 >= 7 * 60 ? 1 : 0)) * 1440 + 7 * 60;
+      g.advance(Math.max(6 * 60, morning - now), { sleeping: true, noCollapse: true });
+      g.goTo('avenue', 'precinct');
+      g.fadeIn?.();
+      g.openModal({
+        kicker: '84TH PRECINCT · MORNING', title: 'Released',
+        body: `A bench, a toilet with no seat, a man singing the same line of the same song until four. They give you back your shoelaces and a pink form.\n\nThe fine came out of what you had: $${res.fine.toFixed(2)}. What they took, they keep.`,
+        choices: [{ label: 'Walk out into Ashby Avenue.', effect: () => {} }],
+      });
+    };
+    if (g.fadeOut) g.fadeOut(done, 420); else done();
+  }
+
   /** A man in a grey hood steps out in front of Mo and wants his wallet. */
   startMugging(g) {
     const s = g.state;
@@ -484,6 +524,16 @@ export class World {
     this.vel?.set(0, 0, 0);
     this.moveTarget = null;
     const fight = fights.startMugging(g);
+    // with a cop in sight it ends before it starts, and then the cop looks at Mo
+    if (this.copNear(14)) {
+      this.thugLeaving = true;
+      g.openModal({
+        kicker: 'LATE · POLICE', title: 'Broken Up',
+        body: police.copLine('breakup'),
+        choices: [{ label: 'Stand very still.', effect: () => { if (police.isHigh(s) && !police.searchedTonight(s)) this.copStop(g); } }],
+      });
+      return;
+    }
     const end = (result) => {
       if (result === 'won') {
         this.thugLeaving = true;
@@ -891,6 +941,12 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (canMove && !this.thug && fights.shouldMug(s, this.areaId, this.mo.root.position.x)) this.startMugging(g);
     }
     this.updateThug(dt);
+    // a cop who can see Mo while he is high stops him (once a night)
+    this.copTimer = (this.copTimer ?? 2) - dt;
+    if (this.copTimer <= 0) {
+      this.copTimer = 1.5;
+      if (canMove && !this.thug && this.areaId !== 'precinct' && police.isHigh(s) && !police.searchedTonight(s) && this.copNear(CONFIG.police.seeRange)) this.copStop(g);
+    }
     // a swing: his right arm out and back
     if (this.punchT > 0) {
       this.punchT = Math.max(0, this.punchT - dt);

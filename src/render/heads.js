@@ -285,6 +285,31 @@ export const FACE_SPECS = {
     skin: '#e0b89a', hair: '#8a6a3a', hairLight: '#b08a5a', hairDark: '#5a4224', style: 'side',
     brow: '#6a4a2a', eye: '#4a5a6a', lips: '#a8705e', lipsLight: '#c48a76', age: 0.55, glasses: true,
   },
+  // the man in the alley at night, the two in the 1104 stairwell, the police
+  drifter: {
+    skin: '#9a7058', hair: '#4a3a2a', hairLight: '#6a5a44', hairDark: '#2a2018', style: 'beanie',
+    brow: '#3a2a1e', eye: '#3a2c20', lips: '#6e4434', lipsLight: '#8c5a46', beard: 'full', beardColor: '#5a4a3a', age: 0.8, gaunt: true,
+  },
+  hall_m: {
+    skin: '#c09070', hair: '#1a1410', hairLight: '#352a20', hairDark: '#0c0906', style: 'short',
+    brow: '#1a1410', eye: '#3a2a1c', lips: '#8a5a48', lipsLight: '#a87262', beard: 'stubble', beardColor: '#1a1410', age: 0.35,
+  },
+  hall_f: {
+    skin: '#a87452', hair: '#2a1a12', hairLight: '#4a3020', hairDark: '#140c08', style: 'bun',
+    brow: '#2a1a12', eye: '#3a2618', lips: '#9a4a40', lipsLight: '#c06a5a', age: 0.3, fem: true, jaw: 0.92,
+  },
+  cop: {
+    skin: '#d0a080', hair: '#1a2240', hairLight: '#2a3460', hairDark: '#0c1020', style: 'beanie',
+    brow: '#3a2a1e', eye: '#3a2a1e', lips: '#8a5a48', lipsLight: '#a87262', beard: 'stubble', beardColor: '#5a4030', age: 0.45, browTilt: 0.12,
+  },
+  cop2: {
+    skin: '#8a5a3a', hair: '#1a2240', hairLight: '#2a3460', hairDark: '#0c1020', style: 'beanie',
+    brow: '#1a120c', eye: '#2a1e16', lips: '#6a3e30', lipsLight: '#8a5644', age: 0.35,
+  },
+  inmate: {
+    skin: '#b08060', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'crop',
+    brow: '#141010', eye: '#3a2a1e', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#141010', age: 0.3,
+  },
   // messages from a number nobody saved: no features to read, on purpose
   unknown: {
     skin: '#6a6f6c', hair: '#2a2e2c', hairLight: '#3e4340', hairDark: '#171a18', style: 'beanie',

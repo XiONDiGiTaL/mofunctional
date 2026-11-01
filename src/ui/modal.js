@@ -7,6 +7,39 @@ export class Modal {
     this.g = game;
     this.wrap = null;
     this.queue = [];
+    this.buttons = [];
+    this.sel = 0;
+    // the keyboard: F / Enter / Space picks the highlighted choice, W/S or the arrows move it,
+    // 1-9 pick directly. Ignored for a moment after opening (the F that opened it is not an
+    // answer) and while something else owns the keys (a text box, the fight meter, a shop board).
+    window.addEventListener('keydown', (e) => this.onKey(e), true);
+  }
+
+  onKey(e) {
+    if (!this.wrap || e.repeat || performance.now() - this.openedAt < 200) return;
+    if (this.g.overlayOpen || this.g.debugOpen) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    const n = this.buttons.length;
+    const enabled = (i) => !this.buttons[i]?.disabled;
+    const move = (d) => {
+      for (let k = 1; k <= n; k++) {
+        const i = (this.sel + d * k + n * 4) % n;
+        if (enabled(i)) { this.highlight(i); return; }
+      }
+    };
+    let used = true;
+    if (['KeyF', 'Enter', 'Space', 'KeyE'].includes(e.code)) this.buttons[this.sel]?.click();
+    else if (['KeyS', 'ArrowDown'].includes(e.code)) move(1);
+    else if (['KeyW', 'ArrowUp'].includes(e.code)) move(-1);
+    else if (/^Digit[1-9]$/.test(e.code) && Number(e.code.slice(5)) <= n && enabled(Number(e.code.slice(5)) - 1)) this.buttons[Number(e.code.slice(5)) - 1].click();
+    else used = false;
+    if (used) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }
+
+  highlight(i) {
+    this.sel = i;
+    this.buttons.forEach((b, k) => b.classList.toggle('choice--sel', k === i));
   }
 
   get isOpen() { return !!this.wrap; }
@@ -45,10 +78,14 @@ export class Modal {
         try { c.effect?.(); } catch (e) { console.error('[modal choice]', e); }
         onClose?.();
       });
+      b.addEventListener('mouseenter', () => { if (!b.disabled) this.highlight(i); });
       choicesEl.appendChild(b);
     });
     this.root.appendChild(wrap);
     this.wrap = wrap;
+    this.buttons = [...choicesEl.querySelectorAll('.choice')];
+    this.openedAt = performance.now();
+    this.highlight(Math.max(0, this.buttons.findIndex((b) => !b.disabled)));
     this.g.audio?.sfx?.('ui');
     this.g.onModalOpenChange?.(true);
   }

@@ -35,6 +35,7 @@ import * as fights from '../src/systems/fights.js';
 import * as shopSys from '../src/systems/shop.js';
 import * as rides from '../src/systems/rides.js';
 import { ROAD } from '../src/world/plan.js';
+import * as police from '../src/systems/police.js';
 
 let passed = 0;
 let failed = 0;
@@ -959,6 +960,24 @@ check('autopay: pays a due bill and texts; short of money it texts insufficient 
   runAutopay(g);
   eq(billInfo(g, 'rent').owedCycles, 0, 'paid');
   eq(g.state.messages.some((m) => m.from === 'SHALE PAY' && /AutoPay paid/.test(m.body)), true, 'paid text');
+  return true;
+});
+
+check('police: a clean search is a warning; holding gets everything taken and the fine (or all he has)', () => {
+  const g = stubGame();
+  g.state.clock.m = 23 * 60;
+  g.state.money = 400;
+  eq(police.search(g).booked, false, 'clean');
+  eq(police.searchedTonight(g.state), true, 'once a night');
+  const g2 = stubGame();
+  g2.state.clock.m = 23 * 60;
+  g2.state.inventory.push({ id: 'static', qty: 3 }, { id: 'drip', qty: 1 });
+  g2.state.money = 120;
+  const r = police.search(g2);
+  eq(r.booked, true, 'booked');
+  eq(r.fine, 120, 'all he had');
+  eq(g2.state.money, 0, 'money gone');
+  eq(g2.state.inventory.some((i) => ['static', 'drip'].includes(i.id) && i.qty > 0), false, 'confiscated');
   return true;
 });
 
