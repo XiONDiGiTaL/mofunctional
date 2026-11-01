@@ -14,7 +14,8 @@ import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const hash = (p) => createHash('sha1').update(readFileSync(join(root, p))).digest('hex').slice(0, 10);
+// line endings are ignored so a Windows checkout (CRLF) stamps the same as the repo (LF)
+const hash = (p) => createHash('sha1').update(readFileSync(join(root, p), 'utf8').replace(/\r\n/g, '\n')).digest('hex').slice(0, 10);
 
 function walk(dir, out = []) {
   for (const name of readdirSync(join(root, dir))) {
