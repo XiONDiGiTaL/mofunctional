@@ -330,6 +330,7 @@ class Game {
     if (area === 'habibs') this.toast("Habib's Corner. Warm, clean, and he is already asking if you ate.", 'info');
     if (area === 'park') this.toast('Kestrel Park. Grass, a bent rim, and somebody else\'s music.', 'info');
     if (area === 'clinic') this.toast('Kestrel Clinic. It smells like clean and paperwork.', 'info');
+    if (this.world.area?.enterToast) this.toast(this.world.area.enterToast, 'info');
   }
 
   /* ------------------------------ collapse / fade ------------------------------ */

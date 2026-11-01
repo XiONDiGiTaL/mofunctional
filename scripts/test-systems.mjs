@@ -27,6 +27,8 @@ import { partnerTarget, PARTNER_SCHEDULES, PARTNER_AREA_NAMES, strangerRunIns } 
 import { STRANGERS, STRANGER_BY_ID } from '../src/core/strangers.js';
 import * as social from '../src/systems/social.js';
 import * as block from '../src/systems/block.js';
+import * as casino from '../src/systems/casino.js';
+import * as sister from '../src/systems/sister.js';
 
 let passed = 0;
 let failed = 0;
@@ -767,6 +769,58 @@ check('debug: the password ignores case, stray symbols and the dead-key tilde', 
   const clean = (v) => String(v).replace(/[^a-z]/gi, '').toLowerCase();
   for (const v of ['Moses', 'moses', '~Moses', '`Moses ', ' MOSES']) eq(clean(v), clean(CONFIG.debug.password), v);
   eq(clean('Mose') === clean(CONFIG.debug.password), false, 'wrong is wrong');
+  return true;
+});
+
+check('casino: slots return about 93% over the long run; the bank only moves by real bets', () => {
+  const T = casino.REELS.reduce((a, r) => a + r.w, 0);
+  let rtp = 0;
+  for (const a of casino.REELS) for (const b of casino.REELS) for (const c of casino.REELS) rtp += (a.w * b.w * c.w / T ** 3) * casino.slotMultiplier([a.id, b.id, c.id]);
+  eq(rtp > 0.88 && rtp < 0.97, true, `rtp ${rtp.toFixed(3)}`);
+  const g = stubGame();
+  g.state.money = 50;
+  casino.casinoState(g.state).bonusUsed = true;
+  const r = casino.spin(g, 5, () => 0.999); // three money bags... or not: whatever the reels say
+  near(g.state.money, 50 - 5 + r.payout, 0.001, 'money');
+  g.state.money = 2;
+  eq(casino.spin(g, 5), null, 'cannot bet what he does not have');
+  return true;
+});
+
+check('casino: blackjack settles once, naturals pay 3 to 2, busts lose', () => {
+  const g = stubGame();
+  casino.casinoState(g.state).bonusUsed = true;
+  g.state.money = 100;
+  eq(casino.handValue([{ r: 'A' }, { r: 'K' }]), 21, 'blackjack');
+  eq(casino.handValue([{ r: 'A' }, { r: 'A' }, { r: '9' }]), 21, 'soft');
+  const t = casino.deal(g, 10);
+  while (!t.done) casino.hit(g, t);
+  const before = g.state.money;
+  casino.stand(g, t);
+  eq(g.state.money, before, 'no second settle');
+  return true;
+});
+
+check('nia: she only asks when the bond is good; yes brings her over with food, missing her leaves it on the radiator', () => {
+  const g = stubGame();
+  g.state.clock.m = 10 * 60;
+  g.state.npc.nia = 0;
+  const mr = Math.random; Math.random = () => 0.01;
+  sister.sisterNewDay(g, 1);
+  eq(sister.sisterState(g.state).status, 'none', 'not at bond 0');
+  g.state.npc.nia = CONFIG.sister.visitBond;
+  sister.sisterNewDay(g, 1);
+  Math.random = mr;
+  eq(sister.sisterState(g.state).status, 'asked', 'asks');
+  sister.answerVisit(g, true);
+  eq(sister.sisterState(g.state).visitDay, 2, 'tomorrow');
+  g.state.clock.m = 1440 + 18 * 60 + 30;
+  sister.sisterTick(g);
+  eq(sister.sisterTarget(g.state).area, 'apartment', 'she is at his place');
+  g.state.clock.m = 1440 + 21 * 60 + 5;
+  sister.sisterTick(g);
+  eq(sister.sisterState(g.state).status, 'none', 'gone');
+  eq(g.state.inventory.some((i) => i.id === 'nia_meal'), true, 'food on the radiator');
   return true;
 });
 

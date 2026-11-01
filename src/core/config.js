@@ -130,6 +130,8 @@ export const CONFIG = {
     eggs:    { id: 'eggs',    name: 'Half-Dozen Eggs', kind: 'food', price: 3.5, hunger: 30, energy: 8, morale: 3,  hygiene: 0,  value: 1.5 },
     sandwich:{ id: 'sandwich',name: 'Bodega Sandwich', kind: 'food', price: 5.5, hunger: 36, energy: 6, morale: 5,  hygiene: 0,  value: 2 },
     bar:     { id: 'bar',     name: 'Protein Brick',  kind: 'food', price: 2.8, hunger: 15, energy: 12, morale: 0,  hygiene: 0,  value: 1 },
+    // Nia's cooking, left behind when he missed her or did not eat: still the best thing in the fridge
+    nia_meal:{ id: 'nia_meal',name: "Nia's Arroz con Pollo", kind: 'food', price: 0, hunger: 48, energy: 24, morale: 10, hygiene: 0, stress: -8, value: 0 },
     cereal:  { id: 'cereal',  name: 'Off-Brand Cereal', kind: 'food', price: 3.2, hunger: 24, energy: 5, morale: 1,  hygiene: 0,  value: 1.2 },
     // ---- Bodega and Habib's stock. Same neighbourhood, two different counters.
     bec:          { id: 'bec',          name: 'Bacon, Egg & Cheese', kind: 'food', price: 4.5, hunger: 44, energy: 16, morale: 7, hygiene: 0, value: 2.0, hot: true },
@@ -333,6 +335,45 @@ export const CONFIG = {
     },
   },
 
+  // the B44 out on Ashby: the bus stop on Kestrel goes somewhere now
+  transit: {
+    fare: 1.5,
+    wait: [4, 22],          // minutes, and it is always closer to the second number
+    ride: 14,
+    walk: 45,               // or walk it: free, slow, tiring
+    walkEnergy: -8,
+  },
+
+  // 1104 Kestrel, the walk-up next door
+  walkup: {
+    stairMinutes: 3,
+    stairEnergy: -2,
+    squeakMarkup: 1.25,     // the hallway costs extra
+    squeakStock: [2, 4],
+  },
+
+  // HardLuck Bet, the casino app
+  casino: {
+    bets: [1, 5, 20, 100],
+    freeBet: 10,          // the first bet, once, on the house
+    chaseLine: 60,        // down more than this today and every loss stings harder
+  },
+
+  // Nia: how much she has to like him before she asks to come over, and what her food does
+  sister: {
+    visitBond: 3,
+    cooldownDays: 4,
+    askChance: 0.45,
+    visit: { fromHour: 18, toHour: 21 },
+    meal: { minutes: 45, hunger: 70, energy: 45, morale: 16, stress: -14 },
+    askLines: [
+      '“can i come by tomorrow? i made too much food. (i made exactly enough food for you.)”',
+      '“mom sent pernil. it\'s coming to you whether you like it or not. tomorrow night ok?”',
+      '“i want to see your place. i\'m not going to judge it out loud. tomorrow?”',
+      '“free tomorrow night? i\'ll bring dinner. you supply a fork. you have a fork right”',
+    ],
+  },
+
   social: {
     postMinutes: 10,
     postMorale: 4,
@@ -391,7 +432,7 @@ export const CONFIG = {
       id: 'melanie', name: 'Melanie', short: 'MEL', age: 34,
       rentShare: 0.25, difficulty: 0.55,
       blurb: 'Warm, funny, particular. She notices when you tried and when you did not.',
-      likes: ['coffee', 'movie', 'park', 'dinner'], dislikes: ['walk'],
+      likes: ['coffee', 'movie', 'park', 'dinner', 'lucias'], dislikes: ['walk'],
       chat: [
         '"I had a whole speech about how I am not looking for anything. Then you knocked on the door with a coffee."',
         '"You do the thing where you disappear for two days and then act normal. I clocked it."',
@@ -408,7 +449,7 @@ export const CONFIG = {
       id: 'diana', name: 'Diana', short: 'DI', age: 36,
       rentShare: 0.5, difficulty: 0.82,
       blurb: 'Independent, exacting, generous once you have earned it. She does not do half-measures.',
-      likes: ['dinner', 'movie', 'park'], dislikes: ['coffee'],
+      likes: ['dinner', 'movie', 'park', 'lucias'], dislikes: ['coffee'],
       chat: [
         '"I am not hard to please. I am hard to convince. There is a difference and it is that one takes effort."',
         '"You cancelled. I am not upset. I am filing it, because I pay attention to patterns."',
@@ -450,6 +491,7 @@ export const CONFIG = {
       park: { id: 'park', name: 'An afternoon in the park', where: 'park', cost: 0, minutes: 75, affection: 12, morale: 9, stress: -9, energy: 3 },
       walk: { id: 'walk', name: 'A walk down Kestrel Street', where: 'street', cost: 0, minutes: 40, affection: 7, morale: 5, stress: -5, energy: -1 },
       movie: { id: 'movie', name: 'A movie at home', where: 'apartment', cost: 4, minutes: 110, affection: 13, morale: 8, stress: -7, energy: -3 },
+      lucias: { id: 'lucias', name: "Dinner at Lucia's on Ashby", where: 'restaurant', cost: 48, minutes: 140, affection: 21, morale: 12, stress: -8, energy: 4 },
     },
   },
 

@@ -4,6 +4,7 @@ import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../r
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
+import { buildWalkup, buildAvenue, buildRestaurant } from './places.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
@@ -12,12 +13,14 @@ import { isPartnerId, partnerState, PARTNER_KEYS } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay, dayOf } from '../core/util.js';
 import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, strangerRunIns, strangerTarget } from './schedules.js';
-import { strangerMenu, strangerLabel } from './encounters.js';
+import { strangerMenu, strangerLabel, niaMenu } from './encounters.js';
+import { sisterTarget } from '../systems/sister.js';
 import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
+  walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant,
 };
 
 export class World {
@@ -187,6 +190,16 @@ export class World {
       // the three women carry a heart until one of them is actually his girlfriend
       if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
     }
+    // Nia, when she has come over: walks into Unit 3B with a bag of food (systems/sister.js)
+    if (id === 'apartment') {
+      const rig = createNPC('nia');
+      rig.npcDef = { kind: 'nia', sister: true, talk: 'sister_nia', roam: 0.6 };
+      rig.root.visible = false;
+      this.root.add(rig.root);
+      this.npcRigs.push(rig);
+      this.interactables.push({ id: 'sister_nia', label: 'Talk to Nia', sub: '', x: 0, z: 0, radius: 1.5, hidden: true, action: (gg) => niaMenu(gg) });
+      this.partnerPresence(rig, 0, g, true);
+    }
     // Stephanie, Melanie and Diana go where their day takes them (schedules.js): each of them has
     // a rig in every area she ever visits, shown only while her schedule has her here
     if (PARTNER_AREA_NAMES[id]) {
@@ -353,7 +366,7 @@ export class World {
   partnerPresence(rig, dt, g, fresh = false) {
     const def = rig.npcDef;
     const mod = minuteOfDay(g.state.clock.m);
-    const row = def.stranger ? strangerTarget(def.kind, dayOf(g.state.clock.m), mod) : partnerTarget(def.kind, mod);
+    const row = def.sister ? sisterTarget(g.state) : def.stranger ? strangerTarget(def.kind, dayOf(g.state.clock.m), mod) : partnerTarget(def.kind, mod);
     const here = !!row && !row.away && row.area === this.areaId;
     const talk = rig.talkIt || this.interactables.find((it) => it.id === def.talk);
     if (talk) {
@@ -738,6 +751,7 @@ export class World {
     // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
     if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();
     this.affection?.update(dt);
+    this.area?.tick?.(g, dt, this);
 
     // street encounters, on a slow clock so they are events rather than background noise
     this.streetTimer = (this.streetTimer ?? 10) - dt;
@@ -980,7 +994,21 @@ export class World {
   patrolNPC(rig, dt, g) {
     const def = rig.npcDef;
     if (!def) return;
-    if (def.partner || def.stranger) { this.partnerPresence(rig, dt, g); return; }
+    if (def.partner || def.stranger || def.sister) { this.partnerPresence(rig, dt, g); return; }
+    // somebody who stays where they are (asleep by the stairs, mid-argument, selling from a coat)
+    if (def.still) { rig.walking = false; rig.pose = def.pose || null; return; }
+    // somebody walking the avenue end to end, on the way to somewhere that is not here
+    if (def.walker) {
+      if (rig.walkDir === undefined) rig.walkDir = Math.random() < 0.5 ? 1 : -1;
+      const [x0, x1] = def.walker;
+      const tx = rig.walkDir > 0 ? x1 : x0;
+      const dx = tx - rig.root.position.x;
+      if (Math.abs(dx) < 0.3) { rig.walkDir *= -1; return; }
+      rig.walking = true;
+      rig.root.position.x += Math.sign(dx) * 1.1 * dt;
+      rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.sign(dx) > 0 ? Math.PI / 2 : -Math.PI / 2) * Math.min(1, dt * 6);
+      return;
+    }
 
     // A scheduled character walks to wherever they are supposed to be right now and stays
     // there until the window changes; unscheduled ones keep to a small patch near home.

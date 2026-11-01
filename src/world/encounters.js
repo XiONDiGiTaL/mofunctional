@@ -9,6 +9,7 @@ import { pick } from '../core/util.js';
 import { bump } from '../core/state.js';
 import { STRANGER_BY_ID } from '../core/strangers.js';
 import * as dating from '../systems/dating.js';
+import * as sister from '../systems/sister.js';
 
 const NO_LINES = [
   '"I have a boyfriend." She does not have a boyfriend. She has a reason to say that.',
@@ -82,4 +83,47 @@ export function strangerMenu(g, id) {
   }
   choices.push({ label: 'Leave her be.', sub: '', effect: () => {} });
   g.openModal({ kicker: 'SOMEBODY FROM THE APP', title: seen ? w.name : 'A Woman', body: intro, choices });
+}
+
+/* ------------------------------------------------------------------ Nia, at Unit 3B */
+
+const NIA_LINES = [
+  '"Sit. Eat. I will talk, you will chew, it is a system."',
+  '"Mom asked if you are eating. I am going to tell her yes, so make it true."',
+  '"Your place is not as bad as I thought. I thought it was going to be very bad."',
+  '"I am not here to fix anything. I am here to make sure you have a fork."',
+];
+
+export function niaMenu(g) {
+  const s = g.state;
+  const st = sister.sisterState(s);
+  const high = s.high?.level > 25;
+  const choices = [];
+  if (!st.ate) {
+    choices.push({
+      label: 'Sit down and eat with her.', sub: `${CONFIG.sister.meal.minutes} min · a real meal · +energy`,
+      effect: () => {
+        sister.eatWithNia(g);
+        g.world?.playEat?.('nia_meal', (name) => g.audio?.sfx?.(name));
+        g.toast('Arroz con pollo, still warm, in your one bowl. Nia watches you eat the whole thing and pretends she is not.', 'good');
+      },
+    });
+  }
+  choices.push({
+    label: 'Talk for a while.', sub: '30 min · +morale',
+    effect: () => {
+      g.advance(30, { social: true });
+      bump(s, 'morale', high ? 2 : 8);
+      bump(s, 'stress', -6);
+      if (high) { sister.bumpBond(s, -1); g.toast('She looks at your eyes for one second too long and changes the subject.', 'bad'); }
+      else { sister.bumpBond(s, 1); g.toast(pick(NIA_LINES), 'good'); }
+    },
+  });
+  choices.push({ label: 'Walk her to the door.', sub: 'she goes home', effect: () => { sister.sayGoodnight(g); g.toast('"Call Mom." She hugs you at the door like she is checking you are all still there.', 'good'); } });
+  g.openModal({
+    kicker: 'NIA · UNIT 3B',
+    title: 'Your Sister',
+    body: `${st.ate ? 'The bag is empty. She is washing your one pot with the energy of someone who has opinions about your sponge.' : 'She has a bag of food in foil and Tupperware, and she is already looking for plates.'}\n\n${pick(NIA_LINES)}`,
+    choices,
+  });
 }

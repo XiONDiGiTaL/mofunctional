@@ -10,6 +10,27 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Threads, Gus, the camera; 1104, the bus, Ashby, Lucia's; HardLuck Bet; Nia
+
+- **Txtr**: messages are grouped into one thread per contact (`threadKeyOf` = sms identity
+  name); the thread shows every message with Mo's replies and day separators; reply chips answer
+  the newest. Message history 150. App women resolve to their own faces.
+- **Gus**: placed at his schedule spot on load (all street NPCs are); `pose` comes from the
+  schedule row (sleep only on the cardboard), not from `sit` everywhere; talk() has Gus and junkie
+  menus (a dollar, a story).
+- **Camera**: `area.camBounds` (the street's runs over the road); thin solids (<= 0.5 m) do not
+  block the arm; no auto-swing indoors (higher arm instead); gentler pull-in rate.
+- **places.js**: `buildWalkup` (floor in `state.walkup`, stairs reload the area with a spawn,
+  knocks once per door per day, Petrakis, Squeak's daily stock, couple, Stephanie's 5C, roof),
+  `busMenu` (fare, wait, ride or walk), `buildAvenue` (walkers, sax, newsstand, pawn),
+  `buildRestaurant` (menu; romance activity `lucias`). NPC defs `still` + `pose`, `walker`;
+  `area.tick` per frame; `area.enterToast`. Street extended west to x -25.4.
+- **systems/casino.js** + app `casino`: honest slots (RTP ~0.93, tested), blackjack, roulette;
+  free first bet; stress when chasing a losing day.
+- **systems/sister.js**: bond `npc.nia`; `nia_visit` texts with yes/no replies; visit window,
+  presence in Unit 3B, `eatWithNia`, food left as `nia_meal` if missed.
+- 48 system checks.
+
 ### FeedLove grows up; NextStoop; the debug password
 
 - **Debug**: on layouts where `~` is a dead key the opening keystroke lands in the password box

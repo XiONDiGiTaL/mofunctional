@@ -80,6 +80,11 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | The three have schedules across the park, Quik-Stop, bodega, Habib's and the street | done |
 | LoveLine folded into FeedLove; NextStoop (neighbourhood lore, board, live sightings) on the home screen | done |
 | FeedLove: followers/following, a timeline with pictures, typed posts, likes both ways with the three | done |
+| Txtr threads per contact; Gus fixed (placement, pose, dialogue); camera over the road and through poles | done |
+| 1104 Kestrel walk-up (5 levels, hallway life, Squeak, Stephanie's 5C, roof) | done |
+| HardLuck Bet casino app (slots, blackjack, roulette) | done |
+| Nia visits with home-cooked meals, earned by how Mo answers her | done |
+| The B44 to Ashby Avenue (newsstand, pawn, sax player) and Lucia's restaurant (meals, a date) | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

@@ -260,6 +260,31 @@ export const FACE_SPECS = {
     skin: '#c09a80', hair: '#241a14', hairLight: '#40302a', hairDark: '#100b08', style: 'long',
     brow: '#241a14', eye: '#3a2c22', lips: '#96604f', lipsLight: '#b87a66', age: 0.45, fem: true,
   },
+  // ---- 1104 Kestrel and Ashby Avenue: painted, like Rolo
+  tenant_m: {
+    skin: '#c8987a', hair: '#2a2420', hairLight: '#4a403a', hairDark: '#141010', style: 'receding',
+    brow: '#2a2420', eye: '#3a2a1e', lips: '#8e5a4a', lipsLight: '#a87262', beard: 'stubble', beardColor: '#2a2420', age: 0.7, browTilt: 0.14,
+  },
+  tenant_f: {
+    skin: '#a87452', hair: '#5a2a1a', hairLight: '#8a4a2a', hairDark: '#2a140a', style: 'bob',
+    brow: '#2a1a10', eye: '#3a2618', lips: '#9a4a40', lipsLight: '#c06a5a', age: 0.6, fem: true, jaw: 0.92, browTilt: 0.12,
+  },
+  squeak: {
+    skin: '#d0a88a', hair: '#7a1a1a', hairLight: '#a83a2a', hairDark: '#3a0a0a', style: 'beanie',
+    brow: '#3a2a20', eye: '#4a3a2a', lips: '#9a6a5a', lipsLight: '#b88272', beard: 'stubble', beardColor: '#5a3a2a', age: 0.3, gaunt: true,
+  },
+  waiter: {
+    skin: '#d8b49a', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'swept',
+    brow: '#141010', eye: '#3a2a1e', lips: '#9a6252', lipsLight: '#b87a6a', beard: 'goatee', beardColor: '#141010', age: 0.45,
+  },
+  passer_m: {
+    skin: '#8a5a3a', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'short',
+    brow: '#141010', eye: '#2a1e16', lips: '#6a3e30', lipsLight: '#8a5644', age: 0.4,
+  },
+  passer_m2: {
+    skin: '#e0b89a', hair: '#8a6a3a', hairLight: '#b08a5a', hairDark: '#5a4224', style: 'side',
+    brow: '#6a4a2a', eye: '#4a5a6a', lips: '#a8705e', lipsLight: '#c48a76', age: 0.55, glasses: true,
+  },
   // messages from a number nobody saved: no features to read, on purpose
   unknown: {
     skin: '#6a6f6c', hair: '#2a2e2c', hairLight: '#3e4340', hairDark: '#171a18', style: 'beanie',

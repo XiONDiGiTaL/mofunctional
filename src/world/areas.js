@@ -15,6 +15,7 @@ import { openShop, shopPrice } from './shops.js';
 import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
 import { partnerTarget } from './schedules.js';
+import { busMenu } from './places.js';
 import { signTex } from '../render/signs.js';
 import * as life from '../systems/life.js';
 import * as romance from '../systems/romance.js';
@@ -275,6 +276,12 @@ export function buildStreet(g) {
   };
   facade(-9.8, 6.6, 7.5, 0xc8c0b4);   // 1120 Kestrel: the tall walk-up
   facade(-16.5, 5.2, 4.6, 0x9c8a76);  // the bodega's own low building, darker brick
+  // 1104 Kestrel, the walk-up west of the bodega: five floors, fire escape, a buzzer panel
+  facade(-22.45, 5.7, 9.2, 0xa89a9e);
+  facade(-29.0, 7.0, 6.0, 0x8a8076);  // and the block keeps going past it
+  group.add(plane(12, 16, { name: 'streetsw_w', map: tex('sidewalk'), repeat: [4, 5] }, [-29, 0, -1.4], [-Math.PI / 2, 0, 0]));
+  group.add(plane(12, 8, { name: 'streetasph_w', map: tex('asphalt'), repeat: [4, 3] }, [-29, -0.01, 5.2], [-Math.PI / 2, 0, 0]));
+  group.add(box(12, 0.18, 0.4, M.concrete, [-29, 0.09, 1.3]));
   facade(1.5, 9, 6.2, 0xd8cfc0);
   facade(11.5, 5.4, 8.5, 0xe4d6b0);
   facade(-3.6, 3.0, 5.0, 0x9a9088);
@@ -305,6 +312,15 @@ export function buildStreet(g) {
       group.add(plane(signW, signH, { name: `sign${x}`, map: sign, emissive: 1.0, unlit: true }, [x, signY ?? h + 0.95, -6.12]));
     }
   };
+
+  // 1104 Kestrel: a plain stoop, a buzzer panel, a sign in a frame
+  const wu = building('walkup');
+  entrance(wu.door, {
+    door: 0x3a3440, trim: 0xc8c0c8, light: 0xfff0c8, signW: 1.5, signH: 0.5,
+    sign: signTex('sign1104', [{ text: '1104', color: '#f2eef2', size: 18 }, { text: 'KESTREL ST', color: '#b8b0b8', size: 7 }], { w: 64, h: 32, bg: '#1a161c', border: '#6a5a6a' }),
+  });
+  for (let i = 0; i < 2; i++) group.add(box(1.9 - i * 0.3, 0.12, 0.4, M.concrete, [wu.door, 0.06 + i * 0.12, -5.62 + i * 0.32]));
+  group.add(box(0.3, 0.5, 0.06, M.metal, [wu.door + 0.9, 1.3, -6.2]));
 
   // 1120 Kestrel: the stoop Mo lives up
   const apt = building('apartment');
@@ -565,7 +581,8 @@ export function buildStreet(g) {
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
     { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
-    { id: 'busstop', label: 'Wait at the bus stop', sub: 'nothing will happen', x: 6.6, z: -4.8, action: (gg) => { gg.advance(20); gg.toast('The bus is late. You watch three people decide not to wait.', 'info'); } },
+    { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 6.6, z: -4.8, action: (gg) => busMenu(gg, 'street') },
+    { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
     { id: 'kev', label: 'Talk to Kev', sub: 'coworker · loud', x: -1.2, z: -1.2, action: (gg) => talk(gg, 'kev') },

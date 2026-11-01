@@ -79,6 +79,9 @@ stress, dependence and risk for the day just ended.
 | **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge — the one ending that takes the game away |
 | **Kestrel Clinic** | walk-ins, Nurse Okafor, treatment on cash or on the bill |
 | **Kestrel Park** | across the road: benches, a half-court, chess, a boombox, people |
+| **1104 Kestrel St.** | the walk-up west of the bodega: a lobby and four floors of hallway, real minutes on the stairs. A man asleep by the steps, Ray & Denise arguing on two, Mrs. Petrakis's soup in 3B, Squeak selling from his coat on four (a few items a day, hallway prices), Stephanie's door in 5C, the roof, and a knock on every door |
+| **Ashby Avenue** | by the B44 from the stop on Kestrel (or a 45-minute walk): people walking somewhere else, a newsstand (papers, scratch-offs), Ashby Pawn & Gold (sell a valuable now, cheap), a sax player |
+| **Lucia's** | a red-sauce trattoria on Ashby: sit-down meals, and the best date on the list |
 
 Every door on the block is built the same way so it can be found at a glance: a recessed door in
 a pale frame, a step and a mat, a lamp over it with the pool of light it throws, and a lit sign.
@@ -122,6 +125,7 @@ due next), an icon grid and a dock. Every app is a parody with its own name, ico
 | **Pocket Lint** | inventory as illustrated tiles; eat, drink, smoke or sell from here |
 | **Landlordly** | a thermostat dial that counts down the days to rent |
 | **FeedLove** | the social app (a heart, not a camera), in four tabs: **FEED** (Mo's profile, a box to type his own posts or a random one, and a timeline of everyone he follows — Mom, Nia, Kev, Dale, Rae, Miguel's bodega and its cat, Habib's, the Fellowship, the Quik-Stop, the park, and the three once he has met them — with pictures and likes), **PEOPLE** (following, followers, people you may know), **♥ HEARTS** (the dating side) and **LOVELINE** (the three, where they are, and her day) |
+| **HardLuck Bet** | an online casino: slots, blackjack and roulette for real money. The odds are honest (slots return about 93%), the first $10 bet is free, a losing day stings, and winnings are tithed like any other income |
 | **NextStoop** | the neighbourhood app: **SEEN NOW** (neighbours posting who is where, from the real schedules — useful for finding people), **THE BOARD** (a day of lost-and-found, safety, free stuff and complaints) and **HISTORY** (the lore of Kestrel Street, a page a day) |
 | **Blessed+** | the Fellowship's "live" Sunday stream and the tithe |
 | **Rolo's Line** | the dealer app (below) |
@@ -253,6 +257,15 @@ and the more of his money and his say they take.
 Signing the pledge ends the game: **Fully Functional**. Mo stops using, is housed, employed and
 more than functional — and none of it is his. It is the ending where someone else saved him, which
 is not what this game is about. Walking out instead keeps the run going.
+
+## Nia
+
+Mo's sister texts and calls. How he answers is the bond between them: talking properly or being
+honest raises it, brushing her off lowers it. Once it is good enough, every few days she asks if
+she can come over. Say yes and she walks into Unit 3B the next evening (18:00-21:00) with a bag of
+food: sitting down to eat with her is the best meal in the game (a big chunk of energy and food,
+morale, less stress). Miss her and the food is left on the radiator with a text; say no and the
+bond takes a hit.
 
 ## Love on Kestrel Street
 

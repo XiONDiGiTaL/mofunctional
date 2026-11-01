@@ -55,6 +55,11 @@ export const APPS = {
     name: 'LoveLine', tag: 'somebody on the block', a: '#ff6b8a', b: '#8a1f4a',
     icon: svg('<path d="M12 20.5S3.5 15 3.5 9.5A4.5 4.5 0 0 1 12 6.8a4.5 4.5 0 0 1 8.5 2.7c0 5.5-8.5 11-8.5 11z"/>'),
   },
+  // a parody of the betting apps: slots, blackjack, a wheel. the house is real
+  casino: {
+    name: 'HardLuck Bet', tag: 'the house always wins · you are a guest', a: '#ffd23a', b: '#5a1a8a',
+    icon: svg('<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor"/>'),
+  },
   // the neighbourhood board: lore, a daily notice board, and who was seen where
   block: {
     name: 'NextStoop', tag: 'your neighbours, unfortunately', a: '#8fd06a', b: '#2a5a3a',
@@ -125,7 +130,7 @@ export function serviceAvatar(name, cls = '') {
 
 /** The home-screen layout: the grid, then the dock. */
 // LoveLine lives inside FeedLove now (its LOVELINE tab); NextStoop takes its place on the grid
-export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'block', 'clinic', 'fellowship', 'rolo'];
+export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'block', 'casino', 'clinic', 'fellowship', 'rolo'];
 
 // Rolo's text thread lives inside Txtr, so it wears Txtr's brand
 APPS.dealer = { ...APPS.messages };

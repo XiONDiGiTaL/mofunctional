@@ -8,7 +8,8 @@
  */
 export const STREET = {
   // the block now runs east past Habib's to the clinic, so the walk is longer, not different
-  bounds: { minX: -19.2, maxX: 24.6, minZ: -5.6, maxZ: 1.4 },
+  // and west past the bodega to 1104, the walk-up
+  bounds: { minX: -25.4, maxX: 24.6, minZ: -5.6, maxZ: 1.4 },
   frontZ: -6.5,      // building faces
   curbZ: 1.3,
   roadZ: [1.5, 9.2],
@@ -18,6 +19,7 @@ export const STREET = {
 
 /** Buildings along the back of the walk, west to east. `door` is the x of the entrance. */
 export const BUILDINGS = [
+  { id: 'walkup', name: '1104 Kestrel St.', short: '1104 WALK-UP', x0: -25.3, x1: -19.6, door: -22.4, area: 'walkup', color: '#6a5a6a', icon: 'home' },
   { id: 'bodega', name: 'Kestrel Bodega', short: 'BODEGA', x0: -19.1, x1: -13.9, door: -15.3, area: 'bodega', color: '#3f6b4a', icon: 'cart' },
   { id: 'apartment', name: '1120 Kestrel St.', short: 'HOME · 3B', x0: -13.1, x1: -6.5, door: -10.0, area: 'apartment', color: '#8a6a4a', icon: 'home' },
   { id: 'alley', name: 'The Alley', short: 'ALLEY', x0: -5.1, x1: -2.1, door: -3.6, area: null, color: '#3a4246', icon: 'alley', open: true },
@@ -57,6 +59,8 @@ export const building = (id) => BUILDINGS.find((b) => b.id === id);
 
 /** Where Mo stands on the street after leaving `from` (a building's area id). */
 export function streetSpawn(from) {
+  // off the B44, at the stop by the job board
+  if (from === 'bus') return { x: 6.6, z: -3.6, rot: Math.PI / 2 };
   // the park has no frontage on the block: Mo comes back through the gate by the crosswalk
   if (from === 'park') return { x: PARK.gate.x, z: -1.2, rot: Math.PI };
   const b = BUILDINGS.find((x) => x.area === from) || building('apartment');

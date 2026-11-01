@@ -767,3 +767,29 @@
 .nstoop--lore div { margin-top: 5px; opacity: .9; }
 
 .chat__day { text-align: center; font-size: 9px; letter-spacing: .16em; opacity: .5; margin: 10px 0 4px; }
+
+/* ------------------------------------------------------------------ HardLuck Bet */
+.feedtabs--cas button { color: #ffe9a0; background: rgba(255, 210, 58, .12); }
+.feedtabs--cas button.on { background: linear-gradient(180deg, #ffd23a, #b8860b); color: #2a0a3a; }
+.cas__promo { text-align: center; font-size: 10px; letter-spacing: .1em; color: #2a0a3a; background: linear-gradient(90deg, #ffd23a, #ff8a3a); border: 0; }
+.cas__table { margin: 8px 0; padding: 12px; border-radius: 16px; background: radial-gradient(circle at 50% 20%, #2a6a3a, #0e2a16); box-shadow: inset 0 0 0 2px rgba(255, 210, 58, .35); text-align: center; }
+.cas__slots { display: flex; justify-content: center; gap: 8px; margin: 6px 0 10px; }
+.cas__reel { width: 54px; height: 64px; display: grid; place-items: center; font-size: 26px; font-weight: 800; color: #b8121a; background: linear-gradient(180deg, #fff, #d8d4cc); border-radius: 8px; box-shadow: inset 0 -6px 10px rgba(0, 0, 0, .25), 0 0 0 2px #ffd23a; }
+.cas__msg { font-family: var(--display); font-size: 12px; letter-spacing: .06em; color: #ffe9a0; margin: 6px 0 10px; min-height: 16px; }
+.cas__bets { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+.cas__bets button { border: 0; border-radius: 999px; padding: 5px 10px; font-weight: 700; cursor: pointer; color: #ffe9a0; background: rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1.5px #ffd23a; }
+.cas__bets button.on { color: #2a0a3a; background: #ffd23a; }
+.cas__bets button:disabled { opacity: .35; cursor: default; }
+.cas__go { width: 100%; }
+.cas__hand { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 6px 0; flex-wrap: wrap; }
+.cas__hand em { font-style: normal; font-size: 10px; color: #cfe8d0; width: 100%; }
+.cas__card { width: 30px; height: 42px; display: grid; place-items: center; font-weight: 800; font-size: 12px; color: #1a1a1a; background: #f8f4ea; border-radius: 5px; box-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+.cas__card.red { color: #c8121a; }
+.cas__card--back { color: #ffd23a; background: repeating-linear-gradient(45deg, #5a1a8a 0 4px, #3a0a6a 4px 8px); }
+.cas__wheel { width: 76px; height: 76px; margin: 4px auto 8px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: #fff; background: conic-gradient(#b8121a 0 10%, #111 10% 20%, #b8121a 20% 30%, #111 30% 40%, #1a8a3a 40% 45%, #b8121a 45% 55%, #111 55% 65%, #b8121a 65% 75%, #111 75% 85%, #b8121a 85% 95%, #1a8a3a 95% 100%); box-shadow: 0 0 0 4px #ffd23a; }
+.cas__wheel--red { background: #b8121a; }
+.cas__wheel--black { background: #111; }
+.cas__wheel--green { background: #1a8a3a; }
+.cas__red { background: #b8121a !important; color: #fff !important; }
+.cas__black { background: #111 !important; color: #fff !important; }
+.cas__green { background: #1a8a3a !important; color: #fff !important; }

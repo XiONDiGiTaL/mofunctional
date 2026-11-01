@@ -195,12 +195,13 @@ export const statPercent = (s, key) => Math.round(s.stats[key] ?? 0);
 
 /* ------------------------------ messages ------------------------------ */
 
-export function pushMessage(g, { from, subject, body, choices = null, id = uid() }) {
+export function pushMessage(g, { from, subject, body, choices = null, id = uid(), kind = null }) {
   g.state.messages.unshift({
     id, from, subject, body,
     day: dayOf(g.state.clock.m),
     read: false,
     choices,
+    ...(kind ? { kind } : {}),
   });
   // threads read better with history; this is still small (a few KB in the save)
   if (g.state.messages.length > 150) g.state.messages.pop();

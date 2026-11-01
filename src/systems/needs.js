@@ -14,6 +14,7 @@ import { onNewDayJob } from './jobs.js';
 import { fellowshipNewDay } from './fellowship.js';
 import { applyAfterglow, partnerNewDay } from './romance.js';
 import { clinicNewDay, onRelapse } from './clinic.js';
+import { sisterNewDay, sisterTick } from './sister.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -42,10 +43,12 @@ export function simulate(g, minutes, ctx = {}) {
       lifeNewDay(g, d);
       partnerNewDay(g, d);
       clinicNewDay(g, d);
+      sisterNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
     bidbayTick(g);
+    sisterTick(g);
     // nothing ends the run any more; a turning point takes the moment and the day goes on
     if (checkTurningPoints(g)) return;
     // Day summary at the configurable hour

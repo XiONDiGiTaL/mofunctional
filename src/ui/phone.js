@@ -18,6 +18,7 @@ import * as life from '../systems/life.js';
 import * as dating from '../systems/dating.js';
 import * as social from '../systems/social.js';
 import * as block from '../systems/block.js';
+import * as casino from '../systems/casino.js';
 import { postImage } from './feedart.js';
 import * as sms from '../systems/sms.js';
 
@@ -1036,6 +1037,59 @@ export class Phone {
       ${this.footer()}`;
   }
 
+  /* ------------------------------ HARDLUCK BET ------------------------------ */
+
+  casinoView() {
+    const s = this.g.state;
+    const cs = casino.casinoState(s);
+    const game = this.casinoGame || 'slots';
+    const bet = this.casinoBet || CONFIG.casino.bets[0];
+    const tabBtn = (id, label) => `<button class="${game === id ? 'on' : ''}" data-act="casgame" data-arg="${id}">${label}</button>`;
+    const bets = `<div class="cas__bets">${CONFIG.casino.bets.map((b) => `<button class="${b === bet ? 'on' : ''}" data-act="casbet" data-num="${b}" ${casino.canBet(s, b) ? '' : 'disabled'}>$${b}</button>`).join('')}</div>`;
+    const card = (c) => `<span class="cas__card ${c.s === '♥' || c.s === '♦' ? 'red' : ''}">${c.r}${c.s}</span>`;
+    let table = '';
+    if (game === 'slots') {
+      const r = this.casLast?.reels || ['seven', 'seven', 'seven'];
+      const glyph = (id) => casino.REELS.find((x) => x.id === id).glyph;
+      table = `<div class="cas__slots">${r.map((id) => `<span class="cas__reel">${glyph(id)}</span>`).join('')}</div>
+        <div class="cas__msg">${this.casLast ? (this.casLast.payout ? `WIN $${this.casLast.payout}` : 'Nothing. Spin again? (That is the app talking.)') : 'Three of a kind pays. Two cherries pays double.'}</div>
+        ${bets}<button class="btn btn--primary cas__go" data-act="casspin" ${casino.canBet(s, bet) ? '' : 'disabled'}>SPIN · $${bet}</button>
+        <div class="tiny mono-dim">💰×180 · 7×70 · BAR×30 · 🔔×15 · 🍋×8 · 🍒×6</div>`;
+    } else if (game === 'blackjack') {
+      const t = this.bj;
+      if (!t || t.done) {
+        table = `${t ? `<div class="cas__hand"><em>Dealer ${casino.handValue(t.dealer)}</em>${t.dealer.map(card).join('')}</div>
+          <div class="cas__hand"><em>You ${casino.handValue(t.player)}</em>${t.player.map(card).join('')}</div>
+          <div class="cas__msg">${T(t.result)}</div>` : '<div class="cas__msg">Dealer stands on 17. Blackjack pays 3 to 2.</div>'}
+          ${bets}<button class="btn btn--primary cas__go" data-act="casdeal" ${casino.canBet(s, bet) ? '' : 'disabled'}>DEAL · $${bet}</button>`;
+      } else {
+        table = `<div class="cas__hand"><em>Dealer</em>${card(t.dealer[0])}<span class="cas__card cas__card--back">?</span></div>
+          <div class="cas__hand"><em>You ${casino.handValue(t.player)}</em>${t.player.map(card).join('')}</div>
+          <div class="row row--wrap">
+            <button class="btn btn--primary" data-act="cashit">HIT</button>
+            <button class="btn" data-act="casstand">STAND</button>
+            ${t.player.length === 2 ? `<button class="btn" data-act="casdouble" ${s.money >= t.bet ? '' : 'disabled'}>DOUBLE</button>` : ''}
+          </div>`;
+      }
+    } else {
+      const l = this.rlLast;
+      table = `<div class="cas__wheel ${l ? `cas__wheel--${l.landed}` : ''}">${l ? l.pocket : '?'}</div>
+        <div class="cas__msg">${l ? (l.payout ? `${l.landed.toUpperCase()}. WIN $${l.payout}` : `${l.landed.toUpperCase()}. The house thanks you.`) : 'Red or black pays even money. Green pays 17 to 1.'}</div>
+        ${bets}<div class="row row--wrap">
+          <button class="btn cas__red" data-act="casrl" data-arg="red" ${casino.canBet(s, bet) ? '' : 'disabled'}>RED</button>
+          <button class="btn cas__black" data-act="casrl" data-arg="black" ${casino.canBet(s, bet) ? '' : 'disabled'}>BLACK</button>
+          <button class="btn cas__green" data-act="casrl" data-arg="green" ${casino.canBet(s, bet) ? '' : 'disabled'}>GREEN</button>
+        </div>`;
+    }
+    const net = cs.won - cs.wagered;
+    return `${this.header('HardLuck Bet', money(s.money))}
+      ${cs.bonusUsed ? '' : `<div class="card cas__promo">NEW PLAYER BONUS · your first bet up to $${CONFIG.casino.freeBet} is free</div>`}
+      <div class="feedtabs feedtabs--cas">${tabBtn('slots', 'SLOTS')}${tabBtn('blackjack', 'BLACKJACK')}${tabBtn('roulette', 'ROULETTE')}</div>
+      <div class="cas__table">${table}</div>
+      <div class="tiny mono-dim">Lifetime: wagered ${money(cs.wagered)} · ${net >= 0 ? 'up' : 'down'} ${money(Math.abs(net))}${cs.bigWin ? ` · best win ${money(cs.bigWin)}` : ''}. Gamble responsibly. (We have to say that. We do not have to mean it.)</div>
+      ${this.footer()}`;
+  }
+
   /* ------------------------------ NEXTSTOOP ------------------------------ */
 
   /** The neighbourhood app: who was seen where, today's board, and the history of the block. */
@@ -1259,6 +1313,14 @@ export class Phone {
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
       hookup(arg) { this.close(); dating.hookup(g, arg); },
       blocktab(arg) { this.blockTab = arg; },
+      casgame(arg) { this.casinoGame = arg; },
+      casbet(arg, num) { this.casinoBet = num; },
+      casspin() { this.casLast = casino.spin(g, this.casinoBet || CONFIG.casino.bets[0]) || this.casLast; },
+      casdeal() { this.bj = casino.deal(g, this.casinoBet || CONFIG.casino.bets[0]) || this.bj; },
+      cashit() { casino.hit(g, this.bj); },
+      casstand() { casino.stand(g, this.bj); },
+      casdouble() { casino.double(g, this.bj); },
+      casrl(arg) { this.rlLast = casino.roulette(g, this.casinoBet || CONFIG.casino.bets[0], arg) || this.rlLast; },
       openlove() { this.app = 'social'; this.msgId = null; this.feedTab = 'love'; },
       openhearts() { this.app = 'social'; this.msgId = null; this.feedTab = 'hearts'; this.heartNote = ''; },
       heart(arg) {
@@ -1312,6 +1374,7 @@ export class Phone {
       rolo: this.roloView,
       dates: this.datesView,
       block: this.blockView,
+      casino: this.casinoView,
       clinic: this.clinicView,
     };
   }

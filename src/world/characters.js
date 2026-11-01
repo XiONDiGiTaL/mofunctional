@@ -469,6 +469,13 @@ const CAST = {
   melanie: { height: 1.68, build: 1.0, shirt: 0x141416, pants: 0x24252b, tank: true },
   diana: { height: 1.72, build: 1.0, shirt: 0x8c8e92, pants: 0x3a4a66 },
   nurse: { height: 1.70, build: 1.0, shirt: 0xdfe6e0, pants: 0x5a6a72, longSleeves: true },
+  // 1104 Kestrel: the arguing couple on two, Squeak in the hallway on four; Ashby Avenue
+  tenant_m: { height: 1.76, build: 1.12, shirt: 0xe0dcd0, pants: 0x3a3a44 },
+  tenant_f: { height: 1.64, build: 1.02, shirt: 0x7a3a6a, pants: 0x2a2c34, longSleeves: true },
+  squeak: { height: 1.7, build: 0.86, shirt: 0x3a4a2a, pants: 0x2a2a30, longSleeves: true },
+  waiter: { height: 1.78, build: 0.98, shirt: 0xf2efe6, pants: 0x141418, longSleeves: true },
+  passer_m: { height: 1.8, build: 1.04, shirt: 0x2a4a7a, pants: 0x3a3a40, longSleeves: true },
+  passer_m2: { height: 1.74, build: 0.98, shirt: 0x8a7a5a, pants: 0x4a4436, longSleeves: true },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
 };

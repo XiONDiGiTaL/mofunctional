@@ -19,6 +19,7 @@ import * as romance from './romance.js';
 import * as clinic from './clinic.js';
 import * as life from './life.js';
 import { STRANGERS } from '../core/strangers.js';
+import * as sister from './sister.js';
 
 /** Senders that are people, with the face the UI should draw. */
 const PEOPLE = {
@@ -150,6 +151,14 @@ export function replyOptions(message, s) {
     return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect }));
   }
   const id = identityFor(message?.from);
+  // Nia asking to come over: yes or no, once
+  if (message?.kind === 'nia_visit') {
+    if (sister.sisterState(s).status !== 'asked' || message.replies?.length) return [];
+    return [
+      { act: 'nia_yes', label: 'Yeah. Come by. I\'ll be home.', category: 'family', sender: id.name },
+      { act: 'nia_no', label: 'Not this week.', category: 'family', sender: id.name },
+    ];
+  }
   const base = SETS[id.category] || SETS.unknown;
   return base.filter((opt) => {
     if (id.category === 'landlord' && opt.act === 'pay') return billInfo({ state: s }, 'rent').owedCycles > 0;
@@ -220,9 +229,16 @@ function applyAct(g, message, opt) {
       life.lifeState(s).counselor = true;
       followUp(g, message.from, 'thank you', '“That is the first true thing you have said to me in a year. I am not going to make it a whole thing. I love you. Eat something.”');
       return;
+    case 'nia_yes':
+      sister.answerVisit(g, true);
+      return;
+    case 'nia_no':
+      sister.answerVisit(g, false);
+      return;
     case 'decline':
       bump(s, 'morale', -4);
       bump(s, 'stress', 3);
+      if (id.name === 'Nia') sister.bumpBond(s, -1);
       followUp(g, message.from, 'ok', '“Alright. I am here. That is all I was going to say.”');
       return;
 
