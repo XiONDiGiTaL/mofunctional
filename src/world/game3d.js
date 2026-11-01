@@ -867,7 +867,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // a lock flag with no animation behind it is an orphan (it can only come from an
     // interrupted path): release it rather than strand the player
     if (s.flags.consuming && !this.substance?.active) s.flags.consuming = false;
-    const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play'
+    const canMove = !g.uiBusy
       && !this.eating?.active && !this.handoff?.active && !this.substance?.active && !this.affection?.active
       && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming && !this.crossing;
 

@@ -88,7 +88,7 @@ export function showShopMenu(g, { shop, items, portrait, buy }) {
   refresh();
   open = { wrap, onKey };
   g.audio?.sfx?.('ui');
-  g.overlayOpen = true;
+  g.setOverlay('shop', true);
   g.onModalOpenChange?.(true);
 }
 
@@ -97,6 +97,6 @@ export function closeShopMenu(g) {
   window.removeEventListener('keydown', open.onKey, true);
   open.wrap.remove();
   open = null;
-  g.overlayOpen = false;
+  g.setOverlay('shop', false);
   g.onModalOpenChange?.(false);
 }

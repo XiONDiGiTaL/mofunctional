@@ -482,6 +482,10 @@ const CAST = {
   cop: { height: 1.82, build: 1.1, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
   cop2: { height: 1.76, build: 1.04, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
   inmate: { height: 1.76, build: 1.0, shirt: 0xd86a1a, pants: 0xd86a1a },
+  // the man in the newsstand: cardigan over a collared shirt, has worn the same cap since 1987
+  newsman: { height: 1.72, build: 1.1, shirt: 0x6a5a3a, pants: 0x3a3630, longSleeves: true },
+  // the kid who flies down the sidewalk on a red bike
+  kid: { height: 1.32, build: 0.84, shirt: 0xe0c84a, pants: 0x2a4a8a },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
 };

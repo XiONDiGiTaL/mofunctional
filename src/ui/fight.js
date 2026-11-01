@@ -30,7 +30,7 @@ export class FightMeter {
       <div class="fightm__msg tiny">Hit him in the green.</div>
     </div>`;
     this.root.appendChild(this.el);
-    g.overlayOpen = true;
+    g.setOverlay('fight', true);
     const mark = this.el.querySelector('.fightm__mark');
     const msg = this.el.querySelector('.fightm__msg');
     const hpEl = this.el.querySelector('[data-hp]');
@@ -78,6 +78,6 @@ export class FightMeter {
     window.removeEventListener('keydown', this.onKey, true);
     this.el.remove();
     this.el = null;
-    this.g.overlayOpen = false;
+    this.g.setOverlay('fight', false);
   }
 }

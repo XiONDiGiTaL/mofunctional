@@ -556,6 +556,59 @@ export function buildAvenue(g) {
   group.add(box(0.28, 0.16, 0.14, retroMaterial('av_radio', { color: 0x2a2a2e }), [2.02, 1.16, -3.2]));
   group.add(box(0.05, 0.18, 0.02, NEWS.brass, [3.62, 1.19, -2.96]));
   group.add(plane(0.34, 0.16, { name: 'av_nochange', map: signTex('signNoChange', [{ text: 'NO CHANGE', color: '#2a2a2a', size: 9 }, { text: 'EXACT PLEASE', color: '#5a5a5a', size: 5 }], { w: 64, h: 32, bg: '#e8e0c0', border: '#a89870' }), unlit: true }, [3.62, 1.30, -2.96]));
+  // the parts that make it a stall someone has run for years rather than a green cube
+  // a roll-up shutter, rolled, in its housing under the roof lip
+  const shutter = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 2.3, 8), retroMaterial('av_shutter', { color: 0x8a8e88 }));
+  shutter.rotation.z = Math.PI / 2;
+  shutter.position.set(3.0, 1.98, -2.62);
+  group.add(shutter);
+  group.add(box(2.36, 0.14, 0.05, NEWS.trim, [3.0, 2.04, -2.5]));
+  // rounded corner posts
+  for (const x of [1.88, 4.12]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.24, 8), NEWS.trim);
+    post.position.set(x, 1.12, -2.86);
+    group.add(post);
+  }
+  // a wire under the awning with magazines pegged to it, turning slightly in the breeze
+  group.add(box(2.2, 0.012, 0.012, NEWS.brass, [3.0, 1.9, -2.62]));
+  [0xd8b93a, 0x2a4a8a, 0xc8322a, 0x8a2a8a, 0x2a7a5a].forEach((c, i) => {
+    const mag = box(0.22, 0.29, 0.015, retroMaterial(`av_hang${i}`, { color: c }), [2.2 + i * 0.4, 1.73, -2.6]);
+    mag.rotation.y = (i % 2 ? 0.15 : -0.12);
+    group.add(mag);
+    group.add(box(0.16, 0.05, 0.017, NEWS.paper, [2.2 + i * 0.4, 1.81, -2.6]));
+    group.add(box(0.03, 0.05, 0.03, NEWS.brass, [2.2 + i * 0.4, 1.88, -2.61]));
+  });
+  // racks on the outside walls: three tilted shelves of covers each side
+  for (const sx of [-1, 1]) {
+    const wx = 3.0 + sx * 1.2;
+    for (let r = 0; r < 3; r++) {
+      group.add(box(0.06, 0.03, 0.9, NEWS.trim, [wx + sx * 0.1, 0.62 + r * 0.42, -3.5]));
+      for (let k = 0; k < 3; k++) {
+        const cover = box(0.025, 0.3, 0.24, retroMaterial(`av_side${(r * 3 + k + (sx > 0 ? 4 : 0)) % 6}`, { color: COVERS[(r * 3 + k + (sx > 0 ? 2 : 0)) % 6] }), [wx + sx * 0.14, 0.78 + r * 0.42, -3.82 + k * 0.3]);
+        cover.rotation.z = sx * 0.22;
+        group.add(cover);
+      }
+    }
+  }
+  // a candy rack on the end of the counter: three tiers of bright little boxes
+  for (let tier = 0; tier < 3; tier++) {
+    group.add(box(0.42, 0.03, 0.14, NEWS.trim, [2.0 + 0.22, 1.14 + tier * 0.11, -2.92 - tier * 0.09]));
+    for (let k = 0; k < 4; k++) group.add(box(0.08, 0.07, 0.06, retroMaterial(`av_candy${(tier + k) % 4}`, { color: [0xe8463a, 0xf2c03a, 0x3f8f3a, 0x2f6fd6][(tier + k) % 4] }), [2.07 + k * 0.1, 1.19 + tier * 0.11, -2.92 - tier * 0.09]));
+  }
+  // the morning delivery: two bundles of papers tied with twine on the pavement
+  const twine = retroMaterial('av_twine', { color: 0xc8a86a });
+  for (const [bx, bz, ry, h] of [[4.75, -2.25, 0.2, 0.28], [4.8, -2.25, -0.15, 0.56]]) {
+    const bundle = new THREE.Group();
+    bundle.position.set(bx, 0, bz);
+    bundle.rotation.y = ry;
+    bundle.add(box(0.44, 0.26, 0.32, NEWS.paper2, [0, h - 0.13, 0]));
+    bundle.add(box(0.46, 0.02, 0.03, twine, [0, h - 0.13, 0]));
+    bundle.add(box(0.03, 0.27, 0.34, twine, [0, h - 0.13, 0]));
+    group.add(bundle);
+  }
+  // the price card in the corner of the glass and a fluorescent tube under the roof
+  group.add(box(1.9, 0.04, 0.04, retroMaterial('av_kiosk_tube', { color: 0xf4fbff, emissive: 1.2, unlit: true }), [3.0, 2.14, -3.9]));
+
   // the bus stop and its shelter
   group.add(box(0.12, 2.6, 0.12, M.metal, [12.5, 1.3, 0.6]));
   group.add(box(1.2, 0.5, 0.08, retroMaterial('av_bussign', { color: 0x2a4a6a, emissive: 0.15 }), [12.5, 2.5, 0.6]));
@@ -577,7 +630,7 @@ export function buildAvenue(g) {
     { kind: 'cop2', x: -11.0, z: -5.2, rot: -0.4, still: true },
     // the paper seller: a person behind the counter, not a voice inside a box. `talk` points at
     // the newsstand prompt, so the prompt follows him and the papers are bought from him.
-    { kind: 'passer_m', x: 3.0, z: -3.55, rot: Math.PI, still: true, talk: 'av_news', act: 'talk' },
+    { kind: 'newsman', x: 3.0, z: -3.55, rot: 0, still: true, talk: 'av_news', act: 'talk' },
   ];
   const s = g.state;
   const interactables = [

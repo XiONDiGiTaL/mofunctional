@@ -287,7 +287,7 @@ export function toggleMap(g) {
   window.addEventListener('keydown', onKey, true);
   root.appendChild(wrap);
   overlay = { wrap, onKey };
-  g.overlayOpen = true;
+  g.setOverlay('map', true);
   g.onModalOpenChange?.(true);
   g.audio?.sfx?.('ui');
 }
@@ -311,7 +311,7 @@ export function closeMap(g) {
   window.removeEventListener('keydown', overlay.onKey, true);
   overlay.wrap.remove();
   overlay = null;
-  g.overlayOpen = false;
+  g.setOverlay('map', false);
   g.onModalOpenChange?.(false);
   g.audio?.sfx?.('ui-back');
 }

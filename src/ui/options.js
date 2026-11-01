@@ -93,7 +93,7 @@ export function showOptions(g) {
   root.appendChild(wrap);
   open = { wrap, onKey };
   g.paused = true;
-  g.overlayOpen = true;
+  g.setOverlay('options', true);
   g.onModalOpenChange?.(true);
 }
 
@@ -103,7 +103,7 @@ export function closeOptions(g) {
   open.wrap.remove();
   open = null;
   g.paused = false;
-  g.overlayOpen = false;
+  g.setOverlay('options', false);
   g.onModalOpenChange?.(false);
   g.input?.clear?.();
 }

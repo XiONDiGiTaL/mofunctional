@@ -77,6 +77,11 @@ class Game {
     this.fadeEl.className = 'fadeout';
     this.uiEl.appendChild(this.fadeEl);
     this.debugOpen = false;
+    // full-screen UI that is not the Modal (shop board, fridge, map, fight, options), by name, so
+    // closing one never clears another
+    this.overlays = new Set();
+    // things the world wanted to show while the player was busy in a menu; they wait their turn
+    this.deferred = [];
     // ~ and the password: a testing tool, hidden in plain sight
     installDebugMenu(this);
 
@@ -103,7 +108,22 @@ class Game {
   // the laptop is the phone's engine in another body: either one being open pauses the world
   get phoneOpen() { return this.phone.isOpen || !!this.laptop?.isOpen; }
   // the shop board and the fridge door are modal too, they just are not the Modal
-  get modalOpen() { return this.modal.isOpen || !!this.overlayOpen; }
+  get modalOpen() { return this.modal.isOpen || this.overlayOpen; }
+  get overlayOpen() { return this.overlays.size > 0; }
+  setOverlay(name, on) { if (on) this.overlays.add(name); else this.overlays.delete(name); }
+  /** Anything on screen that the world must not talk over: a menu, the phone, a dialog, pause, debug. */
+  get uiBusy() { return this.mode !== 'play' || this.paused || this.debugOpen || this.phoneOpen || this.modalOpen; }
+
+  /**
+   * Background code (the world, the dealer) calls this before opening anything. While the player
+   * is in a menu it keeps the opener for later and says so; the loop runs it once the screen is
+   * clear. Player-initiated opens never pass through here as background.
+   */
+  holdForUI(fn) {
+    if (!this.inBackground || !this.uiBusy) return false;
+    if (this.deferred.length < 3) this.deferred.push(fn);
+    return true;
+  }
 
   /* ------------------------------ boot / audio ------------------------------ */
 
@@ -158,8 +178,13 @@ class Game {
     }
 
     if (this.mode === 'play') {
-      tickDealer(this);
-      this.world.update(dt, this);
+      this.inBackground = true;
+      try {
+        tickDealer(this);
+        this.world.update(dt, this);
+      } finally { this.inBackground = false; }
+      // one held-back event per frame, and only once nothing is on screen
+      if (this.deferred.length && !this.uiBusy) this.deferred.shift()();
       this.hud.update();
     } else if (this.mode === 'menu') {
       this.world.update(dt, this);
@@ -447,6 +472,7 @@ class Game {
   }
 
   openModal(opts) {
+    if (this.holdForUI(() => this.openModal(opts))) return;
     // sms: true renders the same choice list as a phone thread instead of a panel
     if (opts.sms) {
       this.threads.ask({ from: opts.from || 'KEV', text: opts.body || '', choices: opts.choices || [], subtitle: opts.subtitle });

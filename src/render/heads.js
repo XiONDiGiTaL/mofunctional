@@ -310,6 +310,16 @@ export const FACE_SPECS = {
     skin: '#b08060', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'crop',
     brow: '#141010', eye: '#3a2a1e', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#141010', age: 0.3,
   },
+  // the newsstand man: sixties, grey moustache, a dark flat cap
+  newsman: {
+    skin: '#c89a78', hair: '#3a3a40', hairLight: '#55555c', hairDark: '#222226', style: 'beanie',
+    brow: '#8a8a88', eye: '#3a2a1e', lips: '#8a5a48', lipsLight: '#a87262', beard: 'mustache', beardColor: '#b8b8b4', age: 0.85, browTilt: 0.08,
+  },
+  // the kid on the bike: round-faced, a red cap worn as the crown
+  kid: {
+    skin: '#8a5a3a', hair: '#c8322a', hairLight: '#e0524a', hairDark: '#8a1a14', style: 'beanie',
+    brow: '#1a120c', eye: '#2a1e16', lips: '#6a3e30', lipsLight: '#8a5644', age: 0, jaw: 0.9,
+  },
   // messages from a number nobody saved: no features to read, on purpose
   unknown: {
     skin: '#6a6f6c', hair: '#2a2e2c', hairLight: '#3e4340', hairDark: '#171a18', style: 'beanie',
@@ -575,6 +585,13 @@ function paintBeard(x, S, cx, noseY, mouthY, jaw) {
     x.quadraticCurveTo(cx + 24, ty(0.3), cx + 15, mouthY - 3);
     x.quadraticCurveTo(cx, noseY + 2, cx - 15, mouthY - 3);
     x.quadraticCurveTo(cx - 24, ty(0.3), cx - halfAt(0.4) + 8, top + 2);
+  } else if (S.beard === 'mustache') {
+    // a moustache alone: a thick brush between nose and lip, drooping at the corners
+    x.moveTo(cx - 17, mouthY + 2);
+    x.quadraticCurveTo(cx - 14, noseY + 3, cx, noseY + 4);
+    x.quadraticCurveTo(cx + 14, noseY + 3, cx + 17, mouthY + 2);
+    x.quadraticCurveTo(cx + 9, mouthY - 3, cx, mouthY - 2);
+    x.quadraticCurveTo(cx - 9, mouthY - 3, cx - 17, mouthY + 2);
   } else {
     // goatee
     x.moveTo(cx - 15, mouthY + 1);

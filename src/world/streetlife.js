@@ -14,6 +14,7 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box } from '../render/retro.js';
+import { createNPC } from './characters.js';
 import { dayOf, pick } from '../core/util.js';
 import { bump, removeItem, inventoryList } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
@@ -186,29 +187,72 @@ function mosaicTexture() {
 
 /* ------------------------------------------------------------------ the dog */
 
+/**
+ * Meatball: built from faceted solids like the people are, not from boxes. A barrel chest that
+ * tapers to the hips, a neck, a domed skull with a tapered muzzle and floppy ears, legs in two
+ * segments with paws, a whip of a tail, a white blaze down the chest and a frayed red collar
+ * somebody once put on him. Same pivots as before (head, tail, four legs), so the animation and
+ * the follow logic did not change.
+ */
 function buildDog() {
   const g = new THREE.Group();
-  const fur = retroMaterial('dog_fur', { color: 0x8a6a42 });
-  const dark = retroMaterial('dog_dark', { color: 0x4a3622 });
-  const nose = retroMaterial('dog_nose', { color: 0x111111 });
-  g.add(box(0.62, 0.28, 0.26, fur, [0, 0.42, 0]));
+  const fur = retroMaterial('dog_fur', { color: 0x9a7448 });
+  const dark = retroMaterial('dog_dark', { color: 0x4f3a24 });
+  const pale = retroMaterial('dog_pale', { color: 0xe8dcc4 });
+  const nose = retroMaterial('dog_nose', { color: 0x141110 });
+  const collar = retroMaterial('dog_collar', { color: 0xa8241e });
+  const eyeMat = retroMaterial('dog_eye', { color: 0x1a120a, ambient: 1 });
+  const mesh = (geo, mat, p = [0, 0, 0], r = [0, 0, 0], s = [1, 1, 1]) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(...p); m.rotation.set(...r); m.scale.set(...s);
+    return m;
+  };
+  // a tapered cylinder lying along x
+  const along = (r1, r2, len, mat, p, sides = 7) => mesh(new THREE.CylinderGeometry(r2, r1, len, sides), mat, p, [0, 0, -Math.PI / 2]);
+
+  // body: chest, belly, hips, with a darker saddle over the back
+  g.add(mesh(new THREE.IcosahedronGeometry(0.17, 1), fur, [0.17, 0.46, 0], [0, 0, 0], [1.15, 1.05, 0.95]));   // chest
+  g.add(along(0.15, 0.125, 0.42, fur, [-0.02, 0.45, 0]));                                                     // barrel
+  g.add(mesh(new THREE.IcosahedronGeometry(0.135, 1), fur, [-0.22, 0.46, 0], [0, 0, 0], [1.1, 1, 1]));       // hips
+  g.add(mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.4, 7, 1, false, Math.PI * 0.6, Math.PI * 0.8), dark, [-0.02, 0.47, 0], [0, 0, -Math.PI / 2], [1, 1.12, 1.12])); // saddle
+  g.add(mesh(new THREE.IcosahedronGeometry(0.1, 0), pale, [0.27, 0.4, 0], [0, 0, 0], [0.7, 1.2, 0.85]));     // white blaze
+  // neck and collar
+  g.add(mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.2, 7), fur, [0.3, 0.6, 0], [0, 0, -0.75]));
+  g.add(mesh(new THREE.TorusGeometry(0.085, 0.018, 4, 9), collar, [0.32, 0.6, 0], [0, Math.PI / 2, 0.8]));
+  g.add(mesh(new THREE.OctahedronGeometry(0.022, 0), retroMaterial('dog_tag', { color: 0xd8b04a, ambient: 1 }), [0.38, 0.54, 0]));
+
   const head = new THREE.Group();
-  head.position.set(0.36, 0.58, 0);
-  head.add(box(0.22, 0.2, 0.2, fur, [0, 0, 0]));
-  head.add(box(0.14, 0.1, 0.13, dark, [0.14, -0.04, 0]));
-  head.add(box(0.04, 0.04, 0.06, nose, [0.22, -0.02, 0]));
-  for (const z of [-0.07, 0.07]) head.add(box(0.06, 0.1, 0.04, dark, [-0.04, 0.12, z]));
-  for (const z of [-0.06, 0.06]) head.add(box(0.03, 0.03, 0.02, nose, [0.1, 0.04, z * 1.2]));
+  head.position.set(0.38, 0.68, 0);
+  head.add(mesh(new THREE.IcosahedronGeometry(0.105, 1), fur, [0, 0.02, 0], [0, 0, 0], [1.05, 0.95, 0.95]));  // skull
+  head.add(along(0.07, 0.045, 0.14, fur, [0.13, -0.02, 0], 6));                                               // muzzle
+  head.add(along(0.05, 0.035, 0.1, pale, [0.15, -0.045, 0], 6));                                              // pale chin
+  head.add(mesh(new THREE.IcosahedronGeometry(0.026, 0), nose, [0.205, -0.005, 0]));
+  for (const z of [-0.045, 0.045]) {
+    head.add(mesh(new THREE.IcosahedronGeometry(0.016, 0), eyeMat, [0.075, 0.045, z]));
+    // ears: soft flaps that fold over and hang
+    const ear = mesh(new THREE.ConeGeometry(0.045, 0.13, 4), dark, [-0.015, 0.02, z * 2.15], [Math.PI - Math.sign(z) * 0.45, 0, 0.15], [1, 1, 0.45]);
+    head.add(ear);
+  }
   g.add(head);
+
   const tail = new THREE.Group();
-  tail.position.set(-0.32, 0.5, 0);
-  tail.add(box(0.2, 0.05, 0.05, dark, [-0.1, 0.04, 0]));
+  tail.position.set(-0.33, 0.52, 0);
+  // a cone with its base at the rump, tipped up and back, and a pale tip on the end of it
+  const tailGeo = new THREE.ConeGeometry(0.035, 0.26, 5).translate(0, 0.13, 0);
+  const tipGeo = new THREE.ConeGeometry(0.016, 0.07, 5).translate(0, 0.225, 0);
+  tail.add(mesh(tailGeo, fur, [0, 0, 0], [0, 0, Math.PI * 0.3]));
+  tail.add(mesh(tipGeo, pale, [0, 0, 0], [0, 0, Math.PI * 0.3]));
   g.add(tail);
+
   const legs = [];
-  for (const [x, z] of [[0.22, 0.09], [0.22, -0.09], [-0.22, 0.09], [-0.22, -0.09]]) {
+  for (const [x, z] of [[0.2, 0.085], [0.2, -0.085], [-0.22, 0.085], [-0.22, -0.085]]) {
     const pivot = new THREE.Group();
-    pivot.position.set(x, 0.32, z);
-    pivot.add(box(0.07, 0.32, 0.07, x > 0 ? fur : dark, [0, -0.16, 0]));
+    pivot.position.set(x, 0.4, z);
+    const front = x > 0;
+    // upper leg (shoulder or haunch), lower leg, and a paw that sits flat
+    pivot.add(mesh(new THREE.CylinderGeometry(0.045, front ? 0.06 : 0.075, 0.2, 6), fur, [front ? 0 : -0.02, -0.08, 0], [0, 0, front ? 0 : -0.25]));
+    pivot.add(mesh(new THREE.CylinderGeometry(0.03, 0.038, 0.2, 6), front ? fur : dark, [0, -0.25, 0]));
+    pivot.add(mesh(new THREE.IcosahedronGeometry(0.04, 0), front ? pale : dark, [0.025, -0.36, 0], [0, 0, 0], [1.4, 0.6, 1]));
     g.add(pivot);
     legs.push(pivot);
   }
@@ -492,49 +536,25 @@ export class StreetLife {
     for (const z of [-0.09, 0.09]) crank.add(box(0.06, 0.022, 0.10, m.seat, [0.15, 0, z]));
     root.add(crank);
 
-    // ---- the child, sitting where a child sits: saddle, bars, pedals
-    const rider = new THREE.Group();
-    rider.position.set(-0.10, 0.80, 0);
-    root.add(rider);
-    const torso = new THREE.Group();
-    torso.position.set(0, 0.06, 0);
-    torso.rotation.z = -0.34;
-    rider.add(torso);
-    torso.add(box(0.26, 0.34, 0.21, m.shirt, [0.02, 0.14, 0]));
-    torso.add(box(0.27, 0.05, 0.22, m.shorts, [0.0, -0.03, 0]));   // waistband
-    const head = new THREE.Group();
-    head.position.set(0.06, 0.34, 0);
-    torso.add(head);
-    head.add(box(0.10, 0.06, 0.09, m.skin, [0.0, 0.0, 0]));        // neck
-    head.add(box(0.175, 0.185, 0.175, m.skin, [0.01, 0.13, 0]));   // skull
-    head.add(box(0.185, 0.055, 0.185, m.cap, [0.01, 0.23, 0]));    // cap
-    head.add(box(0.11, 0.022, 0.16, m.cap, [0.13, 0.205, 0]));     // brim
-    head.add(box(0.028, 0.03, 0.03, m.skin, [0.10, 0.115, 0]));    // nose
-    // arms: shoulder to grip, one per side, with a short sleeve at the top
-    for (const z of [-0.115, 0.115]) {
-      const arm = new THREE.Group();
-      arm.position.set(0.06, 0.26, z);
-      arm.rotation.z = -1.02;
-      arm.add(box(0.075, 0.20, 0.075, m.shirt, [0, 0.09, 0]));
-      arm.add(box(0.062, 0.20, 0.062, m.skin, [0, -0.11, 0]));
-      arm.add(box(0.07, 0.07, 0.07, m.skin, [0, -0.22, 0]));
-      torso.add(arm);
+    // ---- the child: the same body, head and face as everybody else on the block, child-sized,
+    // sat on the saddle with his hands on the grips and his feet on the pedals
+    const kid = createNPC('kid');
+    kid.root.children[0].visible = false;               // his shadow is the bike's
+    kid.root.position.set(-0.19, 0.2, 0);
+    kid.root.rotation.y = Math.PI / 2;                  // the rig faces +z, the bike rides +x
+    root.add(kid.root);
+    // a cap: the crown is the beanie hair style in red, this is the brim
+    kid.head.add(box(0.15, 0.018, 0.12, m.cap, [0, 0.235 * kid.k, 0.12 * kid.k]));
+    kid.torso.rotation.x = 0.36;                        // leaning into the bars
+    kid.head.rotation.x = -0.3;                         // eyes up the road
+    for (const arm of [kid.armL, kid.armR]) {
+      arm.pivot.rotation.x = -1.05;
+      arm.pivot.rotation.z = arm === kid.armL ? 0.18 : -0.18;
+      arm.elbow.rotation.x = -0.25;
     }
-    // legs: a hip pivot, a thigh, a knee pivot and a shin down to the pedal
-    const legs = [];
-    for (const z of [-0.085, 0.085]) {
-      const hip = new THREE.Group();
-      hip.position.set(-0.02, -0.02, z);
-      hip.add(box(0.11, 0.26, 0.11, m.shorts, [0.01, -0.13, 0]));
-      const knee = new THREE.Group();
-      knee.position.set(0.01, -0.26, 0);
-      knee.add(box(0.085, 0.24, 0.085, m.skin, [0, -0.12, 0]));
-      knee.add(box(0.09, 0.07, 0.09, m.sock, [0, -0.25, 0]));
-      knee.add(box(0.13, 0.055, 0.10, m.shoe, [0.02, -0.29, 0]));
-      hip.add(knee);
-      rider.add(hip);
-      legs.push({ hip, knee });
-    }
+    const legs = [kid.legL, kid.legR];
+    const torso = kid.torso;
+    const head = kid.head;
 
     const dir = Math.random() < 0.5 ? 1 : -1;
     root.position.set(dir > 0 ? -28 : 34, 0, -1.6);
@@ -555,12 +575,14 @@ export class StreetLife {
     b.crank.rotation.z -= roll * 0.42;
     const a = b.crank.rotation.z;
     // knees follow the pedals, one leg out of phase with the other
-    b.legs[0].hip.rotation.z = Math.sin(a) * 0.34;
-    b.legs[0].knee.rotation.z = -0.55 - Math.cos(a) * 0.42;
-    b.legs[1].hip.rotation.z = Math.sin(a + Math.PI) * 0.34;
-    b.legs[1].knee.rotation.z = -0.55 - Math.cos(a + Math.PI) * 0.42;
+    b.legs.forEach((leg, i) => {
+      const p = a + i * Math.PI;
+      leg.pivot.rotation.x = -1.0 + Math.sin(p) * 0.34;
+      leg.knee.rotation.x = 1.25 + Math.cos(p) * 0.42;
+      leg.ankle.rotation.x = -0.25;
+    });
     // weight shifting over the pedals, and a look at whatever he is passing
-    b.torso.rotation.z = -0.34 + Math.sin(a * 2) * 0.022;
+    b.torso.rotation.x = 0.36 + Math.sin(a * 2) * 0.022;
     b.head.rotation.y = Math.sin(b.t * 0.8) * 0.14;
     b.root.position.y = Math.abs(Math.sin(a)) * 0.012;
     if (Math.abs(b.root.position.x) > 36) {

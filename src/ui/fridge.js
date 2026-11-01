@@ -100,7 +100,7 @@ export function showFridge(g) {
   root.appendChild(wrap);
   open = { wrap, onKey };
   g.audio?.sfx?.('door');
-  g.overlayOpen = true;
+  g.setOverlay('fridge', true);
   g.onModalOpenChange?.(true);
 }
 
@@ -109,6 +109,6 @@ export function closeFridge(g) {
   window.removeEventListener('keydown', open.onKey, true);
   open.wrap.remove();
   open = null;
-  g.overlayOpen = false;
+  g.setOverlay('fridge', false);
   g.onModalOpenChange?.(false);
 }

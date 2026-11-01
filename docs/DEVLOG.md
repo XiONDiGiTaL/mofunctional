@@ -37,7 +37,21 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 - `ui/options.js` from the pause menu: music / SFX, camera distance/height + reset, controls table
   with gamepad column. `input.js` BINDINGS, keysFor, rebind (swaps), resetBindings;
   `settings.keys`; V / R3 reset the camera (`world.resetCamera`); HUD prompt shows bound keys.
-- 89 checks.
+- One screen at a time: `g.uiBusy` (pause, debug, phone/laptop, Modal, any overlay); overlays are
+  a named set (`g.setOverlay(name, on)`) so closing one never clears another. `tickDealer` and
+  `world.update` run as background (`g.inBackground`); `openModal` from background while busy goes
+  to `g.deferred` (max 3) and opens one per frame once the screen is clear. World `canMove` is
+  `!g.uiBusy`, so muggings, cop stops and street events also wait.
+- `ui/icons.js` redrawn: 64-unit low-poly solids (box, can, band, cup, roll) with lit/mid/dark
+  faces, outline and ground shadow; every CONFIG item has its own art (`ICON_IDS`, tested). Item
+  tiles are green reference-sheet cards.
+- Kid on the bike is a `createNPC('kid')` rig (face texture, red cap) posed on the saddle and
+  pedalling; Meatball rebuilt from faceted solids; the newsstand gets a vendor (`newsman`, moustache
+  beard style), a rolled shutter, corner posts, hanging magazines, side racks, a candy rack, tied
+  bundles and a tube light.
+- Smoking (`eating.js` style 'smoke'): two drags, the hand comes away between them, ember wisps
+  while held and a billboarded exhale plume from the mouth after each drag.
+- 90 checks.
 
 ### Dee's Wash & Fold
 

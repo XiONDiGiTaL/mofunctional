@@ -362,8 +362,9 @@
 /* ------------------------------------------------------------------ item art */
 .itemicon {
   display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px;
-  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .16), rgba(255, 255, 255, .03));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+  /* the reference-sheet card: a lit green panel with a pale rim, so the dark outlines read */
+  background: radial-gradient(circle at 50% 38%, #4e7a58, #23412c 72%);
+  box-shadow: inset 0 0 0 1px rgba(170, 230, 170, .35), 0 1px 0 rgba(0, 0, 0, .4);
 }
 .itemicon svg { width: 80%; height: 80%; }
 
@@ -446,7 +447,7 @@
 .fridge__col--cold { background: linear-gradient(180deg, rgba(214, 238, 255, .9), rgba(240, 248, 255, .8)); box-shadow: inset 0 0 0 1px rgba(58, 124, 165, .25), inset 0 12px 24px -16px rgba(58, 124, 165, .5); }
 .fridge__col h3 { margin: 0 0 2px; font-family: var(--ui); font-weight: 700; font-size: 10px; letter-spacing: .24em; text-transform: uppercase; color: #3a5566; }
 .fridge__item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: #fff; box-shadow: 0 6px 14px -10px rgba(0, 0, 0, .5); }
-.fridge__item .itemicon { background: #f1f4f6; }
+.fridge__item .itemicon { background: radial-gradient(circle at 50% 38%, #f4f7f9, #cfd8de 75%); }
 .fridge__meta { flex: 1; min-width: 0; font-family: var(--ui); }
 .fridge__meta b { display: block; font-size: 11.5px; }
 .fridge__meta em { font-style: normal; color: #3a7ca5; }

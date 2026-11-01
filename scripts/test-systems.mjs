@@ -14,6 +14,7 @@ import { buildGrid, findPath } from '../src/world/pathing.js';
 import { openAt, closedReason } from '../src/world/hours.js';
 import { todayItems, wouldMiss } from '../src/ui/today.js';
 import { groupOf } from '../src/ui/notify.js';
+import { ICON_IDS, itemIcon } from '../src/ui/icons.js';
 import { moveFood, fridgeCount } from '../src/systems/needs.js';
 import { BINDINGS, keysFor, rebind, resetBindings } from '../src/core/input.js';
 import { saveAge, slotLine } from '../src/core/save.js';
@@ -1563,6 +1564,13 @@ check('relations: affection moves and trust shifts are reported, trust as words 
   eq(ch.some((c) => /affection \+10/.test(c.text)), true, 'affection');
   const h = ch.find((c) => c.who === 'Habib');
   eq(!!h && /warmer/.test(h.text) && !/\d/.test(h.text.replace(/\d+ days/, '')), true, 'trust in words');
+  return true;
+});
+
+check('icons: every item has its own art, and every icon is a well-formed svg', () => {
+  const missing = Object.keys(CONFIG.items).filter((id) => !ICON_IDS.includes(id));
+  eq(missing.join(','), '', 'items without art');
+  for (const id of ICON_IDS) eq(/^<span class="itemicon[^"]*"><svg viewBox="0 0 64 64"[\s\S]*<\/svg><\/span>$/.test(itemIcon(id)), true, id);
   return true;
 });
 
