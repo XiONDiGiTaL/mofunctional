@@ -29,7 +29,7 @@ const mix = (a, b, t) => a + (b - a) * t;
 const STYLE = {
   vial: { prop: ['vial', 0xdfe9ff, 0.05, 0.12, 0.05], lift: 1.0, tip: 1.25, headBack: 0.35, beats: [0.7] },
   pill: { prop: ['pills', 0xf2f2f2, 0.05, 0.02, 0.05], lift: 1.0, tip: 0, headBack: 0.12, beats: [0.75, 1.05] },
-  pipe: { prop: ['pipe', 0xe4ece6, 0.011, 0.011, 0.14], lift: 1.0, tip: 0, headBack: 0.2, beats: [0.8, 1.9] },
+  pipe: { prop: ['pipe', 0xe4ece6, 0.018, 0.018, 0.14], lift: 1.0, tip: 0, headBack: 0.2, beats: [0.8, 1.9] },
   drop: { prop: ['dropper', 0xd8e8d0, 0.035, 0.11, 0.035], lift: 1.0, tip: 0.8, headBack: 0.42, beats: [0.6] },
 };
 
@@ -76,14 +76,16 @@ export class SubstanceUse {
       // The real thing at real size: a thin glass stem about the length of his hand with a small
       // ball on the far end, built along +Z from the grip. It used to be a 20 cm brown plank,
       // which read as a length of wood he was holding up beside his face, not a pipe.
-      const glass = retroMaterial(`use_stem_${itemId}`, { color: 0xe4ece6, emissive: 0.3, unlit: true, opacity: 0.58, transparent: true });
-      const ballMat = retroMaterial(`use_ball_${itemId}`, { color: 0xc9d2cf, emissive: 0.34, unlit: true, opacity: 0.62, transparent: true });
-      g.add(box(0.011, 0.011, 0.14, glass, [0, 0, 0.02]));
-      const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.017, 1), ballMat);
+      // 1.8 cm across rather than a hairline: at gameplay camera distance a 1 cm stem of clear
+      // glass is thinner than a pixel and reads as a ball floating near his face
+      const glass = retroMaterial(`use_stem_${itemId}`, { color: 0xe8f0ea, emissive: 0.35, unlit: true, opacity: 0.7, transparent: true });
+      const ballMat = retroMaterial(`use_ball_${itemId}`, { color: 0xccd5d2, emissive: 0.38, unlit: true, opacity: 0.72, transparent: true });
+      g.add(box(0.018, 0.018, 0.14, glass, [0, 0, 0.02]));
+      const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.02, 1), ballMat);
       ball.position.set(0, 0.002, -0.05);
       g.add(ball);
-      g.add(box(0.014, 0.006, 0.014, retroMaterial(`use_ember_${itemId}`, { color: 0xffa257, emissive: 1.1, unlit: true }), [0, -0.011, -0.05]));
-      g.add(box(0.006, 0.003, 0.006, retroMaterial('use_hole', { color: 0x3a3430, unlit: true }), [0, 0.0185, -0.052]));
+      g.add(box(0.02, 0.007, 0.02, retroMaterial(`use_ember_${itemId}`, { color: 0xffa257, emissive: 1.1, unlit: true }), [0, -0.013, -0.05]));
+      g.add(box(0.008, 0.004, 0.008, retroMaterial('use_hole', { color: 0x3a3430, unlit: true }), [0, 0.021, -0.052]));
     }
     if (this.style === 'drop') {
       g.add(box(0.02, 0.03, 0.02, retroMaterial(`use_tip_${itemId}`, { color: 0x9aa08a }), [0, -h / 2, 0.01]));

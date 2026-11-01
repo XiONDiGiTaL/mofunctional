@@ -396,6 +396,7 @@ export const CONFIG = {
     eta: [4, 10],
     waitMinutes: 15,
     waitSeconds: 120,      // real seconds the car sits at the curb before it gives up on him
+    graceSeconds: 5,       // ...and how long it keeps rolling while he sprints for it
 
     minutes: 14,
     drivers: ['Vinnie', 'Sal\'s cousin Vinnie', 'a man named Dutch', 'Ozzie', 'Big Ray (not 2A Ray)'],

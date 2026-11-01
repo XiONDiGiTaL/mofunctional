@@ -37,6 +37,8 @@ export class RideCar {
     this.waitT = 0;
     this.flashT = 0;
     this.lastCall = false;
+    this.baseX = 0;
+    this.grace = -1;
   }
 
   /** Called on area load (fresh) and every frame. */
@@ -87,6 +89,8 @@ export class RideCar {
     this.flashT = 0;
     this.lastCall = false;
     this.driver = r.driver;
+    this.baseX = r.x;
+    this.grace = -1;
     this.speed = 0;
     this.parked = !!inPlace;
     this.waitT = 0;
@@ -129,6 +133,7 @@ export class RideCar {
     this.waitT = 0;
     this.flashT = 0;
     this.lastCall = false;
+    this.grace = -1;
   }
 
   update(dt, g) {
@@ -142,6 +147,8 @@ export class RideCar {
     if (Math.abs(dx) > 0.05) p.x += Math.sign(dx) * Math.min(Math.abs(dx), this.speed * dt);
     else { p.x = this.targetX; this.speed = 0; }
     this.car.rotation.y = this.leaving || dx < 0 ? Math.PI : 0;
+    // the prompt follows the car while it is rolling off, since the curb point is now behind it
+    if (this.interact) this.interact.x = p.x;
     // parked: a honk, an arrow, and the engine idling until he gets in or the clock runs out
     const arrived = !this.leaving && Math.abs(dx) < 0.12;
     if (arrived && !this.parked) {
@@ -175,13 +182,35 @@ export class RideCar {
         g?.toast?.(`${this.driver || 'Your driver'} leans on the horn: thirty seconds, and then he is gone.`, 'bad');
       }
       if (this.waitT >= CONFIG.rides.waitSeconds) {
-        const res = noShowRide(g);
-        if (res) {
-          g?.toast?.(res.refunded > 0
-            ? `The car pulls away. ${money(res.refunded)} goes back on the card.`
-            : 'The car pulls away. You were not charged. Check your messages.', 'bad');
+        if (this.grace < 0) {
+          // out of time: the car starts off down the block, but a sprint can still catch it
+          this.grace = CONFIG.rides.graceSeconds;
+          this.targetX = this.baseX + 3;
+          if (this.interact) this.interact.radius = 2.4;
+          g?.audio?.sfx?.('honk');
+          g?.toast?.(`${this.driver || 'Your driver'} is pulling off — run.`, 'bad');
+        } else {
+          this.grace -= dt;
+          const mo = this.world.mo?.root?.position;
+          const near = mo && Math.hypot(mo.x - this.car.position.x, mo.z - this.car.position.z) < 3.6;
+          if (near) {
+            // caught: it stops where it is and the door is open, with a fresh clock
+            this.grace = -1;
+            this.waitT = 0;
+            this.lastCall = false;
+            this.targetX = this.baseX;
+            if (this.interact) this.interact.radius = 1.8;
+            g?.toast?.('You caught it. The door is open.', 'good');
+          } else if (this.grace <= 0) {
+            const res = noShowRide(g);
+            if (res) {
+              g?.toast?.(res.refunded > 0
+                ? `The car pulls away. ${money(res.refunded)} goes back on the card.`
+                : 'The car pulls away. You were not charged. Check your messages.', 'bad');
+            }
+            this.leave();
+          }
         }
-        this.leave();
       }
     }
     if (this.leaving && Math.abs(dx) < 0.1) this.remove();
