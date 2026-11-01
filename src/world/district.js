@@ -52,39 +52,50 @@ export function buildStationEntrance(x, z, { rot = 0, name = 'KESTREL ST' } = {}
   const g = new THREE.Group();
   g.position.set(x, 0, z);
   g.rotation.y = rot;
-  const rail = retroMaterial('st_rail', { color: 0x2f4a3a, ambient: 0.7 });
-  const globe = retroMaterial('st_globe', { color: 0x8ad86a, emissive: 1, unlit: true });
-  // steps going down and away, each with a dark riser behind it
-  for (let i = 0; i < 5; i++) {
-    g.add(box(2.5, 0.16, 0.38, M.concrete, [0, -0.02 - i * 0.17, -0.35 - i * 0.38]));
-    g.add(box(2.44, 0.34, 0.06, retroMaterial(`st_riser${i}`, { color: 0x16181e }), [0, -0.2 - i * 0.17, -0.53 - i * 0.38]));
-  }
-  // a dark floor at the bottom, so it reads as a hole and not a bench
-  g.add(plane(2.5, 2.2, { name: 'st_pit', color: 0x0e1014 }, [0, -0.92, -1.5], [-Math.PI / 2, 0, 0]));
-  // side walls, handrails and their posts
+  const green = retroMaterial('st_green', { color: 0x2f6b48, ambient: 0.85 });
+  const greenDark = retroMaterial('st_greenDark', { color: 0x1d4a32, ambient: 0.7 });
+  const stepMat = retroMaterial('st_step', { color: 0xa8a8a0, map: tex('concrete'), ambient: 0.8 });
+  const bulb = retroMaterial('st_bulb', { color: 0xffe9b0, emissive: 1, unlit: true });
+
+  // the shaft the stair runs down into, open to the sky on the street side
   for (const sx of [-1, 1]) {
-    g.add(box(0.22, 0.95, 2.5, M.concrete, [sx * 1.34, 0.47, -0.9]));
-    g.add(box(0.09, 0.09, 2.5, rail, [sx * 1.34, 1.02, -0.9]));
-    for (const zz of [-2.0, -0.9, 0.2]) g.add(box(0.11, 0.95, 0.11, rail, [sx * 1.34, 0.5, zz]));
-    g.add(box(0.13, 2.5, 0.13, rail, [sx * 1.75, 1.25, 0.28]));
-    g.add(box(0.36, 0.36, 0.36, globe, [sx * 1.75, 2.6, 0.28]));
+    g.add(box(0.18, 2.9, 3.9, greenDark, [sx * 1.36, -1.2, -1.55]));
+    g.add(box(0.34, 0.62, 4.0, green, [sx * 1.42, 0.31, -1.5]));
+    g.add(box(0.42, 0.09, 4.1, greenDark, [sx * 1.42, 0.66, -1.5]));
   }
-  // the band over the mouth, with the station on it
-  g.add(box(2.9, 0.66, 0.14, retroMaterial('st_band', { color: 0x14243f }), [0, 2.06, 0.26]));
-  g.add(plane(2.7, 0.54, {
+  g.add(box(2.9, 2.9, 0.24, greenDark, [0, -1.2, -3.5]));
+  g.add(plane(2.7, 3.9, { name: 'st_floor', color: 0x14181e }, [0, -2.62, -1.6], [-Math.PI / 2, 0, 0]));
+
+  // ten steps down, tread and riser, with a handrail stepping down beside them
+  for (let i = 0; i < 10; i++) {
+    const y = -0.1 - i * 0.22;
+    const zz = -0.2 - i * 0.33;
+    g.add(box(2.5, 0.1, 0.34, stepMat, [0, y, zz]));
+    g.add(box(2.5, 0.22, 0.05, i % 2 ? greenDark : green, [0, y - 0.11, zz - 0.17]));
+    for (const sx of [-1, 1]) {
+      g.add(box(0.06, 0.06, 0.36, green, [sx * 1.2, y + 0.9, zz]));
+      g.add(box(0.05, 0.85, 0.05, green, [sx * 1.2, y + 0.45, zz - 0.15]));
+    }
+  }
+  // one bulb at the bottom of the well, so it is dark and not black
+  g.add(plane(1.4, 0.4, { name: 'st_walllight', color: 0xffe9b0, emissive: 1, unlit: true }, [0, -1.05, -3.36]));
+
+  // the sign over the mouth on two green posts, and a globe on each post
+  for (const sx of [-1, 1]) {
+    g.add(box(0.12, 2.5, 0.12, greenDark, [sx * 1.5, 1.25, 0.95]));
+    g.add(box(0.3, 0.3, 0.3, bulb, [sx * 1.5, 2.78, 0.95]));
+  }
+  g.add(box(3.15, 0.8, 0.14, greenDark, [0, 2.35, 0.95]));
+  g.add(plane(2.95, 0.68, {
     name: 'st_sign',
     map: signTex(`st_${name.replace(/\s/g, '')}`, [
-      { text: name, color: '#ffffff', size: 9 },
-      { text: 'DOWN TO THE TRAINS', color: '#a8c8ff', size: 5 },
-    ], { w: 128, h: 26, bg: '#14243f' }),
-    emissive: 0.9, unlit: true,
-  }, [0, 2.06, 0.34]));
-  // and the light it throws across the pavement
-  g.add(plane(3.4, 3.0, { name: 'st_glow', color: 0x9adf86, opacity: 0.1, transparent: true, unlit: true }, [0, 0.014, 0.2], [-Math.PI / 2, 0, 0]));
+      { text: name, color: '#f2f6ee', size: 10 },
+      { text: 'SUBWAY · DOWN', color: '#bfe0c4', size: 6 },
+    ], { w: 128, h: 30, bg: '#1d4a32', border: '#e8f0e4' }),
+    emissive: 0.85, unlit: true,
+  }, [0, 2.35, 1.03]));
   return g;
 }
-
-
 
 export function buildSubway(g) {
   const group = new THREE.Group();

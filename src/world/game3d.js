@@ -215,7 +215,7 @@ export class World {
         this.root.add(rig.root);
         this.npcRigs.push(rig);
       }
-      const row = id === 'street' && !npc.debug ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
+      const row = id === 'street' && !npc.debug && !npc.still ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
       rig.root.position.set(row && !row.away ? row.x : npc.x, 0, row && !row.away ? row.z : npc.z);
       if (npc.scale) rig.root.scale.setScalar(npc.scale); // the kids
       rig.root.rotation.y = npc.rot || 0;
@@ -1445,6 +1445,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const pose = rig.walking ? null : rig.pose;
       animateNPC(rig, dt, {
         walking: !!rig.walking,
+        ground: pose === 'ground',
         sitting: pose === 'sit' || (settled && mod < 22 * 60 && mod >= 7 * 60),
         sleeping: pose === 'sleep' || (settled && (mod >= 22 * 60 || mod < 7 * 60)),
       });

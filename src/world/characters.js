@@ -855,7 +855,7 @@ export function animateAddison(rig, dt) {
 }
 
 export function animateNPC(rig, dt, opts = {}) {
-  const { walking = false, sitting = false, sleeping = false } = opts;
+  const { walking = false, sitting = false, sleeping = false, ground = false } = opts;
   rig.t += dt * (walking ? 6.4 : 1);
   const t = rig.t;
   if (rig.type === 'cat') {
@@ -864,15 +864,36 @@ export function animateNPC(rig, dt, opts = {}) {
     return;
   }
   if (sleeping) {
-    rig.hips.position.y = 0.16;
-    rig.hips.rotation.x = -1.45;
-    rig.legL.pivot.rotation.x = -0.3;
-    rig.legR.pivot.rotation.x = -0.2;
-    rig.legL.knee.rotation.x = 0.9;
-    rig.legR.knee.rotation.x = 0.7;
-    rig.armL.pivot.rotation.x = -0.5;
-    rig.armR.pivot.rotation.x = -0.4;
-    rig.head.rotation.x = 0.2;
+    // on his back on the pavement, not hovering over it: the hips drop to the thickness of the
+    // body and the legs lie along the ground instead of sticking up in the air
+    rig.hips.position.y = 0.1;
+    rig.hips.rotation.x = -1.5;
+    rig.legL.pivot.rotation.x = 0.12;
+    rig.legR.pivot.rotation.x = 0.2;
+    rig.legL.knee.rotation.x = 0.22;
+    rig.legR.knee.rotation.x = 0.32;
+    rig.armL.pivot.rotation.z = -0.5;
+    rig.armR.pivot.rotation.z = 0.55;
+    rig.armL.pivot.rotation.x = -0.35;
+    rig.armR.pivot.rotation.x = -0.2;
+    rig.head.rotation.x = 0.3;
+    return;
+  }
+  if (ground) {
+    // sitting on the pavement with his back against nothing: knees up, elbows on them, and the
+    // slowest nod in the world. Butt on the ground, not in the air above it.
+    rig.hips.position.y = rig.hipY - 0.64;
+    rig.hips.rotation.set(0, 0, 0);
+    rig.torso.rotation.set(0.1, Math.sin(t * 0.4) * 0.06, 0);
+    rig.legL.pivot.rotation.set(-1.25, 0, -0.16);
+    rig.legR.pivot.rotation.set(-1.05, 0, 0.2);
+    rig.legL.knee.rotation.set(0.75, 0, 0);
+    rig.legR.knee.rotation.set(0.5, 0, 0);
+    rig.armL.pivot.rotation.set(-0.62, 0, 0.24);
+    rig.armL.elbow.rotation.set(-1.15, 0, 0);
+    rig.armR.pivot.rotation.set(-0.78, 0, -0.22);
+    rig.armR.elbow.rotation.set(-1.3, 0, 0);
+    rig.head.rotation.set(0.26 + Math.sin(t * 0.55) * 0.05, Math.sin(t * 0.31) * 0.12, 0);
     return;
   }
   if (sitting) {

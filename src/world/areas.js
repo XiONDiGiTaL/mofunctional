@@ -271,7 +271,15 @@ function stashMenu(g) {
 export function buildStreet(g) {
   const group = new THREE.Group();
   const L = 46, D = 16;
-  group.add(plane(L, D, { name: 'streetsw', map: tex('sidewalk'), repeat: [14, 5] }, [0, 0, -1.4], [-Math.PI / 2, 0, 0]));
+  // the sidewalk is four slabs, not one, because there is a hole in it at the station: the stair
+  // has to go down into something, and a floor drawn over it hid every step
+  const SW = { map: tex('sidewalk') };
+  const slab = (w, d, cx, cz) => plane(w, d, { ...SW, name: 'streetsw', repeat: [Math.max(1, w * 0.3), Math.max(1, d * 0.31)] }, [cx, 0, cz], [-Math.PI / 2, 0, 0]);
+  const HOLE = { x0: -15.25, x1: -12.35, z0: -2.5, z1: 1.2 };
+  group.add(slab(L, HOLE.z0 - (-9.4), 0, (-9.4 + HOLE.z0) / 2));          // behind the hole
+  group.add(slab(L, 6.6 - HOLE.z1, 0, (HOLE.z1 + 6.6) / 2));              // in front of it
+  group.add(slab(HOLE.x0 - (-23), HOLE.z1 - HOLE.z0, (-23 + HOLE.x0) / 2, (HOLE.z0 + HOLE.z1) / 2));
+  group.add(slab(23 - HOLE.x1, HOLE.z1 - HOLE.z0, (HOLE.x1 + 23) / 2, (HOLE.z0 + HOLE.z1) / 2));
   group.add(plane(L, 8, { name: 'streetasph', map: tex('asphalt'), repeat: [16, 3] }, [0, -0.01, 5.2], [-Math.PI / 2, 0, 0]));
   // curb
   group.add(box(L, 0.18, 0.4, M.concrete, [0, 0.09, 1.3]));
@@ -665,7 +673,9 @@ export function buildStreet(g) {
     { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
     { kind: 'kev', x: -1.2, z: -1.2, rot: -1.2, talk: 'kev' },
     { kind: 'dex', x: -3.4, z: -3.4, rot: 1.4, talk: 'dex', live: true },
-    { kind: 'homeless', x: -9.6, z: 0.4, rot: 1.2, talk: 'homeless' },
+    // Gus does not walk the block: he is on his cardboard, sitting up by day, down by night,
+    // and the schedule that used to march him to the bodega is not his any more
+    { kind: 'homeless', x: -9.6, z: 0.4, rot: 1.2, talk: 'homeless', still: true, pose: 'ground' },
     { kind: 'junkie', x: -12.4, z: -4.2, rot: 2.2, talk: 'junkie' },
   ];
 
@@ -719,7 +729,7 @@ export function buildStreet(g) {
     ],
     spawn: streetSpawn('apartment'),
     // out of whichever door he came through, a step clear of its prompt
-    spawnFor: (from) => (from === 'subway' ? { x: -13.8, z: 1.0, rot: Math.PI / 2 } : streetSpawn(from)),
+    spawnFor: (from) => (from === 'subway' ? { x: -11.9, z: 0.8, rot: Math.PI / 2 } : streetSpawn(from)),
     npcs,
     interactables,
     ambient: 'street',

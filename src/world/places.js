@@ -465,7 +465,13 @@ function go(g, d) {
 export function buildAvenue(g) {
   const group = new THREE.Group();
   const L = 34;
-  group.add(plane(L, 9, { name: 'av_sw', map: tex('sidewalk'), repeat: [10, 3] }, [0, 0, -2.0], [-Math.PI / 2, 0, 0]));
+  // the avenue's pavement, cut around the station stair for the same reason as Kestrel
+  const slab = (w, d, cx, cz) => plane(w, d, { name: 'av_sw', map: tex('sidewalk'), repeat: [Math.max(1, w * 0.29), Math.max(1, d * 0.33)] }, [cx, 0, cz], [-Math.PI / 2, 0, 0]);
+  const AH = { x0: 12.95, x1: 15.85, z0: -2.6, z1: 1.3 };
+  group.add(slab(L, AH.z0 - (-6.5), 0, (-6.5 + AH.z0) / 2));
+  group.add(slab(L, 2.5 - AH.z1, 0, (AH.z1 + 2.5) / 2));
+  group.add(slab(AH.x0 - (-17), AH.z1 - AH.z0, (-17 + AH.x0) / 2, (AH.z0 + AH.z1) / 2));
+  group.add(slab(17 - AH.x1, AH.z1 - AH.z0, (AH.x1 + 17) / 2, (AH.z0 + AH.z1) / 2));
   group.add(plane(L, 9, { name: 'av_road', map: tex('asphalt'), repeat: [12, 3] }, [0, -0.01, 6.0], [-Math.PI / 2, 0, 0]));
   group.add(box(L, 0.18, 0.4, M.concrete, [0, 0.09, 1.5]));
   // the avenue's own skyline: taller, louder, more signs than Kestrel
@@ -682,7 +688,7 @@ export function buildAvenue(g) {
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
     solids: [solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.2, z: 1.0, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
+    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'subway' ? { x: 12.7, z: 1.0, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
     interactables,
     tick,
