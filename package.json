@@ -2,7 +2,7 @@
   "name": "mofunctional",
   "version": "0.9.0",
   "private": true,
-  "description": "MO: FUNCTIONAL — a 90s-era dark comedy life-management simulation. Keep the job. Keep the apartment. Keep it together.",
+  "description": "MO: FUNCTIONAL \u2014 a 90s-era dark comedy life-management simulation. Keep the job. Keep the apartment. Keep it together.",
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 8080",
@@ -10,9 +10,15 @@
     "serve": "npx --yes serve -l 8080 .",
     "check": "node scripts/check-syntax.mjs && node scripts/stamp.mjs --check",
     "stamp": "node scripts/stamp.mjs",
-    "test": "node scripts/test-systems.mjs"
+    "test": "node scripts/test-systems.mjs && node scripts/test-district.mjs"
   },
-  "keywords": ["game", "threejs", "90s-3d", "life-sim", "dark-comedy"],
+  "keywords": [
+    "game",
+    "threejs",
+    "90s-3d",
+    "life-sim",
+    "dark-comedy"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

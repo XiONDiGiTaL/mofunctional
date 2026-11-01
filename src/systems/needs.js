@@ -270,7 +270,10 @@ export function useSubstance(g, itemId) {
   if (entry.qty <= 0) s.inventory = s.inventory.filter((i) => i !== entry);
 
   const style = S.useAnim?.[itemId] || 'pill';
-  const finish = () => applySubstance(g, itemId);
+  // the phone and any dialog go away first: the whole point is seeing him do it
+  if (g.phoneOpen) g.phone?.close?.();
+  if (g.modalOpen) g.modal?.close?.();
+  const finish = () => { applySubstance(g, itemId); g.world?.witnessed?.(g); };
   if (g.world?.playSubstance) {
     s.flags.consuming = true;
     g.world.playSubstance(itemId, style, () => { s.flags.consuming = false; finish(); });

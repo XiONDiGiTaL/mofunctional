@@ -507,7 +507,63 @@ export function createMo() {
     handMat: tone(parseInt(faceSpec('mo').skin.slice(1), 16)),
   });
   rig.root.name = 'Mo';
+  rig.outfitMats = { shirt: mat.shirt, pants: mat.denim, shoes: mat.shoe };
   return rig;
+}
+
+/**
+ * Put something else on. The body is built from shared materials, so the swap is a per-mesh
+ * clone: the shirt on Mo stops being the shirt on everybody else the moment he changes.
+ */
+export function applyOutfit(rig, outfit) {
+  if (!rig || !outfit || !rig.outfitMats) return;
+  const cache = rig.outfitCache || (rig.outfitCache = {});
+  const current = rig.outfitCurrent || (rig.outfitCurrent = {});
+  const slots = [['shirt', outfit.shirt], ['pants', outfit.pants], ['shoes', outfit.shoes]];
+  for (const [slot, color] of slots) {
+    const base = rig.outfitMats[slot];
+    if (!base || typeof color !== 'number') continue;
+    const key = `${slot}:${color}`;
+    if (!cache[key]) {
+      const m = base.clone();
+      if (m.color) m.color.setHex(color);
+      cache[key] = m;
+    }
+    const from = current[slot] || base;
+    rig.root.traverse((o) => { if (o.isMesh && o.material === from) o.material = cache[key]; });
+    current[slot] = cache[key];
+  }
+}
+
+/** A saxophone, in his hands, because a man playing one without one is just a man standing. */
+export function addSaxophone(rig) {
+  if (!rig || rig.saxProp) return null;
+  const k = rig.k || 1;
+  const brass = retroMaterial('saxBrass', { color: 0xc8a03a, ambient: 0.9 });
+  const dark = retroMaterial('saxDark', { color: 0x26262a });
+  const sax = new THREE.Group();
+  sax.add(box(0.055 * k, 0.62 * k, 0.055 * k, brass, [0, 0.3 * k, 0]));
+  sax.add(box(0.17 * k, 0.2 * k, 0.17 * k, brass, [0.05 * k, 0.02 * k, 0]));
+  sax.add(box(0.08 * k, 0.05 * k, 0.08 * k, dark, [0.05 * k, 0.13 * k, 0]));
+  for (let i = 0; i < 5; i++) sax.add(box(0.075 * k, 0.018 * k, 0.075 * k, dark, [0, 0.14 * k + i * 0.1 * k, 0.035 * k]));
+  sax.position.set(0.17 * k, 0.3 * k, 0.17 * k);
+  sax.rotation.set(-0.5, 0, 0.32);
+  rig.torso.add(sax);
+  rig.saxProp = sax;
+  rig.saxT = 0;
+  if (rig.armL) rig.armL.pivot.rotation.set(-1.05, 0, -0.22);
+  if (rig.armR) rig.armR.pivot.rotation.set(-0.78, 0, 0.18);
+  return sax;
+}
+
+/** The same song, every day, a little better than it needs to be. */
+export function animateSax(rig, dt) {
+  rig.saxT = (rig.saxT || 0) + dt;
+  const t = rig.saxT;
+  if (rig.armR) rig.armR.pivot.rotation.x = -0.78 + Math.sin(t * 5.2) * 0.09;
+  if (rig.armL) rig.armL.pivot.rotation.x = -1.05 + Math.sin(t * 5.2 + 0.7) * 0.06;
+  if (rig.torso) rig.torso.rotation.y = Math.sin(t * 1.7) * 0.05;
+  if (rig.saxProp) rig.saxProp.rotation.z = 0.32 + Math.sin(t * 5.2) * 0.03;
 }
 
 export function createAddison() {

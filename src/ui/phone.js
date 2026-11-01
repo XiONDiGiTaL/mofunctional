@@ -1010,8 +1010,9 @@ export class Phone {
       <div class="row row--wrap">
         <button class="btn btn--gold" data-act="govisit">VISIT THE FELLOWSHIP</button>
         <button class="btn btn--sm" data-act="textaddison">TEXT ADDISON</button>
+        ${CONFIG.church.donations.map((n) => `<button class="btn btn--sm btn--gold" data-act="churchdonate" data-arg="${n}" ${s.money < n ? 'disabled' : ''}>GIVE $${n}</button>`).join('')}
       </div>
-      <div class="tiny mono-dim">Visiting takes real time. Services are Sunday 11:00. The allowance is not free; it is only cheap.</div>
+      <div class="tiny mono-dim">Visiting takes real time. Services are Sunday 11:00. Standing with the Shepherd: ${s.npc.addison}. Giving from the app counts the same as the box, and it counts on any day of the week.</div>
       ${this.footer()}`;
   }
 
@@ -1343,6 +1344,7 @@ export class Phone {
       // put the phone away first, so the bite happens on screen
       eatitem(arg) { this.close(); eat(g, arg); },
       useitem(arg) {
+        this.close();
         const def = CONFIG.items[arg];
         g.openModal({
           kicker: 'INVENTORY',
@@ -1438,6 +1440,16 @@ export class Phone {
           body: 'Friend — I read it twice. Once for the words and once for the things you did not say, which is where the truth usually lives.\n\nThe door is open. The coffee is warm. My calendar is, as ever, generously empty for you.',
         });
         g.toast('Addison replies within a minute. Always a minute.', 'event');
+      },
+      churchdonate(arg) {
+        const amt = Number(arg) || CONFIG.church.donations[0];
+        const st = g.state;
+        if (st.money < amt) { g.toast('You cannot give what you do not have. He would understand. Understanding is free.', 'bad'); return; }
+        g.spendMoney(amt, 'Fellowship donation');
+        const stand = Math.max(1, Math.round(amt / 10));
+        st.npc.addison += stand;
+        bump(st, 'morale', amt >= 50 ? 8 : 4);
+        g.toast(`The app says THANK YOU and then asks if you would like to round up. Standing with the Shepherd: ${st.npc.addison}.`, 'event');
       },
       hometab(arg) { this.homeTab = arg || 'street'; },
       fanssub() { const r = fans.subscribe(g); if (!r.ok && r.reason === 'short') return; },

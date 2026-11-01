@@ -35,6 +35,7 @@ export const BINDINGS = [
   { id: 'orbitR', label: 'Turn camera right', key: 'KeyE', extra: [], pad: 'RB / RT / right stick' },
   { id: 'camreset', label: 'Reset camera', key: 'KeyV', extra: [], pad: 'R3 (click right stick)' },
   { id: 'interact', label: 'Interact / confirm', key: 'KeyF', extra: ['Space', 'Enter'], pad: 'A' },
+  { id: 'punch', label: 'Throw a punch', key: 'KeyP', extra: [], pad: '—' },
   { id: 'cycle', label: 'Next thing in reach', key: 'KeyX', extra: [], pad: 'X' },
   { id: 'map', label: 'Map', key: 'KeyM', extra: [], pad: '—' },
   { id: 'today', label: 'Today panel', key: 'KeyT', extra: [], pad: '—' },
@@ -118,7 +119,7 @@ export class InputSystem {
       }
       if (g.mode !== 'play' || g.phoneOpen || g.modalOpen || this.capturing) return;
       const set = g.state?.settings;
-      for (const id of ['interact', 'crt', 'ratio', 'speed1', 'speed2', 'speed3', 'map', 'cycle', 'today', 'camreset']) {
+      for (const id of ['interact', 'punch', 'crt', 'ratio', 'speed1', 'speed2', 'speed3', 'map', 'cycle', 'today', 'camreset']) {
         if (keysFor(set, id).includes(code)) this.events.push(id);
       }
     });

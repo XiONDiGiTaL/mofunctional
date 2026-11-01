@@ -373,7 +373,14 @@ class Game {
 
   goTo(area, from = null) {
     if (this.mode !== 'play') return;
+    // whatever sent him here, he leaves with empty hands: a phone or a dialog left open over the
+    // new area is the reason a teleport could leave him standing still and unable to move
+    if (this.phone.isOpen) this.phone.close();
+    this.laptop?.close?.();
     if (this.modal.isOpen) this.modal.close();
+    this.world.moveTarget = null;
+    this.world.vel?.set(0, 0, 0);
+    this.world.walking = false;
     this.advance(3);
     if (this.state.ending) return;
     this.world.loadArea(area, this, from);
@@ -390,6 +397,30 @@ class Game {
     if (announce && area === 'park') this.toast('Kestrel Park. Grass, a bent rim, and somebody else\'s music.', 'info');
     if (announce && area === 'clinic') this.toast('Kestrel Clinic. It smells like clean and paperwork.', 'info');
     if (announce && this.world.area?.enterToast) this.toast(this.world.area.enterToast, 'info');
+  }
+
+  /** The one that does not end with the clinic: a gun, and the run is over. */
+  deathSequence(cause = 'shot') {
+    const s = this.state;
+    if (this.mode !== 'play' || s.ending) return;
+    this.phone.close();
+    this.modal.reset?.() ?? this.modal.close();
+    this.world.haltMo?.();
+    this.fadeOut(() => {
+      this.world.haltMo?.();
+      this.openModal({
+        kicker: `D${dayOf(s.clock.m)} · ${hhmm(s.clock.m)}`,
+        title: cause === 'shot' ? 'The Street Keeps Its Receipts' : 'You Do Not Get Up',
+        body: cause === 'shot'
+          ? 'There is a sound like a door closing in another apartment, and then the pavement is very close to your face and staying there.\n\nNobody in the courtyard is surprised. That is the part that follows you: nobody is surprised.\n\nThis is where this run ends. Load the last save, or close the book and start again.'
+          : 'The ground comes up and the lights go out one at a time, politely, in order.\n\nThis run is over.',
+        choices: [
+          { label: 'Reload the last save.', effect: () => { this.fadeIn(); this.loadSlot(this.lastSlot || 1); } },
+          { label: 'Back to the menu.', effect: () => { this.fadeIn(); this.quitToMenu?.(); } },
+        ],
+      });
+      this.fadeIn();
+    }, 700);
   }
 
   /* ------------------------------ collapse / fade ------------------------------ */

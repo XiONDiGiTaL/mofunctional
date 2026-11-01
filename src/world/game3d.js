@@ -1,10 +1,14 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
-import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
+import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
+import { buildSubway, buildParkSlope, buildBasement, buildProjects } from './district.js';
+import * as brawl from '../systems/brawl.js';
+import { worn } from '../systems/wardrobe.js';
+import { bump } from '../core/state.js';
 import * as police from '../systems/police.js';
 import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
@@ -18,7 +22,7 @@ import { DealerWalker, HandoffBeat } from './handoff.js';
 import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
 import { isPartnerId, partnerState, PARTNER_KEYS, homeChat } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
-import { clamp, lerp, minuteOfDay, dayOf } from '../core/util.js';
+import { clamp, lerp, minuteOfDay, dayOf, money, hhmm } from '../core/util.js';
 import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, PARTNER_HOME_SPOTS, strangerRunIns, strangerTarget } from './schedules.js';
 import { ceilingFor, armLength, armMax, eyeHeight, liftFor } from './cameraLimits.js';
 import { strangerMenu, strangerLabel, niaMenu } from './encounters.js';
@@ -29,6 +33,7 @@ const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
+  subway: buildSubway, parkslope: buildParkSlope, basement: buildBasement, projects: buildProjects,
 };
 
 export class World {
@@ -79,6 +84,9 @@ export class World {
     this.markerFade = 0;
     this.ray = new THREE.Raycaster();
     this.hurt = 0;
+    this.punchCool = 0;
+    this.punchT = 0;
+    this.chaseRig = null;
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -166,6 +174,7 @@ export class World {
     this.mo.root.visible = true;
     this.mo.root.position.set(spawn.x, 0, spawn.z);
     this.mo.root.rotation.set(0, spawn.rot, 0);
+    dressMo(this.mo, worn(g.state));
     this.camYaw = spawn.rot;
     this.camSwing = 0;
     this.tilt = 0;
@@ -204,6 +213,7 @@ export class World {
       if (npc.scale) rig.root.scale.setScalar(npc.scale); // the kids
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
+      if (npc.sax) { addSaxophone(rig); rig.sax = true; }
       // the three women carry a heart until one of them is actually his girlfriend
       if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
     }
@@ -683,6 +693,252 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     });
   }
 
+
+  /* ------------------------------ hands, cuffs, the Basement ------------------------------ */
+
+  /** Wardrobe asked for a change of clothes. */
+  applyOutfit(state) {
+    dressMo(this.mo, worn(state));
+  }
+
+  /** The closest person to Mo's fists, if any. */
+  punchTarget() {
+    const p = this.mo.root.position;
+    let best = null;
+    let bestD = CONFIG.brawl.range;
+    for (const rig of this.npcRigs) {
+      if (!rig.root.visible || rig.down) continue;
+      const d = Math.hypot(rig.root.position.x - p.x, rig.root.position.z - p.z);
+      if (d < bestD) { bestD = d; best = rig; }
+    }
+    if (this.thug && !this.thug.down) {
+      const d = Math.hypot(this.thug.root.position.x - p.x, this.thug.root.position.z - p.z);
+      if (d < bestD) { bestD = d; best = this.thug; }
+    }
+    return best;
+  }
+
+  /** One punch. The world answers for whoever it lands on. */
+  throwPunch(g) {
+    if ((this.punchCool || 0) > 0) return;
+    this.punchCool = 0.45;
+    this.punchT = 0.34;
+    const rig = this.punchTarget();
+    if (!rig) {
+      bump(g.state, 'energy', -1);
+      g.toast('You swing at the air. The air takes it personally and does nothing.', 'info');
+      return;
+    }
+    const def = rig.npcDef || { kind: 'civilian' };
+    const key = def.kind || 'civilian';
+    const res = brawl.strike(g, { ...def, key });
+    g.audio?.sfx?.(res.result === 'refused' ? 'deny' : 'hit');
+    g.toast(res.line, res.result === 'refused' || res.result === 'dog' ? 'bad' : 'info');
+    if (res.result === 'cop') { this.startChase(g, 'cop'); return; }
+    if (res.result === 'fled') { rig.flee = 5; return; }
+    if (res.result === 'ko') {
+      this.knockDown(rig);
+      g.openModal({
+        kicker: 'THE STREET · SOMEBODY IS DOWN',
+        title: 'Out Cold',
+        body: 'He is breathing. That is the whole report. Across the street somebody has decided, in real time, not to see this.',
+        choices: [
+          { label: 'Go through his pockets.', sub: 'cash · whatever he had', effect: () => {
+            const loot = brawl.loot(g, { ...def, key });
+            if (!loot.ok) { g.toast(loot.reason === 'searched' ? 'You already did that. Once is once.' : 'No.', 'info'); return; }
+            g.toast(`${loot.cash ? `${money(loot.cash)}. ` : ''}${loot.items.length ? `And ${loot.items.join(', ')}.` : 'Otherwise, lint and a bus transfer.'}`, 'info');
+          } },
+          { label: 'Leave him breathing.', effect: () => {} },
+        ],
+      });
+    }
+  }
+
+  knockDown(rig) {
+    rig.down = true;
+    rig.root.rotation.z = Math.PI / 2;
+    rig.root.position.y = 0.18;
+  }
+
+  /** A cop has decided the conversation is over. */
+  startChase(g, reason = 'cop') {
+    if (this.chaseRig) return;
+    const rig = createNPC('cop');
+    rig.npcDef = { kind: 'cop', cop: true };
+    const p = this.mo.root.position;
+    rig.root.position.set(p.x + 2.4, 0, p.z + 2.4);
+    this.root.add(rig.root);
+    this.npcRigs.push(rig);
+    this.chaseRig = rig;
+    this.chaseReason = reason;
+    g.audio?.sfx?.('deny');
+    g.toast(reason === 'drugs'
+      ? '"HEY. HEY! What is that? Do not move." Every head in the precinct turns at once.'
+      : '"THAT IS IT." He is already moving, and so is the other one.', 'bad');
+  }
+
+  /** Mo did something illegal where the law can see it. Only the precinct cares. */
+  witnessed(g) {
+    if (this.areaId === 'precinct') this.startChase(g, 'drugs');
+  }
+
+  updateChase(dt, g) {
+    this.punchCool = Math.max(0, (this.punchCool || 0) - dt);
+    this.punchT = Math.max(0, (this.punchT || 0) - dt);
+    // the ones who ran keep running until they are off the block
+    for (const rig of this.npcRigs) {
+      if (!(rig.flee > 0)) continue;
+      rig.flee -= dt;
+      const dx = rig.root.position.x - this.mo.root.position.x;
+      const dz = rig.root.position.z - this.mo.root.position.z;
+      const d = Math.hypot(dx, dz) || 1;
+      rig.root.position.x += (dx / d) * 2.8 * dt;
+      rig.root.position.z += (dz / d) * 2.8 * dt;
+      rig.root.rotation.y = Math.atan2(dx, dz);
+    }
+    const rig = this.chaseRig;
+    if (!rig) return;
+    const p = this.mo.root.position;
+    const dx = p.x - rig.root.position.x;
+    const dz = p.z - rig.root.position.z;
+    const d = Math.hypot(dx, dz);
+    rig.root.rotation.y = Math.atan2(dx, dz);
+    const step = Math.min(d, 2.4 * dt);
+    if (d > 0.0001) { rig.root.position.x += (dx / d) * step; rig.root.position.z += (dz / d) * step; }
+    if (d < 1.15) this.caught(g);
+  }
+
+  caught(g) {
+    const rig = this.chaseRig;
+    this.chaseRig = null;
+    if (rig) {
+      rig.root.parent?.remove(rig.root);
+      this.npcRigs = this.npcRigs.filter((r) => r !== rig);
+    }
+    const res = police.book(g);
+    g.openModal({
+      kicker: 'POLICE · APPREHENDED',
+      title: 'Cuffs',
+      body: `Your arm goes behind your back before you decide to let it. The cuffs are colder than they are on television, and they are not on television.\n\nConfiscated: ${res.items.join(', ') || 'nothing they admit to'}.\nFine: ${money(res.fine)}.`,
+      choices: [{ label: 'Get in the car.', effect: () => this.toHolding(g, res) }],
+    });
+  }
+
+  /** The Basement: one fight a night, cash if he wins, the clinic and the next day if he does not. */
+  clubFightMenu(g) {
+    const s = g.state;
+    if (!s.club) s.club = { lastNight: -1, wins: 0, losses: 0 };
+    const night = dayOf(s.clock.m - 6 * 60);
+    if (s.club.lastNight === night) {
+      g.openModal({ kicker: 'THE BASEMENT · THE BOOK', title: 'Tomorrow', body: 'The booker does not look up from the cash box. "One a night. You had yours. Come back when the sun has been round."', choices: [{ label: 'All right.', effect: () => {} }] });
+      return;
+    }
+    g.openModal({
+      kicker: 'THE BASEMENT · THE BOOK', title: 'Put Your Name Down',
+      body: `A man with a cash box and no expression. "Four rounds. You go down, you go out. You put him down, you get paid. No weapons, no friends, no crying."\n\nPurse: ${money(CONFIG.club.payout[0])}–${money(CONFIG.club.payout[1])}.`,
+      choices: [
+        { label: 'Put me in.', sub: 'one fight · once a night', effect: () => this.startClubFight(g) },
+        { label: 'Not tonight.', effect: () => {} },
+      ],
+    });
+  }
+
+  startClubFight(g) {
+    const s = g.state;
+    s.club.lastNight = dayOf(s.clock.m - 6 * 60);
+    if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
+    const fight = { hp: CONFIG.club.hp, over: null };
+    g.toast('The crowd closes in. Somebody takes your jacket. Somebody else takes a bet on you.', 'info');
+    setTimeout(() => this.fightMeter.open({
+      hp: fight.hp,
+      onSwing: (landed) => {
+        if (landed) { fight.hp -= 1; bump(s, 'stress', -1); }
+        else { bump(s, 'energy', -9); bump(s, 'stress', 4); }
+        if (fight.hp <= 0) fight.over = 'won';
+        else if (s.stats.energy <= 0) fight.over = 'lost';
+        return fight;
+      },
+      done: (result) => this.endClubFight(g, result),
+    }), 60);
+  }
+
+  endClubFight(g, result) {
+    const s = g.state;
+    if (result === 'won') {
+      const pay = CONFIG.club.payout[0] + Math.floor(Math.random() * (CONFIG.club.payout[1] - CONFIG.club.payout[0]));
+      s.club.wins += 1;
+      g.earnMoney(pay, 'The Basement');
+      bump(s, 'morale', 12);
+      bump(s, 'risk', 2);
+      g.toast(`He stays down. The booker counts ${money(pay)} into your hand like he is doing you a favour, which he is.`, 'good');
+      return;
+    }
+    s.club.losses += 1;
+    const now = s.clock.m;
+    const morning = (Math.floor(now / 1440) + 1) * 1440 + 9 * 60;
+    g.advance(Math.max(6 * 60, morning - now), { sleeping: true, noCollapse: true });
+    s.stats.energy = Math.max(s.stats.energy, 38);
+    s.stats.stress = Math.min(100, s.stats.stress + 18);
+    s.high.level = 0;
+    bump(s, 'morale', -10);
+    g.goTo('clinic', null);
+    g.fadeIn?.();
+    g.openModal({
+      kicker: `D${dayOf(s.clock.m)} · ${hhmm(s.clock.m)}`,
+      title: 'You Wake Up In The Clinic',
+      body: 'The ceiling is the colour of a hospital ceiling. Somebody has put your shoes in a bag. The nurse says two men brought you in and did not leave a name, and that the fight was, in her words, "a draw with extra steps".\n\nThe next day is already happening. It started without you.',
+      choices: [{ label: 'Sit up.', effect: () => {} }],
+    });
+    g.toast('You lost the night and the purse. The Basement will have you back. That is not a compliment.', 'bad');
+  }
+
+  /** The man in the courtyard with the gun. */
+  gunThug(g) {
+    const s = g.state;
+    g.openModal({
+      kicker: 'MARCY HOUSES · THE COURTYARD', title: 'The One With The Gun',
+      body: 'He sees you see it. That is the whole conversation, and it takes about a second.\n\n"You need something?" He does not put his hand on it. He does not have to.',
+      choices: [
+        { label: 'Walk away.', sub: 'live', effect: () => bump(s, 'stress', 4) },
+        { label: 'Swing first.', sub: 'he is armed · this can end the run', effect: () => {
+          if (Math.random() < CONFIG.projects.gunDeathChance) { g.deathSequence?.('shot'); return; }
+          this.startBrawl(g, { hp: CONFIG.brawl.toughHp, name: 'the man with the gun', armed: true });
+        } },
+      ],
+    });
+  }
+
+  streetFight(g, target = {}) {
+    this.startBrawl(g, { hp: CONFIG.brawl.toughHp, name: target.name || 'him', armed: false });
+  }
+
+  startBrawl(g, { hp = 3, name = 'him', armed = false } = {}) {
+    const s = g.state;
+    if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
+    const fight = { hp, over: null };
+    g.toast(`${name[0]?.toUpperCase() || ''}${name.slice(1)} does not step back.`, 'info');
+    setTimeout(() => this.fightMeter.open({
+      hp,
+      onSwing: (landed) => {
+        if (landed) fight.hp -= 1;
+        else { bump(s, 'energy', -8); bump(s, 'stress', 4); }
+        if (fight.hp <= 0) fight.over = 'won';
+        else if (s.stats.energy <= 0) fight.over = 'lost';
+        return fight;
+      },
+      done: (result) => {
+        if (result === 'won') {
+          const loot = brawl.loot(g, { kind: armed ? 'tough' : 'dealer', key: armed ? 'armed_thug' : 'street_thug' });
+          bump(s, 'morale', 8);
+          g.toast(`He goes down. ${loot.cash ? `${money(loot.cash)} in his pockets. ` : ''}${loot.items.length ? `${loot.items.join(', ')}. ` : ''}${armed ? brawl.GUN_REFUSAL : 'Nobody on the block says anything, which is a kind of respect.'}`, 'good');
+        } else {
+          g.toast('You go down. The pavement is the last thing with an opinion about you.', 'bad');
+          g.collapseSequence?.('beaten');
+        }
+      },
+    }), 60);
+  }
+
   updateThug(dt) {
     const rig = this.thug;
     if (!rig) return;
@@ -881,6 +1137,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // Movement is camera-relative, so W is always into the screen. A tap on the floor feeds the
     // same model as a target, and both run through one eased velocity — that is what stops the
     // start/stop snap that made the walk feel janky.
+    if (canMove && g.input?.take?.('punch')) this.throwPunch(g);
+
     const mx = canMove ? (g.input?.move?.x || 0) : 0;
     const my = canMove ? (g.input?.move?.y || 0) : 0;
     const len = Math.hypot(mx, my);
@@ -1019,6 +1277,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       withdrawal: s.stats.withdrawal,
       speed: 1,
     });
+    // a punch reads on the shoulder even though the walk cycle owns the rest of the arm
+    if (this.punchT > 0) this.mo.armR.pivot.rotation.x = -2.1 * Math.sin((1 - this.punchT / 0.34) * Math.PI);
     this.eating?.update(dt);
     this.handoff?.update(dt);
     this.substance?.update(dt);
@@ -1030,11 +1290,13 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.rideCar?.update(dt);
     this.traffic?.update(dt, g);
     this.streetLife?.update(dt, g);
+    this.updateChase(dt, g);
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
       this.patrolNPC(rig, dt, g);
+      if (rig.sax) animateSax(rig, dt);
       if (rig.talkIt) { rig.talkIt.x = rig.root.position.x; rig.talkIt.z = rig.root.position.z; }
       if (rig.heart) {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;

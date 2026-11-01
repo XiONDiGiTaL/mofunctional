@@ -697,6 +697,32 @@ export const CONFIG = {
   },
 
   audio: { musicVolume: 0.62, sfxVolume: 0.5 },
+
+  // Mo's hands, and what one punch means to each kind of person
+  brawl: {
+    range: 2.1,
+    kidMorale: -3,
+    dogLike: -25,
+    copRisk: 14,
+    dealerHp: 3,
+    toughHp: 4,
+    civilianHp: 2,
+    fleeChance: 0.55,
+  },
+  // the subway: one fare, one train every so often, and a real wait if he misses it
+  subway: { fare: 1.5, everySeconds: 46, dockSeconds: 18, rideMinutes: [6, 12] },
+  // the Basement: a purse, four rounds, once a night
+  club: { payout: [120, 320], hp: 4 },
+  projects: { gunDeathChance: 0.45 },
+  church: { donations: [10, 50, 100] },
+  // what he can wear. Face and hair are not for sale.
+  outfits: [
+    { id: 'tee', name: 'white tee and jeans', shirt: 0xe9e8e3, pants: 0x3a4a66, shoes: 0x2a2622, price: 0 },
+    { id: 'work', name: 'Quik-Stop polo', shirt: 0x2f6a4a, pants: 0x2c3038, shoes: 0x2a2622, price: 18 },
+    { id: 'sunday', name: 'Sunday shirt', shirt: 0xe8e0c8, pants: 0x3a3a46, shoes: 0x2a2018, price: 40 },
+    { id: 'dark', name: 'black hoodie', shirt: 0x24262c, pants: 0x24262c, shoes: 0x1a1a1e, price: 55 },
+    { id: 'lucky', name: 'red jacket', shirt: 0x8a2a26, pants: 0x2c3038, shoes: 0x2a2622, price: 90 },
+  ],
 };
 
 export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
