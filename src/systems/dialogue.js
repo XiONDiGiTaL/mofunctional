@@ -100,9 +100,9 @@ export const AMBIENT_LINES = [
 
 export const TUTORIAL_HINTS = {
   0: { title: 'FIRST THINGS', text: 'Open your phone <kbd>[TAB]</kbd>. Check your money, read your messages, and see what is due.' },
-  1: { title: 'EAT SOMETHING', text: 'The fridge is behind you. Interact with <kbd>[E]</kbd> and eat before you do anything else.' },
+  1: { title: 'EAT SOMETHING', text: 'The fridge is in Unit 3B, by the counter. Walk up to it, press <kbd>[F]</kbd>, and eat before you do anything else.' },
   2: { title: 'GO TO WORK', text: 'Shift is 09:00–17:00 at Quik-Stop #14. Go out the door, walk right, and clock in at the store.' },
-  3: { title: 'PAY THE RENT', text: 'Rent is due on Day 7. Open Banking in your phone and pay it before Rae puts a notice on your door.' },
+  3: { title: 'PAY THE RENT', text: 'Rent is due on Day 7. Open Shale Pay on your phone and pay it before Rae puts a notice on your door.' },
   4: { title: 'SELL SOMETHING', text: 'You have things you do not need. BidBay is in your phone. List them high, or list them sold.' },
   5: { title: 'STAY FUNCTIONAL', text: 'Survive 30 days. Rent paid. Job intact. Everything above zero.' },
 };

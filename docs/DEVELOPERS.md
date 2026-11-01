@@ -1,0 +1,163 @@
+# MO: FUNCTIONAL, for developers
+
+The player's guide is the [README](../README.md). This page is the workshop: how the game is
+built, how to test it, and the switches that are not meant for players.
+
+## Running it locally
+
+The game is a static site with no build step. ES modules do not load over `file://`, so serve
+the folder:
+
+```bash
+npm start
+```
+
+That runs `python3 -m http.server 8080` (`npx serve -l 8080 .` works too). Open
+http://localhost:8080 and click PRESS START; audio starts on that first click, per browser
+autoplay rules. Saves live in `localStorage`: three slots plus an autosave.
+
+## Systems notes
+
+### Rent
+
+**Rent can be paid early.** If nothing is outstanding, the Banking app's rent card and
+Landlordly both offer **PAY EARLY**: it settles the *next* cycle in advance, moves the due date
+on by a week, and the due date finds the cycle already settled, so Mo is never charged twice.
+One cycle ahead at most, and a short lock swallows a double click. Every payment is recorded in
+`bills.rent.history` (day, amount, which cycle, the partner share that applied) and shown in the
+app.
+
+### Rolo's orders
+
+**Integrity.** Only one order can be open at a time. Ordering checks the balance up front and
+the handoff checks it again; being short at the meet cancels the order without charging. Money
+moves exactly once, inside the handoff, after the order is marked completed, so a second click
+or a second call finds a finished order and does nothing. The thread ignores taps while Rolo is
+"typing". Orders are saved with the run: reload mid-order and he is still on his way (or
+standing there); leave him waiting three game hours and the order expires, uncharged.
+
+## Soundtrack
+
+Seven tracks in `/Music`, each written for a place, played through one crossfading director
+(`src/systems/soundtrack.js`). One track is heard at a time. Moving between places crossfades
+(about 1.8 s); a place that shares the current track never restarts it; a track left mid-song
+resumes where it was when Mo comes back. The menu always starts from the top.
+
+| File | Plays |
+|---|---|
+| `Mo Functional_ Main Menu.mp3` | title screen and menus |
+| `Mo Functional_ City.mp3` | Kestrel Street by day |
+| `Mo Functional_ Quik-Stop.mp3` | inside the store, within a few metres of its front, and for a minute after a shift |
+| `Mo Functional_ Bodega.mp3` | inside the bodega |
+| `Mo Functional_ Habib.mp3` | inside Habib's Corner |
+| `Mo Functional_ Church.mp3` | inside the Golden Fellowship |
+| `Mo Functional_ Lost Time.mp3` | Unit 3B; the clinic; the street and park from 22:00 to 05:00; severe withdrawal; the endings |
+
+Kestrel Park plays *City* by day.
+
+The files are 64 kbps, 48 kHz MP3s and are played exactly as delivered. Their low resolution,
+grain and crunch are the sound of the game, and nothing in the audio chain filters or
+normalises them. Sound effects (UI blips, doors, cash, munching, the mumbled NPC voices) are
+synthesised live in WebAudio.
+
+## The debug menu
+
+Press **`~`**, type `Moses`, press Enter. A wrong password closes the prompt with no message, no
+error and no hint that anything exists. The panel is a dark green console in the game's own
+style, and the clock stops while it is open:
+
+- **Condition:** fill everything, move any single need by ±10, clear intoxication, tolerance and
+  withdrawal, or reset dependence and risk.
+- **Money:** $1,000 a click, as many times as you like, straight into the balance.
+- **Time:** set the hour, skip hours, advance a whole day, jump to a later day (forward only:
+  the bills, the life history and every cooldown are keyed to the day), pause or resume the clock.
+- **World:** teleport to any area, fire any event by id, clear every event cooldown, spawn or
+  despawn a chosen NPC near Mo, and reset NPC schedules (everyone snaps back to where they should
+  be at this minute).
+- **Relationships:** affection ±10 for each of the three, girlfriend and live-in flags, a
+  pending present, or a full relationship reset.
+- **Testing:** a collapse, a clinic recovery, an early rent payment, rent marked paid, a date,
+  Cheeks, the Afterglow, the dance, using a substance, a free item, the phone, the daily report.
+
+Every button calls the real system, `rent.payRent`, `clinic.treat`, `romance.startDate`,
+`world.playDance`, `useSubstance`, so what it changes is what a player would get, and it all
+lands in the normal save state.
+
+## Rendering
+
+Late-90s console rendering in a custom shader: a low internal resolution scaled up, affine
+texture mapping, vertex snapping, ordered dithering and fog, with procedural textures painted at
+low resolution and nearest-filtered. Signs and shop names are painted the same way. An optional
+CRT layer adds scanlines, vignette, tracking and grain.
+
+## Project layout
+
+```
+index.html              page shell, CRT overlay, UI root
+styles/main.css         base UI: HUD, phone chassis, threads, menus, modals
+styles/ui2.css          skins, message feed, MoPhone apps, Rolo's Line, menu boards,
+                        fridge, map and minimap, daily report
+Music/                  the soundtrack (see above)
+src/main.js             orchestrator: loop, state flow, saves, handoff, map toggle
+src/core/               config (all balance values), state, input, audio (crossfades
+                        + synthesised sfx), save, util
+src/systems/            needs, economy, jobs, events, street, fellowship, dialogue,
+                        endings, dealer (Rolo's orders), soundtrack (music director),
+                        rent (early pay + history), romance (partners, dates, gifts,
+                        household), clinic (treatment + recovery), sms (sender
+                        identity and replies), scheduler (weights, cooldowns)
+src/world/              game3d (renderer, camera, movement), areas (every location),
+                        plan (the street as data, shared with the map), characters,
+                        schedules, shops, title (the title performance), eating,
+                        handoff (Rolo on the street + Mo's smile), animations
+                        (substance use, collapse, dancing)
+src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
+                        expressions), faces (HUD portraits)
+src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
+                        art), shopmenu, fridge, map, threads, modal, menu, themes,
+                        debug (the hidden menu)
+scripts/check-syntax.mjs  parses every module in src/ (npm run check)
+scripts/test-systems.mjs  headless system checks (npm test)
+scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)
+docs/                   design notes, devlog, art handoff
+```
+
+Balance lives in `src/core/config.js`. Gameplay code reads from `CONFIG` rather than
+hard-coding numbers.
+
+```bash
+npm run stamp    # after changing any JS/CSS: re-stamps index.html so players get the new files
+npm run check    # syntax-checks every module and fails if index.html is not stamped
+npm test         # headless checks for the systems (no dependencies)
+```
+
+`npm test` runs `scripts/test-systems.mjs` in plain Node against a small game stub: rent
+arithmetic, early payment and the double-payment guards, partner rent shares, date costs and
+outcomes, the Afterglow clock, gifts, household restocking, event cooldowns and the daily cap,
+SMS identities and replies, and clinic treatment and billing. Everything that needs eyes, the
+animations, the world, the interfaces, is still checked by playing the build; the latest pass
+covered soundtrack switching, the dealer flow (text, app, meet, edge cases, save and reload),
+entering and leaving every building, and the map against world positions.
+
+## Saves
+
+Saves carry a version. Loading runs `src/systems/migrate.js` first: a v2 save is brought up to
+v3 by letting each system build its own state block with its defaults (life, Rolo's orders,
+romance, the event scheduler, the clinic and its course, rent history), so old saves keep
+working. Every load also clears in-flight locks, a payment, a dose or a fall that was mid-way
+when the game saved, so a reload can never leave Mo frozen.
+
+## Known limitations
+
+- The site is served with long cache lifetimes, so a player can briefly mix old and new files
+  after a deploy. New code is added in new modules (or reached through optional calls) so a
+  stale file degrades a feature rather than stopping the game, but a hard refresh or a cache
+  purge is the clean fix.
+- Unit 3B has no track of its own in `/Music`; it uses *Lost Time*, which it shares with the
+  street at night.
+- Rolo only meets on Kestrel Street. Ordering from inside a building works; he waits outside.
+- The animations (substance use, the collapse fall, the dance), the hearts and the live-in
+  partner were checked by stepping the game in a browser and reading their state, not by watching
+  them play in real time; how they look still wants a human eye.
+- Diana's gift pool includes the item called "Grandad's Watch", an odd present from her; the
+  item exists, so it is delivered, but it may want its own gift item.

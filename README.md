@@ -1,639 +1,305 @@
+<div align="center">
+
 # MO: FUNCTIONAL
 
-> *You don't have to get your life together. You just have to keep it together.*
+**You don't have to get your life together. You just have to keep it together.**
 
-A dark-comedy **life-management simulation** set on one block of New York City in the late
-1990s, rendered like an obscure 1998 PlayStation game. Mo has a job at a corner store, a
-week-to-week lease, a phone full of people who want things, and a dependence that has been
-quietly rewriting his week. Rent is due on Day 7. He does not have it.
+A 90s-style dark comedy about rent, shifts, bad habits and the arithmetic of a Tuesday.<br>
+One block in New York. One week until rent. One man who is, technically, fine.
 
-Developed by **XiØN** (xiondigital). Inspired by 90s-era console games, life in New York, and
-the circumstances that people in the inner city know all too well. Built with Three.js and
-vanilla JavaScript ES modules. No backend, no build step, no install.
+### [▶ Play it in your browser](https://xiondigital.net/mofunctional/)
 
-![Kestrel Street outside the bodega](assets/img/street_bodega.jpg)
+No download, no install, no account. Saves stay in your browser.
 
----
+<img src="assets/img/guide/title.jpg" alt="The title screen: Mo on a subway platform under the MO: FUNCTIONAL logo" width="100%">
 
-## Play it
-
-**Live:** <https://xiondigital.net/mofunctional/> (served from `main`)
-
-The game is a static site. ES modules don't load over `file://`, so serve the folder:
-
-```bash
-npm start
-```
-
-That runs `python3 -m http.server 8080`; `npx serve -l 8080 .` works too. Open
-**http://localhost:8080** and click **PRESS START** (audio starts on that first click, per
-browser autoplay rules). Saves live in `localStorage`: three slots plus an autosave.
+</div>
 
 ---
 
-## The game
+## Meet Mo
 
-**The loop.** Time runs while you play (1×, 2×, 4×) and stops while the phone, a shop board, the
-map or a dialog is open. Every action costs minutes. Mo has seven needs — energy, food,
-hygiene, stress, morale, dependence and overdose risk — and the week is about keeping enough of
-them above water to make rent, keep the job, and not die.
+It is Monday, 7:00 in the morning, and the radiator is making the sound of a man being patient.
 
-**Dependence and risk.** Mo starts the game dependent. Withdrawal begins about thirteen hours
-after his last dose (later as tolerance grows; on day one, mid-afternoon), raising stress and
-dragging energy and morale; sleep slows it down and does not compound it. The substances (Bliss, Static, Mud, Drip) are **invented** and described only in
-mechanical terms. Using one relieves withdrawal and lifts some stats, raises dependence,
-tolerance and risk, and does less each time. Risk at the ceiling is an overdose: the ER, not an
-ending.
+Mo lives in Unit 3B at 1120 Kestrel Street. He has a job at Quik-Stop #14, $212.40 in the bank,
+a fridge with three days of food in it, a phone full of people who want things, and a habit that
+has been quietly rewriting his calendar. Rent is $420. It is due on Day 7. You can probably see
+where this is going.
 
-**Two dealers.** Rolo (by phone, any time) sells the ordinary, cut versions. **Dex** is in the
-alley only after dark, 18:00–04:00 — by day he is not on the block at all — and he sells what
-Rolo does not: *uncut* Bliss, double-stacked Static, Black Mud and pure Drip. More effect for the
-money, much more risk and dependence, and roughly one batch in seven is wrong, which spikes risk
-and stress on top of the dose.
+Your job is not to make Mo a success story. Your job is to make him **functional**: fed, rested,
+paid up, employed, and still on speaking terms with his sister. Some days that is easy. Most
+days it is a negotiation between what he needs, what he wants and what the clock will allow.
 
-**Money.** The Quik-Stop shift pays hourly (late arrivals are docked; three strikes and he is
-fired). The job board has odd jobs for cash today. BidBay sells his things over time; Dex in the
-alley buys them for less, right now. The Civic Relief Program gives food credit if Mo has his ID
-and lease. Rent ($420 every 7 days), power and phone bills come due; two missed rent cycles is
-eviction.
+<img src="assets/img/guide/street_day.jpg" alt="Kestrel Street at midday, with the HUD, the Today panel and a text that reads: Someone ate your Instant Ramen. There is no suspect. There is only a fork." width="100%">
 
-**Rent can be paid early.** If nothing is outstanding, the Banking app's rent card and
-Landlordly both offer **PAY EARLY**: it settles the *next* cycle in advance, moves the due date
-on by a week, and the due date finds the cycle already settled, so Mo is never charged twice.
-One cycle ahead at most, and a short lock swallows a double click. Every payment is recorded in
-`bills.rent.history` (day, amount, which cycle, the partner share that applied) and shown in the
-app.
+## Why you might like it
 
-**No game over.** Nothing ends the run on its own except one thing: being saved by the
-Fellowship (below). Otherwise the run ends when the player chooses to close the book, and the
-epilogue fits where Mo's life stands then. The night closes with a **Daily Report**: money, energy, hunger,
-stress, dependence and risk for the day just ended.
+- **It looks like a lost 1998 PlayStation game.** Wobbly textures, chunky polygons, scanlines
+  if you want them, and a soundtrack recorded at exactly the bitrate it deserves.
+- **Every minute costs something.** A shift is eight hours. A nap is three. A falafel is twenty
+  minutes and four dollars, and Habib will remind you that you cannot lose money on falafel,
+  only time.
+- **The block is alive.** Neighbours keep their own schedules, cars honk at you, a kid on a bike
+  yells "ON YOUR LEFT" at nobody, and a stray dog named Meatball decides whether you are worth
+  following home.
+- **Your phone is a whole second game.** More than a dozen parody apps for banking, dating,
+  groceries, stocks, a car service and a countdown to rent that feels personal.
+- **It is funny, and then it is not, and then it is funny again.** The writing never laughs at
+  Mo. It laughs with him, mostly at the bus.
 
-### Places
+---
 
-| Place | What is there |
+## Your first week: a survival checklist
+
+New on Kestrel Street? Follow this and Mo makes it to Day 8 with his dignity mostly intact.
+
+### Day 1 (Monday)
+
+- [ ] **Check the phone.** Press `TAB`. Read your texts, look at your balance in **Shale Pay**,
+      and see what is due.
+- [ ] **Eat breakfast.** The fridge is in Unit 3B. Walk up to it and press `F`. Food is the
+      cheapest stat to keep up, so never skip it.
+- [ ] **Read the Today panel** in the top right (`T` folds it). It lists rent, your shift, bills,
+      odd jobs and anything you pinned. Click a row and it opens the right app or puts the place
+      on your map.
+- [ ] **Make some money.** Work your shift at Quik-Stop #14, or grab an odd job off the board
+      outside. Being late gets you docked; three strikes and Dale lets you go.
+- [ ] **Go to bed at a decent hour.** If sleeping would make you miss something, the game asks
+      first.
+
+### Days 2 to 6
+
+- [ ] **Set up AutoPay** in Shale Pay so rent, power and the phone bill pay themselves on the day
+      they are due, as long as the money is there.
+- [ ] **Sell what you do not need.** The CRT TV, the guitar, the jacket. **BidBay** pays well but
+      slowly. Ashby Pawn pays badly but right now.
+- [ ] **Keep stress down for free.** Sit on a park bench, shoot around on the half-court, play
+      chess against whoever is there, or put on the boombox and dance.
+- [ ] **Answer your sister.** Be honest with Nia and she starts coming over with dinner, which
+      happens to be the best meal in the game.
+- [ ] **Pay the rent.** Day 7 at the latest. If you are flush, you can pay a week early.
+
+### The long game
+
+- [ ] **Stay functional for 30 days:** rent paid, job intact, every bar above zero.
+- [ ] **Get clean, if you want to.** Kestrel Clinic runs a five-session outpatient course. It
+      competes with your shifts, which is exactly the point.
+- [ ] **Build something.** Buy a building, a laundromat, or a few shares of a 1999 dot-com that
+      will absolutely be fine.
+- [ ] **Find someone.** Three people on the block can be dated, and they each have opinions about
+      your hygiene.
+
+---
+
+## What "Functional" means
+
+The HUD tracks how Mo is doing. Keep these out of the red and he can handle almost anything.
+
+| Bar | What it is | How to keep it up |
+|---|---|---|
+| **Energy** | gas in the tank | sleep, coffee, a real meal |
+| **Food** | how long since he ate | the fridge, the bodega, Habib's, Nia's cooking |
+| **Stress** | how close he is to snapping | the park, music, a good conversation, a clean apartment |
+| **Morale** | whether he believes tomorrow will be better | small wins, people who like him, dancing badly |
+| **Dependence** | how much the habit runs his week | time, the clinic, the outpatient course |
+| **Risk** | how close he is to a very bad night | not pushing his luck after dark |
+
+Let a bar bottom out and Mo can collapse. He wakes up hours later, beside his own bed or at the
+clinic, short on time and money and in exactly the state that put him there. The game does not
+end. It just makes Monday harder.
+
+> **Tip:** Time stops whenever the phone, a shop, the map or a dialog is open. Take as long as
+> you like to think. The block will wait.
+
+---
+
+## A tour of the neighbourhood
+
+<p align="center">
+  <img src="assets/img/guide/street_night.jpg" alt="Kestrel Street at night outside Quik-Stop #14, with Meatball the dog trotting beside Mo" width="49%">
+  <img src="assets/img/guide/apartment.jpg" alt="Unit 3B: the bed, the kitchen counter, the fridge and the laptop on the table" width="49%">
+</p>
+
+| Place | Why you go there |
 |---|---|
-| **Unit 3B, 1120 Kestrel St.** | bed, fridge (storage), shower, TV, laptop, Chairman the cat |
-| **Kestrel Street** | the block: neighbours on schedules, street events, the job board, the bus stop, the alley |
-| **Quik-Stop #14** | a real convenience store, open all night: two aisles, coolers, coffee, the register, customers; the time clock is behind the EMPLOYEES ONLY door |
-| **Kestrel Bodega** | Miguel's: bacon egg and cheese, chopped cheese, loosies, tall boys |
-| **Habib's Corner** | halal, no pork: chicken over rice, the combo plate, falafel, lentil soup |
-| **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge — the one ending that takes the game away |
-| **Kestrel Clinic** | walk-ins, Nurse Okafor, treatment on cash or on the bill |
-| **Kestrel Park** | across the road (Mo walks over the crosswalk by the Fellowship, or the one by the lot to the east gate): benches, a half-court, chess, a boombox, people |
-| **1104 Kestrel St.** | the walk-up west of the bodega: a lobby and four floors of hallway, real minutes on the stairs. A man asleep by the steps, Ray & Denise arguing on two, Mrs. Petrakis's soup in 3B, Squeak selling from his coat on four (a few items a day, hallway prices), Stephanie's door in 5C, the roof, and a knock on every door |
-| **Ashby Avenue** | by the B44 from the stop on Kestrel (or a 45-minute walk): people walking somewhere else, a newsstand (papers, scratch-offs), Ashby Pawn & Gold (sell a valuable now, cheap), a sax player |
-| **The road** | walkable now: cars parked along both curbs (new low-poly models — 90s compact, sedan, taxi, sports coupe, convertible, exotic GT, and the B44 bus — in street colours), and traffic in both lanes that keeps its distance, stops for Mo when he is in the road, leans on the horn, and drives on. Cars are solid. At night, the cars on the near curb can be tried: mostly locked, sometimes loose change, food, cigarettes or something worth selling, sometimes the alarm |
-| **Street life** | people walking to somewhere else (they wait for Mo instead of walking through him), smokers outside the Quik-Stop and the bodega with smoke you can see, somebody on the bench, a dice crew crouched over crates at the lot after dark, and things that happen where Mo can see them: a patrol car rolling by with its lights going, a kid on a bike, a split grocery bag |
-| **Dee's Wash & Fold** | the laundromat on Ashby: washers down one wall, dryers stacked down the other, a folding table, two vending machines (soda, water, tall boys, chips — one of them sometimes eats a dollar), a TV nobody chose, mothers folding, kids running the aisle. Do a load ($3, 45 minutes, clean clothes), check the machines for change once a day (quarters, a sock, now and then something somebody will miss). Buy it on TradeHarder ($60,000): a weekly take smaller than 1104's, upkeep, a machine that dies now and then, and the back room — a computer that does everything the laptop does, and the books, where cash is washed into a property's renovations (each level +15% to its weekly take; the machines keep 8%; now and then the city reads the books) |
-| **The 84th Precinct** | on Ashby Avenue (green lamps, cops on the steps): inside, a desk sergeant, cops at their desks, one walking through, one taking a statement, and at the back, inmates in orange on the wall phones behind the glass with their visitors. Some nights two cops walk the park: a mugging in their sight ends before it starts, and a cop who sees Mo high searches him. Clean, he is told to go home; holding, every substance is confiscated, he is fined $250 (or whatever he has), spends the night in holding and walks out onto Ashby in the morning |
-| **The payphone** | outside the Fellowship: the coin return and the gap behind the box (change, now and then somebody's stash), and late at night it sometimes rings: Dex, with something taped behind the box for cash in the slot |
-| **Meatball** | a stray dog who walks the block. Feed him (two meals a day) and he likes Mo more; past halfway he trots along beside him; at full, Mo can whistle for him when somebody tries to mug him on the street or in the park |
-| **Night** | a man in the alley corner facing the wall, and on the third floor of 1104 two people by the stairs who could not wait for an apartment (a mosaic covers it; "This isn't my business") |
-| **The lot** | past the clinic: chain-link, a burnt-out Buick, a graffiti wall, a dice game after dark, and a crosswalk to the park's new east gate |
-| **Lucia's** | a red-sauce trattoria on Ashby: sit-down meals, and the best date on the list |
+| **Unit 3B** | Home. Bed, shower, fridge, TV, a laptop with the whole 1999 internet on it, and Chairman the cat. |
+| **Quik-Stop #14** | Work. Open 24 hours. Dale opens, Kev complains, and the coffee is exactly as good as it costs. |
+| **Kestrel Bodega** | Miguel's. Bacon, egg and cheese. Chopped cheese. A cat asleep on the lottery machine. |
+| **Habib's Corner** | Halal, no pork, no nonsense. Chicken over rice that fixes most problems. |
+| **Kestrel Clinic** | Nurse Okafor, walk-ins welcome. Treatment on cash or on the bill, and she will not judge you out loud. |
+| **Kestrel Park** | Across the crosswalk. Benches, a half-court with a bent rim, chess, and a boombox somebody left a tape in. |
+| **1104 Kestrel St.** | The five-floor walk-up next door. Arguing neighbours, soup on three, a man selling things from his coat on four, and a roof. |
+| **The Golden Fellowship** | Sunday service with Addison Octavius. They will help Mo. That is what worries us. |
+| **Ashby Avenue** | One bus ride away: the newsstand, a pawn shop, Lucia's trattoria, the 84th Precinct and Dee's Wash & Fold. |
 
-Every door on the block is built the same way so it can be found at a glance: a recessed door in
-a pale frame, a step and a mat, a lamp over it with the pool of light it throws, and a lit sign.
-The bodega has its own low building west of the walk-up, with a red-and-yellow sign and an OPEN
-light, and Mo comes back out of whichever door he went in.
+<p align="center">
+  <img src="assets/img/guide/park.jpg" alt="Kestrel Park: paths, benches, trees and the boombox on its crate" width="49%">
+  <img src="assets/img/guide/avenue.jpg" alt="The newsstand on Ashby Avenue, its awning hung with magazines" width="49%">
+</p>
 
-### People
+Every door is lit and signed, every shop keeps real opening hours, and the bodega closes when the
+bodega closes. Plan accordingly.
 
-Mo; **Addison Octavius**, the Fellowship's shepherd; **Rae Vell**, the landlord (he does the
-rounds with a clipboard); **Dale**, the Quik-Stop manager; **Kev**, the coworker; **Miguel** and
-**Habib** behind their counters; **Dex** in the alley at night; **Rolo**, on the other end of
-the dealer line; and the people who live on the street. Neighbours keep daily schedules (Dale
-opens the store and smokes by the board; Kev drinks on the bench at night; Dex holds the alley
-after dark) and street encounters interrupt with real choices.
+### Things happen on the street
 
-Three of the people on the block can be dated — **Stephanie**, **Melanie** and **Diana** — and a
-small heart over their heads is the only thing that marks them out. Everyone else has no heart,
-and no interest.
+Walk around long enough and the block starts telling stories: a couple arguing over a stroller,
+a patrol car rolling by with its lights on and no siren, a split grocery bag, a dice game at the
+lot after dark. Most of them ask you to choose. Watching is usually free. Getting involved
+usually is not.
 
-Every character is built the late-90s console way: lofted faceted limbs with joint caps and a
-low-poly skull wearing one wrap-around face texture. Mo's face comes from his mood sheet; NPC
-faces come from the owner's face bank or are painted in the same style. Mo's 3D head can blend
-into expressions painted onto that texture: **high** (bloodshot eyes, heavy lids, a smirk — the
-title screen) and **smile** (both corners up — a deal that went right).
+<img src="assets/img/guide/street_event.jpg" alt="A street event card titled Two People, One Stroller, No Baby, with the choices Watch it happen and Cross the street" width="100%">
 
 ---
 
 ## The MoPhone
 
-`TAB` opens it. A rounded handset with a lock-screen clock, two widgets (Mo's mood and what is
-due next), an icon grid and a dock. Every app is a parody with its own name, icon and layout:
+Press `TAB`. Everything Mo does with money, people or plans goes through here.
 
-| App | What it is |
+<p align="center">
+  <img src="assets/img/guide/phone.jpg" alt="The MoPhone home screen with a lock-screen clock, Mo's mood widget and app shelves" width="32%">
+  <img src="assets/img/guide/inventory.jpg" alt="Pocket Lint, the inventory app, sorted by kind with resale values" width="32%">
+  <img src="assets/img/guide/feedlove.jpg" alt="FeedLove, the social app, showing posts from Kev and Dale" width="32%">
+</p>
+
+| App | What it does for you |
 |---|---|
-| **Txtr** | messages; companies text with their app icon, people with their face; Rolo is pinned |
-| **Shale Pay** | the bank: a debit card with the live balance, bills, recent activity, and an **AutoPay** toggle that pays rent, power and phone the day they fall due if the balance covers them (a Shale Pay text for every payment, and an insufficient-funds text when it does not) |
-| **LinkedOut** | the Quik-Stop shift, strikes, odd jobs |
-| **BidBay** | list valuables at a price you set; a mystery grab bag |
-| **iDread** | the week ahead (shifts, rent, power, service) and sleep |
-| **GrubHope** | groceries for cash or Civic Relief credit, relief programs |
-| **Pocket Lint** | inventory as illustrated tiles; eat, drink, smoke or sell from here |
-| **Landlordly** | a thermostat dial that counts down the days to rent |
-| **FeedLove** | the social app (a heart, not a camera), in four tabs: **FEED** (Mo's profile, a box to type his own posts or a random one, and a timeline of everyone he follows — Mom, Nia, Kev, Dale, Rae, Miguel's bodega and its cat, Habib's, the Fellowship, the Quik-Stop, the park, and the three once he has met them — with pictures and likes), **PEOPLE** (following, followers, people you may know), **♥ HEARTS** (the dating side) and **LOVELINE** (the three, where they are, and her day) |
-| **LonelyFans** | the subscription app, locked until it is paid for: $2 a day (and AutoPay can carry it), four invented models whose pictures lower stress and morale, a dignity gate that refuses a man at the bottom of the barrel, and the occasional $500 offer that is still, deliberately, not explicit |
-| **HailMary** | the car service ("a ride and a prayer"): call a black car, it pulls up at the curb out front a few minutes later, walk up and get in, pick a destination. Ask for somewhere on the same block and the driver will not start the car ("It's up the road, idiot. Just walk.") and keeps a stop fee; across town is a real ride, and a no-show is charged |
-| **TradeHarder** | stocks (nine 1999 tickers on a daily seeded walk: dot-coms, a bank, the Fellowship's media arm, a Y2K survival company) and property: 1104 Kestrel ($100,000, eight units of weekly rent, tenants who fall behind, move out, or offer to pay in product) and the lot ($30,000) |
-| **Amazin'** | buy things (electronics, gifts, comforts, food that keeps) at retail; delivered by the door next morning |
-| **HardLuck Bet** | an online casino: slots, blackjack and roulette for real money. The odds are honest (slots return about 93%), the first $10 bet is free, a losing day stings, and winnings are tithed like any other income |
-| **NextStoop** | the neighbourhood app: **SEEN NOW** (neighbours posting who is where, from the real schedules — useful for finding people), **THE BOARD** (a day of lost-and-found, safety, free stuff and complaints) and **HISTORY** (the lore of Kestrel Street, a page a day) |
-| **Blessed+** | the Fellowship's "live" Sunday stream and the tithe |
-| **Rolo's Line** | the dealer app (below) |
-| **Tweaks** | skin, interface scale, camera distance and height, volume, saves, run stats |
+| **Txtr** | Your texts. People answer in their own voice, and threads stay in one place. |
+| **Shale Pay** | Your bank: balance, bills, history and AutoPay. |
+| **LinkedOut** | Your shift, your strikes, and odd jobs for cash today. |
+| **Pocket Lint** | Everything you carry, sortable by kind, value or name, with what it would sell for. |
+| **GrubHope** | Groceries and the Civic Relief Program, if you have your ID and lease. |
+| **BidBay** | Sell your things to strangers on the internet, slowly, for real money. |
+| **iDread** | The week ahead, your pinned goals and sleep. |
+| **Landlordly** | A thermostat dial that counts down to rent. Very calming. |
+| **FeedLove** | Post, follow, like, and find someone. Its LoveLine tab tells you who is waiting on you. |
+| **NextStoop** | The neighbourhood gossip board. Surprisingly good at telling you where people are. |
+| **HailMary** | A car service. Ask for a ride up the block and the driver will tell you to walk. |
+| **TradeHarder** | Stocks from 1999 and real estate on Kestrel Street. |
+| **Amazin'** | Order things, they arrive tomorrow. |
+| **Blessed+** | The Fellowship's livestream. Pass the plate. |
+| **Tweaks** | Skins, scale, notifications, sound and saves. |
 
-![The MoPhone home screen](assets/img/phone_home.jpg)
-
-**HUD messages** arrive as text bubbles in the bottom-right corner, fade out of the way, and are
-never thrown out: hover the **MESSAGES** pill (or click it to pin it) to scroll back through the
-day. Incoming texts also open as an SMS thread on the left; when a text asks something, the
-thread waits for Mo's answer and files it in Txtr.
-
-**Seven skins** — Functional, Amber, Ice, VHS, Primo, Bodega and Graphite — recolour the HUD,
-phone, menus and panels from one set of CSS variables. Set them in the main menu's `SETTINGS` or
-in Tweaks.
+There are seven colour skins (Functional, Amber, Ice, VHS, Primo, Bodega and Graphite), and the
+same apps run on the laptop in Unit 3B, alongside a 1999 video site, an anonymous message board
+and a very slow dial-up connection.
 
 ---
 
-## Rolo: the dealer line
+## Food, shopping and the fridge
 
-Rolo takes orders by text and through **Rolo's Line**, a crude WAP-era app. Both are faces on
-one order system (`src/systems/dealer.js`): the same catalog, prices, validation and order.
+Walk into the bodega or Habib's and you get the menu board: the owner, his opinion, and a card
+for every item with its price, what it does for Mo and how many he already has. Click to buy.
+The board stays open so a breakfast run is three clicks, not three trips.
 
-- **By text.** Open Txtr → ROLO. Mo's replies are quick-reply chips, and Rolo's answers are
-  written from the order state: the menu with prices, "how many?", the total, then the order
-  ID, meet spot and time.
-- **In the app.** Pick a product (each has a description, its risk and dependence), set the
-  quantity (1–3), see the total against Mo's balance, and place the order. Afterwards the app
-  shows the order card: ID, status (*en route* → *waiting outside* → *completed*), ETA and
-  location.
-- **The meet.** About 20 game minutes after the order he is due. He does not appear out of thin
-  air behind the camera: if Mo is standing on the street when Rolo gets close, Rolo texts him to
-  go in somewhere (a coffee at the Quik-Stop, the bodega, home) and he is at the hydrant beside
-  the 1120 stoop when Mo comes back out. If Mo was already inside, Rolo is simply there when he
-  steps out. Rolo then waits three game hours — counted from when he is actually standing there —
-  with a **Meet Rolo** interaction on him, on the map and the minimap. Walk up, hand over the
-  cash, and Mo's hand goes out, comes back, and he smiles. Rolo walks off the block.
-- **Prices** are the fictional substances' base prices plus a $4 walk fee. Payment is **cash on
-  meet**.
+<img src="assets/img/guide/shop.jpg" alt="Habib's Corner menu board with cards for chicken over rice, the combo plate, falafel, lentil soup, baklava and mint tea" width="100%">
 
-**Integrity.** Only one order can be open at a time. Ordering checks the balance up front and
-the handoff checks it again; being short at the meet cancels the order without charging. Money
-moves exactly once, inside the handoff, after the order is marked completed, so a second click
-or a second call finds a finished order and does nothing. The thread ignores taps while Rolo is
-"typing". Orders are saved with the run: reload mid-order and he is still on his way (or
-standing there); leave him waiting three game hours and the order expires, uncharged.
-
-![Ordering by text](assets/img/phone_rolo_sms.jpg)
-![Rolo's Line](assets/img/phone_rolo_app.png)
-![The meet by the 1120 stoop](assets/img/dealer_meet.jpg)
+- **Food per dollar** is printed on every card. The falafel wrap is very hard to beat.
+- **The fridge** holds 24 items. Store all your food in one click on the way in, take what you
+  need on the way out.
+- **Eating happens on screen.** Mo takes real bites, and the bars ease up as he chews.
 
 ---
 
-## Food, shops and the fridge
+## Getting around
 
-**Menu boards.** Miguel's and Habib's open an illustrated board: the owner's face and a line of
-his, Mo's cash, and a card per item with its art, price tag, effect chips and the owner's note.
-Click a card to buy; it stamps **BAGGED** and the board stays open.
+<img src="assets/img/guide/map.jpg" alt="The map with a searchable list of places, open and closed times, and a dotted walking route to Habib's Corner" width="100%">
 
-**The fridge** in Unit 3B is storage: two shelves side by side (the fridge and Mo's pockets),
-with STORE, TAKE and EAT. Anything edible can also be eaten straight from Pocket Lint.
-
-**Eating is on screen.** Mo turns toward the camera and takes the item in three bites, with
-crumbs and a munch on each; a drink is a long pull and a gulp, a loosie is a drag. Then he pauses
-and the HUD bars ease up to the new values.
-
-![The bodega's menu board](assets/img/shop_menu.jpg)
-![The fridge](assets/img/fridge.jpg)
+- **The map** (`M`) lists every place by category with its hours. Pick one and you get a route on
+  the street, a ring on the minimap and a heading like "Habib's Corner · 7 m east".
+- **The prompt** at the bottom of the screen tells you what `F` will do, and why it will not when
+  something is closed. With several things in reach, `X` picks the next one.
+- **The B44 bus** runs to Ashby Avenue from the stop on Kestrel. HailMary is faster and judges you.
+- **Speed up time** with `1`, `2` and `3`. The game warns you if something is due within the hour.
 
 ---
 
-## The clinic
+## The people on the block
 
-**Kestrel Clinic** is at the east end of the block, past Habib's: pale tile, a red cross, a ramp
-and a sign that says WALK-INS · NO APPOINTMENT NEEDED. The door is on the street like every other
-door. Inside there is a plastic chair, a scale nobody stands on, and **Nurse Okafor**.
+- **Nia**, Mo's sister, texts and calls. Talk to her properly and she comes over with dinner.
+- **Dale** runs the Quik-Stop and keeps track of every minute you are late. **Kev** works the
+  register next to you and has opinions about everything.
+- **Miguel** and **Habib** run the bodega and the halal spot, and both of them notice when you
+  have not eaten.
+- **Rae Vell**, the landlord, does his rounds with a clipboard. You will learn the sound of it.
+- **Stephanie, Melanie and Diana** each keep their own day all over the block. A small heart over
+  someone's head means you could try, not that she is interested. Dates cost real money and real
+  evenings, and a bad one does not refund.
+- **Meatball** is a stray. Feed him twice a day and he starts following you. Earn his trust all
+  the way and he will have your back after dark.
+- **Addison Octavius** leads the Golden Fellowship. He is very kind, and he would like a tenth of
+  everything you earn.
 
-- **Treatment** is $60 and 90 minutes: risk and withdrawal come down, dependence comes down a
-  little. If Mo cannot pay, it goes on the **hospital bill** — the clinic does not turn anyone
-  away, it keeps a record instead.
-- **Checking in** is free and takes ten minutes; it slows withdrawal.
-- **The waiting chair** costs 20 minutes and calms him down.
-- One treatment a day. She will not do it twice, and she says so.
-- **The outpatient course** is the slow way down. Sign up at the counter (it takes a referral —
-  the ER card, the paramedics' napkin — or a real habit). Five sessions, every other day, kept in
-  person between 10:00 and 16:00, two hours and $35 each (on the bill if he is broke). Every
-  session lowers dependence, withdrawal and risk; finishing the course takes dependence and
-  tolerance down further and counts as a milestone. Clinic hours overlap Quik-Stop shifts, so the
-  course competes with work. One missed appointment is forgiven with a text from Okafor; a second
-  drops him, and she will take him back three days later. Using during the course does not get
-  him thrown out — it makes the next session count for half. The course shows in the clinic app
-  and on the iDread calendar.
-
-**Collapse.** When Mo goes down — energy at zero, an overdose that does not end the run, too long
-awake — he falls, the screen fades to black, hours pass, and he wakes beside his own bed or here.
-After two collapses in a run they start taking him in; before that it is a coin toss, and it is not
-a coin toss at all if he has no home. He loses the hours, the shift, some money, and he wakes up
-in the state that put him there, not refreshed. A collapse locks further collapses out for five
-hours, so it cannot become a loop.
-
-## Kestrel Park
-
-The crosswalk (or the gate interaction on the sidewalk) leads across the road to **Kestrel Park**:
-grass, a path, three benches facing each other so people can talk, a half-court with a bent rim, a
-chess table with a bottle cap for a missing knight, a playground nobody maintains, a boombox on a
-crate, and a few people who are simply there. It is drawn on the map and the minimap from the same
-data the park is built from.
-
-| Interaction | What it does |
-|---|---|
-| **Sit on the bench** | 30 min · morale up, stress down |
-| **Shoot around** | 45 min · the best free morale on the block |
-| **Play chess** | 40 min · against whoever is sitting there; you can win |
-| **The boombox** | 20 min listening — or **dance**, 25 min, morale up and stress down |
-| **Talk to Kev** | he is losing at chess to himself |
-
-Dancing is a real performance on the world stage (`playDance`), not a menu line: Mo moves on the
-spot, the time passes and the stats move with it.
-
-## The Golden Fellowship
-
-Addison Octavius is the antagonist, but not a villain in the usual sense: he extorts Mo for
-money. From the tithing stage he takes a tenth of everything Mo earns, and a fifth once Mo is in
-the inner circle. The terrible part is that it works. Every service from "Attendee" on brings
-dependence and withdrawal down, and once Mo tithes, the routine itself (the calls, the rides,
-somebody asking where he was) eases withdrawal every day. The deeper he goes, the cleaner he gets
-and the more of his money and his say they take.
-
-Signing the pledge ends the game: **Fully Functional**. Mo stops using, is housed, employed and
-more than functional — and none of it is his. It is the ending where someone else saved him, which
-is not what this game is about. Walking out instead keeps the run going.
-
-## Finding your way, and your day
-
-- **Today** (top right, `T` to fold it): rent and when it is due, today's shift and the latest
-  you can clock in, bills due soon, the odd jobs on the board, the clinic session, Rolo, a
-  HailMary car, Nia's visit, the Fellowship on Sunday, and goals you pin yourself in iDread.
-  Each row opens the app that settles it, or puts the place on the map.
-- **Prompts** say what you are about to do and with which key (`F`, or Ⓐ on a pad); when it
-  cannot be done they say why ("Unavailable: Closed · opens 06:00"). With several things in
-  reach, `X` (Ⓧ) cycles through them.
-- **Opening hours**: the bodega, Habib's, the clinic, the Fellowship, Lucia's and the laundromat
-  close; the Quik-Stop and the precinct never do.
-- **The map** (`M`) has a searchable list of every place by category, with whether it is open,
-  its hours and floors; pick one for a ring on the map, a walking route on Kestrel, a "!" on
-  today's places, and a heading line under the minimap ("Quik-Stop #14 · 12 m east", or "B44
-  from the bus stop"). It never moves Mo.
-- **1104** shows its floor in the minimap title (Floor 3/5), has a directory in the lobby and in
-  the elevator, signs on both stairwells, and numbers on every door.
-- **The phone's home screen** groups unread texts as Urgent, People and Apps & services, each
-  linking to its thread, with a MARK ALL READ.
-- **Tweaks → Notifications**: the notice log (all / important only / off), text pop-ups over the
-  game (all / people & urgent / off), and the place announcements. The log counts only what you
-  have not seen and has a CLEAR button.
-- **Time**: the speed (or why time is stopped) under the controls; a warning when speeding up
-  with something due within the hour; and before sleeping, if the hours would run through a
-  shift, the clinic, Rolo, a car or Nia, it says so and asks.
-- **Rooms**: people walking around inside (a live-in girlfriend included) path around the
-  furniture.
-
-## The laptop
-
-The laptop on the table in Unit 3B opens a laptop screen the way the phone opens (the same apps
-run on both): Netscrape Navigator and its bookmarks — FeedLove, NextStoop, LinkedOut, TradeHarder,
-Amazin', HardLuck Bet, BidBay, **MeTube** (videos and memes from 1999; a time sink with a little
-morale in it), **Kestrel Underground** (an anonymous message board: rumours about the Fellowship,
-Dex, the 1996 night at Quik-Stop #14, Gus, the walk-up; Mo can post into any thread) and
-**DialUpDelights** (an adult site where every model is a mosaic and each page takes six minutes on
-dial-up; a little better, once or twice a day).
+---
 
 ## After dark
 
-Late at night in the park, at the alley and walk-up end of the block, past the clinic, or on
-Ashby, somebody in a grey hood may step out and want his wallet. Hand over a quarter of his cash,
-run (energy decides), or fight: a swing meter, F or Space in the green lands, three that land and
-he runs. Every miss is a hit back. At zero energy Mo goes down, is robbed (cash and a few things,
-food first) and wakes up at the clinic.
+The block changes at night. The alley has a man named Dex who only appears after 18:00, the dice
+game sets up at the lot, cops walk the park, and somebody in a grey hood might want your wallet.
+You can pay, run, or fight with a timing meter, and a loyal dog changes the odds.
 
-## The clap
-
-A night with one of the open FeedLove women can leave something behind. It shows up the next day
-and drains energy and morale by the hour until Mo pays for antibiotics at Kestrel Clinic (or puts
-them on the hospital bill). Once it shows, he can text her "You gave me the clap" (she is gone
-after that), or post a warning about her on NextStoop — which the block may applaud, or which she
-may answer, and the block takes her side.
-
-## Nia
-
-Mo's sister texts and calls. How he answers is the bond between them: talking properly or being
-honest raises it, brushing her off lowers it. Once it is good enough, every few days she asks if
-she can come over. Say yes and she walks into Unit 3B the next evening (18:00-21:00) with a bag of
-food: sitting down to eat with her is the best meal in the game (a big chunk of energy and food,
-morale, less stress). Miss her and the food is left on the radiator with a text; say no and the
-bond takes a hit.
-
-## Love on Kestrel Street
-
-Three adults can be dated: **Stephanie** (31, relaxed, low-maintenance), **Melanie** (34, warm and
-particular) and **Diana** (36, independent and exacting). They are approachable when the heart is
-over their head — the heart means *you could try*, not *she is interested*.
-
-**How they look.** Their faces, hair and clothes come from the owner's sheet
-(`assets/ref/partner_face_bank.png`): Diana with straight brown hair to the shoulders and a grey tee,
-Stephanie with long, messy black hair and a black zip hoodie, Melanie with a mass of black curls
-and a black tank top. The faces are baked into portraits and 3D head textures by
-`scripts/bake-npc-faces.py`; the hair below the jaw is real geometry.
-
-**Where they are.** Each of them has her own day, all over the block (`world/schedules.js`):
-
-| | Morning | Afternoon | Evening |
-| --- | --- | --- | --- |
-| **Diana** | park 07:00, Quik-Stop coffee 08:30 | work in Park Slope | bus stop, Kestrel St. 17:00-19:00 |
-| **Melanie** | Miguel's bodega 07:00-08:00 | teaching, then the park 15:00-18:00 | Habib's 18:00-20:00, Kestrel St. 20:00-21:00 |
-| **Stephanie** | asleep until 11 | the park 11:00-14:00, Quik-Stop 14:00-16:00 | the 1120 stoop, Habib's 19:00-21:00, the bench until 01:00 |
-
-She walks in through the door when her time comes and out again when it is over. FeedLove's LOVELINE
-tab shows where each one is right now and her usual day, and NextStoop's SEEN NOW tab gossips
-about it. A live-in girlfriend is at home when her day has
-her off the map.
-
-**Up close.** Once she likes him enough (or is his girlfriend), her menu adds **Hug her**, **Lean
-in** (she kisses his cheek) and **Take her hand** — they walk around together, hand in hand,
-until he lets go, leaves, starts something else, or her day takes her somewhere. The first of each
-in a day is worth affection, morale and a little less stress; after that it is just nice.
-
-**FeedLove HEARTS.** The social app has a dating side: open FeedLove and tap **♥ HEARTS · DATING** at the top, or the **Find someone** banner at the top of the LOVELINE tab.
-
-**Following her.** Once Mo has met one of the three she shows up under PEOPLE. Follow her and she
-follows back when she likes him enough (a girlfriend always does); her posts — her runs, her
-grading, her bench, and once she is his girlfriend, him — come into the feed. Liking her post is a
-little affection, once a day. When Mo posts, the people who follow him may like it, and her like
-is worth a little morale. Every morning it deals a fresh stack of
-profiles — strangers from around the boroughs, and, until he has matched with them, Stephanie,
-Melanie and Diana. Sending a heart takes a few minutes and there are ten a day. Strangers almost
-always say no (unmatched before the heart finishes animating; "do you have a car?"; left on read
-at 1:14 AM); the rare match ghosts him.
-
-**The other twenty.** The strangers are a fixed cast of twenty women (`core/strangers.js`), with
-faces, hair and clothes from the owner's app sheet (`assets/ref/app_women_bank.png`), so the same
-faces come round again. None of them can be dated. Most say no. A few are not looking for a
-boyfriend but might be looking for company: a heart can come back as **MATCH · not for dating**,
-and she goes under *Not for dating* in HEARTS with a **HOOK UP** button — after 22:00, once every
-few days with each of them, not when Mo is exhausted. It is a fade to black and the long train
-home: morale up, stress down, energy and hygiene down. Sometimes she flakes and is gone. If Mo has
-a girlfriend, somebody might see him leave, and she will hear about it.
-
-**Running into them.** Three of the twenty are out on the block each day (the street, the park,
-the Quik-Stop, the bodega, Habib's) for an hour and a half. Until he has seen her in the app she
-is just "the woman"; she may remember turning him down, or matching, and one of the open ones may
-give him her number on the spot. The three answer: they match, send their number, appear
-in Txtr as contacts, and from the app he can text them or ask them out through the same date
-planner as everywhere else.
-
-**Meeting them.** Talk, chat, compliment, flirt. Flirting has a cooldown and a personality-shaped
-chance: Stephanie warms quickly, Melanie notices whether Mo tried, Diana does not accept a first
-draft. A refusal is real, and repeated refusals cost affection.
-
-**Dates.** Five, at real places, for real money: coffee at the bodega ($6), dinner at Habib's
-($28), an afternoon in the park (free), a walk down Kestrel Street (free), a movie at home ($4).
-Each takes the evening and moves Mo there. The outcome — great, good, ok, bad — is scored from her
-likes and dislikes, Mo's hygiene, energy, morale and stress, his withdrawal, his balance, how
-recently he took her out, her difficulty and her affection, plus a roll. A bad date ends early,
-costs affection, and **the money does not come back**. The prose for each outcome is written once,
-in `romance.js`, so the phone, the park and the apartment say the same thing.
-
-**Cheeks.** After a good date — or at home later — she may come back to Unit 3B. The door closes,
-the screen fades, and the game moves to the next morning. Nothing explicit is shown; the game has
-never shown that and does not start now. A night that goes well grants the **Afterglow**: 24
-in-game hours with morale pinned at maximum, stress down, and energy, food and hygiene at least
-decent. It is a clock stamp, so it lasts exactly 24 in-game hours, is announced when it ends, and
-cannot be stacked.
-
-**Girlfriend.** Three *successful* dates (failed ones do not count) and enough affection, and Mo
-can ask. She may say not yet, and she means it. Once she says yes she texts him, and keeps
-texting: how the day is going, when she can see him, encouragement when he is struggling.
-
-**Moving in.** After about a week together, with the affection to match, Mo can ask her to move
-in. She becomes a resident of Unit 3B — visible, walking around, sitting down, talking, with her
-own lines — and she stays put across saves and day rollovers.
-
-| | Rent share | In the flat |
-|---|---:|---|
-| **Stephanie** | 15% | eats about two of Mo's things a day; not much else |
-| **Melanie** | 25% | eats one; leaves small useful presents |
-| **Diana** | 50% | restocks the fridge, gifts often, sells her own things |
-
-The share is read inside `economy.rentPerCycle()` from `CONFIG.partners[id].rentShare`, for the
-single live-in partner: one place, applied once, never stacked, never above half. Early payments
-use the same number, so paying ahead while she lives there charges the reduced amount, and the
-household menu shows her share and her habits (Mo can ask her to cover more; she will not love
-it).
-
-**Gifts.** A girlfriend sometimes texts that she left something. A parcel appears on the counter
-in Unit 3B — one pending at a time, a three-day cooldown per partner — and opening it adds the
-item to Mo's pockets exactly once. The pool is hers: mixtapes and chocolates from Stephanie,
-useful things from Melanie, and things Diana wrapped properly.
-
-## Map and navigation
-
-`M` opens the map (or click the minimap under the HUD panel). It is drawn from the same data the
-street is built from (`src/world/plan.js`), so a door on the map is where the door is.
-
-- **On the street:** each building as a block with its icon and name, doors and the Quik-Stop
-  counter marked on the frontage, the walkable sidewalk distinct from the road, the curb and the
-  crosswalk, points of interest (job board, bus stop, bench, dumpster, payphone), Mo as an arrow
-  showing which way he faces, and Rolo's meet spot when there is an order.
-- **Inside:** the room's actual floor plan — walls, counters, shelves and other colliders —
-  every interaction, the EXIT, and Mo, with a strip of the street underneath highlighting the
-  building he is in.
-- **The minimap** is the same drawing at strip size, redrawn a few times a second.
-
-![The street map](assets/img/map_street.jpg)
-![Inside the bodega](assets/img/map_interior.jpg)
-
----
-
-## Soundtrack
-
-Seven tracks in `/Music`, each written for a place, played through one crossfading director
-(`src/systems/soundtrack.js`). One track is heard at a time. Moving between places crossfades
-(about 1.8 s); a place that shares the current track never restarts it; a track left mid-song
-resumes where it was when Mo comes back. The menu always starts from the top.
-
-| File | Plays |
-|---|---|
-| `Mo Functional_ Main Menu.mp3` | title screen and menus |
-| `Mo Functional_ City.mp3` | Kestrel Street by day |
-| `Mo Functional_ Quik-Stop.mp3` | inside the store, within a few metres of its front, and for a minute after a shift |
-| `Mo Functional_ Bodega.mp3` | inside the bodega |
-| `Mo Functional_ Habib.mp3` | inside Habib's Corner |
-| `Mo Functional_ Church.mp3` | inside the Golden Fellowship |
-| `Mo Functional_ Lost Time.mp3` | Unit 3B; the clinic; the street and park from 22:00 to 05:00; severe withdrawal; the endings |
-
-Kestrel Park plays *City* by day.
-
-The files are 64 kbps, 48 kHz MP3s and are played exactly as delivered. Their low resolution,
-grain and crunch are the sound of the game, and nothing in the audio chain filters or
-normalises them. Sound effects (UI blips, doors, cash, munching, the mumbled NPC voices) are
-synthesised live in WebAudio.
+Some nights are better spent at home with the door locked and a bowl of instant ramen.
 
 ---
 
 ## Controls
 
-Movement is camera-relative: **W always walks into the screen**.
+Movement is camera-relative: `W` always walks into the screen. Click the floor and Mo walks there.
 
-| Input | Action |
-|---|---|
-| `W A S D` / arrows | Move |
-| Click the floor | Walk Mo there (a drag orbits) |
-| `Q` `E`, mouse drag | Orbit the camera |
-| `F` / `Space` / `Enter` | Interact with whatever is near |
-| `TAB` | Phone |
-| `M` | Map |
-| `X` | Next thing in reach |
-| `T` | Today panel |
-| `V` | Reset the camera behind Mo |
-| `ESC` | Pause, or close what is open |
-| `1` `2` `3` | Speed 1× · 2× · 4× |
-| `C` | CRT scanlines |
-| `R` | 4:3 framing |
-| `~` | the hidden debug prompt (below) |
+| Key | Action | Gamepad |
+|---|---|---|
+| `W A S D` / arrows | Move | Left stick / D-pad |
+| `Q` `E` / mouse drag | Turn the camera | Bumpers, triggers, right stick |
+| `V` | Reset the camera behind Mo | R3 |
+| `F` / `Space` / `Enter` | Interact, confirm | A |
+| `X` | Next thing in reach | X |
+| `TAB` | Phone | B |
+| `M` | Map | |
+| `T` | Fold the Today panel | |
+| `1` `2` `3` | Time at 1×, 2× or 4× | Y (2×) |
+| `C` / `R` | CRT scanlines / 4:3 frame | Back (CRT) |
+| `ESC` | Pause, or close what is open | Start |
 
-**Gamepad** (standard mapping): left stick / D-pad move, bumpers, triggers and the right stick
-orbit, `A` interact, `B` phone, `START` pause, `X`/`Y` speed. The HUD has buttons for the phone,
-map, pause, speed, CRT and 4:3. `R3` resets the camera.
+Every key except `TAB` and `ESC` can be remapped from **ESC → Options**, which also has music and
+sound effect volume, camera distance and height, and the full controller reference.
 
-Every key above except `TAB` and `ESC` can be remapped from **ESC → Options**, which also has the
-music and sound-effect volumes, the camera sliders and a full controller reference.
+<img src="assets/img/guide/options.jpg" alt="The Options panel: music and effects volume, camera sliders, and the remappable controls table" width="100%">
 
 ---
 
-## The debug menu
+## Tips from the block
 
-Press **`~`**, type `Moses`, press Enter. A wrong password closes the prompt with no message, no
-error and no hint that anything exists. The panel is a dark green console in the game's own
-style, and the clock stops while it is open:
-
-- **Condition** — fill everything, move any single need by ±10, clear intoxication, tolerance and
-  withdrawal, or reset dependence and risk.
-- **Money** — $1,000 a click, as many times as you like, straight into the balance.
-- **Time** — set the hour, skip hours, advance a whole day, jump to a later day (forward only:
-  the bills, the life history and every cooldown are keyed to the day), pause or resume the clock.
-- **World** — teleport to any area, fire any event by id, clear every event cooldown, spawn or
-  despawn a chosen NPC near Mo, and reset NPC schedules (everyone snaps back to where they should
-  be at this minute).
-- **Relationships** — affection ±10 for each of the three, girlfriend and live-in flags, a
-  pending present, or a full relationship reset.
-- **Testing** — a collapse, a clinic recovery, an early rent payment, rent marked paid, a date,
-  Cheeks, the Afterglow, the dance, using a substance, a free item, the phone, the daily report.
-
-Every button calls the real system — `rent.payRent`, `clinic.treat`, `romance.startDate`,
-`world.playDance`, `useSubstance` — so what it changes is what a player would get, and it all
-lands in the normal save state.
-
-## Rendering
-
-Late-90s console rendering in a custom shader: a low internal resolution scaled up, affine
-texture mapping, vertex snapping, ordered dithering and fog, with procedural textures painted at
-low resolution and nearest-filtered. Signs and shop names are painted the same way. An optional
-CRT layer adds scanlines, vignette, tracking and grain.
+1. **Eat before you do anything else.** Hungry Mo is slow Mo, and slow Mo is late Mo.
+2. **Pin your goals in iDread.** They show up in the Today panel, and Future Mo will thank you.
+3. **The park is free.** So is chess. So is the boombox. Stress is expensive; use them.
+4. **Opening hours are real.** The bodega closes at 23:00, Habib's at 2:00. The Quik-Stop never
+   closes, which is both a comfort and a warning.
+5. **Do not trust a deal that sounds too good after midnight.** It is not.
+6. **Sell the TV.** You were never going to watch it.
 
 ---
 
-## Project layout
+## Credits
 
-```
-index.html              page shell, CRT overlay, UI root
-styles/main.css         base UI: HUD, phone chassis, threads, menus, modals
-styles/ui2.css          skins, message feed, MoPhone apps, Rolo's Line, menu boards,
-                        fridge, map and minimap, daily report
-Music/                  the soundtrack (see above)
-src/main.js             orchestrator: loop, state flow, saves, handoff, map toggle
-src/core/               config (all balance values), state, input, audio (crossfades
-                        + synthesised sfx), save, util
-src/systems/            needs, economy, jobs, events, street, fellowship, dialogue,
-                        endings, dealer (Rolo's orders), soundtrack (music director),
-                        rent (early pay + history), romance (partners, dates, gifts,
-                        household), clinic (treatment + recovery), sms (sender
-                        identity and replies), scheduler (weights, cooldowns)
-src/world/              game3d (renderer, camera, movement), areas (every location),
-                        plan (the street as data, shared with the map), characters,
-                        schedules, shops, title (the title performance), eating,
-                        handoff (Rolo on the street + Mo's smile), animations
-                        (substance use, collapse, dancing)
-src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
-                        expressions), faces (HUD portraits)
-src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
-                        art), shopmenu, fridge, map, threads, modal, menu, themes,
-                        debug (the hidden menu)
-scripts/check-syntax.mjs  parses every module in src/ (npm run check)
-scripts/test-systems.mjs  headless system checks (npm test)
-scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)
-docs/                   design notes, devlog, art handoff
-```
+MO: FUNCTIONAL is developed by **XiØN** ([xiondigital](https://github.com/XiONDiGiTaL)).
 
-Balance lives in `src/core/config.js`. Gameplay code reads from `CONFIG` rather than
-hard-coding numbers.
+Inspired by 90s-era console games, life in New York, and circumstances that people in the inner
+city know all too well. Built with Three.js and plain JavaScript, with an original soundtrack
+written for each place on the block.
 
-```bash
-npm run stamp    # after changing any JS/CSS: re-stamps index.html so players get the new files
-npm run check    # syntax-checks every module and fails if index.html is not stamped
-npm test         # headless checks for the systems (no dependencies)
-```
-
-`npm test` runs `scripts/test-systems.mjs` in plain Node against a small game stub: rent
-arithmetic, early payment and the double-payment guards, partner rent shares, date costs and
-outcomes, the Afterglow clock, gifts, household restocking, event cooldowns and the daily cap,
-SMS identities and replies, and clinic treatment and billing. Everything that needs eyes — the
-animations, the world, the interfaces — is still checked by playing the build; the latest pass
-covered soundtrack switching, the dealer flow (text, app, meet, edge cases, save and reload),
-entering and leaving every building, and the map against world positions.
-
----
-
-## Saves
-
-Saves carry a version. Loading runs `src/systems/migrate.js` first: a v2 save is brought up to
-v3 by letting each system build its own state block with its defaults (life, Rolo's orders,
-romance, the event scheduler, the clinic and its course, rent history), so old saves keep
-working. Every load also clears in-flight locks — a payment, a dose or a fall that was mid-way
-when the game saved — so a reload can never leave Mo frozen.
-
-## Known limitations
-
-- The site is served with long cache lifetimes, so a player can briefly mix old and new files
-  after a deploy. New code is added in new modules (or reached through optional calls) so a
-  stale file degrades a feature rather than stopping the game, but a hard refresh or a cache
-  purge is the clean fix.
-- Unit 3B has no track of its own in `/Music`; it uses *Lost Time*, which it shares with the
-  street at night.
-- Rolo only meets on Kestrel Street. Ordering from inside a building works; he waits outside.
-- The animations (substance use, the collapse fall, the dance), the hearts and the live-in
-  partner were checked by stepping the game in a browser and reading their state, not by watching
-  them play in real time; how they look still wants a human eye.
-- Diana's gift pool includes the item called "Grandad's Watch", an odd present from her; the
-  item exists, so it is delivered, but it may want its own gift item.
-
----
+Want to look under the hood, run it locally or poke at the debug tools? See
+**[docs/DEVELOPERS.md](docs/DEVELOPERS.md)**.
 
 ## Disclaimer
 
-MO: FUNCTIONAL is a work of fiction. It is a game about life choices — work and life balance,
-time management, money, and what a week costs when it gets away from you. In real life, drug
-use is not okay and this game does not condone it. If you or someone you know is struggling with
-substance use, please get help: in the US, the SAMHSA National Helpline is free, confidential and
-open 24/7 at **1-800-662-4357**; elsewhere, contact your local health service or a doctor.
+MO: FUNCTIONAL is a work of fiction about life choices, work and life balance, time management,
+money, and what a week costs when it gets away from you. Every character, business and place in
+it is invented. The substances in the game are fictional and are described only by what they do
+to the numbers.
 
-## Notes
+In real life, drug use is not okay and this game does not condone it. If you or someone you know
+is struggling with substance use, please reach out for help. In the US, the SAMHSA National
+Helpline is free, confidential and open 24/7 at **1-800-662-4357**. Elsewhere, contact your local
+health service or a doctor.
 
-- Everything here is fiction. The substances (Bliss, Static, Mud, Drip) are invented and
-  described only in mechanical terms — no real-world dosing, sourcing or preparation detail.
-- Kestrel Street, the Golden Fellowship, Addison Octavius, Rolo, Quik-Stop, Shale Mobile, the
-  Civic Relief Program and the phone apps (Txtr, Shale Pay, LinkedOut, BidBay, iDread, GrubHope,
-  Pocket Lint, Landlordly, FeedLove, Blessed+, Rolo's Line, Tweaks) are original fiction or
-  parody; no real app's logo or trademark is used.
-- The visual style is an homage to late-90s console rendering. No platform assets are used.
+The game contains mature themes, including addiction, crime and adult relationships. Nothing
+explicit is ever shown.
