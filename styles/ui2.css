@@ -855,3 +855,7 @@
 .fightm__mark { position: absolute; top: -2px; bottom: -2px; width: 5px; margin-left: -2px; background: #fff; box-shadow: 0 0 8px #fff; }
 .fightm__go { width: 100%; }
 .fightm__msg { margin-top: 6px; min-height: 14px; }
+
+/* ------------------------------------------------------------------ HailMary */
+.ride__card { display: flex; flex-direction: column; gap: 5px; border-color: #ff6ab0; }
+.ride__card--here { background: rgba(255, 106, 176, .14); }

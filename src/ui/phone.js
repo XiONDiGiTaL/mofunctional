@@ -1370,6 +1370,7 @@ export class Phone {
   get apps() {
     return {
       invest: this.investView,
+      ride: this.rideView,
       shop: this.shopView,
       tube: this.tubeView,
       board: this.boardView,

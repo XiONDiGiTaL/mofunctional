@@ -10,6 +10,16 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Crossing the street; HailMary
+
+- A parked car sat on the park crosswalk (x 9.6), blocking the crossing and the camera; both
+  parked cars are on the far curb now. `World.playCross(x, toZ, onDone)` walks Mo over the
+  stripes (camera swings behind him) and then loads the park; used by both crosswalks.
+- `systems/rides.js` (call, pickup at the curb out front, tick: arrive / wait / no-show fee,
+  fares, same-block refusal with a stop fee, ride = advance + goTo to the door) and
+  `world/ridecar.js` (RideCar: parked on a fresh load or driving in, a camera-only solid while
+  parked, "Get in the black car", the destination menu). App `ride` in sites.js. 54 checks.
+
 ### Credits, employment checks, the lot; hookups and the clap; the laptop; TradeHarder; fights; Amazin'
 
 - Credits name XiØN; work-of-fiction and real-life drug-use disclaimer (SAMHSA line) in the

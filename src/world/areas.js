@@ -558,8 +558,10 @@ export function buildStreet(g) {
     group.add(box(0.08, 0.13, 0.4, retroMaterial(`cartail${tint}`, { color: 0x8a2a22, emissive: 0.5, unlit: true }), [cx - nose * 1.84, 0.62, cz - 0.52]));
     group.add(box(0.08, 0.13, 0.4, retroMaterial(`cartail2${tint}`, { color: 0x8a2a22, emissive: 0.5, unlit: true }), [cx - nose * 1.84, 0.62, cz + 0.52]));
   };
-  car(-7.2, 3.4, 0x5a6a78, 1);
-  car(9.6, 3.6, 0x6a4a3a, -1);
+  // parked along the far curb, clear of the crosswalks and of the near lane where a HailMary car
+  // pulls up (one used to sit right on the park crosswalk, in the way of the crossing and the camera)
+  car(-7.2, 7.9, 0x5a6a78, 1);
+  car(17.4, 7.9, 0x6a4a3a, -1);
 
   // street trees in planters, mailbox, news box, wall phone
   const tree = (tx, tz) => {
@@ -607,7 +609,7 @@ export function buildStreet(g) {
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
     { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
-    { id: 'eastgate', label: 'Cross to the park · east gate', sub: 'past the lot', x: 28.4, z: 0.9, radius: 1.5, action: (gg) => gg.goTo('park', 'eastgate') },
+    { id: 'eastgate', label: 'Cross the street · park east gate', sub: 'past the lot', x: 28.4, z: 0.9, radius: 1.7, action: (gg) => { if (!gg.world?.playCross?.(28.4, 7.6, () => gg.goTo('park', 'eastgate'))) gg.goTo('park', 'eastgate'); } },
     { id: 'lotdice', label: 'The dice game by the wall', sub: 'late · $5 a roll · nobody asks your name', x: 29.9, z: -3.6, radius: 1.5, action: (gg) => lotDice(gg) },
     { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 6.6, z: -4.8, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
@@ -616,7 +618,8 @@ export function buildStreet(g) {
     { id: 'kev', label: 'Talk to Kev', sub: 'coworker · loud', x: -1.2, z: -1.2, action: (gg) => talk(gg, 'kev') },
     { id: 'dex', label: 'Talk to Dex', sub: 'the corner · cash only', x: -3.4, z: -3.4, action: (gg) => dexMenu(gg) },
     { id: 'clinicDoor', label: 'Enter Kestrel Clinic', sub: 'walk-ins · the nurse is in', x: building('clinic').door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('clinic', 'street') },
-    { id: 'parkGate', label: 'Cross to Kestrel Park', sub: 'benches · hoops · people', x: 9.35, z: 0.9, radius: 1.7, action: (gg) => gg.goTo('park', 'street') },
+    // the crossings: Mo walks over the stripes to the far curb, and the park is on the other side
+    { id: 'parkGate', label: 'Cross the street to Kestrel Park', sub: 'at the crosswalk · benches · hoops · people', x: 9.35, z: 0.9, radius: 1.9, action: (gg) => { if (!gg.world?.playCross?.(9.35, 7.6, () => gg.goTo('park', 'street'))) gg.goTo('park', 'street'); } },
   ];
 
   return {

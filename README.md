@@ -80,7 +80,7 @@ stress, dependence and risk for the day just ended.
 | **Habib's Corner** | halal, no pork: chicken over rice, the combo plate, falafel, lentil soup |
 | **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge — the one ending that takes the game away |
 | **Kestrel Clinic** | walk-ins, Nurse Okafor, treatment on cash or on the bill |
-| **Kestrel Park** | across the road: benches, a half-court, chess, a boombox, people |
+| **Kestrel Park** | across the road (Mo walks over the crosswalk by the Fellowship, or the one by the lot to the east gate): benches, a half-court, chess, a boombox, people |
 | **1104 Kestrel St.** | the walk-up west of the bodega: a lobby and four floors of hallway, real minutes on the stairs. A man asleep by the steps, Ray & Denise arguing on two, Mrs. Petrakis's soup in 3B, Squeak selling from his coat on four (a few items a day, hallway prices), Stephanie's door in 5C, the roof, and a knock on every door |
 | **Ashby Avenue** | by the B44 from the stop on Kestrel (or a 45-minute walk): people walking somewhere else, a newsstand (papers, scratch-offs), Ashby Pawn & Gold (sell a valuable now, cheap), a sax player |
 | **The lot** | past the clinic: chain-link, a burnt-out Buick, a graffiti wall, a dice game after dark, and a crosswalk to the park's new east gate |
@@ -128,6 +128,7 @@ due next), an icon grid and a dock. Every app is a parody with its own name, ico
 | **Pocket Lint** | inventory as illustrated tiles; eat, drink, smoke or sell from here |
 | **Landlordly** | a thermostat dial that counts down the days to rent |
 | **FeedLove** | the social app (a heart, not a camera), in four tabs: **FEED** (Mo's profile, a box to type his own posts or a random one, and a timeline of everyone he follows — Mom, Nia, Kev, Dale, Rae, Miguel's bodega and its cat, Habib's, the Fellowship, the Quik-Stop, the park, and the three once he has met them — with pictures and likes), **PEOPLE** (following, followers, people you may know), **♥ HEARTS** (the dating side) and **LOVELINE** (the three, where they are, and her day) |
+| **HailMary** | the car service ("a ride and a prayer"): call a black car, it pulls up at the curb out front a few minutes later, walk up and get in, pick a destination. Ask for somewhere on the same block and the driver will not start the car ("It's up the road, idiot. Just walk.") and keeps a stop fee; across town is a real ride, and a no-show is charged |
 | **TradeHarder** | stocks (nine 1999 tickers on a daily seeded walk: dot-coms, a bank, the Fellowship's media arm, a Y2K survival company) and property: 1104 Kestrel ($100,000, eight units of weekly rent, tenants who fall behind, move out, or offer to pay in product) and the lot ($30,000) |
 | **Amazin'** | buy things (electronics, gifts, comforts, food that keeps) at retail; delivered by the door next morning |
 | **HardLuck Bet** | an online casino: slots, blackjack and roulette for real money. The odds are honest (slots return about 93%), the first $10 bet is free, a losing day stings, and winnings are tithed like any other income |

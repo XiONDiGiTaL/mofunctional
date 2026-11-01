@@ -33,6 +33,7 @@ import * as market from '../src/systems/market.js';
 import * as health from '../src/systems/health.js';
 import * as fights from '../src/systems/fights.js';
 import * as shopSys from '../src/systems/shop.js';
+import * as rides from '../src/systems/rides.js';
 
 let passed = 0;
 let failed = 0;
@@ -897,6 +898,33 @@ check('shop: an order is paid now and delivered the next day', () => {
   eq(shopSys.shopState(g.state).orders.length, 1, 'ordered');
   shopSys.shopNewDay(g, 2);
   eq(g.state.inventory.some((i) => i.id === it.id), true, 'delivered');
+  return true;
+});
+
+check('rides: the car comes, waits, and leaves a no-show; same-block asks are refused', () => {
+  const g = stubGame();
+  g.world = { areaId: 'street', mo: { root: { position: { x: 2 } } } };
+  g.spendMoney = (n) => { g.state.money -= n; return true; };
+  g.goTo = (area) => { g.world.areaId = area; };
+  g.state.money = 100;
+  g.state.clock.m = 600;
+  const c = rides.callRide(g);
+  eq(rides.rideState(g.state).status, 'coming', 'coming');
+  g.state.clock.m += c.eta;
+  rides.tickRide(g);
+  eq(rides.rideState(g.state).status, 'waiting', 'arrived');
+  const refused = rides.ride(g, 'quikstop');
+  eq(refused.refused, true, 'up the road');
+  eq(rides.rideState(g.state).status, 'waiting', 'still at the curb');
+  const went = rides.ride(g, 'avenue');
+  eq(went.fare, CONFIG.rides.base + CONFIG.rides.crossTown, 'cross-town fare');
+  eq(g.world.areaId, 'avenue', 'went');
+  rides.callRide(g);
+  g.state.clock.m += 60 + CONFIG.rides.waitMinutes;
+  rides.tickRide(g);
+  g.state.clock.m += CONFIG.rides.waitMinutes;
+  rides.tickRide(g);
+  eq(rides.rideState(g.state).status, 'none', 'no-show');
   return true;
 });
 

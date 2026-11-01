@@ -94,6 +94,8 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | TradeHarder stocks and property (1104, the lot; tenants) | done |
 | Muggings after dark: pay, run or fight (swing meter); robbed and clinic on a loss | done |
 | Amazin' online store, next-day delivery | done |
+| Walk across the street at the crosswalks; the parked car moved off the crossing | done |
+| HailMary car service: a car that shows up at the curb, destinations, "it's up the road" pushback | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

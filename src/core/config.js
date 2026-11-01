@@ -383,6 +383,30 @@ export const CONFIG = {
     shipping: 4.99,
   },
 
+  // HailMary, the car service: "a ride and a prayer"
+  rides: {
+    base: 7,
+    crossTown: 9,          // on top of the base when it is another neighbourhood
+    stopFee: 3,            // what he charges to refuse a ride up the block
+    cancelFee: 5,
+    eta: [4, 10],
+    waitMinutes: 15,
+    minutes: 14,
+    drivers: ['Vinnie', 'Sal\'s cousin Vinnie', 'a man named Dutch', 'Ozzie', 'Big Ray (not 2A Ray)'],
+    pushback: [
+      '"It\'s up the road, idiot. Just walk."',
+      '"Chief. CHIEF. I can SEE it from here. Get out of my car."',
+      '"You want me to drive you forty feet? My meter laughs at you."',
+      '"Walk. It\'s good for you. Look at you. Walk."',
+    ],
+    rideLines: [
+      'Vinnie takes a route that is definitely not the fastest and tells you about his ex-wife the whole way.',
+      'The radio plays the same ballgame you could hear from the curb. The Mets are losing. The driver is furious about it.',
+      'He runs one yellow, then another, then says "that was orange" with total confidence.',
+      'Twelve minutes of silence, a pine tree air freshener and the city sliding past the window. It is honestly nice.',
+    ],
+  },
+
   // HardLuck Bet, the casino app
   casino: {
     bets: [1, 5, 20, 100],

@@ -7,6 +7,7 @@ import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant } from './places.js';
 import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
+import { RideCar } from './ridecar.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
@@ -98,6 +99,8 @@ export class World {
     this.dance?.stop();
     this.collapse?.stop();
     this.dealerWalker?.remove();
+    this.rideCar?.remove();
+    this.crossing = null;
     if (this.titleScene) {
       this.titleScene.dispose();
       this.titleScene = null;
@@ -251,6 +254,9 @@ export class World {
     // a dealer who is already waiting is standing there when Mo steps out
     if (!this.dealerWalker) this.dealerWalker = new DealerWalker(this);
     this.dealerWalker.sync(g, true);
+    // a HailMary car that is already waiting here is parked at the curb when he steps out
+    if (!this.rideCar) this.rideCar = new RideCar(this);
+    this.rideCar.sync(g, true);
   }
 
   /**
@@ -674,7 +680,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (s.flags.consuming && !this.substance?.active) s.flags.consuming = false;
     const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play'
       && !this.eating?.active && !this.handoff?.active && !this.substance?.active && !this.affection?.active
-      && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming;
+      && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming && !this.crossing;
 
     // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
     // A positive orbit means "turn the view to the right". Since forward is (sin yaw, cos yaw),
@@ -802,6 +808,21 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       this.marker.rotation.z += dt * 1.1;
     }
 
+    // crossing the road at a crosswalk: a short walk over the stripes, then the other side
+    if (this.crossing) {
+      const c = this.crossing;
+      const p = this.mo.root.position;
+      p.x += (c.x - p.x) * Math.min(1, dt * 6);
+      p.z = Math.min(c.toZ, p.z + 1.7 * dt);
+      this.mo.root.rotation.y += angleDelta(this.mo.root.rotation.y, 0) * Math.min(1, dt * 8);
+      // the camera comes round behind him, so the crossing is a walk away from the lens, not
+      // a shot back at him through whatever stands at the park edge
+      this.camYaw += angleDelta(this.camYaw, 0) * Math.min(1, dt * 3);
+      this.walking = true;
+      if (!c.honked && p.z > (c.fromZ + c.toZ) / 2) { c.honked = true; if (Math.random() < 0.4) g.toast('A cab leans on its horn at you from a full block away. On principle.', 'info'); }
+      if (p.z >= c.toZ - 0.01) { this.crossing = null; this.walking = false; c.onDone?.(); }
+    }
+
     // animation
     animateMo(this.mo, dt, {
       walking: this.walking,
@@ -816,6 +837,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.dance?.update(dt);
     this.dealerWalker?.sync(g);
     this.dealerWalker?.update(dt);
+    this.rideCar?.sync(g);
+    this.rideCar?.update(dt);
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
@@ -1028,6 +1051,14 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   /** Stop him where he stands: no momentum, no tap target, no walk cycle (menus, doors, meals). */
+  /** Walk Mo over a crosswalk (x) from the curb to `toZ`, then call onDone (which loads the far side). */
+  playCross(x, toZ, onDone) {
+    if (this.mode !== 'play' || this.crossing) return false;
+    this.haltMo();
+    this.crossing = { x, fromZ: this.mo.root.position.z, toZ, onDone, honked: false };
+    return true;
+  }
+
   haltMo() {
     this.vel?.set(0, 0, 0);
     this.moveTarget = null;

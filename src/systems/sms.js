@@ -59,6 +59,9 @@ const BUSINESS = {
   'THE GOLDEN FELLOWSHIP': { category: 'service', service: 'THE GOLDEN FELLOWSHIP', name: 'The Golden Fellowship' },
   'GOLDEN FELLOWSHIP': { category: 'service', service: 'THE GOLDEN FELLOWSHIP', name: 'The Golden Fellowship' },
   FEEDLOVE: { category: 'service', service: 'FEEDLOVE', name: 'FeedLove' },
+  HAILMARY: { category: 'service', service: 'HAILMARY', name: 'HailMary' },
+  "AMAZIN'": { category: 'service', service: "AMAZIN'", name: "Amazin'" },
+  'HECTOR': { category: 'personal', kind: 'tenant_m', name: 'Hector (super, 1104)' },
 };
 
 const norm = (name = '') => String(name).toUpperCase().replace(/\(.*?\)/g, '').trim();
