@@ -10,6 +10,10 @@
  *
  *   node scripts/test-systems.mjs
  */
+import { buildGrid, findPath } from '../src/world/pathing.js';
+import { openAt, closedReason } from '../src/world/hours.js';
+import { todayItems, wouldMiss } from '../src/ui/today.js';
+import { groupOf } from '../src/ui/notify.js';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { CONFIG } from '../src/core/config.js';
 import { createState, clock, bump, addItem, countItem } from '../src/core/state.js';
@@ -1470,6 +1474,42 @@ check('migrate: a v3 save gains the new blocks and keeps its live-in', () => {
   eq(out.romance.liveIn, 'diana', 'she still lives there');
   eq(out.romance.partners.diana.heartbroken, false, 'nobody is heartbroken retroactively');
   eq(out.romance.partners.diana.girlfriend, true, 'still his girlfriend');
+  return true;
+});
+
+check('pathing: a wanderer finds a way round a table instead of through it', () => {
+  const area = { bounds: { minX: -3, maxX: 3, minZ: -3, maxZ: 3 }, solids: [{ x: 0, z: 0, w: 4, d: 1, h: 1 }] };
+  const grid = buildGrid(area);
+  const path = findPath(grid, 0, -2, 0, 2);
+  eq(Array.isArray(path) && path.length >= 2, true, 'has corners');
+  for (const [x, z] of path) eq(Math.abs(x) < 2.25 && Math.abs(z) < 0.75, false, `waypoint ${x.toFixed(2)},${z.toFixed(2)} clear of the table`);
+  return true;
+});
+
+check('hours: places close, the doors say when they open, and unlisted places never close', () => {
+  eq(openAt('bodega', 3 * 60), false, 'bodega at 3am');
+  eq(openAt('bodega', 12 * 60), true, 'bodega at noon');
+  eq(openAt('habibs', 24 * 60 + 60), true, "Habib's at 1am (open till 2)");
+  eq(openAt('quikstop', 3 * 60), true, 'the Quik-Stop never closes');
+  eq(/opens 06:00/.test(closedReason('bodega', 3 * 60)), true, 'reason');
+  return true;
+});
+
+check('today: rent and the shift are listed; sleeping through the shift is flagged', () => {
+  const g = stubGame();
+  g.state.clock.m = 1440 + 7 * 60; // day 2 is Monday (day 1 is Sunday), before the 09:00 shift
+  const items = todayItems(g);
+  eq(items.some((i) => i.id === 'rent'), true, 'rent');
+  eq(items.some((i) => i.id === 'shift' && /09:00/.test(i.text)), true, 'shift');
+  eq(wouldMiss(g, 7 * 60).some((x) => /shift/.test(x)), true, 'a 7 h sleep misses it');
+  eq(wouldMiss(g, 30).length, 0, 'half an hour does not');
+  return true;
+});
+
+check('notifications: landlord and bills are urgent, people are social, services are info', () => {
+  eq(groupOf({ from: 'RAE VELL (LANDLORD)', subject: '', body: 'rent' }), 'urgent', 'landlord');
+  eq(groupOf({ from: 'NIA', subject: '', body: 'hi' }), 'social', 'sister');
+  eq(groupOf({ from: 'BIDBAY', subject: '', body: 'listing' }), 'info', 'service');
   return true;
 });
 

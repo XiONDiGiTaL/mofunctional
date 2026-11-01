@@ -2,6 +2,8 @@
  * MO: FUNCTIONAL — entry point and game orchestrator.
  * Boots the 3D world, the HUD, the phone, saves, and the main loop.
  */
+import { shouldPop } from './ui/notify.js';
+import { wouldMiss } from './ui/today.js';
 import { CONFIG } from './core/config.js';
 import { Audio } from './core/audio.js';
 import { createState, clock, logLine, bump, spend, earn, pushMessage } from './core/state.js';
@@ -83,8 +85,12 @@ class Game {
 
     this.bus.on('log', ({ text }) => this.hud.pushLog(`D${dayOf(this.state.clock.m)} · ${text}`));
     // every incoming message also surfaces as a HUD thread, with the sender's face on it
-    this.bus.on('message', ({ from, body }) => {
-      if (this.mode === 'play') this.threads.push(from, body);
+    // a text only pops up over the game if the player wants that kind (Tweaks → Notifications);
+    // every text is still in Txtr either way
+    this.bus.on('message', ({ from, body, id }) => {
+      if (this.mode !== 'play') return;
+      const m = this.state.messages.find((x) => x.id === id) || { from, body, subject: '' };
+      if (shouldPop(this.state, m)) this.threads.push(from, body);
     });
 
     this.lastT = performance.now();
@@ -121,6 +127,8 @@ class Game {
     }
     if (this.mode !== 'play' || this.phoneOpen || this.modalOpen) return;
     if (inp.take('interact')) this.world.tryInteract(this);
+    if (inp.take('cycle')) this.world.cycleTarget?.();
+    if (inp.take('today')) this.hud.toggleToday?.();
     if (inp.take('crt')) this.toggleCRT();
     if (inp.take('ratio')) this.toggle43();
     if (inp.take('speed1')) this.setSpeed(1);
@@ -267,6 +275,11 @@ class Game {
   setSpeed(n) {
     this.state.settings.speed = clamp(n, 1, 3);
     this.audio.sfx('ui');
+    // speeding up with something due within the hour: say so, once
+    if (n > 1 && this.mode === 'play') {
+      const soon = wouldMiss(this, 60);
+      if (soon.length) this.toast(`Heads up: ${soon.join(', ')} within the hour.`, 'bad');
+    }
   }
 
   togglePause() {
@@ -295,6 +308,12 @@ class Game {
     if (this.modal.isOpen) return;
     if (this.laptop?.isOpen) { this.laptop.close(); return; }
     this.phone.toggle();
+  }
+
+  /** Put a destination on the map (from Today, or anywhere); optionally open the map to it. */
+  navigateTo(id, openMap = false) {
+    this.state.nav = id;
+    if (openMap && this.mode === 'play' && !this.phoneOpen && !this.modal.isOpen) this.toggleMap?.();
   }
 
   openLaptop(app = null) {
@@ -332,15 +351,17 @@ class Game {
     this.world.loadArea(area, this, from);
     this.hud.setPrompt(null);
     this.audio.sfx('door');
-    if (area === 'street') this.toast('1120 Kestrel St. The neon is doing its best.', 'info');
-    if (area === 'church') this.toast('The Fellowship. It smells expensive in here.', 'gold');
-    if (area === 'apartment') this.toast('Unit 3B. Home, in the legal sense.', 'info');
-    if (area === 'bodega') this.toast('Kestrel Bodega. It smells like a grill and lottery tickets.', 'info');
-    if (area === 'quikstop') this.toast('Quik-Stop #14. The door chime plays half a song and gives up.', 'info');
-    if (area === 'habibs') this.toast("Habib's Corner. Warm, clean, and he is already asking if you ate.", 'info');
-    if (area === 'park') this.toast('Kestrel Park. Grass, a bent rim, and somebody else\'s music.', 'info');
-    if (area === 'clinic') this.toast('Kestrel Clinic. It smells like clean and paperwork.', 'info');
-    if (this.world.area?.enterToast) this.toast(this.world.area.enterToast, 'info');
+    // the "where you are" lines can be switched off (Tweaks → Notifications)
+    const announce = this.state.settings.placeToasts ?? true;
+    if (!announce) { /* quiet */ } else if (area === 'street') this.toast('1120 Kestrel St. The neon is doing its best.', 'info');
+    if (announce && area === 'church') this.toast('The Fellowship. It smells expensive in here.', 'gold');
+    if (announce && area === 'apartment') this.toast('Unit 3B. Home, in the legal sense.', 'info');
+    if (announce && area === 'bodega') this.toast('Kestrel Bodega. It smells like a grill and lottery tickets.', 'info');
+    if (announce && area === 'quikstop') this.toast('Quik-Stop #14. The door chime plays half a song and gives up.', 'info');
+    if (announce && area === 'habibs') this.toast("Habib's Corner. Warm, clean, and he is already asking if you ate.", 'info');
+    if (announce && area === 'park') this.toast('Kestrel Park. Grass, a bent rim, and somebody else\'s music.', 'info');
+    if (announce && area === 'clinic') this.toast('Kestrel Clinic. It smells like clean and paperwork.', 'info');
+    if (announce && this.world.area?.enterToast) this.toast(this.world.area.enterToast, 'info');
   }
 
   /* ------------------------------ collapse / fade ------------------------------ */

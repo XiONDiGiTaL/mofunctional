@@ -5,7 +5,7 @@ import { tex } from '../render/textures.js';
 import { CONFIG } from '../core/config.js';
 import { countItem, inventoryList, addItem, removeItem, hasItem } from '../core/state.js';
 import { bump } from '../core/state.js';
-import { money, chance, pick, clamp, randInt, minuteOfDay, dayOf } from '../core/util.js';
+import { money, chance, pick, clamp, randInt, minuteOfDay, dayOf, hhmm } from '../core/util.js';
 import { eat, sleep, useSubstance, soberUp } from '../systems/needs.js';
 import { visitFellowship, serviceWindow } from '../systems/fellowship.js';
 import { workShift, callOut, quitJob, applyForJob, doOddJob, oddJobsAvailable, shiftInfo } from '../systems/jobs.js';
@@ -16,6 +16,8 @@ import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
 import { partnerTarget } from './schedules.js';
 import { busMenu } from './places.js';
+import { closedReason } from './hours.js';
+import { confirmSleep } from '../ui/today.js';
 import { buildVehicle } from './vehicles.js';
 import { ROAD } from './plan.js';
 import { signTex } from '../render/signs.js';
@@ -196,9 +198,9 @@ function bedMenu(g) {
     title: 'Horizontal, For A While',
     body: `It is ${String(Math.floor(mod / 60)).padStart(2, '0')}:${String(mod % 60).padStart(2, '0')}. The mattress has a shape in it that you did not put there.\n\nSleep restores energy. It also skips the clock forward. You cannot sleep through a shift and keep the shift.`,
     choices: [
-      { label: 'Sleep 4 hours.', sub: 'quick · partial recovery', effect: () => sleep(g, 4) },
-      { label: 'Sleep 7 hours.', sub: 'the responsible option', effect: () => sleep(g, 7) },
-      { label: 'Sleep 9 hours.', sub: 'grief nap, basically', effect: () => sleep(g, 9) },
+      { label: 'Sleep 4 hours.', sub: `quick · partial recovery · until ${hhmm(g.state.clock.m + 240)}`, effect: () => confirmSleep(g, 4, () => sleep(g, 4)) },
+      { label: 'Sleep 7 hours.', sub: `the responsible option · until ${hhmm(g.state.clock.m + 420)}`, effect: () => confirmSleep(g, 7, () => sleep(g, 7)) },
+      { label: 'Sleep 9 hours.', sub: `grief nap, basically · until ${hhmm(g.state.clock.m + 540)}`, effect: () => confirmSleep(g, 9, () => sleep(g, 9)) },
       { label: 'Lie down for an hour.', sub: '+energy, still awake-ish', effect: () => { g.advance(60, { sleeping: true }); bump(s, 'energy', 4); bump(s, 'stress', -3); } },
       { label: 'Get up.', sub: '', effect: () => {} },
     ],
@@ -666,9 +668,9 @@ export function buildStreet(g) {
     { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => apartmentDoor(gg) },
     { id: 'store', label: 'Enter Quik-Stop #14', sub: 'open 24 hrs · shop · clock in at the back', x: 1.5, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('quikstop', 'street') },
     { id: 'alley', label: 'Step into the alley', sub: 'Dex is usually here', x: -3.6, z: -2.4, action: (gg) => dexMenu(gg) },
-    { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: building('church').door, z: STREET.doorZ, radius: 1.7, action: (gg) => gg.goTo('church', 'street') },
-    { id: 'bodega', label: 'Enter Kestrel Bodega', sub: 'Miguel · BEC · loosies', x: bod.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('bodega', 'street') },
-    { id: 'habibs', label: "Enter Habib's Corner", sub: 'halal · chicken over rice', x: hab.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('habibs', 'street') },
+    { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: building('church').door, z: STREET.doorZ, radius: 1.7, unavailable: (gg) => closedReason('church', gg.state.clock.m), action: (gg) => gg.goTo('church', 'street') },
+    { id: 'bodega', label: 'Enter Kestrel Bodega', sub: 'Miguel · BEC · loosies', x: bod.door, z: STREET.doorZ, radius: 1.6, unavailable: (gg) => closedReason('bodega', gg.state.clock.m), action: (gg) => gg.goTo('bodega', 'street') },
+    { id: 'habibs', label: "Enter Habib's Corner", sub: 'halal · chicken over rice', x: hab.door, z: STREET.doorZ, radius: 1.6, unavailable: (gg) => closedReason('habibs', gg.state.clock.m), action: (gg) => gg.goTo('habibs', 'street') },
     { id: 'homelessMan', label: 'Talk to Gus', sub: 'the man on the cardboard', x: -9.6, z: 0.4, action: (gg) => talk(gg, 'homeless') },
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
@@ -687,7 +689,7 @@ export function buildStreet(g) {
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
     { id: 'kev', label: 'Talk to Kev', sub: 'coworker · loud', x: -1.2, z: -1.2, action: (gg) => talk(gg, 'kev') },
     { id: 'dex', label: 'Talk to Dex', sub: 'the corner · cash only', x: -3.4, z: -3.4, action: (gg) => dexMenu(gg) },
-    { id: 'clinicDoor', label: 'Enter Kestrel Clinic', sub: 'walk-ins · the nurse is in', x: building('clinic').door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('clinic', 'street') },
+    { id: 'clinicDoor', label: 'Enter Kestrel Clinic', sub: 'walk-ins · the nurse is in', x: building('clinic').door, z: STREET.doorZ, radius: 1.6, unavailable: (gg) => closedReason('clinic', gg.state.clock.m), action: (gg) => gg.goTo('clinic', 'street') },
     // the crossings: Mo walks over the stripes to the far curb, and the park is on the other side
     { id: 'parkGate', label: 'Cross the street to Kestrel Park', sub: 'at the crosswalk · benches · hoops · people', x: 9.35, z: 0.9, radius: 1.9, action: (gg) => { if (!gg.world?.playCross?.(9.35, 7.6, () => gg.goTo('park', 'street'))) gg.goTo('park', 'street'); } },
   ];

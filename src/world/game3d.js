@@ -10,6 +10,7 @@ import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
 import { RideCar } from './ridecar.js';
 import { Traffic } from './traffic.js';
+import { buildGrid, findPath, wanderSpot } from './pathing.js';
 import { StreetLife, applyAct, dogState } from './streetlife.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
@@ -266,6 +267,8 @@ export class World {
     // a HailMary car that is already waiting here is parked at the curb when he steps out
     if (!this.rideCar) this.rideCar = new RideCar(this);
     this.rideCar.sync(g, true);
+    // indoors, a walkability grid so wanderers go round the furniture (world/pathing.js)
+    this.navGrid = id !== 'street' && id !== 'avenue' && id !== 'park' ? buildGrid(this.area) : null;
     // cars up and down the road, where there is a road
     this.traffic = this.area.traffic ? new Traffic(this, this.area.traffic) : null;
     // smoke, the dog, the things that happen
@@ -728,8 +731,17 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.promptTarget = it;
   }
 
+  /** The next interactable in reach (X / the pad's X). */
+  cycleTarget() {
+    if (!this.nearList || this.nearList.length < 2) return;
+    this.pickIndex = ((this.pickIndex || 0) + 1) % this.nearList.length;
+    this.prompt = null; // redraw
+  }
+
   tryInteract(g) {
     if (this.mode !== 'play' || !this.promptTarget) return false;
+    const why = this.promptTarget.unavailable ? this.promptTarget.unavailable(g) : null;
+    if (why) { g.audio.sfx('deny'); g.toast(why, 'info'); return false; }
     g.audio.sfx('ui');
     const target = this.promptTarget;
     this.mo.root.rotation.y = Math.atan2(target.x - this.mo.root.position.x, target.z - this.mo.root.position.z);
@@ -1224,22 +1236,27 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       }
     }
 
-    // interaction prompt
-    let best = null;
-    let bestDist = Infinity;
+    // interaction prompt: everything in reach, nearest first. X cycles through them, so two doors
+    // a metre apart do not mean shuffling back and forth to pick one.
+    const near = [];
     for (const it of this.interactables) {
       if (it.hidden) continue;
       const d = Math.hypot(it.x - this.mo.root.position.x, it.z - this.mo.root.position.z);
-      if (d < (it.radius || 1.75) && d < bestDist) {
-        best = it;
-        bestDist = d;
-      }
+      if (d < (it.radius || 1.75)) near.push({ it, d });
     }
+    near.sort((a, b) => a.d - b.d);
+    const ids = near.map((n) => n.it.id).join(',');
+    if (ids !== this.nearIds) { this.nearIds = ids; this.pickIndex = 0; }
+    this.nearList = near.map((n) => n.it);
+    const best = this.nearList[Math.min(this.pickIndex || 0, this.nearList.length - 1)] || null;
     this.promptTarget = best;
-    const prompt = best ? `${best.label}${best.sub ? `|${best.sub}` : ''}` : null;
+    // a target may say it cannot be used right now, and why (closed, wrong hour, not yours)
+    const why = best?.unavailable ? best.unavailable(g) : null;
+    const pad = g.input?.lastDevice === 'pad';
+    const prompt = best ? `${best.label}|${best.sub || ''}|${why || ''}|${this.pickIndex}|${near.length}|${pad}` : null;
     if (prompt !== this.prompt) {
       this.prompt = prompt;
-      g.hud?.setPrompt(best ? { label: best.label, sub: best.sub } : null);
+      g.hud?.setPrompt(best ? { label: best.label, sub: best.sub, unavailable: why, index: this.pickIndex || 0, count: near.length, pad } : null);
     }
     if (this.promptTarget && canMove) {
       // subtle highlight: face the interaction when close, no shader tricks needed
@@ -1398,6 +1415,26 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     }
     const w = rig.wander;
     w.timer -= dt;
+    // indoors: pick a reachable spot and walk the grid path round the furniture to it
+    if (this.navGrid) {
+      if (w.timer <= 0) {
+        w.timer = 3 + Math.random() * 5;
+        const spot = wanderSpot(this.navGrid, w.homeX, w.homeZ, def.roam ?? 1.5);
+        w.path = spot ? findPath(this.navGrid, rig.root.position.x, rig.root.position.z, spot[0], spot[1]) : null;
+      }
+      const next = w.path?.[0];
+      if (!next) { rig.walking = false; return; }
+      const dx = next[0] - rig.root.position.x;
+      const dz = next[1] - rig.root.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.08) { w.path.shift(); if (!w.path.length) rig.walking = false; return; }
+      rig.walking = true;
+      const step = Math.min(dist, 0.8 * dt);
+      rig.root.position.x += (dx / dist) * step;
+      rig.root.position.z += (dz / dist) * step;
+      rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
+      return;
+    }
     if (w.timer <= 0) {
       w.timer = 2.5 + Math.random() * 4.5;
       const a = Math.random() * Math.PI * 2;

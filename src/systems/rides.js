@@ -14,6 +14,7 @@ import { CONFIG } from '../core/config.js';
 import { money, pick } from '../core/util.js';
 import { pushMessage, logLine } from '../core/state.js';
 import { building, STREET, PARK, ROAD } from '../world/plan.js';
+import { openAt } from '../world/hours.js';
 
 /** On Kestrel the car pulls into the nearest gap between parked cars. */
 function freeCurbX(x) {
@@ -143,6 +144,8 @@ export function ride(g, destId) {
   r.spent += fare;
   g.advance(C().minutes);
   logLine(g, `HailMary to ${dest.name} (${money(fare)}).`, 'info');
-  g.goTo(dest.area, dest.from);
+  // a closed place: he is dropped at its door outside, not let into a dark room
+  if (!openAt(dest.area, s.clock.m)) g.goTo(dest.area === 'restaurant' ? 'avenue' : 'street', dest.area);
+  else g.goTo(dest.area, dest.from);
   return { fare, dest, line: pick(C().rideLines) };
 }

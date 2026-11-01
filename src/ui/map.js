@@ -9,6 +9,8 @@
  */
 import { STREET, BUILDINGS, LANDMARKS, MEET_SPOT, PARK, building } from '../world/plan.js';
 import * as dealer from '../systems/dealer.js';
+import { destinations, destById, accessLabel, isOpen, heading } from './nav.js';
+import { todayItems } from './today.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -129,6 +131,29 @@ function streetSVG(g, { mini = false, highlight = null } = {}) {
     out.push(glyph(waiting && o.arrived ? 'rolo' : 'spot', X(MEET_SPOT.x), Y(MEET_SPOT.z), mini ? 8 : 15, '#9bbc0f'));
     if (!mini) out.push(plate(X(MEET_SPOT.x), Y(MEET_SPOT.z) + 26, waiting ? (o.arrived ? `ROLO · ${o.id}` : 'GO INSIDE · HE COMES') : `MEET ${o.id}`, { size: 9, color: '#0f380f', bg: '#9bbc0f' }));
   }
+  // today's tasks: a small "!" on the places that matter today
+  if (g?.state && !mini) {
+    const marks = new Set(todayItems(g).filter((i) => i.act?.map && i.level !== 'done').map((i) => i.act.map));
+    for (const id of marks) {
+      const d = destById(id);
+      if (!d || d.map !== 'street') continue;
+      out.push(`<circle cx="${X(d.x)}" cy="${Y(d.z) - 30}" r="8" fill="#ff7a4a" stroke="#1a0a04" stroke-width="1.5"/>`);
+      out.push(`<text x="${X(d.x)}" y="${Y(d.z) - 26}" text-anchor="middle" font-size="11" font-weight="800" fill="#1a0a04">!</text>`);
+    }
+  }
+  // the selected destination: a ring, and on the big map a walking route along the sidewalk
+  const dest = g?.state ? destById(g.state.nav) : null;
+  const wv = g?.world;
+  if (dest && dest.map === 'street') {
+    out.push(`<circle cx="${X(dest.x)}" cy="${Y(dest.z)}" r="${mini ? 6 : 15}" fill="none" stroke="#ffd24a" stroke-width="${mini ? 2 : 3}" class="mapping"/>`);
+    if (!mini) out.push(plate(X(dest.x), Y(dest.z) - 22, `→ ${dest.name.toUpperCase()}`, { size: 9, color: '#1a1408', bg: '#ffd24a' }));
+    if (wv?.areaId === 'street' && wv.mo) {
+      const p = wv.mo.root.position;
+      const walkZ = Math.max(-4.2, Math.min(0.6, p.z > 1.4 ? 0.6 : p.z));
+      const pts = [[p.x, p.z], [p.x, walkZ], [dest.x, walkZ], [dest.x, dest.z]].map(([x, z]) => `${X(x).toFixed(1)},${Y(z).toFixed(1)}`).join(' ');
+      out.push(`<polyline points="${pts}" fill="none" stroke="#ffd24a" stroke-width="${mini ? 1.5 : 3}" stroke-dasharray="${mini ? '3 3' : '8 6'}" opacity=".85"/>`);
+    }
+  }
   // Mo
   const w = g?.world;
   if (w?.areaId === 'street' && w.mo) {
@@ -191,14 +216,16 @@ let overlay = null;
 
 export function mapTitle(g) {
   const id = g.world?.areaId;
-  return id === 'street' ? 'Kestrel Street' : AREA_NAMES[id] || 'Somewhere';
+  return id === 'street' ? 'Kestrel Street' : g.world?.area?.title || AREA_NAMES[id] || 'Somewhere';
 }
 
 export function renderMinimap(g) {
   const id = g.world?.areaId;
   if (!id || g.mode !== 'play') return '';
   const body = id === 'street' ? streetSVG(g, { mini: true }) : interiorSVG(g, { mini: true });
-  return `<div class="minimap__head"><b>${esc(mapTitle(g))}</b><span>M · MAP</span></div>${body}`;
+  const h = heading(g);
+  const arrow = h?.dir != null ? `<i class="minimap__arrow" style="transform:rotate(${(-h.dir * 180 / Math.PI + 180).toFixed(0)}deg)">▲</i>` : '';
+  return `<div class="minimap__head"><b>${esc(mapTitle(g))}</b><span>M · MAP</span></div>${body}${h ? `<div class="minimap__nav">${arrow}${esc(h.text)}</div>` : ''}`;
 }
 
 export function toggleMap(g) {
@@ -207,6 +234,7 @@ export function toggleMap(g) {
   const root = document.getElementById('ui') || document.body;
   const wrap = document.createElement('div');
   wrap.className = 'mapview';
+  let query = '';
   const draw = () => {
     const id = g.world?.areaId;
     const inside = id !== 'street';
@@ -217,7 +245,14 @@ export function toggleMap(g) {
           <div><span class="mapview__kicker">KESTREL NAV · v0.98</span><h2>${esc(mapTitle(g))}</h2></div>
           <button class="mapview__x" data-close aria-label="Close">×</button>
         </header>
-        <div class="mapview__main">${inside ? interiorSVG(g) : streetSVG(g)}</div>
+        <div class="mapview__body">
+          <aside class="mapview__dests">
+            <input class="mapview__search" type="text" placeholder="Find a place…" value="${esc(query)}" autocomplete="off" spellcheck="false" />
+            ${g.state.nav ? '<button class="mapview__clear" data-nav-clear>CLEAR DESTINATION</button>' : ''}
+            ${destList(g, query)}
+          </aside>
+          <div class="mapview__main">${inside ? interiorSVG(g) : streetSVG(g)}</div>
+        </div>
         ${inside ? `<div class="mapview__inset"><span>YOU ARE INSIDE · ${esc(building(AREA_BUILDING[id])?.short || '')}</span>${streetSVG(g, { mini: true, highlight: AREA_BUILDING[id] })}</div>` : ''}
         <footer class="mapview__legend">
           <span><i class="lg lg--mo"></i>You</span>
@@ -229,9 +264,25 @@ export function toggleMap(g) {
       </div>`;
   };
   draw();
-  wrap.addEventListener('click', (e) => { if (e.target.closest('[data-close]') || e.target === wrap) closeMap(g); });
+  wrap.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]') || e.target === wrap) { closeMap(g); return; }
+    const pickBtn = e.target.closest('[data-dest]');
+    if (pickBtn) { g.state.nav = g.state.nav === pickBtn.dataset.dest ? null : pickBtn.dataset.dest; draw(); return; }
+    if (e.target.closest('[data-nav-clear]')) { g.state.nav = null; draw(); }
+  });
+  wrap.addEventListener('input', (e) => {
+    if (!e.target.classList.contains('mapview__search')) return;
+    query = e.target.value;
+    const pos = e.target.selectionStart;
+    draw();
+    const box = wrap.querySelector('.mapview__search');
+    box.focus();
+    box.setSelectionRange(pos, pos);
+  });
   const onKey = (e) => {
-    if (e.key === 'Escape' || e.code === 'KeyM') { e.stopImmediatePropagation(); e.preventDefault(); closeMap(g); }
+    const typing = document.activeElement?.classList?.contains('mapview__search');
+    if (e.key === 'Escape' || (e.code === 'KeyM' && !typing)) { e.stopImmediatePropagation(); e.preventDefault(); closeMap(g); return; }
+    if (typing) e.stopImmediatePropagation();
   };
   window.addEventListener('keydown', onKey, true);
   root.appendChild(wrap);
@@ -239,6 +290,20 @@ export function toggleMap(g) {
   g.overlayOpen = true;
   g.onModalOpenChange?.(true);
   g.audio?.sfx?.('ui');
+}
+
+/** The list beside the map: by category, filtered by the search, with open/closed and a pick. */
+function destList(g, query) {
+  const q = String(query || '').toLowerCase();
+  const m = g.state.clock.m;
+  const list = destinations().filter((d) => !q || `${d.name} ${d.cat} ${d.blurb}`.toLowerCase().includes(q));
+  const cats = [...new Set(list.map((d) => d.cat))];
+  return cats.map((c) => `<div class="mapdest__cat">${esc(c)}</div>${list.filter((d) => d.cat === c).map((d) => {
+    const acc = accessLabel(d, m);
+    const sel = g.state.nav === d.id;
+    return `<button class="mapdest ${sel ? 'mapdest--sel' : ''} ${isOpen(d, m) ? '' : 'mapdest--closed'}" data-dest="${d.id}">
+      <b>${esc(d.name)}</b><small>${esc([d.map === 'avenue' ? 'Ashby Ave.' : null, d.floors ? (typeof d.floors === 'number' ? `${d.floors} floors` : d.floors) : null, acc, d.blurb].filter(Boolean).join(' · '))}</small></button>`;
+  }).join('')}`).join('') || '<div class="mapdest__none">Nothing by that name around here.</div>';
 }
 
 export function closeMap(g) {

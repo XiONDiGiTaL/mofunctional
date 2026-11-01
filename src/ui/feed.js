@@ -27,10 +27,12 @@ export class MessageFeed {
       <div class="feed__list" role="log" aria-live="polite"></div>
       <button class="feed__handle" type="button" title="Message history (click to pin)">
         <i class="feed__dot"></i><span class="feed__label">Messages</span><b class="feed__count">0</b>
-      </button>`;
+      </button>
+      <button class="feed__clear" type="button" title="Clear the log">CLEAR</button>`;
     this.list = this.el.querySelector('.feed__list');
     this.countEl = this.el.querySelector('.feed__count');
     this.el.querySelector('.feed__handle').addEventListener('click', () => this.togglePinned());
+    this.el.querySelector('.feed__clear').addEventListener('click', () => this.clear());
     // opening the history jumps to the newest message, like any messaging app
     this.el.addEventListener('mouseenter', () => this.toBottom());
     root.appendChild(this.el);
@@ -45,6 +47,13 @@ export class MessageFeed {
     return `D${day} · ${String(Math.floor(mod / 60)).padStart(2, '0')}:${String(mod % 60).padStart(2, '0')}`;
   }
 
+  /** 'all' | 'important' (good/bad/event only) | 'off' (kept in the history, never bubbled up). */
+  quiet(kind) {
+    const mode = this.g?.state?.settings?.feedBubbles || 'all';
+    if (mode === 'off') return true;
+    return mode === 'important' && (kind === 'info' || kind === 'sys');
+  }
+
   push(text, kind = 'info') {
     const from = SENDERS[kind] || SENDERS.info;
     const grouped = this.lastWho === kind; // consecutive texts from one sender share a header
@@ -57,8 +66,10 @@ export class MessageFeed {
         <div class="fb__head"><b>${esc(from.who)}</b><time>${this.stamp()}</time></div>
         <div class="fb__text">${esc(text)}</div>
       </div>`;
-    this.append(node);
-    setTimeout(() => node.classList.add('fb--old'), LINGER);
+    const quiet = this.quiet(kind);
+    if (quiet) node.classList.add('fb--old');
+    this.append(node, quiet);
+    if (!quiet) setTimeout(() => node.classList.add('fb--old'), LINGER);
   }
 
   /** Log lines are the quiet ones: a centred timestamp row, like "Today 07:41" in a thread. */
@@ -67,16 +78,20 @@ export class MessageFeed {
     const node = document.createElement('div');
     node.className = 'fb fb--sys';
     node.innerHTML = `<span>${esc(text)}</span>`;
-    this.append(node);
-    setTimeout(() => node.classList.add('fb--old'), LINGER - 2000);
+    const quiet = this.quiet('sys');
+    if (quiet) node.classList.add('fb--old');
+    this.append(node, quiet);
+    if (!quiet) setTimeout(() => node.classList.add('fb--old'), LINGER - 2000);
   }
 
-  append(node) {
+  append(node, quiet = false) {
     const pinnedToBottom = this.list.scrollHeight - this.list.scrollTop - this.list.clientHeight < 40;
     this.list.appendChild(node);
     while (this.list.children.length > KEEP) this.list.firstElementChild.remove();
-    this.count += 1;
+    // the count is what he has not looked at yet; opening the history marks it seen
+    if (!this.el.classList.contains('feed--open')) this.count += 1;
     this.countEl.textContent = this.count > 99 ? '99+' : String(this.count);
+    if (quiet) return;
     this.el.classList.remove('feed--ping');
     void this.el.offsetWidth; // restart the handle's ping animation
     this.el.classList.add('feed--ping');
@@ -92,6 +107,8 @@ export class MessageFeed {
 
   togglePinned() {
     this.el.classList.toggle('feed--open');
+    this.count = 0;
+    this.countEl.textContent = '0';
     this.toBottom();
   }
 

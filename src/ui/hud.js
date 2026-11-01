@@ -1,4 +1,5 @@
 /** HUD: clock, money, needs, prompt, toasts, objective, speed controls. */
+import { todayItems } from './today.js';
 import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { money, hhmm, dayOf, minuteOfDay, clamp } from '../core/util.js';
 import { clock } from '../core/state.js';
@@ -53,10 +54,12 @@ export class HUD {
           <button class="hud__btn" data-hud="crt">CRT</button>
           <button class="hud__btn" data-hud="ratio">4:3</button>
         </div>
+        <div class="hud__timestate"></div>
         <div class="hud__objective"></div>
+        <div class="hud__today"></div>
       </div>
       <div class="hud__prompt"></div>
-      <div class="hud__hint">WASD move · Q/E orbit · F interact · TAB phone · M map · 1/2/3 speed · ESC pause · pad supported</div>
+      <div class="hud__hint">WASD move · Q/E orbit · F interact · X next target · T today · TAB phone · M map · 1/2/3 speed · ESC pause · pad supported</div>
       <div class="hud__log"></div>
       <div class="hud__toasts"></div>
     </div>`);
@@ -72,6 +75,17 @@ export class HUD {
     this.statsEl = this.el.querySelector('.hud__stats');
     this.promptEl = this.el.querySelector('.hud__prompt');
     this.objectiveEl = this.el.querySelector('.hud__objective');
+    this.todayEl = this.el.querySelector('.hud__today');
+    this.timeStateEl = this.el.querySelector('.hud__timestate');
+    // a Today row is a shortcut: open the app that settles it, or put the place on the map
+    this.todayEl.addEventListener('click', (e) => {
+      const row = e.target.closest('[data-today]');
+      if (e.target.closest('[data-today-toggle]')) { this.toggleToday(); return; }
+      if (!row) return;
+      if (row.dataset.phone) this.g.openPhone?.(row.dataset.phone);
+      if (row.dataset.map) this.g.navigateTo?.(row.dataset.map, true);
+    });
+    this.todayT = 0;
     this.logEl = this.el.querySelector('.hud__log');
     this.toastWrap = this.el.querySelector('.hud__toasts');
     this.feed = new MessageFeed(this.el, this.g);
@@ -170,6 +184,14 @@ export class HUD {
     let extra = '';
     if (rent.owedCycles > 0) extra = `<span class="bad">Rent overdue: ${money(rent.owed)}</span>`;
     else if (rent.daysLeft <= 2) extra = `<span class="warn">Rent due in ${rent.daysLeft}d (${money(rent.base)})</span>`;
+    // time: the speed, or why it has stopped
+    const stopped = g.paused ? 'PAUSED · ESC to resume' : g.phoneOpen ? 'TIME STOPPED · phone / laptop open' : g.modalOpen ? 'TIME STOPPED · decide' : g.mode !== 'play' ? '' : null;
+    const speedLabel = { 1: '1×', 2: '2×', 3: '4×' }[s.settings.speed] || '1×';
+    const ts = stopped ?? `▶ ${speedLabel} · ${s.settings.speed > 1 ? 'fast' : 'time running'}`;
+    if (ts !== this.lastTs) { this.lastTs = ts; this.timeStateEl.textContent = ts; this.timeStateEl.classList.toggle('stopped', !!stopped); }
+    // Today, a couple of times a second
+    const nowT = performance.now();
+    if (nowT - this.todayT > 500) { this.todayT = nowT; this.renderToday(); }
     const glow = afterglowLabel(s);
     this.objectiveEl.innerHTML = `<b>${hint.title}</b>${extra ? `${extra}<br>` : ''}
       ${glow ? `<span class="hud__afterglow">AFTERGLOW · ${glow}</span><br>` : ''}${hint.text}`;
@@ -185,12 +207,39 @@ export class HUD {
     this.el.querySelector('[data-hud="pause"]').textContent = g.paused ? '▶ [ESC]' : 'II [ESC]';
   }
 
+  toggleToday() {
+    const s = this.g.state;
+    s.settings.todayOpen = !(s.settings.todayOpen ?? true);
+    this.renderToday();
+  }
+
+  renderToday() {
+    const g = this.g;
+    if (!g.state || g.mode !== 'play') { this.todayEl.innerHTML = ''; return; }
+    const open = g.state.settings.todayOpen ?? true;
+    const items = todayItems(g);
+    const urgent = items.filter((i) => i.level === 'urgent').length;
+    const rows = open ? items.slice(0, 8).map((i) => {
+      const act = i.act?.phone ? `data-phone="${i.act.phone}"` : i.act?.map ? `data-map="${i.act.map}"` : '';
+      return `<button class="today__row today__row--${i.level}" data-today ${act} ${act ? '' : 'disabled'}><i>${escapeHtml(i.icon)}</i><span><b>${escapeHtml(i.text)}</b>${i.sub ? `<small>${escapeHtml(i.sub)}</small>` : ''}</span>${i.act?.map ? '<em>MAP</em>' : i.act?.phone ? '<em>OPEN</em>' : ''}</button>`;
+    }).join('') : '';
+    const html = `<button class="today__head" data-today-toggle><b>TODAY</b>${urgent ? `<span class="today__urgent">${urgent} urgent</span>` : ''}<span>${open ? '▾' : '▸'} T</span></button>${rows}`;
+    if (html !== this.lastToday) { this.lastToday = html; this.todayEl.innerHTML = html; }
+  }
+
   setPrompt(prompt) {
     if (!prompt) {
       this.promptEl.classList.remove('show');
       return;
     }
-    this.promptEl.innerHTML = `<kbd>F</kbd>${escapeHtml(prompt.label)}${prompt.sub ? `<small>${escapeHtml(prompt.sub)}</small>` : ''}`;
+    // [F] (or Ⓐ on a pad) and the action; when it cannot be done, why; when there is more than one
+    // thing in reach, which one this is and the key that moves to the next
+    const key = prompt.pad ? 'Ⓐ' : 'F';
+    const cyc = prompt.count > 1 ? `<span class="prompt__cycle"><kbd>${prompt.pad ? 'Ⓧ' : 'X'}</kbd>${prompt.index + 1}/${prompt.count}</span>` : '';
+    this.promptEl.classList.toggle('prompt--off', !!prompt.unavailable);
+    this.promptEl.innerHTML = prompt.unavailable
+      ? `<kbd>${key}</kbd>${escapeHtml(prompt.label)}<small class="prompt__why">Unavailable: ${escapeHtml(prompt.unavailable)}</small>${cyc}`
+      : `<kbd>${key}</kbd>${escapeHtml(prompt.label)}${prompt.sub ? `<small>${escapeHtml(prompt.sub)}</small>` : ''}${cyc}`;
     this.promptEl.classList.add('show');
   }
 

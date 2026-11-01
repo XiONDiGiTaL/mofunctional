@@ -107,7 +107,9 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Park cops at night, searches when high, booking, the 84th Precinct on Ashby | done |
 | The payphone: coin return, stash, Dex's night calls | done |
 | Dee's Wash & Fold: vending, laundry, change, people; buy it; the back room (PC, laundering into property levels) | done |
-| Live-in partner paths around furniture | todo |
+| QoL: contextual prompts (key, reason, cycling), opening hours, Today panel + pinned goals, map destinations/route/markers, 1104 floor indicator + directory, notification center, log clear + settings, time-state line, sleep and speed warnings | done |
+| Live-in partner paths around furniture (grid pathing in every interior) | done |
+| Key remapping, inventory sorting, save-slot details, camera reset key | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 
 ## Animation and feedback

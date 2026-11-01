@@ -272,6 +272,34 @@ Signing the pledge ends the game: **Fully Functional**. Mo stops using, is house
 more than functional — and none of it is his. It is the ending where someone else saved him, which
 is not what this game is about. Walking out instead keeps the run going.
 
+## Finding your way, and your day
+
+- **Today** (top right, `T` to fold it): rent and when it is due, today's shift and the latest
+  you can clock in, bills due soon, the odd jobs on the board, the clinic session, Rolo, a
+  HailMary car, Nia's visit, the Fellowship on Sunday, and goals you pin yourself in iDread.
+  Each row opens the app that settles it, or puts the place on the map.
+- **Prompts** say what you are about to do and with which key (`F`, or Ⓐ on a pad); when it
+  cannot be done they say why ("Unavailable: Closed · opens 06:00"). With several things in
+  reach, `X` (Ⓧ) cycles through them.
+- **Opening hours**: the bodega, Habib's, the clinic, the Fellowship, Lucia's and the laundromat
+  close; the Quik-Stop and the precinct never do.
+- **The map** (`M`) has a searchable list of every place by category, with whether it is open,
+  its hours and floors; pick one for a ring on the map, a walking route on Kestrel, a "!" on
+  today's places, and a heading line under the minimap ("Quik-Stop #14 · 12 m east", or "B44
+  from the bus stop"). It never moves Mo.
+- **1104** shows its floor in the minimap title (Floor 3/5), has a directory in the lobby and in
+  the elevator, signs on both stairwells, and numbers on every door.
+- **The phone's home screen** groups unread texts as Urgent, People and Apps & services, each
+  linking to its thread, with a MARK ALL READ.
+- **Tweaks → Notifications**: the notice log (all / important only / off), text pop-ups over the
+  game (all / people & urgent / off), and the place announcements. The log counts only what you
+  have not seen and has a CLEAR button.
+- **Time**: the speed (or why time is stopped) under the controls; a warning when speeding up
+  with something due within the hour; and before sleeping, if the hours would run through a
+  shift, the clinic, Rolo, a car or Nia, it says so and asks.
+- **Rooms**: people walking around inside (a live-in girlfriend included) path around the
+  furniture.
+
 ## The laptop
 
 The laptop on the table in Unit 3B opens a laptop screen the way the phone opens (the same apps
@@ -583,8 +611,6 @@ when the game saved — so a reload can never leave Mo frozen.
   them play in real time; how they look still wants a human eye.
 - Diana's gift pool includes the item called "Grandad's Watch", an odd present from her; the
   item exists, so it is delivered, but it may want its own gift item.
-- A live-in girlfriend walks a short loop in Unit 3B and talks where she stands; she does not
-  path around furniture.
 
 ---
 

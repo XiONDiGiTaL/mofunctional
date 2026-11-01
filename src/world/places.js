@@ -22,6 +22,7 @@ import { bump, addItem, removeItem, countItem, inventoryList, logLine } from '..
 import * as romance from '../systems/romance.js';
 import { partnerTarget } from './schedules.js';
 import * as market from '../systems/market.js';
+import { closedReason } from './hours.js';
 
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 const M = {
@@ -46,6 +47,16 @@ const M = {
 /* ================================================================== 1104 KESTREL */
 
 const FLOOR_NAMES = ['Lobby', '2nd floor', '3rd floor', '4th floor', '5th floor'];
+
+/** Who is where in 1104, floor by floor: the lobby board and the elevator both read this. */
+const DIRECTORY = [
+  'Lobby · 1A · the mailboxes · somebody asleep under the stairs',
+  '2nd · 2A Ray & Denise (arguing, in the hall) · 2B–2D',
+  '3rd · 3B Mrs. Petrakis (soup) · 3A, 3C, 3D',
+  '4th · 4A Squeak (in the hallway) · 4B–4D',
+  '5th · 5C Stephanie · the roof, up the last flight',
+];
+export const walkupDirectory = () => DIRECTORY.slice();
 
 export function walkupState(s) {
   if (!s.walkup) s.walkup = { floor: 0, knocked: {}, stockDay: 0, stock: {}, soupDay: 0 };
@@ -77,7 +88,7 @@ function elevator(g) {
   g.openModal({
     kicker: '1104 KESTREL · THE ELEVATOR',
     title: 'Going Somewhere',
-    body: 'A box the size of a phone booth. A sign: CAPACITY 4 PERSONS (2 ADULTS). Somebody has scratched "PRAY" into the brass next to the emergency button.',
+    body: 'A box the size of a phone booth. A sign: CAPACITY 4 PERSONS (2 ADULTS). Somebody has scratched "PRAY" into the brass next to the emergency button.\n\n' + DIRECTORY.join('\n'),
     choices: [
       ...FLOOR_NAMES.map((name, n) => ({
         label: n === w.floor ? `${name} (you are here)` : name,
@@ -324,7 +335,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     group.add(box(0.4, 0.2, 0.06, retroMaterial('wu_exit', { color: 0xff3a2a, emissive: 1.2, unlit: true }), [0, 2.55, D / 2 - 0.12]));
     for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) group.add(box(0.06, 0.2, 0.26, M.metal, [-W / 2 + 0.1, 1.0 + r * 0.24, 1.0 + c * 0.28]));
     interactables.push({ id: 'wu_exit', label: 'Out to Kestrel St.', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('street', 'walkup') });
-    interactables.push({ id: 'wu_mail', label: 'Read the mailboxes', sub: 'names, tape, one that says DO NOT', x: -W / 2 + 0.6, z: 1.5, radius: 1.0, action: (gg) => gg.openModal({ kicker: '1104 KESTREL · LOBBY', title: 'The Mailboxes', body: '2A RAY & DENISE (DENISE crossed out, written back in). 3B PETRAKIS. 4A — no name, just a drawing of a squeaky toy. 5C S. — a sticker of a cartoon bench. 5D VACANT, which is a lie: you can hear a radio.', choices: [{ label: 'Huh.', effect: () => {} }] }) });
+    interactables.push({ id: 'wu_mail', label: 'The building directory', sub: 'mailboxes · who lives on which floor', x: -W / 2 + 0.6, z: 1.5, radius: 1.0, action: (gg) => gg.openModal({ kicker: '1104 KESTREL · LOBBY', title: 'Directory', body: `Taped above the mailboxes, in three different handwritings:\n\n${DIRECTORY.join('\n')}\n\nStairs at the north end, up on the right and down on the left. The elevator is between them.`, choices: [{ label: 'Got it.', effect: () => {} }] }) });
     npcs.push({ kind: 'junkie', x: -0.9, z: -2.6, rot: 1.4, talk: 'wu_sleeper', still: true, pose: 'sleep' });
     interactables.push({ id: 'wu_sleeper', label: 'The man asleep by the stairs', sub: 'he is breathing, you checked', x: -0.9, z: -2.6, radius: 1.1, action: (gg) => gg.openModal({ kicker: '1104 KESTREL · LOBBY', title: 'Asleep by the Stairs', body: 'A man asleep on flattened boxes under the first flight, shoes tucked under his head so nobody takes them. Someone has left a sandwich next to him. Someone else has taken half of it.', choices: [
       { label: 'Leave a dollar by his hand.', sub: '$1', disabled: s.money < 1, effect: () => { gg.spendMoney(1, 'a dollar by the stairs'); bump(s, 'morale', 3); } },
@@ -393,6 +404,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     interactables,
     tick,
     ambient: 'street',
+    title: `1104 Kestrel · ${FLOOR_NAMES[f]} · ${f + 1}/${FLOOR_NAMES.length}`,
     enterToast: f === 0 ? (market.owns(s, 'walkup') ? '1104 Kestrel. Your building. The lobby still smells like a hundred years of dinners, but now they are your dinners.' : '1104 Kestrel. The lobby smells like a hundred years of dinners.') : null,
   };
 }
@@ -569,9 +581,9 @@ export function buildAvenue(g) {
   ];
   const s = g.state;
   const interactables = [
-    { id: 'av_lucias', label: "Enter Lucia's", sub: 'tablecloths · red sauce · a waiter in a vest', x: -4.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('restaurant', 'avenue') },
+    { id: 'av_lucias', label: "Enter Lucia's", sub: 'tablecloths · red sauce · a waiter in a vest', x: -4.5, z: -5.2, radius: 1.5, unavailable: (gg) => closedReason('restaurant', gg.state.clock.m), action: (gg) => gg.goTo('restaurant', 'avenue') },
     { id: 'av_precinct', label: 'Enter the 84th Precinct', sub: 'the desk sergeant has seen everything', x: -12.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('precinct', 'avenue') },
-    { id: 'av_laundry', label: "Enter Dee's Wash & Fold", sub: 'laundry · vending machines · a TV', x: 5.0, z: -5.2, radius: 1.4, action: (gg) => gg.goTo('laundromat', 'avenue') },
+    { id: 'av_laundry', label: "Enter Dee's Wash & Fold", sub: 'laundry · vending machines · a TV', x: 5.0, z: -5.2, radius: 1.4, unavailable: (gg) => closedReason('laundromat', gg.state.clock.m), action: (gg) => gg.goTo('laundromat', 'avenue') },
     { id: 'av_pawn', label: 'Ashby Pawn & Gold', sub: 'sell something, fast and cheap', x: 10.5, z: -5.2, radius: 1.5, action: (gg) => pawnMenu(gg) },
     { id: 'av_news', label: 'Buy a paper from the man in the box', sub: `papers · scratch-offs · ${money(0.5)}`, x: 3.0, z: -2.95, radius: 1.7, action: (gg) => newsstand(gg) },
     { id: 'av_sax', label: 'The sax player', sub: 'plays one song very well', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'ASHBY AVE.', title: 'The Sax Player', body: 'He plays the same song every day and every day it is better than it needs to be. His case has four dollars and a subway token in it.', choices: [

@@ -10,6 +10,24 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Quality of life
+
+- Prompts: World collects every interactable in reach (`nearList`, `pickIndex`), `X`/pad X
+  cycles (`cycleTarget`); an interactable may define `unavailable(g)` → reason, shown as
+  "Unavailable: …" and refused on F. HUD shows F or Ⓐ by last device, and "X n/m".
+- `world/hours.js`: HOURS, openAt, closedReason; doors and rides respect it.
+- `ui/today.js`: todayItems (rent, shift + grace, bills, clinic, Rolo, ride, Nia, service, odd
+  jobs, goals), wouldMiss, confirmSleep (bed and phone), addGoal; HUD `.hud__today` (T toggles),
+  `.hud__timestate`; `setSpeed` warns. iDread pins goals.
+- `ui/nav.js` + map.js: destinations by category, search, open/closed, `state.nav`, route
+  polyline, today "!" markers, minimap heading; `g.navigateTo(id, openMap)`.
+- 1104: area `title` (Floor n/5) used by mapTitle; DIRECTORY in the lobby and the elevator.
+- `ui/notify.js`: groupOf/groups/shouldPop; phone home notification center; settings
+  feedBubbles / textPopups / placeToasts; feed counts unseen, CLEAR button.
+- `world/pathing.js`: 25 cm walkability grid per interior, BFS + line-of-sight smoothing;
+  patrolIdle uses it indoors.
+- 85 checks.
+
 ### Dee's Wash & Fold
 
 - `buildLaundromat` / `buildLaundryBack` (places.js), a front on Ashby; items soda, water, chips.

@@ -21,6 +21,8 @@ import * as block from '../systems/block.js';
 import * as casino from '../systems/casino.js';
 import { postImage } from './feedart.js';
 import { installSites, siteActions, stoopPostBody } from './sites.js';
+import { goals, addGoal, confirmSleep } from './today.js';
+import * as notify from './notify.js';
 import * as sms from '../systems/sms.js';
 import * as fans from '../systems/fans.js';
 
@@ -109,7 +111,7 @@ export class Phone {
       if (e.key === 'Escape') { e.target.blur(); return; }
       e.stopPropagation();
       // Enter sends whatever box it is in
-      const send = { feedtext: 'posttyped', stooptext: 'stooppost', boardtext: 'boardpost' }[e.target.id];
+      const send = { feedtext: 'posttyped', stooptext: 'stooppost', boardtext: 'boardpost', goaltext: 'goaladd' }[e.target.id];
       if (e.key === 'Enter' && send) {
         e.preventDefault();
         const btn = this.body.querySelector(`[data-act="${send}"]`);
@@ -252,11 +254,24 @@ export class Phone {
           <span>Fit for the day: ${fit}</span>
         </div>
       </div>
+      ${this.notifyCenter()}
       <div class="mohome__tabs">${APP_SHELVES.map((sh) => `<button class="mohome__tab${sh.id === this.homeTab ? ' is-on' : ''}" data-act="hometab" data-arg="${sh.id}">${sh.name}</button>`).join('')}</div>
       <div class="mohome__grid">${(APP_SHELVES.find((x) => x.id === this.homeTab) || APP_SHELVES[0]).apps.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
       <div class="mohome__signal">${s.flags.phoneLate ? 'Shale Mobile · signal degraded (bill overdue)' : 'Shale Mobile · weak but honest'}</div>
       <div class="mohome__dock">${DOCK.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0, label: false })).join('')}</div>
     </div>`;
+  }
+
+  /** Urgent / social / info: unread counts and the newest line of each, each linking to its thread. */
+  notifyCenter() {
+    const gs = notify.groups(this.g.state);
+    const rows = [['urgent', 'Urgent', '!'], ['social', 'People', '♥'], ['info', 'Apps & services', 'i']]
+      .filter(([k]) => gs[k].unread)
+      .map(([k, name, mark]) => {
+        const m = gs[k].latest;
+        return `<button class="notif notif--${k}" data-act="notifopen" data-arg="${T(m.id)}"><i>${mark}</i><span><b>${name} · ${gs[k].unread}</b><small>${T(m.from)}: ${T(String(m.body).slice(0, 48))}</small></span></button>`;
+      }).join('');
+    return rows ? `<div class="notifs">${rows}<button class="notif__clear" data-act="notifread">MARK ALL READ</button></div>` : '';
   }
 
   nextObligation() {
@@ -799,6 +814,10 @@ export class Phone {
         <em>${DAY_NAMES[(day - 1) % 7]}</em><b>${day}</b><span>${hhmm(s.clock.m)} · ${this.nextObligation()}</span>
       </div>
       <div class="list">${rows.join('')}</div>
+      <div class="app__h">Your goals · pinned to Today</div>
+      <div class="list">${goals(s).map((x) => `<div class="listitem goal ${x.done ? 'goal--done' : ''}"><div class="grow"><div class="name">${T(x.text)}</div></div>
+        <button class="btn btn--sm" data-act="goaldone" data-arg="${x.id}">${x.done ? 'UNDO' : 'DONE'}</button><button class="btn btn--sm" data-act="goaldel" data-arg="${x.id}">✕</button></div>`).join('') || '<div class="empty">Nothing pinned. Pin something you mean to do this week.</div>'}</div>
+      <div class="fcompose"><input id="goaltext" type="text" maxlength="60" placeholder="pay Rae by Friday · call Nia · save $200" autocomplete="off" spellcheck="false" /><button class="btn btn--primary btn--sm" data-act="goaladd">PIN</button></div>
       <div class="app__h">Sleep</div>
       <div class="row row--wrap">
         <button class="btn btn--sm" data-act="sleep" data-num="4">4 HOURS</button>
@@ -1005,6 +1024,12 @@ export class Phone {
         <button class="btn btn--sm btn--ghost" data-act="camreset">RESET</button>
         <span class="tiny mono-dim">Distance pulls the arm back; height raises the eye on it.</span>
       </div>
+      <div class="app__h">Notifications</div>
+      <div class="tiny mono-dim">Notice bubbles (the log by the minimap)</div>
+      <div class="row row--wrap"><button class="btn btn--sm ${(s.settings.feedBubbles || 'all') === 'all' ? 'btn--primary' : ''}" data-act="setnotif" data-key="feedBubbles" data-arg="all">ALL</button><button class="btn btn--sm ${(s.settings.feedBubbles || 'all') === 'important' ? 'btn--primary' : ''}" data-act="setnotif" data-key="feedBubbles" data-arg="important">IMPORTANT</button><button class="btn btn--sm ${(s.settings.feedBubbles || 'all') === 'off' ? 'btn--primary' : ''}" data-act="setnotif" data-key="feedBubbles" data-arg="off">OFF</button></div>
+      <div class="tiny mono-dim">Text pop-ups over the game</div>
+      <div class="row row--wrap"><button class="btn btn--sm ${(s.settings.textPopups || 'important') === 'all' ? 'btn--primary' : ''}" data-act="setnotif" data-key="textPopups" data-arg="all">ALL</button><button class="btn btn--sm ${(s.settings.textPopups || 'important') === 'important' ? 'btn--primary' : ''}" data-act="setnotif" data-key="textPopups" data-arg="important">PEOPLE & URGENT</button><button class="btn btn--sm ${(s.settings.textPopups || 'important') === 'off' ? 'btn--primary' : ''}" data-act="setnotif" data-key="textPopups" data-arg="off">OFF</button></div>
+      <div class="row row--wrap"><button class="btn btn--sm ${(s.settings.placeToasts ?? true) ? 'btn--primary' : ''}" data-act="setplace">PLACE ANNOUNCEMENTS: ${(s.settings.placeToasts ?? true) ? 'ON' : 'OFF'}</button></div>
       <div class="app__h">Volume</div>
       <div class="kv"><span class="mono-dim">Music</span><b data-live="musicvol">${Math.round((s.settings.volume ?? 0.7) * 100)}%</b></div>
       <input type="range" min="0" max="100" value="${Math.round((s.settings.volume ?? 0.7) * 100)}" data-act="volume" style="width:100%" />
@@ -1298,7 +1323,13 @@ export class Phone {
         });
       },
       listitem(arg) { this.bidItem = arg; this.bidPrice = CONFIG.items[arg].value; this.app = 'bidbay'; },
-      sleep(arg, num) { sleep(g, num ?? 7); this.close(); },
+      sleep(arg, num) { this.close(); confirmSleep(g, num ?? 7, () => sleep(g, num ?? 7)); },
+      goaladd() {
+        const box = this.body?.querySelector('#goaltext');
+        if (addGoal(s, box?.value)) { if (box) box.value = ''; } else g.toast('Six goals at a time. Finish one.', 'info');
+      },
+      goaldone(arg) { const x = goals(s).find((y) => y.id === arg); if (x) x.done = !x.done; },
+      goaldel(arg) { s.goals = goals(s).filter((y) => y.id !== arg); },
       feedpost(text) {
         g.advance(10);
         s.feedPosts = s.feedPosts || [];
@@ -1405,6 +1436,10 @@ export class Phone {
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
       hookup(arg) { this.close(); dating.hookupMenu(g, arg); },
       blocktab(arg) { this.blockTab = arg; },
+      notifopen(arg) { this.app = 'messages'; this.actions.msgopen.call(this, arg); },
+      notifread() { for (const m of s.messages) m.read = true; },
+      setnotif(arg, num, el) { s.settings[el.dataset.key] = arg; },
+      setplace() { s.settings.placeToasts = !(s.settings.placeToasts ?? true); },
       autopay() { setAutopay(g, !s.autopay?.on); g.toast(s.autopay.on ? 'Shale Pay AutoPay is on.' : 'AutoPay is off. Every bill is yours again.', 'info'); },
       casgame(arg) { this.casinoGame = arg; },
       casbet(arg, num) { this.casinoBet = num; },

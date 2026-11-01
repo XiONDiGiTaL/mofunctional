@@ -74,6 +74,8 @@ export class InputSystem {
       if (code === 'Digit2') this.events.push('speed2');
       if (code === 'Digit3') this.events.push('speed3');
       if (code === 'KeyM') this.events.push('map');
+      if (code === 'KeyX') this.events.push('cycle');      // the next thing in reach
+      if (code === 'KeyT') this.events.push('today');      // the Today panel
     });
 
     window.addEventListener('keyup', (e) => {
@@ -207,7 +209,7 @@ export class InputSystem {
       this.edge('B', 'phone');
       this.edge('START', 'pause');
       this.edge('Y', 'speed2');
-      this.edge('X', 'speed1');
+      this.edge('X', 'cycle');
       this.edge('BACK', 'crt');
     }
 
