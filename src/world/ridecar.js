@@ -28,6 +28,17 @@ const CHASE_LINES = [
   '"Wave your arms at me again and I keep driving."',
 ];
 
+/** Out the window, at the running man, on the way off the block. */
+const CHASE_MID = [
+  '"HEY. HEY. I am DRIVING here."',
+  '"You look insane. You know that? Insane."',
+  '"I got a fare waiting. I do not got a you."',
+  '"Go home, chief. Walk it off."',
+];
+
+/** Seconds into the pull-off at which he leans out and yells. */
+const SHOUT_AT = [1.2, 3.2];
+
 /** The HailMary car: a black sedan with a pink light-up placard in the windshield. */
 function buildCar() {
   const g = buildVehicle('sedan', 0x0e0f12);
@@ -50,6 +61,7 @@ export class RideCar {
     this.lastCall = false;
     this.baseX = 0;
     this.grace = -1;
+    this.shout = 0;
   }
 
   /** Called on area load (fresh) and every frame. */
@@ -102,6 +114,7 @@ export class RideCar {
     this.driver = r.driver;
     this.baseX = r.x;
     this.grace = -1;
+    this.shout = 0;
     this.speed = 0;
     this.parked = !!inPlace;
     this.waitT = 0;
@@ -145,6 +158,7 @@ export class RideCar {
     this.flashT = 0;
     this.lastCall = false;
     this.grace = -1;
+    this.shout = 0;
   }
 
   update(dt, g) {
@@ -153,10 +167,21 @@ export class RideCar {
     const dx = this.targetX - p.x;
     // it pulls in and out under acceleration instead of hitting nine metres a second the frame it
     // spawns and then stopping dead, which read as a jump cut rather than a car
-    const want = this.leaving ? 8.5 : Math.min(6, 1.2 + Math.abs(dx) * 0.5);
-    this.speed = Math.min(want, (this.speed || 0) + (this.leaving ? 4 : 6) * dt);
-    if (Math.abs(dx) > 0.05) p.x += Math.sign(dx) * Math.min(Math.abs(dx), this.speed * dt);
-    else { p.x = this.targetX; this.speed = 0; }
+    const chasing = this.grace >= 0 && !this.leaving;
+    if (chasing) {
+      // rolling off: it is already moving, and it keeps adding speed while he runs, so a catch
+      // at the door is something he has to earn in the first second or two
+      const elapsed = CONFIG.rides.graceSeconds - this.grace;
+      const cruise = Math.min(CONFIG.rides.chaseSpeed, 1.7 + elapsed * 0.55);
+      this.speed = Math.min(cruise, (this.speed || 0) + 6 * dt);
+      this.targetX = p.x + 3;
+      if (p.x < this.baseX + 14) p.x += Math.min(3, this.speed * dt);
+    } else {
+      const want = this.leaving ? 8.5 : Math.min(6, 1.2 + Math.abs(dx) * 0.5);
+      this.speed = Math.min(want, (this.speed || 0) + (this.leaving ? 4 : 6) * dt);
+      if (Math.abs(dx) > 0.05) p.x += Math.sign(dx) * Math.min(Math.abs(dx), this.speed * dt);
+      else { p.x = this.targetX; this.speed = 0; }
+    }
     this.car.rotation.y = this.leaving || dx < 0 ? Math.PI : 0;
     // the prompt follows the car while it is rolling off, since the curb point is now behind it
     if (this.interact) this.interact.x = p.x;
@@ -196,12 +221,21 @@ export class RideCar {
         if (this.grace < 0) {
           // out of time: the car starts off down the block, but a sprint can still catch it
           this.grace = CONFIG.rides.graceSeconds;
+          this.shout = 0;
           this.targetX = this.baseX + 3;
           if (this.interact) this.interact.radius = 2.4;
           g?.audio?.sfx?.('honk');
           g?.toast?.(`${this.driver || 'Your driver'} is pulling off — run.`, 'bad');
         } else {
           this.grace -= dt;
+          const into = CONFIG.rides.graceSeconds - this.grace;
+          // he leans out the window while Mo runs, with the brights
+          if (this.shout < SHOUT_AT.length && into >= SHOUT_AT[this.shout]) {
+            g?.toast?.(`${this.driver}: ${CHASE_MID[this.shout % CHASE_MID.length]}`, 'bad');
+            this.shout++;
+            this.flashT = 1.4;
+            g?.audio?.sfx?.('honk');
+          }
           // at the door, alongside it: standing behind the car or at the far kerb does not count
           const mo = this.world.mo?.root?.position;
           const near = mo && Math.hypot(mo.x - this.car.position.x, mo.z - DOOR_Z) < CONFIG.rides.doorReach;
@@ -211,7 +245,10 @@ export class RideCar {
             this.grace = -1;
             this.waitT = 0;
             this.lastCall = false;
+            // it stops where he reached it; no walk back to the old kerb
+            this.baseX = this.car.position.x;
             this.targetX = this.baseX;
+            if (this.solid) this.solid.x = this.baseX;
             if (this.interact) this.interact.radius = 1.8;
             g?.toast?.(late
               ? `${pick(CHASE_LINES)} — ${this.driver}`

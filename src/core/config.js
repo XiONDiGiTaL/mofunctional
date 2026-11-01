@@ -398,6 +398,7 @@ export const CONFIG = {
     waitSeconds: 120,      // real seconds the car sits at the curb before it gives up on him
     graceSeconds: 5,       // ...and how long it keeps rolling while he sprints for it
     doorReach: 1.5,        // how close to the door, not the roof, counts as caught
+    chaseSpeed: 4.2,       // what the car is doing by the end of the grace window
 
     minutes: 14,
     drivers: ['Vinnie', 'Sal\'s cousin Vinnie', 'a man named Dutch', 'Ozzie', 'Big Ray (not 2A Ray)'],
