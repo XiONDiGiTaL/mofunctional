@@ -141,11 +141,17 @@ export function buildApartment(g) {
   }
 
   // ---- someone lives here now. She is in the room, not in a menu.
+  // Home is read from her schedule, not from it backwards. This line used to show her in the
+  // room only on the rows that said she was *away*, so a live-in partner stood in the flat
+  // during her shift, was gone all evening, and the block's schedule walked her out of a home
+  // the player had just asked her into. Home is now the same answer everything else gets.
   const liveIn = g.state.romance?.liveIn;
-  const liveDef = liveIn && partnerTarget(liveIn, minuteOfDay(g.state.clock.m))?.away ? CONFIG.partners?.[liveIn] : null;
+  const liveMod = minuteOfDay(g.state.clock.m);
+  const liveRow = liveIn ? partnerTarget(liveIn, liveMod, liveIn) : null;
+  const liveDef = liveIn && liveRow && !liveRow.away && liveRow.area === 'apartment' ? CONFIG.partners?.[liveIn] : null;
   if (liveIn && liveDef) {
     interactables.push({
-      id: 'partner', label: `Talk to ${liveDef.name}`, sub: 'girlfriend · lives here', x: -1.9, z: 1.5,
+      id: 'partner', label: `Talk to ${liveDef.name}`, sub: liveRow.note, x: liveRow.x, z: liveRow.z,
       action: (gg) => partnerMenu(gg, liveIn),
     });
   }
@@ -163,7 +169,9 @@ export function buildApartment(g) {
 
   const npcs = [];
   if (g.state.flags.cat) npcs.push({ kind: 'cat', x: 0.9, z: 1.9, rot: -0.6 });
-  if (liveIn && liveDef) npcs.push({ kind: liveIn, x: -1.9, z: 1.5, rot: 0.9, talk: liveIn, roam: 1.1 });
+  // the rig's talk id has to match the interactable's id: it said "stephanie" while the prompt
+  // was called 'partner', so the prompt never followed her and never said what she was doing
+  if (liveIn && liveDef) npcs.push({ kind: liveIn, x: liveRow.x, z: liveRow.z, rot: 0.9, talk: 'partner', roam: 0.9, pose: liveRow.pose || null });
 
   return {
     group,

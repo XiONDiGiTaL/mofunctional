@@ -572,7 +572,46 @@ class Game {
     this.crtEl.classList.toggle('hidden', !s.crt);
     document.getElementById('app').classList.toggle('ratio43', !!s.ratio43);
     this.audio.setVolume(s.muted ? 0 : s.volume);
+    this.audio.setSfxVolume(s.muted ? 0 : (s.sfxVolume ?? CONFIG.audio.sfxVolume));
     this.applyTheme();
+  }
+
+  /* ------------------------------ audio settings ------------------------------ */
+
+  /**
+   * The two buses are independent and take effect on the gain immediately — the track that is
+   * playing keeps playing, it just gets quieter. Both live in state.settings, so they travel with
+   * a save slot and come back on load.
+   */
+  setMusicVolume(v) {
+    const s = this.state.settings;
+    s.volume = clamp(Number(v) || 0, 0, 1);
+    if (s.muted && s.volume > 0) s.muted = false;
+    this.audio.setVolume(s.muted ? 0 : s.volume);
+    this.saveAudioSoon();
+  }
+
+  setSfxVolume(v) {
+    const s = this.state.settings;
+    s.sfxVolume = clamp(Number(v) || 0, 0, 1);
+    if (s.muted && s.sfxVolume > 0) s.muted = false;
+    this.audio.setSfxVolume(s.muted ? 0 : s.sfxVolume);
+    this.saveAudioSoon();
+  }
+
+  setMuted(on) {
+    const s = this.state.settings;
+    s.muted = !!on;
+    this.audio.setVolume(s.muted ? 0 : s.volume);
+    this.audio.setSfxVolume(s.muted ? 0 : (s.sfxVolume ?? CONFIG.audio.sfxVolume));
+    this.audio.sfx(s.muted ? 'ui-back' : 'ui');
+    this.saveAudioSoon();
+  }
+
+  /** A drag is a hundred input events: write the settings once it settles. */
+  saveAudioSoon() {
+    clearTimeout(this.audioSaveTimer);
+    this.audioSaveTimer = setTimeout(() => this.autosave(), 600);
   }
 
   /** Themes are pure CSS variables on :root; the scale zooms the in-game UI layers. */

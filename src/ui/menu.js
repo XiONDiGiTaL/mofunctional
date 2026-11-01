@@ -216,6 +216,9 @@ export class Menu {
           <span>Music volume</span><input type="range" min="0" max="100" value="${Math.round(s.settings.volume * 100)}" data-set="vol" />
         </div>
         <div class="row row--between" style="padding:8px 0">
+          <span>Sound effects</span><input type="range" min="0" max="100" value="${Math.round((s.settings.sfxVolume ?? 0.5) * 100)}" data-set="sfxvol" />
+        </div>
+        <div class="row row--between" style="padding:8px 0">
           <span>Default speed</span>
           <span class="row">
             ${[1, 2, 3].map((n) => `<button class="btn btn--sm ${s.settings.speed === n ? 'btn--primary' : ''}" data-set="speed" data-arg="${n}">${n === 1 ? '1x' : n === 2 ? '2x' : '4x'}</button>`).join('')}
@@ -254,9 +257,18 @@ export class Menu {
       this.showSettings();
     });
     overlay.addEventListener('input', (e) => {
-      if (e.target.dataset.set === 'vol') {
+      const key = e.target.dataset.set;
+      if (key === 'vol') {
+        // the same setters the phone uses, so a slider behaves identically wherever it is found
         this.g.state.settings.volume = Number(e.target.value) / 100;
-        this.g.audio.setVolume(this.g.state.settings.volume);
+        this.g.setMusicVolume?.(Number(e.target.value) / 100);
+      }
+      if (key === 'sfxvol') {
+        this.g.state.settings.sfxVolume = Number(e.target.value) / 100;
+        this.g.setSfxVolume?.(Number(e.target.value) / 100);
+        // a click so the new level is audible while the handle is still under the finger
+        clearTimeout(this.sfxBlip);
+        this.sfxBlip = setTimeout(() => this.g.audio.sfx('ui'), 90);
       }
     });
     this.pushOverlay(overlay);

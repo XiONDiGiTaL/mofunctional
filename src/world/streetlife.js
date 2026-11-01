@@ -411,26 +411,162 @@ export class StreetLife {
     }
   }
 
+  /**
+   * The kid on the bike, built like the rest of the cast instead of like a placeholder.
+   *
+   * The prop used to be a bar, two boxes for wheels and a head floating between them, which read
+   * as a bug whenever it went past Mo. This one is a bicycle: a frame with an actual triangle in
+   * it, spoked wheels, fork, handlebars with grips, a saddle on a post, a chainring and pedals —
+   * and a child sitting on it who pedals in time with the crank, leans into the bars and looks
+   * where he is going. Same event, same spawn side, same speed, same cleanup.
+   */
   startBike() {
     if (this.bike) return;
     const root = new THREE.Group();
-    const metal = retroMaterial('bike_frame', { color: 0xc8121a });
-    const tyre = retroMaterial('bike_tyre', { color: 0x111111 });
-    root.add(box(0.9, 0.06, 0.05, metal, [0, 0.55, 0]));
-    for (const x of [-0.4, 0.4]) root.add(box(0.5, 0.5, 0.05, tyre, [x, 0.3, 0]));
-    root.add(box(0.2, 0.5, 0.2, retroMaterial('bike_kid', { color: 0x2a4a8a }), [0, 0.95, 0]));
-    root.add(box(0.16, 0.16, 0.16, retroMaterial('bike_kidhead', { color: 0x8a5a3a }), [0.05, 1.3, 0]));
+    const m = {
+      frame: retroMaterial('bike_frame', { color: 0xc8121a }),
+      frameDark: retroMaterial('bike_frame2', { color: 0x7a0a12 }),
+      tyre: retroMaterial('bike_tyre', { color: 0x141414 }),
+      rim: retroMaterial('bike_rim', { color: 0xb8bcc0, ambient: 0.95 }),
+      metal: retroMaterial('bike_metal', { color: 0x9aa0a6, ambient: 0.95 }),
+      seat: retroMaterial('bike_seat', { color: 0x1a1a1e }),
+      shirt: retroMaterial('bike_shirt', { color: 0xe0c84a }),
+      shorts: retroMaterial('bike_shorts', { color: 0x2a4a8a }),
+      skin: retroMaterial('bike_skin', { color: 0x8a5a3a, ambient: 0.85 }),
+      cap: retroMaterial('bike_cap', { color: 0xc8322a }),
+      shoe: retroMaterial('bike_shoe', { color: 0xe8e6da }),
+      sock: retroMaterial('bike_sock', { color: 0xf0eee4 }),
+    };
+
+    // a tube between two points in the bike's own side plane (x,y), sticking out in z
+    const tube = (x1, y1, x2, y2, w, mat, z = 0) => {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const part = box(Math.hypot(dx, dy), w, w, mat, [(x1 + x2) / 2, (y1 + y2) / 2, z]);
+      part.rotation.z = Math.atan2(dy, dx);
+      root.add(part);
+      return part;
+    };
+
+    // wheels: a chunky tyre, a thin rim, four spokes and a hub, all in the side plane so they
+    // roll the way the bike is pointing
+    const wheel = (x) => {
+      const w = new THREE.Group();
+      w.position.set(x, 0.34, 0);
+      w.add(new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.033, 4, 14), m.tyre));
+      w.add(new THREE.Mesh(new THREE.TorusGeometry(0.265, 0.011, 3, 14), m.rim));
+      for (let i = 0; i < 4; i++) {
+        const spoke = box(0.53, 0.011, 0.011, m.rim, [0, 0, 0]);
+        spoke.rotation.z = (i * Math.PI) / 4;
+        w.add(spoke);
+      }
+      w.add(box(0.055, 0.055, 0.05, m.metal, [0, 0, 0]));
+      root.add(w);
+      return w;
+    };
+    const rear = wheel(-0.42);
+    const front = wheel(0.42);
+
+    // the frame: seat tube, down tube, top tube, chainstay, seatstay and a raked fork
+    tube(-0.06, 0.36, -0.16, 0.74, 0.045, m.frame);       // seat tube
+    tube(-0.06, 0.36, 0.30, 0.78, 0.05, m.frame);         // down tube
+    tube(-0.16, 0.74, 0.30, 0.78, 0.042, m.frame);        // top tube
+    tube(-0.06, 0.36, -0.42, 0.34, 0.032, m.frameDark);   // chainstay
+    tube(-0.16, 0.74, -0.42, 0.34, 0.03, m.frameDark);    // seatstay
+    tube(0.30, 0.78, 0.42, 0.34, 0.034, m.metal);         // fork
+    tube(0.30, 0.78, 0.34, 1.00, 0.042, m.metal);         // head tube to the bars
+
+    // bars, grips, saddle on a post, and a bell he rings at nobody
+    root.add(box(0.05, 0.05, 0.42, m.metal, [0.34, 1.00, 0]));
+    for (const z of [-0.19, 0.19]) root.add(box(0.06, 0.06, 0.11, m.seat, [0.34, 1.00, z]));
+    root.add(box(0.05, 0.05, 0.18, m.metal, [0.30, 0.985, 0.06]));
+    root.add(box(0.05, 0.02, 0.05, m.cap, [0.27, 0.995, -0.02]));
+    tube(-0.16, 0.74, -0.16, 0.80, 0.034, m.metal);        // seat post
+    root.add(box(0.24, 0.045, 0.13, m.seat, [-0.19, 0.815, 0]));
+
+    // crank and pedals, which is what makes the child a rider rather than a passenger
+    const crank = new THREE.Group();
+    crank.position.set(-0.06, 0.36, 0);
+    crank.add(new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.012, 3, 10), m.metal));
+    crank.add(box(0.30, 0.026, 0.026, m.metal, [0, 0, 0]));
+    for (const z of [-0.09, 0.09]) crank.add(box(0.06, 0.022, 0.10, m.seat, [0.15, 0, z]));
+    root.add(crank);
+
+    // ---- the child, sitting where a child sits: saddle, bars, pedals
+    const rider = new THREE.Group();
+    rider.position.set(-0.10, 0.80, 0);
+    root.add(rider);
+    const torso = new THREE.Group();
+    torso.position.set(0, 0.06, 0);
+    torso.rotation.z = -0.34;
+    rider.add(torso);
+    torso.add(box(0.26, 0.34, 0.21, m.shirt, [0.02, 0.14, 0]));
+    torso.add(box(0.27, 0.05, 0.22, m.shorts, [0.0, -0.03, 0]));   // waistband
+    const head = new THREE.Group();
+    head.position.set(0.06, 0.34, 0);
+    torso.add(head);
+    head.add(box(0.10, 0.06, 0.09, m.skin, [0.0, 0.0, 0]));        // neck
+    head.add(box(0.175, 0.185, 0.175, m.skin, [0.01, 0.13, 0]));   // skull
+    head.add(box(0.185, 0.055, 0.185, m.cap, [0.01, 0.23, 0]));    // cap
+    head.add(box(0.11, 0.022, 0.16, m.cap, [0.13, 0.205, 0]));     // brim
+    head.add(box(0.028, 0.03, 0.03, m.skin, [0.10, 0.115, 0]));    // nose
+    // arms: shoulder to grip, one per side, with a short sleeve at the top
+    for (const z of [-0.115, 0.115]) {
+      const arm = new THREE.Group();
+      arm.position.set(0.06, 0.26, z);
+      arm.rotation.z = -1.02;
+      arm.add(box(0.075, 0.20, 0.075, m.shirt, [0, 0.09, 0]));
+      arm.add(box(0.062, 0.20, 0.062, m.skin, [0, -0.11, 0]));
+      arm.add(box(0.07, 0.07, 0.07, m.skin, [0, -0.22, 0]));
+      torso.add(arm);
+    }
+    // legs: a hip pivot, a thigh, a knee pivot and a shin down to the pedal
+    const legs = [];
+    for (const z of [-0.085, 0.085]) {
+      const hip = new THREE.Group();
+      hip.position.set(-0.02, -0.02, z);
+      hip.add(box(0.11, 0.26, 0.11, m.shorts, [0.01, -0.13, 0]));
+      const knee = new THREE.Group();
+      knee.position.set(0.01, -0.26, 0);
+      knee.add(box(0.085, 0.24, 0.085, m.skin, [0, -0.12, 0]));
+      knee.add(box(0.09, 0.07, 0.09, m.sock, [0, -0.25, 0]));
+      knee.add(box(0.13, 0.055, 0.10, m.shoe, [0.02, -0.29, 0]));
+      hip.add(knee);
+      rider.add(hip);
+      legs.push({ hip, knee });
+    }
+
     const dir = Math.random() < 0.5 ? 1 : -1;
     root.position.set(dir > 0 ? -28 : 34, 0, -1.6);
     root.rotation.y = dir > 0 ? 0 : Math.PI;
     this.world.root.add(root);
-    this.bike = { root, dir };
+    this.bike = { root, dir, wheels: [front, rear], crank, legs, torso, head, t: 0 };
   }
 
   updateBike(dt) {
-    if (!this.bike) return;
-    this.bike.root.position.x += this.bike.dir * 6.5 * dt;
-    this.bike.root.position.y = Math.abs(Math.sin(this.clock * 12)) * 0.02;
-    if (Math.abs(this.bike.root.position.x) > 36) { this.bike.root.parent?.remove(this.bike.root); this.bike = null; }
+    const b = this.bike;
+    if (!b) return;
+    b.t += dt;
+    const speed = 6.5;
+    b.root.position.x += b.dir * speed * dt;
+    // the pedals turn the wheels: the wheels roll at the bike's speed, the crank at its gear
+    const roll = (speed / 0.31) * dt * b.dir;
+    for (const w of b.wheels) w.rotation.z -= roll;
+    b.crank.rotation.z -= roll * 0.42;
+    const a = b.crank.rotation.z;
+    // knees follow the pedals, one leg out of phase with the other
+    b.legs[0].hip.rotation.z = Math.sin(a) * 0.34;
+    b.legs[0].knee.rotation.z = -0.55 - Math.cos(a) * 0.42;
+    b.legs[1].hip.rotation.z = Math.sin(a + Math.PI) * 0.34;
+    b.legs[1].knee.rotation.z = -0.55 - Math.cos(a + Math.PI) * 0.42;
+    // weight shifting over the pedals, and a look at whatever he is passing
+    b.torso.rotation.z = -0.34 + Math.sin(a * 2) * 0.022;
+    b.head.rotation.y = Math.sin(b.t * 0.8) * 0.14;
+    b.root.position.y = Math.abs(Math.sin(a)) * 0.012;
+    if (Math.abs(b.root.position.x) > 36) {
+      b.root.parent?.remove(b.root);
+      b.root.traverse((o) => o.geometry?.dispose?.());
+      this.bike = null;
+    }
   }
 }

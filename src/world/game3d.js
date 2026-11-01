@@ -15,10 +15,11 @@ import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
 import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
-import { isPartnerId, partnerState, PARTNER_KEYS } from '../systems/romance.js';
+import { isPartnerId, partnerState, PARTNER_KEYS, homeChat } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay, dayOf } from '../core/util.js';
-import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, strangerRunIns, strangerTarget } from './schedules.js';
+import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, PARTNER_HOME_SPOTS, strangerRunIns, strangerTarget } from './schedules.js';
+import { ceilingFor, armLength, armMax, eyeHeight, liftFor } from './cameraLimits.js';
 import { strangerMenu, strangerLabel, niaMenu } from './encounters.js';
 import { sisterTarget } from '../systems/sister.js';
 import { maybeStreetEvent } from '../systems/street.js';
@@ -388,8 +389,14 @@ export class World {
   partnerPresence(rig, dt, g, fresh = false) {
     const def = rig.npcDef;
     const mod = minuteOfDay(g.state.clock.m);
-    const row = def.sister ? sisterTarget(g.state) : def.stranger ? strangerTarget(def.kind, dayOf(g.state.clock.m), mod) : partnerTarget(def.kind, mod);
+    // the live-in id is what tells her schedule that home is Unit 3B now; without it she is
+    // still on the block's day and the apartment is somewhere she never is
+    const liveIn = g.state?.romance?.liveIn || null;
+    const row = def.sister ? sisterTarget(g.state) : def.stranger ? strangerTarget(def.kind, dayOf(g.state.clock.m), mod)
+      : partnerTarget(def.kind, mod, liveIn);
     const here = !!row && !row.away && row.area === this.areaId;
+    // the pose comes from the row she is standing at: asleep in the bed, folded onto the couch
+    if (here) rig.pose = row.pose || null;
     const talk = rig.talkIt || this.interactables.find((it) => it.id === def.talk);
     if (talk) {
       talk.sub = here ? row.note : '';
@@ -443,8 +450,44 @@ export class World {
       rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
       return;
     }
+    // at home she does not stand still like a shop display: she drifts between the rooms
+    this.partnerAtHome(rig, dt, g, def);
     // at her spot: the same small idle patch as everyone else
     this.patrolIdle(rig, dt);
+  }
+
+  /**
+   * Living together is not a pose. When she is home she drifts between a handful of known-clear
+   * spots — the couch, the counter, the window — sits where the spot is a seat, and says one line
+   * when Mo comes close, at the volume of the rest of the apartment.
+   *
+   * The spots are checked against the room's solids each time, so a blocked one is simply not
+   * chosen. There is no pathfinding here and a room this size does not need any.
+   */
+  partnerAtHome(rig, dt, g, def) {
+    if (this.areaId !== 'apartment' || !def.partner || rig.holding) return;
+    const row = rig.partnerRow;
+    if (!row || row.pose === 'sleep') return;
+    rig.homeTimer = (rig.homeTimer ?? (4 + Math.random() * 6)) - dt;
+    if (rig.homeTimer > 0) return;
+    rig.homeTimer = 9 + Math.random() * 10;
+    const b = this.area.bounds;
+    const mo = this.mo.root.position;
+    const open = PARTNER_HOME_SPOTS.filter((sp) => sp.x > b.minX + 0.45 && sp.x < b.maxX - 0.45 &&
+      sp.z > b.minZ + 0.45 && sp.z < b.maxZ - 0.45 && !this.blocked(sp.x, sp.z));
+    if (!open.length) return;
+    // she does not walk into him, and she does not take the spot he is standing on
+    const clear = open.filter((sp) => Math.hypot(sp.x - mo.x, sp.z - mo.z) > 0.95);
+    const list = clear.length ? clear : open;
+    const spot = list[Math.floor(Math.random() * list.length)];
+    rig.partnerWalk = { x: spot.x, z: spot.z, t: 0 };
+    rig.pose = spot.pose || null;
+    // one line, when he is near enough to hear it, and not on a loop
+    if (Math.hypot(mo.x - rig.root.position.x, mo.z - rig.root.position.z) < 2.0 &&
+        this.time - (rig.sayAt ?? -999) > 55) {
+      rig.sayAt = this.time;
+      g.broadcast?.({ from: String(def.kind).toUpperCase(), text: homeChat(def.kind) });
+    }
   }
 
   /** Mo and one of the three: 'hug' or 'kiss' (she kisses his cheek). */
@@ -975,10 +1018,20 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const camSet = s.settings || {};
     const distMul = clamp(Number(camSet.camDist) || 1, 0.7, 1.4);
     const heightMul = clamp(Number(camSet.camHeight) || 1, 0.8, 1.35);
-    const boomMax = this.roomBoom(interior) * distMul;
+    // A room has a ceiling and walls a couple of metres away, so the camera settings cannot act
+    // on it the way they act on the street. At 140% distance and 135% height the old formula put
+    // the indoor eye at 3.7 m in a 2.7 m apartment — above the ceiling, looking down through it —
+    // and the shortened arm lifted it further. Indoors the arm stops at what fits the room, the
+    // eye stops under the ceiling, and extra distance is spent mostly on the arm, not the height.
+    // The limits themselves live in cameraLimits.js, where `npm test` can try every zoom setting
+    // against every ceiling. Indoors the arm stops at what the room can give and the eye stops
+    // under its ceiling; outdoors both sliders keep the range they always had.
+    const ceil = interior ? this.camCeiling() : 6.6;
+    const roomArm = this.roomBoom(interior);
+    const boomMax = armMax(interior, roomArm, distMul);
     // the eye rides up with the distance, so pulling the camera back still reads as a wider shot
     // in a room where the arm itself has nowhere longer to go
-    const restHeight = (interior ? 1.98 : 2.62) * heightMul * distMul;
+    const restHeight = eyeHeight(interior, heightMul, distMul, ceil);
     const follow = 1 - Math.exp(-9 * dt);
     this.camFocus.x += (this.mo.root.position.x - this.camFocus.x) * follow;
     this.camFocus.z += (this.mo.root.position.z - this.camFocus.z) * follow;
@@ -1037,9 +1090,11 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       room = this.armRoom(this.camYaw + this.camSwing, boomMax, 0);
       // pressed against something tall and looking into it: over his head is the one place left
       if (!room) {
+        // behind his head is still a shot; 10 cm from his eyes was the inside of his skull, and
+        // five sliders' worth of "zoom out" then read as a close-up of the back of a neck
         const yaw = this.camYaw + this.camSwing;
-        const clear35 = !this.camBlocked(this.camFocus.x - Math.sin(yaw) * 0.35, this.camFocus.z - Math.cos(yaw) * 0.35);
-        room = clear35 ? 0.35 : 0.1;
+        const clear50 = !this.camBlocked(this.camFocus.x - Math.sin(yaw) * 0.5, this.camFocus.z - Math.cos(yaw) * 0.5);
+        room = clear50 ? 0.5 : 0.42;
       }
     }
 
@@ -1060,14 +1115,18 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     }
     // a shortened arm lifts a little to look over his shoulder; while swinging there is a side
     // view coming, so do not climb into a top-down in the meantime
-    const liftPerMetre = swinging ? 0.1 : interior ? 0.42 : 0.28;
-    const targetHeight = restHeight + impairment * 0.06 + (boomMax - this.camBoom) * liftPerMetre;
+    const liftPerMetre = liftFor(interior, swinging);
+    const targetHeight = Math.min(
+      ceil,
+      restHeight + impairment * 0.06 + (boomMax - this.camBoom) * liftPerMetre
+    );
     this.boomHeight += (targetHeight - this.boomHeight) * (1 - Math.exp(-6 * dt));
+    this.boomHeight = clamp(this.boomHeight, 0.92, ceil);
 
     // last resort: never let the arm place the eye outside the room, whatever the corner does
     this.camPos.set(
       clamp(this.camFocus.x + backX * this.camBoom, b.minX + 0.15, b.maxX - 0.15),
-      this.boomHeight,
+      clamp(this.boomHeight, 0.92, ceil),
       clamp(this.camFocus.z + backZ * this.camBoom, b.minZ + 0.15, b.maxZ - 0.15)
     );
     this.camera.position.copy(this.camPos);
@@ -1142,13 +1201,17 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.walking = false;
   }
 
+  /**
+   * The height the eye may not pass indoors: the room's ceiling less a hand's width. A room can
+   * name its own with `camCeil`; otherwise 2.7 m is the height everything here was built to.
+   */
+  camCeiling() {
+    return ceilingFor(this.area);
+  }
+
   /** The arm length a place wants: the street's long lens, or most of a room's short side. */
   roomBoom(interior) {
-    if (!interior) return 4.1;
-    const b = this.area?.bounds;
-    if (!b) return 2.45;
-    const short = Math.min(b.maxX - b.minX, b.maxZ - b.minZ);
-    return clamp(short * 0.42, 1.8, 2.45);
+    return armLength(interior, this.area?.bounds);
   }
 
   /** Longest arm, in metres, that fits along `yaw` without leaving the room or hitting something. */
