@@ -43,6 +43,49 @@ const M = {
 
 /* ================================================================== THE SUBWAY */
 
+/**
+ * The way down, from the street: a stairwell cut into the sidewalk, railings either side, a lit
+ * globe on each post and a band over the mouth with the station on it. Both stations used to be
+ * an invisible trigger on the pavement, which is why nobody could find the trains.
+ */
+export function buildStationEntrance(x, z, { rot = 0, name = 'KESTREL ST' } = {}) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.rotation.y = rot;
+  const rail = retroMaterial('st_rail', { color: 0x2f4a3a, ambient: 0.7 });
+  const globe = retroMaterial('st_globe', { color: 0x8ad86a, emissive: 1, unlit: true });
+  // steps going down and away, each with a dark riser behind it
+  for (let i = 0; i < 5; i++) {
+    g.add(box(2.5, 0.16, 0.38, M.concrete, [0, -0.02 - i * 0.17, -0.35 - i * 0.38]));
+    g.add(box(2.44, 0.34, 0.06, retroMaterial(`st_riser${i}`, { color: 0x16181e }), [0, -0.2 - i * 0.17, -0.53 - i * 0.38]));
+  }
+  // a dark floor at the bottom, so it reads as a hole and not a bench
+  g.add(plane(2.5, 2.2, { name: 'st_pit', color: 0x0e1014 }, [0, -0.92, -1.5], [-Math.PI / 2, 0, 0]));
+  // side walls, handrails and their posts
+  for (const sx of [-1, 1]) {
+    g.add(box(0.22, 0.95, 2.5, M.concrete, [sx * 1.34, 0.47, -0.9]));
+    g.add(box(0.09, 0.09, 2.5, rail, [sx * 1.34, 1.02, -0.9]));
+    for (const zz of [-2.0, -0.9, 0.2]) g.add(box(0.11, 0.95, 0.11, rail, [sx * 1.34, 0.5, zz]));
+    g.add(box(0.13, 2.5, 0.13, rail, [sx * 1.75, 1.25, 0.28]));
+    g.add(box(0.36, 0.36, 0.36, globe, [sx * 1.75, 2.6, 0.28]));
+  }
+  // the band over the mouth, with the station on it
+  g.add(box(2.9, 0.66, 0.14, retroMaterial('st_band', { color: 0x14243f }), [0, 2.06, 0.26]));
+  g.add(plane(2.7, 0.54, {
+    name: 'st_sign',
+    map: signTex(`st_${name.replace(/\s/g, '')}`, [
+      { text: name, color: '#ffffff', size: 9 },
+      { text: 'DOWN TO THE TRAINS', color: '#a8c8ff', size: 5 },
+    ], { w: 128, h: 26, bg: '#14243f' }),
+    emissive: 0.9, unlit: true,
+  }, [0, 2.06, 0.34]));
+  // and the light it throws across the pavement
+  g.add(plane(3.4, 3.0, { name: 'st_glow', color: 0x9adf86, opacity: 0.1, transparent: true, unlit: true }, [0, 0.014, 0.2], [-Math.PI / 2, 0, 0]));
+  return g;
+}
+
+
+
 export function buildSubway(g) {
   const group = new THREE.Group();
   const L = 48;

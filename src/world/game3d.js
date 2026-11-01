@@ -740,7 +740,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     g.audio?.sfx?.(res.result === 'refused' ? 'deny' : 'hit');
     g.toast(res.line, res.result === 'refused' || res.result === 'dog' ? 'bad' : 'info');
     if (res.result === 'cop') { this.startChase(g, 'cop'); return; }
-    if (res.result === 'fled') { rig.flee = 5; return; }
+    if (res.result === 'fled') { this.startFlee(rig); return; }
     if (res.result === 'ko') {
       this.knockDown(rig, g);
       g.openModal({
@@ -792,6 +792,18 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (rig.talkIt) rig.talkIt.visible = true;
   }
 
+  /** Send somebody running: not away from him, but to the end of the street. */
+  startFlee(rig) {
+    const b = this.area?.bounds;
+    const p = rig.root.position;
+    const away = p.x - this.mo.root.position.x;
+    const edge = b ? (away >= 0 ? b.maxX - 0.7 : b.minX + 0.7) : p.x + Math.sign(away || 1) * 9;
+    rig.flee = 7;
+    rig.fleeX = edge;
+    rig.gone = false;
+    if (rig.talkIt) rig.talkIt.visible = false;
+  }
+
   /** A cop has decided the conversation is over. */
   startChase(g, reason = 'cop') {
     if (this.chaseRig) return;
@@ -817,16 +829,20 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   updateChase(dt, g) {
     this.punchCool = Math.max(0, (this.punchCool || 0) - dt);
     this.punchT = Math.max(0, (this.punchT || 0) - dt);
-    // the ones who ran keep running until they are off the block
+    // the ones who ran head for the end of the block, along the pavement. Running straight away
+    // from Mo meant running straight through the facades, so they have a place to get to and the
+    // floor of the area to do it on; at the end of it they are gone.
     for (const rig of this.npcRigs) {
       if (!(rig.flee > 0)) continue;
       rig.flee -= dt;
-      const dx = rig.root.position.x - this.mo.root.position.x;
-      const dz = rig.root.position.z - this.mo.root.position.z;
-      const d = Math.hypot(dx, dz) || 1;
-      rig.root.position.x += (dx / d) * 2.8 * dt;
-      rig.root.position.z += (dz / d) * 2.8 * dt;
-      rig.root.rotation.y = Math.atan2(dx, dz);
+      const b = this.area?.bounds;
+      const tx = rig.fleeX ?? rig.root.position.x;
+      const dx = tx - rig.root.position.x;
+      const step = Math.min(Math.abs(dx), 3.1 * dt) * Math.sign(dx || 1);
+      rig.root.position.x += step;
+      if (b) rig.root.position.z = clamp(rig.root.position.z, b.minZ + 0.5, b.maxZ - 0.5);
+      rig.root.rotation.y = Math.atan2(Math.sign(dx || 1), 0);
+      if (Math.abs(dx) < 0.25) { rig.gone = true; rig.flee = 0; rig.root.visible = false; }
     }
     const rig = this.chaseRig;
     if (!rig) return;
@@ -1326,6 +1342,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
+      if (rig.gone) continue;
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
       if (rig.down) { this.npcDown(rig, dt, s); continue; }
       this.patrolNPC(rig, dt, g);

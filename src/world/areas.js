@@ -61,7 +61,7 @@ const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 
 /* ------------------------------ APARTMENT ------------------------------ */
 
-import { closetMenu } from './district.js';
+import { closetMenu, buildStationEntrance } from './district.js';
 
 export function buildApartment(g) {
   const group = new THREE.Group();
@@ -275,6 +275,8 @@ export function buildStreet(g) {
   group.add(plane(L, 8, { name: 'streetasph', map: tex('asphalt'), repeat: [16, 3] }, [0, -0.01, 5.2], [-Math.PI / 2, 0, 0]));
   // curb
   group.add(box(L, 0.18, 0.4, M.concrete, [0, 0.09, 1.3]));
+  // the way down to the trains, west end of the sidewalk
+  group.add(buildStationEntrance(-13.8, 0.7, { name: 'KESTREL ST' }));
 
   // building facades along the back
   const facade = (x, w, h, tint) => {
@@ -686,7 +688,7 @@ export function buildStreet(g) {
     { id: 'parkGateFar', label: 'Into Kestrel Park', sub: 'through the gate', x: 9.35, z: 10.2, radius: 1.6, action: (gg) => gg.goTo('park', 'street') },
     { id: 'alleypee', label: 'The man in the alley', sub: 'facing the wall', x: -5.0, z: -5.2, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'THE ALLEY · LATE', title: 'No', body: 'This isn\'t my business.\n\nNothing in the alley after midnight is anybody\'s business.', choices: [{ label: 'Keep walking.', effect: () => {} }] }) },
     { id: 'payphone', label: 'The payphone', sub: 'coin return · the gap behind the box', x: 12.9, z: -5.3, radius: 1.2, action: (gg) => payphone(gg) },
-    { id: 'subwayDown', label: 'Down into the station', sub: 'Kestrel St · the line under the block', x: -13.8, z: 0.7, radius: 1.7, action: (gg) => gg.goTo('subway', 'street') },
+    { id: 'subwayDown', label: 'Down into the station', sub: 'west end of the block · under the sidewalk', x: -13.8, z: 0.7, radius: 1.7, action: (gg) => gg.goTo('subway', 'street') },
     { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 4.6, z: 0.35, radius: 1.5, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
