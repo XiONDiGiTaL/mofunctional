@@ -11,11 +11,22 @@ import { retroMaterial, box, plane } from '../render/retro.js';
 import { signTex } from '../render/signs.js';
 import { CONFIG } from '../core/config.js';
 import { rideState, DESTINATIONS, fareTo, tooClose, ride, noShowRide } from '../systems/rides.js';
-import { money } from '../core/util.js';
+import { money, pick } from '../core/util.js';
 import { buildVehicle } from './vehicles.js';
 import { ROAD } from './plan.js';
 
 const LANE_Z = ROAD.parkNearZ;
+// the door is on the curb side of the car, not in the middle of it
+const DOOR_Z = LANE_Z - 0.9;
+
+/** What he has to say when somebody runs him down at the light. */
+const CHASE_LINES = [
+  '"You ran. I saw you run. Get in."',
+  '"Nobody runs for a bus like that. Get in."',
+  '"You chased me down the block. Get in before I change my mind."',
+  '"I had a fare on Ashby, you know. Get in."',
+  '"Wave your arms at me again and I keep driving."',
+];
 
 /** The HailMary car: a black sedan with a pink light-up placard in the windshield. */
 function buildCar() {
@@ -191,16 +202,20 @@ export class RideCar {
           g?.toast?.(`${this.driver || 'Your driver'} is pulling off — run.`, 'bad');
         } else {
           this.grace -= dt;
+          // at the door, alongside it: standing behind the car or at the far kerb does not count
           const mo = this.world.mo?.root?.position;
-          const near = mo && Math.hypot(mo.x - this.car.position.x, mo.z - this.car.position.z) < 3.6;
+          const near = mo && Math.hypot(mo.x - this.car.position.x, mo.z - DOOR_Z) < CONFIG.rides.doorReach;
           if (near) {
             // caught: it stops where it is and the door is open, with a fresh clock
+            const late = this.grace <= CONFIG.rides.graceSeconds * 0.4;
             this.grace = -1;
             this.waitT = 0;
             this.lastCall = false;
             this.targetX = this.baseX;
             if (this.interact) this.interact.radius = 1.8;
-            g?.toast?.('You caught it. The door is open.', 'good');
+            g?.toast?.(late
+              ? `${pick(CHASE_LINES)} — ${this.driver}`
+              : 'You caught it. The door is open.', 'good');
           } else if (this.grace <= 0) {
             const res = noShowRide(g);
             if (res) {
