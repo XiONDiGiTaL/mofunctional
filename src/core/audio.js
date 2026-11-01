@@ -11,6 +11,9 @@ export class Audio {
     this.sfxGain = null;
     this.ready = false;
     this.musicPlaying = false;
+    // srcs whose file would not load. The director reads this so a broken track is asked for
+    // once, not every time the room is re-checked.
+    this.failed = new Set();
     this._level = 0;
     this._vol = CONFIG.audio.musicVolume;
     this._sfx = CONFIG.audio.sfxVolume;
@@ -53,7 +56,9 @@ export class Audio {
    * The files are played exactly as delivered. Their low bitrate, hiss and crunch are the sound
    * of the game; nothing here filters or normalises them.
    */
-  async playTrack(src, { fade = 1.6, restart = false, loop = true } = {}) {
+  async playTrack(src, { fade = 1.6, restart = false, loop = true, fallback = null } = {}) {
+    // never re-open a file that already failed: go straight to what should be heard instead
+    if (fallback && this.failed.has(src)) return this.playTrack(fallback, { fade, loop });
     try { await this.init(); } catch (e) { console.warn('[audio] init failed', e); }
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended') {
@@ -79,7 +84,15 @@ export class Audio {
       } catch (e) {
         el.volume = 0; // unwired fallback: fade the element itself
       }
-      el.addEventListener('error', () => console.warn('[audio] could not load', src));
+      // a missing file is not a crash: remember it, and hand the room the fallback track
+      el.addEventListener('error', () => {
+        console.warn('[audio] could not load', src);
+        this.failed.add(src);
+        if (fallback && fallback !== src && this.current === t) {
+          this.current = null;
+          this.playTrack(fallback, { fade, loop });
+        }
+      });
       this.tracks.set(src, t);
     }
 

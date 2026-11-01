@@ -10,6 +10,7 @@
  *
  *   node scripts/test-systems.mjs
  */
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { CONFIG } from '../src/core/config.js';
 import { createState, clock, bump } from '../src/core/state.js';
 import { billInfo, rentPerCycle, rentShare, runAutopay, setAutopay } from '../src/systems/economy.js';
@@ -25,6 +26,7 @@ import * as dealer from '../src/systems/dealer.js';
 import { earn } from '../src/core/state.js';
 import { partnerTarget, partnerAtHome, PARTNER_SCHEDULES, LIVE_IN_SCHEDULES, PARTNER_AREA_NAMES, strangerRunIns } from '../src/world/schedules.js';
 import { Audio } from '../src/core/audio.js';
+import { Soundtrack, TRACKS, AREA_TRACKS, FALLBACK_ID } from '../src/systems/soundtrack.js';
 import { ceilingFor, armLength, armMax, eyeHeight, liftFor } from '../src/world/cameraLimits.js';
 import { STRANGERS, STRANGER_BY_ID } from '../src/core/strangers.js';
 import * as social from '../src/systems/social.js';
@@ -1061,6 +1063,81 @@ check('audio: the music and effects buses are separate, clamped, and need no Aud
   a.setVolume(-4);
   eq(a.volumes.music, 0, 'clamped down');
   eq(a.ready, false, 'no context started by a volume change');
+  return true;
+});
+
+check('soundtrack: every piece the director names is a real file in /Music, and none repeats', () => {
+  const ids = Object.keys(TRACKS);
+  eq(ids.length, 14, 'fourteen tracks');
+  const seen = new Set();
+  for (const id of ids) {
+    const path = decodeURI(TRACKS[id].src);
+    eq(path.startsWith('Music/'), true, `${id}: lives in Music/`);
+    eq(existsSync(path), true, `${id}: ${path} exists`);
+    eq(statSync(path).size > 1000, true, `${id}: has audio in it`);
+    eq(seen.has(path), false, `${id}: a file of its own`);
+    seen.add(path);
+    eq(TRACKS[id].title.length > 0, true, `${id}: has a title`);
+  }
+  // every file delivered is used by something: no orphan in the folder
+  for (const name of readdirSync('Music').filter((n) => n.endsWith('.mp3'))) {
+    const src = encodeURI(`Music/${name}`);
+    eq(ids.some((id) => TRACKS[id].src === src), true, `${name} is in the table`);
+  }
+  return true;
+});
+
+check('soundtrack: each place with its own piece is mapped to it, and Lost Time stays the fallback', () => {
+  const dedicated = {
+    apartment: 'apartment', bodega: 'bodega', quikstop: 'quikstop', habibs: 'habib', church: 'church',
+    clinic: 'clinic', laundromat: 'laundromat', laundry_back: 'laundromat', precinct: 'precinct',
+    restaurant: 'restaurant', street: 'city', avenue: 'ashby', park: 'park',
+  };
+  eq(JSON.stringify(AREA_TRACKS), JSON.stringify(dedicated), 'the table is exactly this');
+  for (const [area, id] of Object.entries(AREA_TRACKS)) eq(!!TRACKS[id], true, `${area} -> ${id}`);
+  eq(Object.values(AREA_TRACKS).includes(FALLBACK_ID), false, 'nothing dedicated is assigned Lost Time');
+  eq(TRACKS[FALLBACK_ID].src, encodeURI('Music/Mo Functional_ Lost Time.mp3'), 'the fallback is Lost Time');
+  eq(AREA_TRACKS.walkup, undefined, 'the walk-up has no piece of its own: it falls back');
+  eq(AREA_TRACKS.menu, undefined, 'the menu is not a gameplay area');
+  return true;
+});
+
+check('soundtrack: the walk-up and unlisted places fall back; dedicated rooms keep their piece at any hour', () => {
+  const mk = (areaId, minute, { mode = 'play', withdrawal = 0, x = 20, z = 0, failed = null } = {}) => ({
+    mode,
+    audio: failed ? { failed: new Set(failed) } : null,
+    state: { clock: { m: minute }, stats: { withdrawal } },
+    world: { areaId, mo: { root: { position: { x, z } } } },
+  });
+  const pick = (...a) => new Soundtrack(mk(...a)).pick();
+
+  eq(pick('menu', 13 * 60, { mode: 'menu' }), 'menu', 'the menu is the menu piece');
+  eq(pick('street', 13 * 60, { mode: 'ending' }), 'lost', 'the endings close on Lost Time');
+
+  eq(pick('walkup', 13 * 60), 'lost', 'the shared stairwell falls back by day');
+  eq(pick('walkup', 3 * 60), 'lost', 'and by night');
+  eq(pick('somewhere_new', 13 * 60), 'lost', 'an area nobody mapped falls back too');
+
+  for (const id of ['apartment', 'bodega', 'quikstop', 'church', 'habibs', 'clinic', 'laundromat', 'laundry_back', 'precinct', 'restaurant']) {
+    const want = AREA_TRACKS[id];
+    eq(pick(id, 13 * 60), want, `${id} at midday`);
+    eq(pick(id, 23 * 60), want, `${id} at eleven at night keeps its own piece`);
+  }
+
+  eq(pick('avenue', 13 * 60), 'ashby', 'Ashby Avenue');
+  eq(pick('park', 13 * 60), 'park', 'the park has its own piece now');
+  eq(pick('street', 13 * 60), 'city', 'the street by day');
+  eq(pick('street', 13 * 60, { x: 1.5, z: -5.6 }), 'quikstop', 'and the storefront carries onto it');
+  eq(pick('street', 23 * 60), 'lost', 'the street after ten');
+  eq(pick('avenue', 23 * 60), 'lost', 'Ashby after ten');
+  eq(pick('park', 23 * 60), 'lost', 'the park after ten');
+  eq(pick('apartment', 23 * 60), 'apartment', 'the apartment does not lose its piece at night');
+  eq(pick('street', 13 * 60, { withdrawal: 80 }), 'lost', 'a deep withdrawal takes the street');
+
+  eq(pick('clinic', 13 * 60, { failed: [TRACKS.clinic.src] }), 'lost', 'a broken file falls back, not silent');
+  // a broken fallback must never take a room down with it: the clinic's own file still plays
+  eq(pick('clinic', 13 * 60, { failed: [TRACKS.lost.src] }), 'clinic', 'a broken fallback does not cost a working piece');
+  eq(pick('walkup', 13 * 60, { failed: [TRACKS.lost.src] }), 'lost', 'and the fallback is still the fallback');
   return true;
 });
 
