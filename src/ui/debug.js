@@ -84,10 +84,14 @@ export function installDebugMenu(g) {
     ui.appendChild(prompt);
     const input = prompt.querySelector('input');
     input.focus();
+    // the key that opened the prompt can land in it: on layouts where ~ is a dead key it arrives
+    // as "~" in front of the first letter, so clear it once the opening keystroke is done
+    setTimeout(() => { if (/^[~`]+$/.test(input.value)) input.value = ''; }, 0);
     const submit = () => {
-      const value = input.value;
+      // letters only, any case: "~Moses", "moses " and "Moses" are all the password
+      const clean = (v) => String(v).replace(/[^a-z]/gi, '').toLowerCase();
       // wrong: it simply was not there. no message, no shake, no clue.
-      if (String(value) !== CONFIG.debug.password) { closePrompt(); return; }
+      if (clean(input.value) !== clean(CONFIG.debug.password)) { closePrompt(); return; }
       open();
     };
     input.addEventListener('keydown', (e) => {

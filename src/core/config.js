@@ -341,6 +341,10 @@ export const CONFIG = {
     backlashMorale: -7,
     donationChance: 0.10,
     donationAmount: 12,
+    timelineDays: 3,            // how far back the FeedLove timeline goes
+    followBackAffection: 25,    // she follows Mo back once she likes him this much (a girlfriend always does)
+    likeAffection: 1,           // liking her post, once a day each
+    partnerLikeMorale: 2,       // her liking his post
   },
 
   events: {

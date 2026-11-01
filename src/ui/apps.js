@@ -55,6 +55,11 @@ export const APPS = {
     name: 'LoveLine', tag: 'somebody on the block', a: '#ff6b8a', b: '#8a1f4a',
     icon: svg('<path d="M12 20.5S3.5 15 3.5 9.5A4.5 4.5 0 0 1 12 6.8a4.5 4.5 0 0 1 8.5 2.7c0 5.5-8.5 11-8.5 11z"/>'),
   },
+  // the neighbourhood board: lore, a daily notice board, and who was seen where
+  block: {
+    name: 'NextStoop', tag: 'your neighbours, unfortunately', a: '#8fd06a', b: '#2a5a3a',
+    icon: svg('<path d="M3 20.5h18"/><path d="M5 20.5v-9l7-5.5 7 5.5v9"/><path d="M9.5 20.5v-5h5v5"/><path d="M8 8.2V4.5h2.5v1.8"/>'),
+  },
   clinic: {
     name: 'Clinic', tag: 'walk-ins · no judgement', a: '#8fd0e0', b: '#26424e',
     icon: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 7.5v9M7.5 12h9"/>'),
@@ -119,7 +124,8 @@ export function serviceAvatar(name, cls = '') {
 }
 
 /** The home-screen layout: the grid, then the dock. */
-export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'dates', 'clinic', 'fellowship', 'rolo'];
+// LoveLine lives inside FeedLove now (its LOVELINE tab); NextStoop takes its place on the grid
+export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'block', 'clinic', 'fellowship', 'rolo'];
 
 // Rolo's text thread lives inside Txtr, so it wears Txtr's brand
 APPS.dealer = { ...APPS.messages };

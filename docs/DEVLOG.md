@@ -10,6 +10,22 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### FeedLove grows up; NextStoop; the debug password
+
+- **Debug**: on layouts where `~` is a dead key the opening keystroke lands in the password box
+  ("~Moses") and the strict compare failed silently. The prompt now clears a leading ~/` and the
+  compare is letters-only, case-insensitive.
+- **FeedLove** (`systems/social.js`, `ui/feedart.js`): accounts with handles, posting rhythms,
+  lines and picture scenes; a seeded timeline over the last 3 days (pre-game days included) that
+  never shows the future; follow/unfollow; who follows Mo (family, friends, the three once she
+  likes him); likes both ways (her post: affection once a day; his post: `likesForMoPost`).
+  Tabs FEED / PEOPLE / HEARTS / LOVELINE; a text box (Enter or POST) beside the random post; the
+  phone keeps its scroll position and draft across re-renders and isolates typing from game keys.
+- **NextStoop** (`systems/block.js`, app id `block`) replaces LoveLine on the home grid: live
+  sightings from the schedules, a seeded daily board, 14 lore entries unlocking one a day.
+  `openPhone('dates')` now opens FeedLove on its LOVELINE tab.
+- 45 system checks.
+
 ### The twenty app women: faces, hookups, run-ins
 
 - `assets/ref/app_women_bank.png` (owner's 5x4 sheet) baked as `w0`..`w19` in `NPC_FACES`.

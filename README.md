@@ -121,7 +121,8 @@ due next), an icon grid and a dock. Every app is a parody with its own name, ico
 | **GrubHope** | groceries for cash or Civic Relief credit, relief programs |
 | **Pocket Lint** | inventory as illustrated tiles; eat, drink, smoke or sell from here |
 | **Landlordly** | a thermostat dial that counts down the days to rent |
-| **FeedLove** | the social app (a heart, not a camera): posting for likes, and **HEARTS**, its dating side |
+| **FeedLove** | the social app (a heart, not a camera), in four tabs: **FEED** (Mo's profile, a box to type his own posts or a random one, and a timeline of everyone he follows — Mom, Nia, Kev, Dale, Rae, Miguel's bodega and its cat, Habib's, the Fellowship, the Quik-Stop, the park, and the three once he has met them — with pictures and likes), **PEOPLE** (following, followers, people you may know), **♥ HEARTS** (the dating side) and **LOVELINE** (the three, where they are, and her day) |
+| **NextStoop** | the neighbourhood app: **SEEN NOW** (neighbours posting who is where, from the real schedules — useful for finding people), **THE BOARD** (a day of lost-and-found, safety, free stuff and complaints) and **HISTORY** (the lore of Kestrel Street, a page a day) |
 | **Blessed+** | the Fellowship's "live" Sunday stream and the tithe |
 | **Rolo's Line** | the dealer app (below) |
 | **Tweaks** | skin, interface scale, camera distance and height, volume, saves, run stats |
@@ -273,8 +274,9 @@ and a black tank top. The faces are baked into portraits and 3D head textures by
 | **Melanie** | Miguel's bodega 07:00-08:00 | teaching, then the park 15:00-18:00 | Habib's 18:00-20:00, Kestrel St. 20:00-21:00 |
 | **Stephanie** | asleep until 11 | the park 11:00-14:00, Quik-Stop 14:00-16:00 | the 1120 stoop, Habib's 19:00-21:00, the bench until 01:00 |
 
-She walks in through the door when her time comes and out again when it is over. LoveLine shows
-where each one is right now and her usual day. A live-in girlfriend is at home when her day has
+She walks in through the door when her time comes and out again when it is over. FeedLove's LOVELINE
+tab shows where each one is right now and her usual day, and NextStoop's SEEN NOW tab gossips
+about it. A live-in girlfriend is at home when her day has
 her off the map.
 
 **Up close.** Once she likes him enough (or is his girlfriend), her menu adds **Hug her**, **Lean
@@ -282,7 +284,13 @@ in** (she kisses his cheek) and **Take her hand** — they walk around together,
 until he lets go, leaves, starts something else, or her day takes her somewhere. The first of each
 in a day is worth affection, morale and a little less stress; after that it is just nice.
 
-**FeedLove HEARTS.** The social app has a dating side: open FeedLove and tap **♥ HEARTS · DATING** at the top, or the **Find someone** banner at the top of LoveLine. Every morning it deals a fresh stack of
+**FeedLove HEARTS.** The social app has a dating side: open FeedLove and tap **♥ HEARTS · DATING** at the top, or the **Find someone** banner at the top of the LOVELINE tab.
+
+**Following her.** Once Mo has met one of the three she shows up under PEOPLE. Follow her and she
+follows back when she likes him enough (a girlfriend always does); her posts — her runs, her
+grading, her bench, and once she is his girlfriend, him — come into the feed. Liking her post is a
+little affection, once a day. When Mo posts, the people who follow him may like it, and her like
+is worth a little morale. Every morning it deals a fresh stack of
 profiles — strangers from around the boroughs, and, until he has matched with them, Stephanie,
 Melanie and Diana. Sending a heart takes a few minutes and there are ten a day. Strangers almost
 always say no (unmatched before the heart finishes animating; "do you have a car?"; left on read

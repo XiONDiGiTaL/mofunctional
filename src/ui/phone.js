@@ -16,6 +16,9 @@ import { itemIcon } from './icons.js';
 import * as dealer from '../systems/dealer.js';
 import * as life from '../systems/life.js';
 import * as dating from '../systems/dating.js';
+import * as social from '../systems/social.js';
+import * as block from '../systems/block.js';
+import { postImage } from './feedart.js';
 import * as sms from '../systems/sms.js';
 import * as rent from '../systems/rent.js';
 import * as romance from '../systems/romance.js';
@@ -53,6 +56,8 @@ export class Phone {
 
   open(appId = null) {
     if (this.wrap) return;
+    // LoveLine is a tab of FeedLove now; anything that still asks for it lands there
+    if (appId === 'dates') { appId = 'social'; this.feedTab = 'love'; }
     this.app = appId || 'home';
     this.wrap = el(`<div class="phone-wrap"><div class="phone">
       <span class="phone__side phone__side--1"></span>
@@ -91,6 +96,12 @@ export class Phone {
         clearTimeout(this.camSaveTimer);
         this.camSaveTimer = setTimeout(() => this.g.autosave?.(), 500);
       }
+    });
+    this.wrap.addEventListener('keydown', (e) => {
+      if (e.target.tagName !== 'INPUT' || e.target.type === 'range') return;
+      if (e.key === 'Escape') { e.target.blur(); return; }
+      e.stopPropagation();
+      if (e.key === 'Enter' && e.target.id === 'feedtext') { e.preventDefault(); this.actions.posttyped.call(this); this.render(); }
     });
     this.root.appendChild(this.wrap);
     this.render();
@@ -137,10 +148,15 @@ export class Phone {
     this.wrap.querySelector('[data-live="clock"]').textContent = `${c.hhmm} · D${c.day}`;
     this.wrap.querySelector('[data-live="money"]').textContent = money(s.money);
     const view = this.apps[this.app] ? this.apps[this.app].call(this) : this.homeView();
+    const sameView = this.lastView === `${this.app}|${this.feedTab}`;
+    const keep = this.body.scrollTop;
+    const draft = this.body.querySelector('#feedtext')?.value;
     this.body.innerHTML = view;
     this.body.dataset.app = this.app;
     this.wrap.querySelector('.phone__screen').dataset.app = this.app;
-    this.body.scrollTop = this.app === 'dealer' ? this.body.scrollHeight : 0;
+    this.body.scrollTop = this.app === 'dealer' ? this.body.scrollHeight : sameView ? keep : 0;
+    if (draft && this.body.querySelector('#feedtext')) this.body.querySelector('#feedtext').value = draft;
+    this.lastView = `${this.app}|${this.feedTab}`;
   }
 
   /** Live read-outs under sliders, updated while dragging. */
@@ -709,29 +725,79 @@ export class Phone {
     const g = this.g;
     const s = g.state;
     const posts = s.feedPosts || [];
-    const tabs = `<div class="feedtabs">
-        <button class="${this.feedTab !== 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="feed">FEED</button>
-        <button class="feedtabs__hearts ${this.feedTab === 'hearts' ? 'on' : ''}" data-act="feedtab" data-arg="hearts">♥ HEARTS · DATING</button>
-      </div>`;
-    if (this.feedTab === 'hearts') return `${this.header('FeedLove', 'HEARTS')}${tabs}${this.heartsView()}${this.footer()}`;
-    return `${this.header('FeedLove', `${s.social.followers} FOLLOWERS`)}${tabs}
+    const so = social.socialState(s);
+    const tab = this.feedTab || 'feed';
+    const tabBtn = (id, label, cls = '') => `<button class="${cls} ${tab === id ? 'on' : ''}" data-act="feedtab" data-arg="${id}">${label}</button>`;
+    const tabs = `<div class="feedtabs">${tabBtn('feed', 'FEED')}${tabBtn('people', 'PEOPLE')}${tabBtn('hearts', '♥ HEARTS', 'feedtabs__hearts')}${tabBtn('love', 'LOVELINE')}</div>`;
+    if (tab === 'hearts') return `${this.header('FeedLove', 'HEARTS')}${tabs}${this.heartsView()}${this.footer()}`;
+    if (tab === 'love') return `${this.header('FeedLove', 'LOVELINE')}${tabs}${this.loveBody()}${this.footer()}`;
+    if (tab === 'people') return `${this.header('FeedLove', `${so.followers} FOLLOWERS`)}${tabs}${this.peopleView()}${this.footer()}`;
+    const face = (id) => {
+      const a = social.ACCOUNTS[id];
+      return a.kind ? `<img class="fpost__face" src="${portraitURL(a.kind, 'content')}" alt="" />` : `<span class="fpost__face fpost__face--brand" style="--c:${a.color}">${a.initial}</span>`;
+    };
+    const tl = social.timeline(s).slice(0, 30);
+    const today = dayOf(s.clock.m);
+    const when = (p) => (p.day === today ? hhmm(p.minute) : p.day === today - 1 ? 'yesterday' : `${today - p.day}d ago`);
+    const mine = posts.slice(-5).reverse().map((p) => `
+      <div class="fpost fpost--mine">
+        <div class="fpost__head"><img class="fpost__face" src="${portraitURL('mo', 'content')}" alt="" /><b>@mofunctional</b><span>D${p.day}</span></div>
+        <div class="fpost__text">${T(p.text)}</div>
+        <div class="fpost__meta"><span class="post__heart">♥</span> ${p.likes} · ${p.replies} replies${p.likedBy?.length ? ` · liked by ${T(p.likedBy.map((id) => social.ACCOUNTS[id]?.name || id).join(', '))}` : ''}</div>
+      </div>`).join('');
+    return `${this.header('FeedLove', `${so.followers} FOLLOWERS`)}${tabs}
       <div class="profile profile--feed">
         <span class="profile__ring"><img src="${portraitURL('mo', this.g.hud?.mood?.id || 'content')}" alt="" /></span>
         <div class="profile__stats">
           <span><b>${posts.length}</b>posts</span>
-          <span><b>${s.social.followers}</b>followers</span>
-          <span><b>3</b>following</span>
+          <button class="profile__stat" data-act="feedtab" data-arg="people"><b>${so.followers}</b>followers</button>
+          <button class="profile__stat" data-act="feedtab" data-arg="people"><b>${so.following.length}</b>following</button>
         </div>
       </div>
       <div class="tiny"><b>@mofunctional</b> · ${T(s.feedBio || 'not really a brand. a person. mostly.')}</div>
-      <button class="btn btn--primary" data-act="post">POST SOMETHING (10 MIN)</button>
-      <div class="app__h">Your posts</div>
-      <div class="list">
-        ${posts.length ? posts.slice(-6).reverse().map((p) => `
-          <div class="listitem post"><div class="grow"><div class="name">${T(p.text)}</div><div class="meta"><span class="post__heart">♥</span> ${p.likes} · ${p.replies} replies · D${p.day}</div></div></div>`).join('') : '<div class="empty">You have never posted. This is probably correct.</div>'}
+      <div class="fcompose">
+        <input id="feedtext" type="text" maxlength="140" placeholder="what's on your mind, Mo?" autocomplete="off" spellcheck="false" />
+        <button class="btn btn--primary btn--sm" data-act="posttyped">POST</button>
       </div>
-      <div class="tiny mono-dim">Posting costs 10 minutes and may produce: one like, one insult, or an unexpected $12 from a stranger.</div>
+      <button class="btn btn--sm" data-act="post">POST SOMETHING (10 MIN)</button>
+      ${mine ? `<div class="app__h">Your posts</div>${mine}` : ''}
+      <div class="app__h">Your feed</div>
+      ${tl.length ? tl.map((p) => {
+        const a = social.ACCOUNTS[p.author];
+        const liked = !!so.liked[p.id];
+        return `<div class="fpost">
+          <div class="fpost__head">${face(p.author)}<b>${T(a.name)}</b><em>@${T(a.handle)}</em><span>${when(p)}</span></div>
+          <div class="fpost__text">${T(p.text)}</div>
+          ${postImage(p, a.kind)}
+          <div class="fpost__meta"><button class="fpost__like ${liked ? 'on' : ''}" data-act="likepost" data-arg="${p.id}">♥ ${p.likes + (liked ? 1 : 0)}</button></div>
+        </div>`;
+      }).join('') : '<div class="empty">You follow nobody who posts. Go to PEOPLE.</div>'}
       ${this.footer()}`;
+  }
+
+  /** FeedLove PEOPLE: who he follows, who follows him, and who he could follow. */
+  peopleView() {
+    const s = this.g.state;
+    const so = social.socialState(s);
+    const ids = Object.keys(social.ACCOUNTS).filter((id) => social.accountVisible(s, id));
+    const row = (id, btn) => {
+      const a = social.ACCOUNTS[id];
+      const face = a.kind ? `<img class="chat__face" src="${portraitURL(a.kind, 'content')}" alt="" />` : `<span class="chat__face fpost__face--brand" style="--c:${a.color}">${a.initial}</span>`;
+      const back = social.followsMo(s, id) ? '<span class="pill">follows you</span>' : '';
+      return `<div class="listitem">${face}<div class="grow"><div class="name">${T(a.name)} ${back}</div><div class="meta">@${T(a.handle)}</div></div>${btn}</div>`;
+    };
+    const following = so.following.filter((id) => ids.includes(id));
+    const others = ids.filter((id) => !so.following.includes(id));
+    const fl = social.followerList(s);
+    return `
+      <div class="app__h">Following · ${following.length}</div>
+      <div class="list">${following.map((id) => row(id, `<button class="btn btn--sm" data-act="follow" data-arg="${id}" data-num="0">UNFOLLOW</button>`)).join('') || '<div class="empty">Nobody. Bold.</div>'}</div>
+      <div class="app__h">Followers · ${so.followers}</div>
+      <div class="list">${fl.named.map((id) => row(id, so.following.includes(id) ? '' : `<button class="btn btn--sm btn--primary" data-act="follow" data-arg="${id}" data-num="1">FOLLOW BACK</button>`)).join('')}
+        ${fl.others ? `<div class="tiny mono-dim">and ${fl.others} other${fl.others === 1 ? '' : 's'} — a cousin, a guy from high school, and several accounts selling sunglasses.</div>` : ''}</div>
+      ${others.length ? `<div class="app__h">People you may know</div>
+      <div class="list">${others.map((id) => row(id, `<button class="btn btn--sm btn--primary" data-act="follow" data-arg="${id}" data-num="1">FOLLOW</button>`)).join('')}</div>` : ''}
+      <div class="tiny mono-dim">Stephanie, Melanie and Diana show up here once you have met them. Follow her and she may follow you back; like her posts and she notices.</div>`;
   }
 
   /** FeedLove HEARTS: today's stack of profiles. Strangers mostly say no; the three answer. */
@@ -910,7 +976,9 @@ export class Phone {
 
   /* ------------------------------ DATING ------------------------------ */
 
-  datesView() {
+  datesView() { return `${this.header('LoveLine', 'KESTREL ST.')}${this.loveBody()}${this.footer()}`; }
+
+  loveBody() {
     const g = this.g;
     const s = g.state;
     const cards = romance.PARTNER_KEYS.map((id) => {
@@ -937,7 +1005,7 @@ export class Phone {
         </div>
       </div>`;
     }).join('');
-    return `${this.header('LoveLine', 'KESTREL ST.')}
+    return `
       <button class="card dfind" data-act="openhearts">
         <b>♥ Find someone on FeedLove HEARTS</b>
         <span class="tiny">today's stack of profiles · send hearts · swap numbers</span>
@@ -945,6 +1013,34 @@ export class Phone {
       ${cards}
       <div class="tiny mono-dim">Find her where her day takes her: the park, the Quik-Stop, the bodega, Habib's, the street. Get close and you can hug, hold hands, and let her kiss your cheek.
       <br><b>${T(romance.afterglowLabel(s) || 'No Afterglow right now.')}</b></div>
+      ${this.footer()}`;
+  }
+
+  /* ------------------------------ NEXTSTOOP ------------------------------ */
+
+  /** The neighbourhood app: who was seen where, today's board, and the history of the block. */
+  blockView() {
+    const s = this.g.state;
+    const tab = this.blockTab || 'now';
+    const tabBtn = (id, label) => `<button class="${tab === id ? 'on' : ''}" data-act="blocktab" data-arg="${id}">${label}</button>`;
+    let body = '';
+    if (tab === 'now') {
+      body = `<div class="tiny mono-dim">Posted by neighbours in the last hour. Mostly accurate.</div>
+        ${block.sightings(s).map((x) => `<div class="nstoop"><div class="nstoop__who">${T(x.who)} <span>· just now</span></div><div>${T(x.text)}</div></div>`).join('')}`;
+    } else if (tab === 'board') {
+      const board = block.boardToday(s);
+      body = board.length ? '' : '<div class="empty">Quiet so far today. Give it an hour; somebody will lose a cat.</div>';
+      body += board.map((x) => `<div class="nstoop"><div class="nstoop__cat">${T(x.cat)}</div>
+        <div class="nstoop__who">${T(x.who)} <span>· ${T(x.where)} · ${hhmm(x.minute)}</span></div><div>${T(x.text)}</div>
+        <div class="tiny mono-dim">${x.replies} repl${x.replies === 1 ? 'y' : 'ies'}</div></div>`).join('');
+    } else {
+      const lore = block.loreUnlocked(s);
+      body = `${lore.map((x) => `<details class="nstoop nstoop--lore"><summary><b>${T(x.title)}</b></summary><div>${T(x.body)}</div></details>`).join('')}
+        ${lore.length < block.LORE.length ? `<div class="tiny mono-dim">Pat from the block association adds a page every day. ${block.LORE.length - lore.length} more to come.</div>` : ''}`;
+    }
+    return `${this.header('NextStoop', 'KESTREL ST.')}
+      <div class="feedtabs feedtabs--stoop">${tabBtn('now', 'SEEN NOW')}${tabBtn('board', 'THE BOARD')}${tabBtn('lore', 'HISTORY')}</div>
+      ${body}
       ${this.footer()}`;
   }
 
@@ -1044,6 +1140,31 @@ export class Phone {
       },
       listitem(arg) { this.bidItem = arg; this.bidPrice = CONFIG.items[arg].value; this.app = 'bidbay'; },
       sleep(arg, num) { sleep(g, num ?? 7); this.close(); },
+      feedpost(text) {
+        g.advance(10);
+        s.feedPosts = s.feedPosts || [];
+        const p = { text, likes: Math.floor(Math.random() * 8) + s.social.followers, replies: Math.floor(Math.random() * 3), day: dayOf(s.clock.m), typed: true };
+        p.likedBy = social.likesForMoPost(g);
+        p.likes += p.likedBy.length;
+        s.feedPosts.push(p);
+        if (s.feedPosts.length > 24) s.feedPosts.shift();
+        bump(s, 'morale', CONFIG.social.postMorale);
+        s.social.followers += Math.floor(Math.random() * 2);
+        return p;
+      },
+      posttyped() {
+        const box = this.body?.querySelector('#feedtext');
+        const text = String(box?.value || '').replace(/\s+/g, ' ').trim().slice(0, 140);
+        if (!text) { g.toast('FeedLove: say something. Anything. Even "hi".', 'info'); return; }
+        if (box) box.value = '';
+        this.actions.feedpost.call(this, text);
+        g.toast('Posted.', 'good');
+      },
+      likepost(arg) {
+        const p = social.timeline(s).find((x) => x.id === arg);
+        if (p) social.likePost(g, p);
+      },
+      follow(arg, num) { social.follow(g, arg, num !== 0); },
       post() {
         g.advance(10);
         s.feedPosts = s.feedPosts || [];
@@ -1057,6 +1178,8 @@ export class Phone {
           'feeling normal. this is a lie but it is a nice one.',
         ];
         const p = { text: pick(texts), likes: Math.floor(Math.random() * 8) + s.social.followers, replies: Math.floor(Math.random() * 3), day: dayOf(s.clock.m) };
+        p.likedBy = social.likesForMoPost(g);
+        p.likes += p.likedBy.length;
         s.feedPosts.push(p);
         if (s.feedPosts.length > 24) s.feedPosts.shift();
         bump(s, 'morale', CONFIG.social.postMorale);
@@ -1109,6 +1232,8 @@ export class Phone {
       clincheck() { clinic.checkIn(g); },
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
       hookup(arg) { this.close(); dating.hookup(g, arg); },
+      blocktab(arg) { this.blockTab = arg; },
+      openlove() { this.app = 'social'; this.msgId = null; this.feedTab = 'love'; },
       openhearts() { this.app = 'social'; this.msgId = null; this.feedTab = 'hearts'; this.heartNote = ''; },
       heart(arg) {
         const res = dating.sendHeart(g, arg);
@@ -1160,6 +1285,7 @@ export class Phone {
       dealer: this.dealerView,
       rolo: this.roloView,
       dates: this.datesView,
+      block: this.blockView,
       clinic: this.clinicView,
     };
   }

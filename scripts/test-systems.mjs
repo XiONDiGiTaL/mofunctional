@@ -25,6 +25,8 @@ import * as dealer from '../src/systems/dealer.js';
 import { earn } from '../src/core/state.js';
 import { partnerTarget, PARTNER_SCHEDULES, PARTNER_AREA_NAMES, strangerRunIns } from '../src/world/schedules.js';
 import { STRANGERS, STRANGER_BY_ID } from '../src/core/strangers.js';
+import * as social from '../src/systems/social.js';
+import * as block from '../src/systems/block.js';
 
 let passed = 0;
 let failed = 0;
@@ -715,6 +717,56 @@ check('gestures: the first hug of the day counts, the second is just nice', () =
   g.state.clock.m += 1440;
   romance.gesture(g, 'melanie', 'hug');
   eq(st.affection, 40 + 2 * CONFIG.romance.gestureValues.hug.affection, 'next day');
+  return true;
+});
+
+check('feedlove: the timeline is stable, only shows posts whose time has come, and only from people he follows', () => {
+  const g = stubGame();
+  g.state.clock.m = 2 * 1440 + 12 * 60;
+  const a = social.timeline(g.state);
+  eq(JSON.stringify(social.timeline(g.state)), JSON.stringify(a), 'stable');
+  eq(a.length > 0, true, 'has posts');
+  for (const p of a) {
+    eq(social.isFollowing(g.state, p.author), true, `${p.author} followed`);
+    if (p.day === 3) eq(p.minute <= 12 * 60, true, 'not from the future');
+  }
+  eq(a.some((p) => p.author === 'melanie'), false, 'not before meeting her');
+  return true;
+});
+
+check('feedlove: she follows back once she likes him; liking her post is a little affection once a day', () => {
+  const g = stubGame();
+  const st = romance.partnerState(g.state, 'diana');
+  st.met = true;
+  st.affection = 10;
+  social.follow(g, 'diana', true);
+  eq(social.followsMo(g.state, 'diana'), false, 'not yet');
+  st.affection = CONFIG.social.followBackAffection;
+  eq(social.followsMo(g.state, 'diana'), true, 'now');
+  const post = { id: 'diana-1-0', author: 'diana' };
+  social.likePost(g, post);
+  eq(st.affection, CONFIG.social.followBackAffection + CONFIG.social.likeAffection, 'first like');
+  social.likePost(g, post); social.likePost(g, { id: 'diana-1-1', author: 'diana' });
+  eq(st.affection, CONFIG.social.followBackAffection + CONFIG.social.likeAffection, 'once a day');
+  return true;
+});
+
+check('nextstoop: lore unlocks daily, the board never shows the future, sightings follow the schedules', () => {
+  const g = stubGame();
+  g.state.clock.m = 12 * 60;
+  eq(block.loreUnlocked(g.state).length, 3, 'day 1');
+  g.state.clock.m = 1440 + 12 * 60;
+  eq(block.loreUnlocked(g.state).length, 4, 'day 2');
+  for (const x of block.boardToday(g.state)) eq(x.minute <= 12 * 60, true, 'board time');
+  g.state.clock.m = 12 * 60; // Stephanie is in the park 11-14
+  eq(block.sightings(g.state).some((x) => /Kestrel Park/.test(x.text) && /hoodie/.test(x.text)), true, 'stephanie sighting');
+  return true;
+});
+
+check('debug: the password ignores case, stray symbols and the dead-key tilde', () => {
+  const clean = (v) => String(v).replace(/[^a-z]/gi, '').toLowerCase();
+  for (const v of ['Moses', 'moses', '~Moses', '`Moses ', ' MOSES']) eq(clean(v), clean(CONFIG.debug.password), v);
+  eq(clean('Mose') === clean(CONFIG.debug.password), false, 'wrong is wrong');
   return true;
 });
 
