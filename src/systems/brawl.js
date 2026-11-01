@@ -16,7 +16,7 @@
  * Headless: the odds and the loot are here; the world draws the arm and moves the people.
  */
 import { CONFIG } from '../core/config.js';
-import { dayOf, pick, money } from '../core/util.js';
+import { dayOf, pick, money, randInt } from '../core/util.js';
 import { bump, logLine, addItem, countItem } from '../core/state.js';
 
 const C = () => CONFIG.brawl;
@@ -49,6 +49,50 @@ export function classify(kind = '', def = {}) {
   if (def.dealer || DEALER_KINDS.has(k) || /deal/.test(k)) return 'dealer';
   if (def.tough || TOUGH_KINDS.has(k) || /thug/.test(k)) return 'tough';
   return 'civilian';
+}
+
+const IMPORTANT_KINDS = new Set([
+  'nurse', 'rae', 'dale', 'kev', 'dex', 'habib', 'gus', 'squeak', 'addison', 'nia',
+  'clerk', 'shopkeeper', 'owner', 'cashier', 'barkeep', 'booker', 'priest', 'pastor', 'deacon',
+]);
+
+/** Somebody with a counter, a till or a job to lose: these are the ones who call it in. */
+export function isImportant(kind = '', def = {}) {
+  return !!(def.talk || def.important || IMPORTANT_KINDS.has(String(kind || '').toLowerCase()));
+}
+
+/**
+ * A punch thrown at somebody who works here. Three in a day and the phone comes out; the cruiser
+ * takes a few minutes to arrive, and then it is the ordinary arrest, with the ordinary fine.
+ */
+export function assault(g, id = 'somebody') {
+  const s = g.state;
+  const b = brawlState(s);
+  const day = dayOf(s.clock.m);
+  b.heat = b.heat && typeof b.heat === 'object' ? b.heat : {};
+  const row = b.heat[id] && b.heat[id].day === day ? b.heat[id] : { n: 0, day };
+  row.n += 1;
+  b.heat[id] = row;
+  if (row.n >= C().reportAfter && !b.alert) {
+    const wait = randInt(C().alertMinutes[0], C().alertMinutes[1]);
+    b.alert = { id, at: s.clock.m + wait };
+    logLine(g, 'Behind the counter, somebody picks up the phone and turns their back to you.', 'bad');
+    return { called: true, inMinutes: wait, n: row.n };
+  }
+  return { called: false, n: row.n, left: Math.max(0, C().reportAfter - row.n) };
+}
+
+/** The call has worked its way through: the cruiser is on the block. */
+export function alertDue(s) {
+  const b = brawlState(s);
+  return !!b.alert && s.clock.m >= b.alert.at;
+}
+
+export function clearAlert(s) {
+  const b = brawlState(s);
+  const a = b.alert || null;
+  b.alert = null;
+  return a;
 }
 
 /** How many landed punches a kind of person takes before they go down. */

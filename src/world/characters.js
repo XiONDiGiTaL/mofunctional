@@ -618,6 +618,25 @@ export function punchPose(rig, u) {
 }
 
 /**
+ * Hands up, chin down, weight on the back foot, bouncing a little: the half second before
+ * somebody decides to swing back. `t` is a running clock, for the bounce.
+ */
+export function guardPose(rig, t = 0) {
+  const bob = Math.sin(t * 3.4);
+  rig.armR.pivot.rotation.set(-0.98 + bob * 0.05, 0, -0.2);
+  rig.armR.elbow.rotation.set(-1.78, 0, 0);
+  rig.armL.pivot.rotation.set(-0.86 - bob * 0.04, 0, 0.22);
+  rig.armL.elbow.rotation.set(-1.92, 0, 0);
+  rig.torso.rotation.set(0.07, Math.sin(t * 1.7) * 0.09, 0);
+  rig.hips.rotation.y = 0;
+  rig.head.rotation.set(0.03, 0, 0);
+  rig.legL.pivot.rotation.x = -0.13;
+  rig.legR.pivot.rotation.x = 0.17;
+  rig.legL.knee.rotation.x = 0.15;
+  rig.legR.knee.rotation.x = 0.1;
+}
+
+/**
  * Out cold on the pavement: limbs loose where they fell, chest still moving. The world lays the
  * root down once; this keeps the body from getting back into the idle cycle and walking off
  * while it lies there.

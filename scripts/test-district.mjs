@@ -110,6 +110,36 @@ check('a swing carries the running total, not the kind', () => {
   eq(second.hp, first.hp - 1);
 });
 
+check('a shopkeeper who is hit over and over calls the precinct', () => {
+  const { s, g } = stub();
+  ok(brawl.isImportant('nurse'), 'the nurse counts');
+  ok(brawl.isImportant('passer_m', { talk: 'gus' }), 'anyone with a talk prompt counts');
+  let called = false;
+  for (let i = 0; i < CONFIG.brawl.reportAfter; i++) called = brawl.assault(g, 'dex').called || called;
+  ok(called, 'the phone came out');
+  ok(!!s.brawl.alert, 'an alert is outstanding');
+});
+
+check('the cruiser takes a few minutes, and one call is one cruiser', () => {
+  const { s, g } = stub();
+  for (let i = 0; i < CONFIG.brawl.reportAfter; i++) brawl.assault(g, 'dex');
+  ok(!brawl.alertDue(s), 'not on the same minute');
+  const again = brawl.assault(g, 'dex');
+  eq(again.called, false, 'no second call while one is out');
+  s.clock.m += CONFIG.brawl.alertMinutes[1] + 1;
+  ok(brawl.alertDue(s), 'due now');
+  brawl.clearAlert(s);
+  ok(!brawl.alertDue(s), 'cleared once answered');
+});
+
+check('a new day forgets the grudge', () => {
+  const { s, g } = stub();
+  brawl.assault(g, 'dex');
+  brawl.assault(g, 'dex');
+  s.clock.m += 1440;
+  eq(brawl.assault(g, 'dex').n, 1, 'counting starts again');
+});
+
 check('the gun is left where it fell', () => {
   ok(/Live by the gun/.test(brawl.GUN_REFUSAL), 'the line is the line');
 });

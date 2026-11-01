@@ -708,6 +708,12 @@ export const CONFIG = {
     toughHp: 7,
     civilianHp: 3,
     fleeChance: 0.55,
+    guardSeconds: 2.6,       // how long they keep their hands up after swinging
+    swingDelay: 0.45,        // the beat between your hit landing and theirs coming back
+    downSeconds: 120,        // real seconds on the pavement before somebody gets up
+    reportAfter: 3,          // hits on the same shopkeeper before the phone comes out
+    alertMinutes: [3, 10],   // and how long the cruiser takes to find the block
+
   },
   // the subway: one fare, one train every so often, and a real wait if he misses it
   subway: { fare: 1.5, everySeconds: 46, dockSeconds: 18, rideMinutes: [6, 12] },

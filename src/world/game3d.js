@@ -1,7 +1,7 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
-import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown } from './characters.js';
+import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
@@ -193,6 +193,13 @@ export class World {
     this.camera.lookAt(this.camTarget);
 
     this.interactables = this.area.interactables.map((it) => ({ ...it, vec: new THREE.Vector2(it.x, it.z) }));
+    // a prompt belongs to the room that drew it: the station's "wait for the train" followed him
+    // into the Basement and the projects because nothing cleared it on the way out
+    this.prompt = null;
+    this.nearIds = null;
+    this.pickIndex = 0;
+    this.promptTarget = null;
+    g.hud?.setPrompt?.(null);
 
     for (const npc of this.area.npcs) {
       let rig;
@@ -737,9 +744,20 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const maxHp = rig.brawlHpMax || brawl.hpFor(def);
     const res = brawl.strike(g, { ...def, key, hp: rig.brawlHp, maxHp, label: def.label || def.name || def.kind });
     if (typeof res.hp === 'number') { rig.brawlHp = res.hp; rig.brawlHpMax = maxHp; }
+    // somebody with a counter to lose does the one thing that actually costs him: they call it in
+    if (brawl.isImportant(def.kind, def)) {
+      const heat = brawl.assault(g, key);
+      if (heat.called) g.toast('They do not swing back. They pick up the phone, and they keep looking at you while they dial.', 'bad');
+    }
     g.audio?.sfx?.(res.result === 'refused' ? 'deny' : 'hit');
     g.toast(res.line, res.result === 'refused' || res.result === 'dog' ? 'bad' : 'info');
     if (res.result === 'cop') { this.startChase(g, 'cop'); return; }
+    // they square up: hands up for a moment, then their swing, then hands up again
+    if (res.result === 'fight') {
+      rig.guardT = CONFIG.brawl.guardSeconds;
+      rig.swingDelay = CONFIG.brawl.swingDelay;
+      return;
+    }
     if (res.result === 'fled') { this.startFlee(rig); return; }
     if (res.result === 'ko') {
       this.knockDown(rig, g);
@@ -762,7 +780,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   knockDown(rig, g) {
     rig.down = true;
     rig.downT = 0;
-    rig.downDay = g ? Math.floor(g.state.clock.m / 1440) : undefined;
+    rig.downUntil = (this.realT || 0) + CONFIG.brawl.downSeconds;
     rig.flee = 0;
     rig.root.rotation.set(0, rig.root.rotation.y, 0);
     rig.root.rotation.z = Math.PI / 2;
@@ -770,15 +788,77 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     animateDown(rig);
   }
 
-  /** Somebody who is out does not walk, talk, patrol or animate: they lie there until morning. */
-  npcDown(rig, dt, s) {
-    if (rig.downDay !== undefined && Math.floor(s.clock.m / 1440) !== rig.downDay) {
-      this.getUp(rig);
-      return;
-    }
+  /** Somebody who is out does not walk, talk, patrol or animate: they lie there and come round. */
+  npcDown(rig, dt) {
+    // two minutes of real time, not an in-game day: long enough to matter, short enough that
+    // walking off the block and coming back is not a reset button
+    if (this.realT >= (rig.downUntil ?? 0)) { this.getUp(rig); return; }
     rig.downT = (rig.downT || 0) + dt;
-    if (rig.talkIt) rig.talkIt.visible = false;
     animateDown(rig);
+  }
+
+  /**
+   * A prompt has to say what is true right now. Somebody's talk prompt becomes the two things you
+   * can do about a person on the ground, and goes back to what it was when they come round.
+   */
+  syncTalkIt(rig) {
+    const it = rig.talkIt;
+    if (!it) return;
+    it.x = rig.root.position.x;
+    it.z = rig.root.position.z;
+    if (!it.base) it.base = { label: it.label, sub: it.sub, action: it.action };
+    if (rig.down && !rig.talkDown) {
+      it.label = 'Somebody is out cold';
+      it.sub = 'check their pockets · or leave them';
+      it.action = (gg) => this.downBodyMenu(gg, rig);
+      rig.talkDown = true;
+    } else if (!rig.down && rig.talkDown) {
+      it.label = it.base.label;
+      it.sub = it.base.sub;
+      it.action = it.base.action;
+      rig.talkDown = false;
+    }
+  }
+
+  /** The two things there are to do about a person on the ground. */
+  downBodyMenu(g, rig) {
+    const def = rig.npcDef || { kind: 'civilian' };
+    const key = rig.npcId || def.talk || def.kind || 'somebody';
+    const who = def.label || def.name || (def.kind === 'nurse' ? 'the nurse' : 'this one');
+    g.openModal({
+      kicker: 'SOMEBODY IS OUT COLD',
+      title: 'On The Ground',
+      body: `${who[0].toUpperCase()}${who.slice(1)} is out. Breathing, which is the part that matters legally. Nobody on the block is looking, or nobody is admitting to it.\n\nYou can wait for them to come round. It takes a couple of minutes.`,
+      choices: [
+        { label: 'Go through their pockets.', sub: 'cash · whatever they had', effect: () => {
+          const loot = brawl.loot(g, { ...def, key, label: def.kind });
+          if (!loot.ok) { g.toast(loot.reason === 'searched' ? 'You already did that. Once is once.' : 'No.', 'info'); return; }
+          g.toast(`${loot.cash ? `${money(loot.cash)}. ` : ''}${loot.items.length ? `And ${loot.items.join(', ')}.` : 'Otherwise, lint and a bus transfer.'}`, 'info');
+        } },
+        { label: 'Leave them alone.', sub: 'they will be up in a minute or two', effect: () => {} },
+      ],
+    });
+  }
+
+  /** Hands up, then their swing, then hands up again. */
+  brawlPose(rig, dt) {
+    if (rig.swingDelay > 0) {
+      rig.swingDelay = Math.max(0, rig.swingDelay - dt);
+      if (rig.swingDelay === 0) rig.swingT = 0.34;
+    }
+    if (rig.guardT > 0) rig.guardT = Math.max(0, rig.guardT - dt);
+    if (rig.swingT > 0) {
+      rig.swingT = Math.max(0, rig.swingT - dt);
+      punchPose(rig, 1 - rig.swingT / 0.34);
+    } else if (rig.guardT > 0) {
+      guardPose(rig, this.time || 0);
+    } else if (rig.swingDelay > 0) {
+      guardPose(rig, this.time || 0);
+    }
+    if ((rig.guardT > 0 || rig.swingT > 0 || rig.swingDelay > 0) && !rig.down) {
+      const p = this.mo.root.position;
+      rig.root.rotation.y = Math.atan2(p.x - rig.root.position.x, p.z - rig.root.position.z);
+    }
   }
 
   getUp(rig) {
@@ -816,9 +896,11 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.chaseRig = rig;
     this.chaseReason = reason;
     g.audio?.sfx?.('deny');
-    g.toast(reason === 'drugs'
-      ? '"HEY. HEY! What is that? Do not move." Every head in the precinct turns at once.'
-      : '"THAT IS IT." He is already moving, and so is the other one.', 'bad');
+    g.toast(reason === 'report'
+      ? 'A cruiser pulls to the curb without its lights on. Two of them get out, and one of them is already looking at you.'
+      : reason === 'drugs'
+        ? '"HEY. HEY! What is that? Do not move." Every head in the precinct turns at once.'
+        : '"THAT IS IT." He is already moving, and so is the other one.', 'bad');
   }
 
   /** Mo did something illegal where the law can see it. Only the precinct cares. */
@@ -829,6 +911,12 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   updateChase(dt, g) {
     this.punchCool = Math.max(0, (this.punchCool || 0) - dt);
     this.punchT = Math.max(0, (this.punchT || 0) - dt);
+    this.realT = (this.realT || 0) + dt;
+    // somebody phoned it in a few minutes ago, and the call has worked its way down to a cruiser
+    if (!this.chaseRig && brawl.alertDue(g.state)) {
+      brawl.clearAlert(g.state);
+      this.startChase(g, 'report');
+    }
     // the ones who ran head for the end of the block, along the pavement. Running straight away
     // from Mo meant running straight through the facades, so they have a place to get to and the
     // floor of the area to do it on; at the end of it they are gone.
@@ -1343,10 +1431,10 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
       if (rig.gone) continue;
+      this.syncTalkIt(rig);
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
-      if (rig.down) { this.npcDown(rig, dt, s); continue; }
+      if (rig.down) { this.npcDown(rig, dt); continue; }
       this.patrolNPC(rig, dt, g);
-      if (rig.talkIt) { rig.talkIt.x = rig.root.position.x; rig.talkIt.z = rig.root.position.z; }
       if (rig.heart) {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
         rig.heart.rotation.y += dt * 1.1;
@@ -1363,6 +1451,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (rig.npcDef?.act) applyAct(rig, dt, this.streetLife);
       // after the idle cycle, or it takes the arms back down to his sides
       if (rig.sax) animateSax(rig, dt);
+      this.brawlPose(rig, dt);
     }
     // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
     if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();
@@ -1661,6 +1750,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   patrolNPC(rig, dt, g) {
     const def = rig.npcDef;
     if (!def) return;
+    // somebody with their hands up is not going for a walk
+    if (rig.guardT > 0 || rig.swingT > 0 || rig.swingDelay > 0) { rig.walking = false; return; }
     if (def.partner || def.stranger || def.sister) { this.partnerPresence(rig, dt, g); return; }
     // somebody who stays where they are (asleep by the stairs, mid-argument, selling from a coat)
     if (def.still) { rig.walking = false; rig.pose = def.pose || null; return; }
