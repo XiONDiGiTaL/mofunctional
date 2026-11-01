@@ -13,6 +13,7 @@ import { bidbayTick } from './economy.js';
 import { onNewDayJob } from './jobs.js';
 import { fellowshipNewDay } from './fellowship.js';
 import { applyAfterglow, partnerNewDay } from './romance.js';
+import { clinicNewDay, onRelapse } from './clinic.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -40,6 +41,7 @@ export function simulate(g, minutes, ctx = {}) {
       fellowshipNewDay(g, d);
       lifeNewDay(g, d);
       partnerNewDay(g, d);
+      clinicNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
@@ -259,6 +261,7 @@ function applySubstance(g, itemId) {
   const s = g.state;
   const type = S.types[itemId];
   if (!type) return false;
+  onRelapse(g);
 
   const toleranceCut = clamp(1 - s.stats.tolerance * S.toleranceEffects.effectCutPerPoint, 0.35, 1);
   for (const [k, v] of Object.entries(type.effects)) {

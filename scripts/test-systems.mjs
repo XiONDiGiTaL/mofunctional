@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Headless checks for the systems added in this pass: early rent, partner rent share, the
- * Afterglow clock, event cooldowns, contextual SMS replies, romance progression and the clinic.
+ * Afterglow clock, event cooldowns, contextual SMS replies, romance progression, the clinic and
+ * its outpatient course, save migration and the animation-lock guards.
  *
  * These run in plain Node with a small `g` stub — no DOM, no WebGL, no browser. They are the
  * checks that can be automated; the animations, the world and the interfaces still need a human
@@ -17,6 +18,8 @@ import * as romance from '../src/systems/romance.js';
 import * as scheduler from '../src/systems/scheduler.js';
 import * as sms from '../src/systems/sms.js';
 import * as clinic from '../src/systems/clinic.js';
+import * as life from '../src/systems/life.js';
+import { migrate, SAVE_VERSION } from '../src/systems/migrate.js';
 
 let passed = 0;
 let failed = 0;
@@ -416,6 +419,129 @@ check('clinic: collapse goes to a clinic when there is no home', () => {
   s2.life = {}; s2.life.housing = 'housed';
   s2.counters.collapsed = CONFIG.clinic.collapse.collapsesBeforeClinic;
   eq(clinic.shouldTakeHimIn(s2, 'collapse'), true, 'frequent collapses -> clinic');
+  return true;
+});
+
+/* ---------------------------------------------------------- outpatient course */
+
+const P = CONFIG.clinic.program;
+// a day and hour inside clinic hours
+const at = (day, hour = 11) => (day - 1) * 1440 + hour * 60;
+
+check('course: needs a referral or a real habit to enroll', () => {
+  const g = stubGame();
+  g.state.stats.addiction = 5;
+  eq(clinic.enroll(g), false, 'no reason to be there');
+  g.state.flags.wantsHelp = true;           // the paramedics' napkin
+  eq(clinic.enroll(g), true, 'the napkin gets him in');
+  eq(clinic.programState(g.state).status, 'active');
+  return true;
+});
+
+check('course: each session costs money and time and lowers dependence; it ends after the last', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 1000;
+  s.stats.addiction = 80;
+  s.clock.m = at(2);
+  clinic.enroll(g);
+  let day = 2;
+  for (let i = 0; i < P.sessions; i++) {
+    s.clock.m = at(day);
+    const before = { money: s.money, dep: s.stats.addiction, t: s.clock.m };
+    const res = clinic.attend(g);
+    if (!res) throw new Error(`session ${i + 1} refused`);
+    near(before.money - s.money, P.cost, 0.01, 'charged once per session');
+    eq(s.clock.m - before.t, P.minutes, 'time cost');
+    if (!(s.stats.addiction < before.dep)) throw new Error('dependence did not come down');
+    eq(clinic.attend(g), false, 'cannot double-book the same day');
+    day += P.everyDays;
+  }
+  eq(clinic.programState(s).status, 'completed', 'completed after the last session');
+  if (!life.lifeState(s).milestones.course) throw new Error('no milestone');
+  return true;
+});
+
+check('course: outside clinic hours the appointment waits', () => {
+  const g = stubGame();
+  g.state.flags.wantsHelp = true;
+  g.state.clock.m = at(3, 20);              // 20:00
+  clinic.enroll(g);
+  eq(clinic.programState(g.state).next, 4, 'first appointment is tomorrow');
+  g.state.clock.m = at(4, 8);               // 08:00, too early
+  eq(clinic.attend(g), false, 'before hours');
+  return true;
+});
+
+check('course: one miss is forgiven, the second drops him; re-enroll after the wait', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.flags.wantsHelp = true;
+  s.clock.m = at(2);
+  clinic.enroll(g);                          // appointment day 2
+  clinic.clinicNewDay(g, 2 + P.graceDays + 1);
+  eq(clinic.programState(s).missed, 1, 'first miss');
+  eq(clinic.programState(s).status, 'active', 'still on the course');
+  const next = clinic.programState(s).next;
+  clinic.clinicNewDay(g, next + P.graceDays + 1);
+  eq(clinic.programState(s).status, 'dropped', 'second miss drops him');
+  s.clock.m = at(next + P.graceDays + 1);
+  eq(clinic.programInfo(g).canEnroll, false, 'not straight back in');
+  s.clock.m = at(next + P.graceDays + 1 + P.reenrollDays);
+  s.life.counselor = true;
+  eq(clinic.programInfo(g).canEnroll, true, 'back in after the wait');
+  return true;
+});
+
+check('course: a relapse halves the next session, it does not expel him', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 500;
+  s.flags.wantsHelp = true;
+  s.clock.m = at(2);
+  clinic.enroll(g);
+  s.stats.addiction = 60;
+  clinic.onRelapse(g);
+  const res = clinic.attend(g);
+  eq(res.halved, true, 'session counted for less');
+  near(s.stats.addiction, 60 + P.perSession.addiction * P.relapseFactor, 0.01, 'half the drop');
+  eq(clinic.programState(s).status, 'active', 'still enrolled');
+  return true;
+});
+
+/* ------------------------------------------------------------------ saves */
+
+check('migration: a v2 save loads as v3 with every system block present', () => {
+  const old = JSON.parse(JSON.stringify(createState()));
+  old.v = 2;
+  for (const k of ['life', 'dealer', 'romance', 'sched', 'clinic', 'fridge']) delete old[k];
+  delete old.bills.rent.history;
+  const s = migrate(old);
+  eq(s.v, SAVE_VERSION, 'version');
+  for (const k of ['life', 'dealer', 'romance', 'sched', 'clinic']) if (!s[k]) throw new Error(`missing ${k}`);
+  eq(s.clinic.program.status, 'none', 'course defaults');
+  eq(s.life.housing, 'housed', 'housing default');
+  if (!Array.isArray(s.fridge)) throw new Error('fridge');
+  return true;
+});
+
+check('migration: in-flight locks never survive a reload', () => {
+  const s = createState();
+  s.rentLock = true;
+  s.flags.consuming = true;
+  s.flags.recovering = true;
+  const m = migrate(JSON.parse(JSON.stringify(s)));
+  eq(m.rentLock, false, 'rent lock');
+  eq(m.flags.consuming, false, 'consuming');
+  eq(m.flags.recovering, false, 'recovering');
+  return true;
+});
+
+check('turning points wait while a fall or a dose is mid-animation', () => {
+  const g = stubGame();
+  g.state.stats.risk = 100;
+  g.state.flags.recovering = true;
+  eq(life.checkTurningPoints(g), false, 'no hospital mid-recovery');
   return true;
 });
 

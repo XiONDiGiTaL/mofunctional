@@ -10,6 +10,45 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Pass after the continuation — locks, the course, migration, Quik-Stop interior
+
+Picked up at 696f145. Everything below was verified in a browser (the game loop stepped at a
+fixed 60 fps, since the preview pane does not run animation frames while hidden) and by the
+headless suite (now 31 checks).
+
+Fixed (bugs in the previous pass, found on review):
+- **Interrupted animations stranded the player.** `SubstanceUse.stop()` and `CollapseFall.stop()`
+  dropped their completion callbacks. An area change mid-dose left `flags.consuming` set (saved,
+  so it survived reloads) — movement locked, every later use refused, the dose lost without its
+  effects. A fall cut short never faded or woke him and left `flags.recovering` set. Both now
+  run the pending callback exactly once when stopped; a consuming flag with no animation behind
+  it is released by the world; and turning points (life.js) wait while either lock is up.
+- **`state.rentLock` was saved** and only a timer cleared it: a save made mid-payment reloaded
+  with rent permanently "busy". Cleared on every load (migrate.js).
+- **Street schedules applied in every area**: Kev in the park and Rae in the church were sent
+  toward street coordinates and paced at the room's edge. Schedules now drive street NPCs only.
+- **Talk prompts stayed at an NPC's starting spot** when a schedule moved them: each talk prompt
+  is now tied to its rig and follows it.
+- **Arrival prompts**: the clinic and the park put Mo inside their exit prompts on arrival (one F
+  and he was back outside), and leaving the Quik-Stop put him inside its door prompt. Spawns and
+  radii moved; every area was swept for prompts on arrival.
+- **Soundtrack**: the park and the clinic were not mapped and fell through to the street logic.
+- **Debug**: "give" pushed duplicate inventory rows; the event picker reset on every re-render.
+
+Added:
+- **Quik-Stop #14 interior** (`buildQuikStop`): aisles, coolers, coffee station, register with a
+  clerk, customers by time of day, Dale in the back during the day, EMPLOYEES ONLY door with the
+  time clock. Shopping goes through the shared menu board with a convenience markup
+  (`SHOPS.quikstop.markup`); a new `coffee` item. The street door enters it; the soundtrack plays
+  Quik-Stop inside. Mo can shop there whether or not he works there.
+- **Outpatient course** (`clinic.js`: programState/programInfo/enroll/attend/onRelapse/
+  clinicNewDay; `CONFIG.clinic.program`). See README "The clinic". `flags.wantsHelp` is the
+  referral hook it was meant to be.
+- **Save migration v2 → v3** (`src/systems/migrate.js`, `SAVE_VERSION`), wired into `applyState`.
+- **Debug**: jump to day N (forward only), spawn/despawn a chosen NPC, reset NPC schedules
+  (`world.debugSpawnNPC/debugDespawnNPC/resetNPCs`).
+- Removed the unused `CONFIG.romance.giftItems`.
+
 ### Continuation pass — early rent, clinic, park, dating, debug
 
 Built on top of the existing game without replacing anything. All new balance lives in
@@ -356,6 +395,20 @@ re-tune rent, or the game becomes a walk.
 
 ## 5. Verification log
 
+Pass after the continuation (browser, game loop stepped at 60 fps; plus `npm test`):
+- `npm run check` 55/55, `npm test` 31/31.
+- Quik-Stop: street door → interior → register board (ramen $1.40 → $1.89) → coffee ($1.69,
+  +8 energy) → exit lands at the store door; music "quikstop"; camera sweep: 0 frames outside the
+  room or inside furniture.
+- Camera sweep (scripted walk + orbit) in apartment, bodega, Habib's, church, Quik-Stop, street,
+  park, clinic: 0 frames outside any room; furniture contact only 2 frames in the park.
+- Arrival sweep: no area puts Mo inside a door/exit prompt on arrival or on return to the street.
+- Debug: wrong password closes silently; `Moses` opens; day 1 → 4; spawn/despawn Stephanie;
+  schedule reset snaps a displaced NPC back; "give" stacks.
+- Interrupted dose (area change mid-animation): effects applied once, lock released, Mo walks.
+- Interrupted collapse: fade lifted, `recovering` cleared, woke at the clinic with the hours gone.
+- Not verified by eye: how the new animations look in motion; touch input.
+
 Verified locally (headless Chromium via Playwright, software WebGL):
 - Page loads, start gate dismisses, menu → new game → intro → gameplay.
 - HUD clock/needs update; phone opens; all eleven apps render; **0 console errors**.
@@ -409,21 +462,18 @@ Not fully verified (needs human play):
 - [ ] **Playtest a full 30-day run** and log where money/time breaks down. Adjust
       `CONFIG.economy`, `CONFIG.job.wage`, odd-job pay. Record results here.
 - [ ] **Touch controls** for tablets/phones (virtual stick + interact + phone button).
-- [ ] **Camera collision**: the follow camera clips through walls in the apartment corner.
-      Add a raycast clamp against `area.solids`.
+- [x] **Camera collision**: fixed (725c537) — the arm marches out from Mo, stops at tall
+      solids (colliders carry a height), pulls in instantly, swings with hysteresis.
 - [ ] **Bed/sleep while phone open** — currently sleeping from the Calendar app works
       anywhere; restrict it to the apartment for consistency with the bed interaction.
-- [ ] **Save migration**: `state.v` exists but no migration path. Add one before v3.
-      New state (`state.romance`, `state.sched`, `state.clinic`, `bills.rent.history`) is created
-      lazily, so old saves load; a real migration is still owed.
+- [x] **Save migration**: v2 → v3 in `src/systems/migrate.js`. Add the next step there.
 
 ### Medium priority
 - [ ] More events: landlord inspection, health clinic visit, a second job offer, a
       roommate subplot, Chairman's vet bill.
 - [ ] Fellowship stage 3 should visibly change NPC dialogue in the street (rumours).
 - [x] Add a "recovery" path: **Kestrel Clinic** is now a real location with paid treatment,
-      free check-ins, a hospital bill, and collapse recovery. A multi-day appointment chain
-      (repeated visits lowering addiction faster) is still not written.
+      free check-ins, a hospital bill, collapse recovery, and a five-session outpatient course.
 - [ ] Addison's dance should sync to the music when the menu is active (analyser already
       exposed via `g.audio.level()`).
 - [ ] Add optional 16:9 → 4:3 letterbox framing with animated overscan.
@@ -438,6 +488,13 @@ Not fully verified (needs human play):
 - [ ] Ending-specific menu art (the corridor changes after an ending).
 - [ ] Accessibility: font-size toggle, reduced screen-shake, colourblind-safe stat bars.
 - [ ] Localisation hooks (all prose is in `dialogue.js` and `areas.js` — extract to JSON).
+
+### Next up
+- [ ] Visual random events (police car, ambulance, an argument, rain, a power cut) through the
+      scheduler, with real NPCs and props rather than text.
+- [ ] Pedestrians and NPC-to-NPC conversations on the street.
+- [ ] BidBay marketplace: randomised listings, fluctuating prices, scams, item condition.
+- [ ] Live-in partner pathing around furniture.
 
 ### Known rough edges
 - `simulate()` steps in 10-minute chunks; very long advances (9h sleep) run ~54 iterations

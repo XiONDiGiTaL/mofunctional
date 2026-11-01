@@ -22,6 +22,7 @@ import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
 import { toggleMap } from './ui/map.js';
 import * as life from './systems/life.js';
+import { migrate } from './systems/migrate.js';
 import * as romance from './systems/romance.js';
 import * as clinic from './systems/clinic.js';
 import { installDebugMenu } from './ui/debug.js';
@@ -188,6 +189,8 @@ class Game {
   }
 
   applyState(data, fromMenu = false) {
+    // versioned migration first (and in-flight locks cleared), then the merge over a fresh state
+    data = migrate(data);
     const fresh = createState();
     this.world.collapse?.reset?.();
     this.fadeIn();
@@ -195,7 +198,9 @@ class Game {
       ...fresh,
       ...data,
       stats: { ...fresh.stats, ...(data.stats || {}) },
-      flags: { ...fresh.flags, ...(data.flags || {}) },
+      // in-flight animation locks are not state: a save made mid-use or mid-fall must not
+      // reload with Mo frozen
+      flags: { ...fresh.flags, ...(data.flags || {}), consuming: false, recovering: false },
       settings: { ...fresh.settings, ...(data.settings || {}) },
       bills: { ...fresh.bills, ...(data.bills || {}) },
       job: { ...fresh.job, ...(data.job || {}) },
@@ -321,6 +326,7 @@ class Game {
     if (area === 'church') this.toast('The Fellowship. It smells expensive in here.', 'gold');
     if (area === 'apartment') this.toast('Unit 3B. Home, in the legal sense.', 'info');
     if (area === 'bodega') this.toast('Kestrel Bodega. It smells like a grill and lottery tickets.', 'info');
+    if (area === 'quikstop') this.toast('Quik-Stop #14. The door chime plays half a song and gives up.', 'info');
     if (area === 'habibs') this.toast("Habib's Corner. Warm, clean, and he is already asking if you ate.", 'info');
     if (area === 'park') this.toast('Kestrel Park. Grass, a bent rim, and somebody else\'s music.', 'info');
     if (area === 'clinic') this.toast('Kestrel Clinic. It smells like clean and paperwork.', 'info');

@@ -353,6 +353,8 @@ export function checkTurningPoints(g) {
   if (s.ending) return true;
   const l = lifeState(s);
   if (l.inHospital) return false;
+  // a collapse or a dose is mid-animation: let it finish before anything else takes the moment
+  if (s.flags.recovering || s.flags.consuming) return false;
   // within a point of the ceiling counts: the healthy-hours decay shaves a fraction off every
   // tick, and an exact >= 100 let a maxed-out risk slip under the line before it was checked
   if (s.stats.risk >= CONFIG.substances.risk.overdoseAt - 1) { hospitalize(g, 'overdose'); return true; }

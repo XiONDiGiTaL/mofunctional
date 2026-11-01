@@ -11,7 +11,7 @@ import { visitFellowship, serviceWindow } from '../systems/fellowship.js';
 import { workShift, callOut, quitJob, applyForJob, doOddJob, oddJobsAvailable, shiftInfo } from '../systems/jobs.js';
 import { buyFood, sellToDex, buyGrabBag, billInfo } from '../systems/economy.js';
 import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
-import { openShop } from './shops.js';
+import { openShop, shopPrice } from './shops.js';
 import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
 import { signTex } from '../render/signs.js';
@@ -555,7 +555,7 @@ export function buildStreet(g) {
 
   const interactables = [
     { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => apartmentDoor(gg) },
-    { id: 'store', label: 'Enter Quik-Stop #14', sub: 'clock in · buy snacks', x: 1.5, z: -5.6, action: (gg) => storeMenu(gg) },
+    { id: 'store', label: 'Enter Quik-Stop #14', sub: 'open 24 hrs · shop · clock in at the back', x: 1.5, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('quikstop', 'street') },
     { id: 'alley', label: 'Step into the alley', sub: 'Dex is usually here', x: -3.6, z: -2.4, action: (gg) => dexMenu(gg) },
     { id: 'church', label: 'Enter The Golden Fellowship', sub: 'Sunday 11:00 · coffee', x: building('church').door, z: STREET.doorZ, radius: 1.7, action: (gg) => gg.goTo('church', 'street') },
     { id: 'bodega', label: 'Enter Kestrel Bodega', sub: 'Miguel · BEC · loosies', x: bod.door, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('bodega', 'street') },
@@ -592,7 +592,7 @@ export function buildStreet(g) {
   };
 }
 
-function storeMenu(g) {
+function storeMenu(g, { staff = false } = {}) {
   g.soundtrack?.cue?.('quikstop', 25);
   const s = g.state;
   const info = shiftInfo(g);
@@ -610,7 +610,7 @@ function storeMenu(g) {
   } else {
     choices.push({ label: 'Ask Dale for your job back.', sub: '35 min', effect: () => applyForJob(g) });
   }
-  choices.push({
+  if (!staff) choices.push({
     label: 'Buy something from the shelves.',
     sub: 'convenience-store prices',
     effect: () => {
@@ -1130,7 +1130,7 @@ export function buildHabibs(g) {
 
   const interactables = [
     { id: 'habcounter', label: 'Order from Habib', sub: 'chicken over rice · falafel', x: -0.4, z: -0.05, action: (gg) => habibCounter(gg) },
-    { id: 'habcase', label: 'Look in the hot case', sub: 'it is all still warm', x: -1.6, z: -0.05, action: (gg) => openShop(gg, 'habibs') },
+    { id: 'habcase', label: 'Look in the hot case', sub: 'it is all still warm', x: -1.6, z: -0.05, radius: 1.2, action: (gg) => openShop(gg, 'habibs') },
     { id: 'habshelf', label: 'Browse the shelves', sub: 'no pork, never', x: 2.4, z: -1.6, action: (gg) => openShop(gg, 'habibs') },
     { id: 'habexit', label: 'Back out to Kestrel St.', sub: '', x: -1.2, z: 2.95, radius: 1.05, action: (gg) => gg.goTo('street', 'habibs') },
   ];
@@ -1250,7 +1250,7 @@ export function buildPark(g) {
     { id: 'chess', label: 'Play chess at the table', sub: 'the knight is a bottle cap', x: -2.4, z: -0.6, radius: 1.5, action: (gg) => parkChess(gg) },
     { id: 'boombox', label: 'The boombox on the crate', sub: 'somebody left a tape in it', x: 1.9, z: 1.1, radius: 1.5, action: (gg) => parkMusic(gg) },
     { id: 'parkmate', label: 'Talk to Kev', sub: 'he is losing at chess to himself', x: -2.4, z: 0.2, radius: 1.5, action: (gg) => { gg.advance(8); bump(gg.state, 'morale', 4); gg.openModal({ kicker: 'KEV · KESTREL PARK', title: 'Park Kev', body: `${npcLine('kev')}\n\nHe has set up a chess board with no opponent and is losing anyway.`, choices: [{ label: 'Sit with him for a bit.', effect: () => { bump(gg.state, 'morale', 5); bump(gg.state, 'stress', -4); gg.advance(15); } }, { label: 'Leave him to it.', effect: () => {} }] }); } },
-    { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'through the gate', x: 0, z: 7.9, radius: 1.4, action: (gg) => gg.goTo('street', 'park') },
+    { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'through the gate', x: 0, z: 7.9, radius: 1.1, action: (gg) => gg.goTo('street', 'park') },
   ];
 
   return {
@@ -1264,7 +1264,8 @@ export function buildPark(g) {
       solid(1.9, 0.9, 0.8, 0.6, 0.85), solid(2.9, 6.2, 0.7, 0.7, 0.9),
       solid(-3.0, 6.4, 0.4, 0.4), solid(4.2, 6.4, 0.4, 0.4),
     ],
-    spawn: { x: 0, z: 6.9, rot: Math.PI },
+    // a step inside the gate, past the exit's prompt (arriving inside it made F walk him back out)
+    spawn: { x: 0, z: 6.5, rot: Math.PI },
     npcs,
     interactables,
     ambient: 'park',
@@ -1332,7 +1333,8 @@ export function buildClinic(g) {
       solid(3.4, -1.2, 0.5, 0.5, 1.9), solid(1.0, 2.4, 0.2, 0.2),
       solid(-0.6, 1.0, 0.5, 0.5, 0.8), solid(0.3, 1.0, 0.5, 0.5, 0.8), solid(1.2, 1.0, 0.5, 0.5, 0.8),
     ],
-    spawn: { x: 0, z: 2.2, rot: Math.PI },
+    // inside the door but clear of every prompt (it used to land in the exit's, so F walked him out)
+    spawn: { x: -1.3, z: 1.9, rot: Math.PI },
     npcs: [{ kind: 'nurse', x: -1.6, z: -1.9, rot: 0.2, talk: 'nurse' }],
     interactables,
     ambient: 'clinic',
@@ -1539,11 +1541,44 @@ function clinicMenu(g) {
           });
         },
       },
+      ...programChoices(g),
       { label: 'Check in on the line instead.', sub: 'free · 10 min · slows withdrawal', effect: () => { clinic.checkIn(g); } },
       { label: 'Ask what it costs.', sub: '', effect: () => { g.toast(`Treatment is ${money(info.cost)}. If you cannot pay, it goes on the bill and the bill grows.`, 'info'); } },
       { label: 'Leave.', sub: '', effect: () => {} },
     ],
   });
+}
+
+/** The outpatient course at the clinic counter: sign up, or keep today's appointment. */
+function programChoices(g) {
+  const p = clinic.programInfo(g);
+  const hours = `${String(p.window[0] / 60).padStart(2, '0')}:00-${String(p.window[1] / 60).padStart(2, '0')}:00`;
+  if (p.status === 'active') {
+    return [{
+      label: `Keep your appointment — session ${p.done + 1} of ${p.sessions}`,
+      sub: p.canAttend ? `${p.minutes} min · ${money(p.cost)} · dependence comes down${p.relapsePending ? ' (half, after the slip)' : ''}`
+        : p.dueToday ? `appointments are ${hours}` : `next one is day ${p.next}`,
+      disabled: !p.canAttend,
+      effect: () => {
+        const res = clinic.attend(g);
+        if (!res) return;
+        g.openModal({
+          kicker: 'KESTREL CLINIC · OUTPATIENT',
+          title: res.completed ? 'The Last Plastic Chair' : `Session ${res.done} of ${res.sessions}`,
+          body: res.completed
+            ? 'Okafor closes the file, then opens it again to write one more line. "Finished. Not fixed. Finished." She shakes your hand like she has decided to.'
+            : `Two hours. A circle of chairs, a man who talks about his dog the whole time, and ten minutes alone with Okafor where you say a true thing out loud.${res.halved ? '\n\nShe knows about the slip. She does not make a speech. It just counts for less today.' : ''}\n\nNext: day ${clinic.programInfo(g).next}.`,
+          choices: [{ label: 'Walk out into the afternoon.', effect: () => {} }],
+        });
+      },
+    }];
+  }
+  return [{
+    label: 'Sign up for the outpatient course',
+    sub: p.canEnroll ? `${p.sessions} sessions · every 2 days · ${hours} · ${money(p.cost)} each` : p.status === 'dropped' ? `day ${p.waitUntil} at the earliest` : 'needs a referral, or a real habit',
+    disabled: !p.canEnroll,
+    effect: () => { clinic.enroll(g); },
+  }];
 }
 
 function clinicReception(g) {
@@ -1561,4 +1596,109 @@ function clinicReception(g) {
   });
 }
 
+/* ------------------------------ QUIK-STOP #14 ------------------------------ */
 
+/**
+ * The store Mo works at, as a store: two gondola aisles, the coolers along the back, a coffee
+ * station, the register by the door with a clerk behind it, a door marked EMPLOYEES ONLY with
+ * the time clock behind it. Open all night. Customers drift the aisles; Dale is in the back
+ * during the day. Everything sold here goes through the same menu board as the corner shops,
+ * at convenience-store markup.
+ */
+export function buildQuikStop(g) {
+  const group = new THREE.Group();
+  const W = 9, D = 8;
+  group.add(plane(W, D, { name: 'qsfloor', map: tex('tile'), repeat: [5, 4] }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(box(W, 3.0, 0.16, { name: 'qswall', color: 0xd8d4c4 }, [0, 1.5, -D / 2]));
+  group.add(box(W, 3.0, 0.16, { name: 'qswall2', color: 0xd8d4c4 }, [0, 1.5, D / 2]));
+  group.add(box(0.16, 3.0, D, { name: 'qswall3', color: 0xd8d4c4 }, [-W / 2, 1.5, 0]));
+  group.add(box(0.16, 3.0, D, { name: 'qswall4', color: 0xd8d4c4 }, [W / 2, 1.5, 0]));
+  group.add(plane(W, D, { name: 'qsceil', map: tex('ceiling'), repeat: [3, 3] }, [0, 3.0, 0], [Math.PI / 2, 0, 0]));
+  // the green stripe every store in the chain has at hip height
+  for (const z of [-D / 2 + 0.1, D / 2 - 0.1]) group.add(box(W - 0.2, 0.18, 0.02, M.green, [0, 1.1, z]));
+  for (const x of [-W / 2 + 0.1, W / 2 - 0.1]) group.add(box(0.02, 0.18, D - 0.2, M.green, [x, 1.1, 0]));
+  // fluorescent strips: the whole lighting design
+  for (const x of [-2.4, 0, 2.4]) group.add(box(0.2, 0.06, 5.6, M.lamp, [x, 2.94, -0.4]));
+
+  // two gondola aisles, low enough to see over, stocked in chain-store colours
+  for (const ax of [-1.6, 0.8]) {
+    group.add(box(0.6, 1.45, 3.2, M.metal, [ax, 0.72, -1.0]));
+    for (let tier = 0; tier < 3; tier++) {
+      for (let i = 0; i < 6; i++) {
+        const c = [0xd9502e, 0xf2b632, 0x2f6fb5, 0x7cc35a, 0xe8463a, 0xf4f1ea][(i + tier) % 6];
+        for (const side of [-1, 1]) group.add(box(0.12, 0.26, 0.42, retroMaterial(`qsgood${c}`, { color: c }), [ax + side * 0.33, 0.35 + tier * 0.45, -2.35 + i * 0.54]));
+      }
+    }
+  }
+  // the coolers along the back, lit from inside
+  group.add(box(4.8, 2.2, 0.55, retroMaterial('qscooler', { color: 0x2e3a3c }), [1.3, 1.1, -3.65]));
+  for (let i = 0; i < 4; i++) {
+    group.add(plane(1.05, 1.8, { name: 'qscoolerglass', color: 0x9fd8ff, emissive: 0.4, unlit: true, opacity: 0.55, transparent: true }, [-0.5 + i * 1.2, 1.15, -3.36]));
+  }
+  // coffee station on the right wall
+  group.add(box(0.7, 1.0, 1.6, M.wood, [3.95, 0.5, 0.6]));
+  group.add(box(0.4, 0.5, 0.35, retroMaterial('qscoffee', { color: 0x2a2a28 }), [4.0, 1.25, 0.3]));
+  group.add(box(0.3, 0.28, 0.28, retroMaterial('qspot', { color: 0x6b4a2f, emissive: 0.1 }), [3.95, 1.14, 0.9]));
+  group.add(plane(1.2, 0.36, { name: 'qscoffeesign', map: signTex('signQsCoffee', [{ text: 'COFFEE · $1.69', color: '#ffe36a', size: 12 }], { w: 96, h: 24, bg: '#2a1a10' }), emissive: 0.9, unlit: true }, [4.33, 1.9, 0.6], [0, -Math.PI / 2, 0]));
+  // the register by the door: counter, till, lotto, the wall of cigarettes behind
+  group.add(box(2.8, 1.0, 0.8, M.wood, [-2.6, 0.5, 2.2]));
+  group.add(box(2.84, 0.06, 0.84, M.tile, [-2.6, 1.03, 2.2]));
+  group.add(box(0.4, 0.26, 0.34, retroMaterial('qstill', { color: 0x2a2a28 }), [-2.0, 1.19, 2.2]));
+  group.add(box(0.5, 0.32, 0.4, retroMaterial('qslotto', { color: 0x223a5a, emissive: 0.15 }), [-3.4, 1.22, 2.2]));
+  group.add(box(2.6, 1.3, 0.24, retroMaterial('qssmokes', { color: 0x5a2a22 }), [-2.6, 1.9, 3.82]));
+  // the front: glass door, windows, the sign seen backwards from inside
+  group.add(box(1.2, 2.3, 0.1, { name: 'qsdoor', color: 0x9fb8b0, opacity: 0.55, transparent: true, unlit: true }, [1.2, 1.15, 3.92]));
+  group.add(box(0.12, 2.4, 0.2, M.green, [0.55, 1.2, 3.88]));
+  group.add(box(0.12, 2.4, 0.2, M.green, [1.85, 1.2, 3.88]));
+  group.add(box(0.6, 0.2, 0.06, retroMaterial('exitsign', { color: 0xff3a2a, emissive: 1.2, unlit: true }), [1.2, 2.68, 3.84]));
+  group.add(plane(2.0, 1.3, { name: 'qswinfront', map: tex('window'), emissive: 0.4, unlit: true }, [3.2, 1.6, 3.9], [0, Math.PI, 0]));
+  // staff door, back left: EMPLOYEES ONLY, and the time clock beside it
+  group.add(box(0.12, 2.2, 1.0, M.door, [-4.38, 1.1, -2.5]));
+  group.add(plane(1.0, 0.26, { name: 'qsstaff', map: signTex('signQsStaff', [{ text: 'EMPLOYEES ONLY', color: '#ffffff', size: 10 }], { w: 80, h: 18, bg: '#8a1e22' }), emissive: 0.8, unlit: true }, [-4.3, 2.5, -2.5], [0, Math.PI / 2, 0]));
+  group.add(box(0.08, 0.36, 0.26, retroMaterial('qsclock', { color: 0x3a3f42, emissive: 0.1 }), [-4.38, 1.4, -1.6]));
+
+  const mod = minuteOfDay(g.state.clock.m);
+  const dayShift = mod >= 8 * 60 && mod < 17 * 60;
+  const npcs = [
+    { kind: 'clerk', x: -2.6, z: 3.0, rot: Math.PI, talk: null },
+    // customers: somebody in the aisles at most hours, more of them in the evening rush
+    { kind: mod >= 16 * 60 && mod < 21 * 60 ? 'kev' : 'nia', x: -0.4, z: -1.6, rot: 0.6 },
+    ...(mod >= 6 * 60 && mod < 23 * 60 ? [{ kind: 'junkie', x: 2.4, z: -2.2, rot: -0.4 }] : []),
+    ...(dayShift ? [{ kind: 'dale', x: -3.6, z: -2.0, rot: 1.3, talk: 'dale' }] : []),
+  ];
+
+  const interactables = [
+    { id: 'qsregister', label: 'Pay at the register', sub: 'coffee · food · tall boys · loosies', x: -2.6, z: 1.3, action: (gg) => openShop(gg, 'quikstop') },
+    { id: 'qsaisle', label: 'Browse the aisles', sub: 'noodles, cans, cereal', x: -0.4, z: -0.4, radius: 1.4, action: (gg) => openShop(gg, 'quikstop') },
+    { id: 'qscooler', label: 'Open the coolers', sub: 'eggs · sandwiches · tall boys', x: 1.3, z: -2.9, action: (gg) => openShop(gg, 'quikstop') },
+    { id: 'qscoffee', label: 'Pour a coffee', sub: `${money(shopPrice('quikstop', 'coffee'))} · +energy · drink it here`, x: 3.0, z: 0.6, action: (gg) => quikCoffee(gg) },
+    { id: 'qsstaff', label: 'Staff door · time clock', sub: 'clock in, call out, talk to Dale', x: -3.3, z: -2.4, action: (gg) => storeMenu(gg, { staff: true }) },
+    ...(dayShift ? [{ id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: -3.6, z: -2.0, action: (gg) => talk(gg, 'dale') }] : []),
+    { id: 'qsexit', label: 'Back out to Kestrel St.', sub: '', x: 1.2, z: 3.2, radius: 1.05, action: (gg) => gg.goTo('street', 'quikstop') },
+  ];
+
+  return {
+    group,
+    bounds: { minX: -4.1, maxX: 4.1, minZ: -3.4, maxZ: 3.4 },
+    solids: [
+      solid(-2.6, 2.2, 2.8, 0.9, 1.0),
+      solid(-1.6, -1.0, 0.7, 3.4, 1.45), solid(0.8, -1.0, 0.7, 3.4, 1.45),
+      solid(1.3, -3.6, 4.8, 0.7),
+      solid(3.95, 0.6, 0.7, 1.6, 1.0),
+    ],
+    spawn: { x: 1.2, z: 1.7, rot: Math.PI },
+    npcs,
+    interactables,
+    ambient: 'street',
+  };
+}
+
+/** A coffee at the station: bought and drunk on the spot, through the same eat path as the fridge. */
+function quikCoffee(g) {
+  const price = shopPrice('quikstop', 'coffee');
+  if (g.state.money < price) { g.toast('Not enough for coffee. Not even the bad coffee.', 'bad'); return; }
+  g.spendMoney(price, 'Quik-Stop coffee');
+  addItem(g.state, 'coffee', 1);
+  g.audio.sfx('cash');
+  eat(g, 'coffee');
+}

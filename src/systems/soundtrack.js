@@ -11,7 +11,8 @@
  *   Bodega     inside Miguel's
  *   Habib      inside Habib's Corner
  *   Church     inside the Golden Fellowship
- *   Lost Time  Unit 3B, the street after 22:00, deep withdrawal, and the endings
+ *   Lost Time  Unit 3B, the clinic, the street and park after 22:00, deep withdrawal, the endings
+ *   (the park plays City by day; Quik-Stop also plays inside the store)
  */
 const dir = 'Music/';
 const file = (name) => encodeURI(`${dir}Mo Functional_ ${name}.mp3`);
@@ -60,8 +61,16 @@ export class Soundtrack {
     switch (area) {
       case 'apartment': return 'lost';
       case 'bodega': return 'bodega';
+      case 'quikstop': return 'quikstop';
       case 'habibs': return 'habib';
       case 'church': return 'church';
+      // the clinic is quiet in the way a clinic is quiet
+      case 'clinic': return 'lost';
+      // the park is the city with the sky showing: the street score by day, the late one at night
+      case 'park': {
+        const pm = minuteOfDay(s?.clock?.m ?? 0);
+        return pm >= 22 * 60 || pm < 5 * 60 ? 'lost' : 'city';
+      }
       default: break;
     }
     // the street: the store's music spills out of its door; hysteresis so the edge never flaps

@@ -65,7 +65,7 @@ stress, dependence and risk for the day just ended.
 |---|---|
 | **Unit 3B, 1120 Kestrel St.** | bed, fridge (storage), shower, TV, laptop, Chairman the cat |
 | **Kestrel Street** | the block: neighbours on schedules, street events, the job board, the bus stop, the alley |
-| **Quik-Stop #14** | Mo's job: clock in from the storefront counter |
+| **Quik-Stop #14** | a real convenience store, open all night: two aisles, coolers, coffee, the register, customers; the time clock is behind the EMPLOYEES ONLY door |
 | **Kestrel Bodega** | Miguel's: bacon egg and cheese, chopped cheese, loosies, tall boys |
 | **Habib's Corner** | halal, no pork: chicken over rice, the combo plate, falafel, lentil soup |
 | **The Golden Fellowship** | Addison Octavius, the allowance, the tithe, the pledge |
@@ -193,6 +193,15 @@ door. Inside there is a plastic chair, a scale nobody stands on, and **Nurse Oka
 - **Checking in** is free and takes ten minutes; it slows withdrawal.
 - **The waiting chair** costs 20 minutes and calms him down.
 - One treatment a day. She will not do it twice, and she says so.
+- **The outpatient course** is the slow way down. Sign up at the counter (it takes a referral —
+  the ER card, the paramedics' napkin — or a real habit). Five sessions, every other day, kept in
+  person between 10:00 and 16:00, two hours and $35 each (on the bill if he is broke). Every
+  session lowers dependence, withdrawal and risk; finishing the course takes dependence and
+  tolerance down further and counts as a milestone. Clinic hours overlap Quik-Stop shifts, so the
+  course competes with work. One missed appointment is forgiven with a text from Okafor; a second
+  drops him, and she will take him back three days later. Using during the course does not get
+  him thrown out — it makes the next session count for half. The course shows in the clinic app
+  and on the iDread calendar.
 
 **Collapse.** When Mo goes down — energy at zero, an overdose that does not end the run, too long
 awake — he falls, the screen fades to black, hours pass, and he wakes beside his own bed or here.
@@ -300,11 +309,13 @@ resumes where it was when Mo comes back. The menu always starts from the top.
 |---|---|
 | `Mo Functional_ Main Menu.mp3` | title screen and menus |
 | `Mo Functional_ City.mp3` | Kestrel Street by day |
-| `Mo Functional_ Quik-Stop.mp3` | within a few metres of the Quik-Stop front, at its counter, and for a minute after a shift |
+| `Mo Functional_ Quik-Stop.mp3` | inside the store, within a few metres of its front, and for a minute after a shift |
 | `Mo Functional_ Bodega.mp3` | inside the bodega |
 | `Mo Functional_ Habib.mp3` | inside Habib's Corner |
 | `Mo Functional_ Church.mp3` | inside the Golden Fellowship |
-| `Mo Functional_ Lost Time.mp3` | Unit 3B; the street from 22:00 to 05:00; severe withdrawal; the endings |
+| `Mo Functional_ Lost Time.mp3` | Unit 3B; the clinic; the street and park from 22:00 to 05:00; severe withdrawal; the endings |
+
+Kestrel Park plays *City* by day.
 
 The files are 64 kbps, 48 kHz MP3s and are played exactly as delivered. Their low resolution,
 grain and crunch are the sound of the game, and nothing in the audio chain filters or
@@ -346,8 +357,11 @@ style, and the clock stops while it is open:
 - **Condition** — fill everything, move any single need by ±10, clear intoxication, tolerance and
   withdrawal, or reset dependence and risk.
 - **Money** — $1,000 a click, as many times as you like, straight into the balance.
-- **Time** — set the hour, skip hours, advance a whole day, pause or resume the clock.
-- **World** — teleport to any area, fire any event by id, clear every event cooldown.
+- **Time** — set the hour, skip hours, advance a whole day, jump to a later day (forward only:
+  the bills, the life history and every cooldown are keyed to the day), pause or resume the clock.
+- **World** — teleport to any area, fire any event by id, clear every event cooldown, spawn or
+  despawn a chosen NPC near Mo, and reset NPC schedules (everyone snaps back to where they should
+  be at this minute).
 - **Relationships** — affection ±10 for each of the three, girlfriend and live-in flags, a
   pending present, or a full relationship reset.
 - **Testing** — a collapse, a clinic recovery, an early rent payment, rent marked paid, a date,
@@ -415,6 +429,14 @@ entering and leaving every building, and the map against world positions.
 
 ---
 
+## Saves
+
+Saves carry a version. Loading runs `src/systems/migrate.js` first: a v2 save is brought up to
+v3 by letting each system build its own state block with its defaults (life, Rolo's orders,
+romance, the event scheduler, the clinic and its course, rent history), so old saves keep
+working. Every load also clears in-flight locks — a payment, a dose or a fall that was mid-way
+when the game saved — so a reload can never leave Mo frozen.
+
 ## Known limitations
 
 - The site is served with long cache lifetimes, so a player can briefly mix old and new files
@@ -423,12 +445,12 @@ entering and leaving every building, and the map against world positions.
   purge is the clean fix.
 - Unit 3B has no track of its own in `/Music`; it uses *Lost Time*, which it shares with the
   street at night.
-- The talk prompts for street NPCs sit at their default spots; when a neighbour's schedule moves
-  them elsewhere, the prompt stays put.
 - Rolo only meets on Kestrel Street. Ordering from inside a building works; he waits outside.
-- The dating, clinic and park content was verified headlessly (system arithmetic, guards,
-  save-shaped state) and by reading the world code; the animations, the hearts, the live-in
-  partner's wandering and the collapsed-time transition still want a human pass in a browser.
+- The animations (substance use, the collapse fall, the dance), the hearts and the live-in
+  partner were checked by stepping the game in a browser and reading their state, not by watching
+  them play in real time; how they look still wants a human eye.
+- Diana's gift pool includes the item called "Grandad's Watch", an odd present from her; the
+  item exists, so it is delivered, but it may want its own gift item.
 - A live-in girlfriend walks a short loop in Unit 3B and talks where she stands; she does not
   path around furniture.
 

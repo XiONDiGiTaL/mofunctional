@@ -101,7 +101,12 @@ export class SubstanceUse {
     this.puffs = [];
     this.prop = null;
     this.active = false;
+    // Interrupted (an area change, a turning point, a new use): the item already left his pockets,
+    // so its effects must still land, exactly once. Dropping the callback here used to leave
+    // flags.consuming set for good — saved, so a reload kept him frozen — and the dose lost.
+    const pending = this.onFinish;
     this.onFinish = null;
+    if (pending) pending();
   }
 
   /** A puff of smoke off the pipe: three grey boxes that drift and fade. */
@@ -219,7 +224,11 @@ export class CollapseFall {
     mo.root.position.y = 0;
     mo.hips.position.y = mo.hipY;
     this.active = false;
+    // a fall cut short (the area changed under it) still has to reach the fade and the wake-up:
+    // otherwise flags.recovering stays set, saved, and the screen never goes black
+    const pending = this.onDone;
     this.onDone = null;
+    if (pending) pending();
   }
 
   /** Reset the rig so the next area load starts upright. */

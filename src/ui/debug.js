@@ -13,7 +13,7 @@
  */
 import { CONFIG } from '../core/config.js';
 import { clamp, money, hhmm, dayOf, minuteOfDay } from '../core/util.js';
-import { bump } from '../core/state.js';
+import { bump, addItem } from '../core/state.js';
 import { billInfo } from '../systems/economy.js';
 import * as rent from '../systems/rent.js';
 import * as romance from '../systems/romance.js';
@@ -29,9 +29,13 @@ const STATS = [
 ];
 
 const PLACES = [
-  ['apartment', 'Unit 3B'], ['street', 'Kestrel St.'], ['bodega', "Miguel's"],
+  ['apartment', 'Unit 3B'], ['street', 'Kestrel St.'], ['quikstop', 'Quik-Stop'], ['bodega', "Miguel's"],
   ['habibs', "Habib's"], ['church', 'Fellowship'], ['park', 'Kestrel Park'], ['clinic', 'Clinic'],
 ];
+
+// the NPC kinds the world knows how to build, and which ones the panel's pickers have chosen
+const NPC_KINDS = ['kev', 'rae', 'dale', 'dex', 'nia', 'miguel', 'habib', 'homeless', 'junkie', 'clerk', 'rolo', 'stephanie', 'melanie', 'diana'];
+const debugSel = {};
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -168,6 +172,26 @@ export function installDebugMenu(g) {
       case 'event':
         scheduler.trigger(g, String(arg), events.EVENTS_LIST);
         break;
+      case 'setday': {
+        // forward only: the bills, the life history and every cooldown are keyed to the day, and
+        // rewinding the clock under them would corrupt the run rather than test it
+        const target = Math.floor(Number(arg));
+        const today = dayOf(s.clock.m);
+        if (!(target > today)) { g.toast(`Debug: day ${today} or later only (time only runs forward).`, 'bad'); break; }
+        const minutes = (target - today) * 1440;
+        g.advance(minutes, { noCollapse: true });
+        g.toast(`Debug: it is day ${dayOf(s.clock.m)}.`, 'info');
+        break;
+      }
+      case 'npcspawn':
+        if (g.world?.debugSpawnNPC?.(arg)) g.toast(`Debug: ${arg} is here.`, 'info');
+        break;
+      case 'npcdespawn':
+        g.toast(g.world?.debugDespawnNPC?.(arg) ? `Debug: removed the nearest ${arg}.` : `Debug: no ${arg} in this area.`, 'info');
+        break;
+      case 'npcreset':
+        g.toast(`Debug: ${g.world?.resetNPCs?.(g) ?? 0} NPCs put back on schedule.`, 'info');
+        break;
       case 'cooldowns':
         scheduler.clearCooldowns(g);
         g.toast('Debug: event cooldowns cleared.', 'good');
@@ -251,7 +275,8 @@ export function installDebugMenu(g) {
         else g.toast(`Debug: no ${arg} in the inventory.`, 'bad');
         break;
       case 'give':
-        s.inventory.push({ id: arg, qty: 1 });
+        // through the real inventory: one stack per item, not a new row per click
+        if (!addItem(s, arg, 1)) g.toast(`Debug: no item called ${arg}.`, 'bad');
         break;
       case 'phone':
         g.togglePhone();
@@ -303,7 +328,10 @@ export function installDebugMenu(g) {
       </div>`;
     }).join('');
 
-    const eventOpts = (events.EVENT_IDS || []).map((id) => `<option value="${id}">${id}</option>`).join('');
+    const sel = (debugSel.event = debugSel.event || (events.EVENT_IDS || [])[0] || '');
+    const eventOpts = (events.EVENT_IDS || []).map((id) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${id}</option>`).join('');
+    const npcSel = (debugSel.npc = debugSel.npc || NPC_KINDS[0]);
+    const npcOpts = NPC_KINDS.map((id) => `<option value="${id}" ${id === npcSel ? 'selected' : ''}>${id}</option>`).join('');
 
     body.innerHTML = `
       <div class="debug__grid">
@@ -325,10 +353,12 @@ export function installDebugMenu(g) {
           <div class="debug__row"><span>Clock</span><b>D${dayOf(now)} · ${hhmm(now)}</b></div>
           <div class="debug__row">${[6, 9, 12, 15, 18, 21, 2].map((h) => `<button data-dact="hour" data-arg="${h}">${String(h).padStart(2, '0')}:00</button>`).join('')}</div>
           <div class="debug__row"><button data-dact="skip" data-arg="1">+1h</button><button data-dact="skip" data-arg="4">+4h</button><button data-dact="newday">+1 day</button><button data-dact="pause">${g.paused ? 'Resume' : 'Pause'} clock</button></div>
+          <div class="debug__row"><span>Set day</span><input class="debug__num" type="number" min="${dayOf(now) + 1}" value="${dayOf(now) + 1}" data-dact-input="setday" /><button data-dact="setday" data-arg="${dayOf(now) + 1}" data-input-source="setday">Go</button></div>
 
           <h4>World</h4>
           <div class="debug__row">${PLACES.map(([id, label]) => `<button data-dact="tp" data-arg="${id}">${label}</button>`).join('')}</div>
-          <div class="debug__row"><select data-dact-select="event">${eventOpts}</select><button data-dact="event" data-arg="${(events.EVENT_IDS || [])[0] || ''}" data-select-source="event">Trigger event</button><button data-dact="cooldowns">Clear cooldowns</button></div>
+          <div class="debug__row"><select data-dact-select="event">${eventOpts}</select><button data-dact="event" data-arg="${sel}" data-select-source="event">Trigger event</button><button data-dact="cooldowns">Clear cooldowns</button></div>
+          <div class="debug__row"><select data-dact-select="npc">${npcOpts}</select><button data-dact="npcspawn" data-arg="${npcSel}" data-select-source="npc">Spawn</button><button data-dact="npcdespawn" data-arg="${npcSel}" data-select-source="npc">Despawn</button><button data-dact="npcreset">Reset schedules</button></div>
         </section>
 
         <section>
@@ -346,8 +376,15 @@ export function installDebugMenu(g) {
     // the <select>s feed the buttons next to them, so one click can use the chosen id
     for (const select of body.querySelectorAll('[data-dact-select]')) {
       select.addEventListener('change', () => {
-        const btn = body.querySelector(`[data-select-source="${select.dataset.dactSelect}"]`);
-        if (btn) btn.dataset.arg = select.value;
+        debugSel[select.dataset.dactSelect] = select.value;
+        for (const btn of body.querySelectorAll(`[data-select-source="${select.dataset.dactSelect}"]`)) btn.dataset.arg = select.value;
+      });
+    }
+    for (const input of body.querySelectorAll('[data-dact-input]')) {
+      input.addEventListener('keydown', (e) => e.stopPropagation()); // typing a number is not a hotkey
+      input.addEventListener('input', () => {
+        const btn = body.querySelector(`[data-input-source="${input.dataset.dactInput}"]`);
+        if (btn) btn.dataset.arg = input.value;
       });
     }
   }

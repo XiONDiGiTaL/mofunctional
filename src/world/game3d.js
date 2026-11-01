@@ -2,7 +2,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
-import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildMenuWorld } from './areas.js';
+import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld } from './areas.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
@@ -15,7 +15,7 @@ import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
-  bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic,
+  bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
 };
 
 export class World {
@@ -183,6 +183,12 @@ export class World {
       // the three women carry a heart until one of them is actually his girlfriend
       if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
     }
+    // a talk prompt belongs to a person, not to the spot they started on: tie each one to its rig
+    for (const rig of this.npcRigs) {
+      const talkId = rig.npcDef?.talk;
+      if (!talkId) continue;
+      rig.talkIt = this.interactables.find((it) => it.id === talkId || (talkId === 'homeless' && it.id === 'homelessMan')) || null;
+    }
     this.collapse?.reset();
     this.audioLevel = 0;
     // a dealer who is already waiting is standing there when Mo steps out
@@ -237,6 +243,66 @@ export class World {
     this.dance.play();
     clearTimeout(this.danceTimer);
     this.danceTimer = setTimeout(() => this.dance?.stop(), Math.max(1, seconds) * 1000);
+  }
+
+  /**
+   * Debug: put an NPC of `kind` a couple of metres in front of Mo, on a clear spot. It is a real rig
+   * in the area's NPC list (it patrols, it is removed with the area), flagged so schedules ignore it.
+   */
+  debugSpawnNPC(kind) {
+    if (this.mode !== 'play' || !this.area) return null;
+    const mo = this.mo.root.position;
+    const yaw = this.mo.root.rotation.y;
+    let x = mo.x + Math.sin(yaw) * 1.6;
+    let z = mo.z + Math.cos(yaw) * 1.6;
+    const b = this.area.bounds;
+    x = clamp(x, b.minX + 0.3, b.maxX - 0.3);
+    z = clamp(z, b.minZ + 0.3, b.maxZ - 0.3);
+    if (this.blocked(x, z)) { x = mo.x; z = mo.z; }
+    const rig = createNPC(kind);
+    rig.root.position.set(x, 0, z);
+    rig.root.rotation.y = Math.atan2(mo.x - x, mo.z - z);
+    rig.npcDef = { kind, x, z, debug: true };
+    this.root.add(rig.root);
+    this.npcRigs.push(rig);
+    return rig;
+  }
+
+  /** Debug: remove the NPC of `kind` nearest to Mo in this area (the cat and Addison excluded). */
+  debugDespawnNPC(kind) {
+    const mo = this.mo.root.position;
+    let best = null;
+    let bestD = Infinity;
+    for (const rig of this.npcRigs) {
+      if (rig.type === 'cat' || (kind && rig.npcDef?.kind !== kind)) continue;
+      const d = rig.root.position.distanceTo(mo);
+      if (d < bestD) { best = rig; bestD = d; }
+    }
+    if (!best) return false;
+    this.root.remove(best.root);
+    this.npcRigs.splice(this.npcRigs.indexOf(best), 1);
+    if (best.talkIt) {
+      const i = this.interactables.indexOf(best.talkIt);
+      if (i >= 0) this.interactables.splice(i, 1);
+    }
+    return true;
+  }
+
+  /**
+   * Debug: snap every NPC to where they should be right now — scheduled ones to their schedule
+   * row for this minute (street only), everyone else back to where the area placed them — and
+   * forget their wander plans, so a run that has knotted them up in a corner starts clean.
+   */
+  resetNPCs(g) {
+    for (const rig of this.npcRigs) {
+      const def = rig.npcDef;
+      if (!def) continue;
+      const row = this.areaId === 'street' && !def.debug ? scheduleTarget(def.kind, minuteOfDay(g.state.clock.m)) : null;
+      rig.root.position.set(row ? row.x : def.x, 0, row ? row.z : def.z);
+      rig.wander = null;
+      rig.walking = false;
+    }
+    return this.npcRigs.length;
   }
 
   /** Mo's half of the exchange: hand out, hand back, a smile. */
@@ -370,6 +436,9 @@ export class World {
 
   updatePlay(dt, g) {
     const s = g.state;
+    // a lock flag with no animation behind it is an orphan (it can only come from an
+    // interrupted path): release it rather than strand the player
+    if (s.flags.consuming && !this.substance?.active) s.flags.consuming = false;
     const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play'
       && !this.eating?.active && !this.handoff?.active && !this.substance?.active
       && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming;
@@ -519,6 +588,7 @@ export class World {
     for (const rig of this.npcRigs) {
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
       this.patrolNPC(rig, dt, g);
+      if (rig.talkIt) { rig.talkIt.x = rig.root.position.x; rig.talkIt.z = rig.root.position.z; }
       if (rig.heart) {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
         rig.heart.rotation.y += dt * 1.1;
@@ -772,7 +842,10 @@ export class World {
 
     // A scheduled character walks to wherever they are supposed to be right now and stays
     // there until the window changes; unscheduled ones keep to a small patch near home.
-    const target = g ? scheduleTarget(def.kind, minuteOfDay(g.state.clock.m)) : null;
+    // The schedules are street coordinates. Kev in the park or Rae indoors used to be sent toward
+    // their street spot, walk to the edge of the room and stand there pacing; off the street,
+    // a scheduled character keeps to their own patch like everyone else.
+    const target = g && this.areaId === 'street' && !def.debug ? scheduleTarget(def.kind, minuteOfDay(g.state.clock.m)) : null;
     if (target) {
       const dx = target.x - rig.root.position.x;
       const dz = target.z - rig.root.position.z;

@@ -60,13 +60,41 @@ export const SHOPS = {
   },
 };
 
+// Quik-Stop #14: open all night, nothing cooked, everything a little too expensive
+SHOPS.quikstop = {
+  id: 'quikstop',
+  name: 'Quik-Stop #14',
+  owner: 'The clerk',
+  ownerKind: 'clerk',
+  kicker: 'QUIK-STOP #14 · OPEN 24 HRS',
+  blurb: 'Fluorescent, refrigerated and slightly sticky. The slushie machine has been "being fixed" since spring.',
+  voice: [
+    '"Just that? You want a lotto with that? Nobody wants a lotto with that."',
+    '"Coffee is free refills. The refill is not free. Do not ask me how."',
+    '"If you are on the schedule today, Dale is in the back. If you are not, you are a customer. Congratulations."',
+  ],
+  stock: [
+    { id: 'coffee', note: 'burnt since six, honest about it' },
+    { id: 'sandwich', note: 'cold case, triangle, dated tomorrow' },
+    { id: 'ramen', note: 'the noodle wall' },
+    { id: 'bar', note: 'protein brick, by the register' },
+    { id: 'cereal', note: 'family size, single man' },
+    { id: 'beans', note: 'the can aisle' },
+    { id: 'eggs', note: 'back cooler' },
+    { id: 'tallboy', note: 'back cooler, ID if Dale is watching' },
+    { id: 'loosies', note: 'behind the counter, if you ask right' },
+  ],
+  markup: 1.35,
+  sellsPork: true,
+};
+
 export const shopById = (id) => SHOPS[id] || SHOPS.bodega;
 
 /** Price with a small, deterministic per-shop markup (Habib's runs a little higher). */
 export function shopPrice(shopId, itemId) {
   const def = CONFIG.items[itemId];
   if (!def) return 0;
-  const base = def.price ?? 0;
+  const base = (def.price ?? 0) * (SHOPS[shopId]?.markup || 1);
   return Math.round(base * 100) / 100;
 }
 

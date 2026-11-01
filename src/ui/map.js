@@ -144,9 +144,8 @@ function streetSVG(g, { mini = false, highlight = null } = {}) {
 
 const AREA_NAMES = {
   apartment: 'Unit 3B · 1120 Kestrel St.', bodega: 'Kestrel Bodega', habibs: "Habib's Corner",
-  church: 'The Golden Fellowship', park: 'Kestrel Park', clinic: 'Kestrel Clinic',
-};
-const AREA_BUILDING = { apartment: 'apartment', bodega: 'bodega', habibs: 'habibs', church: 'church', clinic: 'clinic', park: null };
+  church: 'The Golden Fellowship', park: 'Kestrel Park', clinic: 'Kestrel Clinic', quikstop: 'Quik-Stop #14' };
+const AREA_BUILDING = { apartment: 'apartment', bodega: 'bodega', habibs: 'habibs', church: 'church', clinic: 'clinic', park: null, quikstop: 'quikstop' };
 
 function shortLabel(label) {
   return String(label || '')

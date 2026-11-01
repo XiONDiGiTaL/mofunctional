@@ -119,6 +119,7 @@ export const CONFIG = {
     lentil:       { id: 'lentil',       name: 'Lentil Soup', kind: 'food', price: 3.5, hunger: 30, energy: 10, morale: 4, hygiene: 0, value: 1.2, hot: true },
     baklava:      { id: 'baklava',      name: 'Baklava', kind: 'food', price: 2.5, hunger: 14, energy: 6, morale: 8, hygiene: 0, value: 1.0 },
     mint_tea:     { id: 'mint_tea',     name: 'Mint Tea', kind: 'comfort', price: 1.5, stress: -5, morale: 3, value: 0.4 },
+    coffee:       { id: 'coffee',       name: 'Quik-Stop Coffee', kind: 'comfort', price: 1.25, energy: 9, stress: 2, morale: 1, value: 0.2 },
     bliss:   { id: 'bliss',   name: 'Bliss Vial',     kind: 'substance', price: 35, value: 12 },
     static:  { id: 'static',  name: 'Static (pills)', kind: 'substance', price: 22, value: 8 },
     mud:     { id: 'mud',     name: 'Mud',            kind: 'substance', price: 18, value: 6 },
@@ -314,7 +315,6 @@ export const CONFIG = {
       walk: { id: 'walk', name: 'A walk down Kestrel Street', where: 'street', cost: 0, minutes: 40, affection: 7, morale: 5, stress: -5, energy: -1 },
       movie: { id: 'movie', name: 'A movie at home', where: 'apartment', cost: 4, minutes: 110, affection: 13, morale: 8, stress: -7, energy: -3 },
     },
-    giftItems: ['flowers', 'chocolates', 'mixtape', 'candle', 'breath_mints', 'soup_can', 'batteries', 'necklace', 'perfume', 'watch'],
   },
 
   /* --------------------------------------------------------------- clinic */
@@ -329,6 +329,22 @@ export const CONFIG = {
       feeIfBroke: 40,             // added to hospital debt when he cannot pay cash
       hoursLost: 7,
       lockHours: 5,               // no collapse again straight away (stops the loop)
+    },
+    // The outpatient course: the slow way down. Several paid appointments, days apart, inside
+    // clinic hours — which overlap Quik-Stop shifts, so recovery competes with work for the day.
+    program: {
+      sessions: 5,
+      everyDays: 2,               // one appointment every other day
+      window: [10 * 60, 16 * 60], // appointments are 10:00-16:00 at the clinic
+      minutes: 120,
+      cost: 35,                   // per session; on the hospital bill if he cannot pay
+      perSession: { addiction: -6, withdrawal: -25, risk: -8, stress: -8, morale: 4 },
+      relapseFactor: 0.5,         // the session after a relapse does half as much
+      graceDays: 1,               // a day late is still the same appointment
+      missAllowance: 1,           // one missed appointment is forgiven; the next drops him
+      reenrollDays: 3,            // after dropping out, how long before they take him back
+      completion: { addiction: -10, tolerance: -2, morale: 15, stress: -10 },
+      eligibleDependence: 30,     // without a referral, this much dependence gets him in
     },
   },
 

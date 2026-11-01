@@ -21,7 +21,7 @@ export const BUILDINGS = [
   { id: 'bodega', name: 'Kestrel Bodega', short: 'BODEGA', x0: -19.1, x1: -13.9, door: -15.3, area: 'bodega', color: '#3f6b4a', icon: 'cart' },
   { id: 'apartment', name: '1120 Kestrel St.', short: 'HOME · 3B', x0: -13.1, x1: -6.5, door: -10.0, area: 'apartment', color: '#8a6a4a', icon: 'home' },
   { id: 'alley', name: 'The Alley', short: 'ALLEY', x0: -5.1, x1: -2.1, door: -3.6, area: null, color: '#3a4246', icon: 'alley', open: true },
-  { id: 'quikstop', name: 'Quik-Stop #14', short: 'QUIK-STOP', x0: -1.6, x1: 4.6, door: 1.5, area: null, color: '#2f6b5a', icon: 'work' },
+  { id: 'quikstop', name: 'Quik-Stop #14', short: 'QUIK-STOP', x0: -1.6, x1: 4.6, door: 1.5, area: 'quikstop', color: '#2f6b5a', icon: 'work' },
   { id: 'church', name: 'The Golden Fellowship', short: 'FELLOWSHIP', x0: 8.8, x1: 14.2, door: 11.5, area: 'church', color: '#a8823a', icon: 'church' },
   { id: 'habibs', name: "Habib's Corner", short: "HABIB'S", x0: 14.6, x1: 19.1, door: 15.7, area: 'habibs', color: '#7a2a2a', icon: 'food' },
   { id: 'clinic', name: 'Kestrel Clinic', short: 'CLINIC', x0: 19.6, x1: 24.4, door: 21.6, area: 'clinic', color: '#5a7a86', icon: 'clinic' },

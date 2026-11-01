@@ -7,7 +7,7 @@ import { clamp, dayOf, hhmm, minuteOfDay, uid } from './util.js';
 
 export function createState() {
   const s = {
-    v: 2,
+    v: 3, // see systems/migrate.js
     createdAt: Date.now(),
     clock: { m: CONFIG.time.startMinutes },
     money: CONFIG.economy.startMoney,

@@ -665,6 +665,7 @@ export class Phone {
     const g = this.g;
     const s = g.state;
     const day = dayOf(s.clock.m);
+    const course = clinic.programInfo(g);
     const rows = [];
     for (let i = 0; i < 7; i++) {
       const d = day + i;
@@ -678,6 +679,7 @@ export class Phone {
         rentDue ? '<span class="pill" style="color:#ff8f7a">rent</span>' : '',
         powerDue ? '<span class="pill" style="color:#ffc46b">power</span>' : '',
         service ? '<span class="pill" style="color:#ffd24a">service</span>' : '',
+        course.status === 'active' && d === Math.max(course.next, day) ? '<span class="pill" style="color:#7fd1ae">clinic 10-16</span>' : '',
       ].join(' ');
       rows.push(`<div class="listitem">
         <div class="grow"><div class="name">${DAY_NAMES[wd]} — Day ${d}${i === 0 ? ' (today)' : ''}</div><div class="meta">${tags || '&nbsp;'}</div></div>
@@ -895,12 +897,26 @@ export class Phone {
         <div class="kv"><span>Withdrawal</span><b class="${s.stats.withdrawal > 50 ? 'bad' : ''}">${Math.round(s.stats.withdrawal)}%</b></div>
         <div class="kv"><span>Hospital bill</span><b class="${l.debt.hospital ? 'bad' : 'creditv'}">${money(l.debt.hospital || 0)}</b></div>
       </div>
+      ${this.courseCard()}
       <div class="row row--wrap">
         <button class="btn btn--sm btn--primary" data-act="clincheck" ${checkedToday ? 'disabled' : ''}>CHECK IN (FREE)</button>
         <button class="btn btn--sm" data-act="clingo">WALK TO THE CLINIC</button>
       </div>
       <div class="tiny mono-dim">The clinic is the pale building at the east end of Kestrel Street, past Habib's. Check-in is free, once a day. Treatment is ${money(info.cost)}; if you cannot pay it goes on the bill and the bill grows.</div>
       ${this.footer()}`;
+  }
+
+  /** The outpatient course, as the clinic app shows it. Appointments happen at the clinic. */
+  courseCard() {
+    const p = clinic.programInfo(this.g);
+    if (p.status === 'none' && !p.eligible) return '';
+    const label = { none: 'not enrolled', active: `session ${p.done} of ${p.sessions} done`, completed: 'completed', dropped: `dropped · back in day ${p.waitUntil}` }[p.status];
+    return `<div class="card">
+      <div class="kv"><span>Outpatient course</span><b class="${p.status === 'dropped' ? 'bad' : p.status === 'completed' ? 'creditv' : ''}">${label}</b></div>
+      ${p.status === 'active' ? `<div class="kv"><span>Next appointment</span><b>${p.dueToday ? 'today' : `day ${p.next}`} · 10:00-16:00</b></div>
+      <div class="kv"><span>Missed</span><b class="${p.missed ? 'bad' : ''}">${p.missed} · ${CONFIG.clinic.program.missAllowance} forgiven</b></div>` : ''}
+      <div class="tiny mono-dim">${p.status === 'active' ? 'Appointments are kept in person at the clinic counter.' : p.canEnroll ? 'Sign up at the clinic counter. Five sessions, every other day, $35 each.' : ''}</div>
+    </div>`;
   }
 
   /* ------------------------------ ACTIONS ------------------------------ */
