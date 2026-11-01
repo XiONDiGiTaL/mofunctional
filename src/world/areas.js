@@ -14,6 +14,7 @@ import { npcLine, AMBIENT_LINES } from '../systems/dialogue.js';
 import { openShop, shopPrice } from './shops.js';
 import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
+import { partnerTarget } from './schedules.js';
 import { signTex } from '../render/signs.js';
 import * as life from '../systems/life.js';
 import * as romance from '../systems/romance.js';
@@ -137,7 +138,7 @@ export function buildApartment(g) {
 
   // ---- someone lives here now. She is in the room, not in a menu.
   const liveIn = g.state.romance?.liveIn;
-  const liveDef = liveIn ? CONFIG.partners?.[liveIn] : null;
+  const liveDef = liveIn && partnerTarget(liveIn, minuteOfDay(g.state.clock.m))?.away ? CONFIG.partners?.[liveIn] : null;
   if (liveIn && liveDef) {
     interactables.push({
       id: 'partner', label: `Talk to ${liveDef.name}`, sub: 'girlfriend · lives here', x: -1.9, z: 1.5,
@@ -1230,20 +1231,13 @@ export function buildPark(g) {
   group.add(box(1.7, 0.12, 0.2, M.white, [0, 2.4, 8.36]));
   group.add(plane(2.6, 0.45, { name: 'parkgate', map: signTex('signParkGate', [{ text: 'KESTREL PARK', color: '#e9f6d8', size: 12 }], { w: 128, h: 24, bg: '#1e3a26', border: '#8fc07a' }), emissive: 0.8, unlit: true }, [0, 2.7, 8.3]));
 
-  // ---- people. The three women are here on their own schedules; so is somebody's friend.
+  // ---- people. The three women come and go on their own schedules (world/schedules.js, placed
+  // by the world, not here); Kev is just here.
   const npcs = [
-    { kind: 'stephanie', x: -4.4, z: 2.6, rot: 0.4, talk: 'stephanie' },
-    { kind: 'melanie', x: 4.4, z: 3.6, rot: -0.5, talk: 'melanie' },
-    { kind: 'diana', x: -1.0, z: -3.4, rot: 1.6, talk: 'diana' },
     { kind: 'kev', x: -2.4, z: -0.2, rot: 2.6, talk: 'kev' },
   ];
 
-  const partnerSpot = { stephanie: [-4.4, 2.6], melanie: [4.4, 3.6], diana: [-1.0, -3.4] };
   const interactables = [
-    ...Object.entries(partnerSpot).map(([id, [x, z]]) => ({
-      id: `partner_${id}`, label: `Talk to ${CONFIG.partners[id].name}`, sub: 'she is around', x, z, radius: 1.6,
-      action: (gg) => partnerMenu(gg, id),
-    })),
     { id: 'parkbench1', label: 'Sit on the bench', sub: 'watch the park happen', x: -4.4, z: 1.8, radius: 1.5, action: (gg) => parkSit(gg) },
     { id: 'parkbench2', label: 'Sit on the bench', sub: 'the other one', x: 4.4, z: 3.0, radius: 1.5, action: (gg) => parkSit(gg) },
     { id: 'hoops', label: 'Shoot around on the half-court', sub: '45 min · the rim is bent', x: 5.2, z: -4.6, radius: 2.0, action: (gg) => parkHoops(gg) },
@@ -1450,6 +1444,21 @@ export function partnerMenu(g, id) {
       effect: () => dateMenu(g, id),
     },
   ];
+  // the close stuff: offered once she likes him enough (always, once she is his girlfriend)
+  const close = (type) => st.girlfriend || st.affection >= CONFIG.romance.gestures[type];
+  const world = g.world;
+  const holding = !!world?.holdingHands?.(id);
+  if (close('hug')) {
+    choices.push({ label: 'Hug her.', sub: romance.gestureSub(s, id, 'hug'), effect: () => { world?.playAffection?.('hug', id); romance.gesture(g, id, 'hug'); } });
+  }
+  if (close('kiss')) {
+    choices.push({ label: 'Lean in.', sub: `she kisses your cheek · ${romance.gestureSub(s, id, 'kiss')}`, effect: () => { world?.playAffection?.('kiss', id); romance.gesture(g, id, 'kiss'); } });
+  }
+  if (holding) {
+    choices.push({ label: 'Let go of her hand.', sub: '', effect: () => world?.holdHands?.(id, false) });
+  } else if (close('hand') && g.world?.areaId !== 'apartment') {
+    choices.push({ label: 'Take her hand.', sub: `walk around together · ${romance.gestureSub(s, id, 'hand')}`, effect: () => { if (world?.holdHands?.(id)) romance.gesture(g, id, 'hand'); } });
+  }
   if (st.girlfriend) {
     choices.push({
       label: 'Spend the evening in.', sub: 'free · +morale · +affection',

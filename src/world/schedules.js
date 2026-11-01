@@ -64,3 +64,59 @@ export function scheduleTarget(kind, minuteOfDay) {
   }
   return rows[0];
 }
+
+/**
+ * Stephanie, Melanie and Diana keep their own days, all over the block: the park, the Quik-Stop,
+ * the bodega, Habib's and Kestrel Street itself. Each row names the area and a spot inside it
+ * (that area's own coordinates); `away` rows are work, school or sleep, off the map. The world
+ * shows a woman only in the area her current row names, and she walks in or out through the
+ * door when the row changes while Mo is there.
+ */
+export const PARTNER_SCHEDULES = {
+  // the morning person: a run, a coffee, work in Park Slope, then the bus home
+  diana: [
+    { from: 7 * 60, to: 8 * 60 + 30, area: 'park', x: -1.0, z: -3.4, note: 'cooling down after a run' },
+    { from: 8 * 60 + 30, to: 9 * 60 + 30, area: 'quikstop', x: 2.7, z: -0.4, note: 'coffee, black, standing up' },
+    { from: 9 * 60 + 30, to: 17 * 60, away: true, note: 'at work in Park Slope' },
+    { from: 17 * 60, to: 19 * 60, area: 'street', x: 7.8, z: -4.2, note: 'off the bus, by the stop' },
+    { from: 19 * 60, to: 7 * 60, away: true, note: 'home, early night' },
+  ],
+  // the teacher: a roll before school, grading in the park, dinner at Habib's
+  melanie: [
+    { from: 7 * 60, to: 8 * 60, area: 'bodega', x: -0.8, z: -1.2, note: 'a buttered roll before school' },
+    { from: 8 * 60, to: 15 * 60, away: true, note: 'teaching' },
+    { from: 15 * 60, to: 18 * 60, area: 'park', x: 4.4, z: 3.6, note: 'grading papers by the bench' },
+    { from: 18 * 60, to: 20 * 60, area: 'habibs', x: 1.8, z: 0.6, note: 'chicken over rice, extra white sauce' },
+    { from: 20 * 60, to: 21 * 60, area: 'street', x: 7.6, z: -2.2, note: 'walking home past the park' },
+    { from: 21 * 60, to: 7 * 60, away: true, note: 'home' },
+  ],
+  // the night owl: up late, out late, no plans
+  stephanie: [
+    { from: 1 * 60, to: 11 * 60, away: true, note: 'asleep' },
+    { from: 11 * 60, to: 14 * 60, area: 'park', x: -4.4, z: 2.6, note: 'on the bench, doing nothing on purpose' },
+    { from: 14 * 60, to: 16 * 60, area: 'quikstop', x: -0.5, z: 1.2, note: 'reading magazines she is not buying' },
+    { from: 16 * 60, to: 19 * 60, area: 'street', x: -9.0, z: -3.4, note: 'on the 1120 stoop' },
+    { from: 19 * 60, to: 21 * 60, area: 'habibs', x: -2.4, z: 0.6, note: 'dinner, if the line is short' },
+    { from: 21 * 60, to: 1 * 60, area: 'street', x: -6.8, z: 1.0, note: 'by the bench, people-watching' },
+  ],
+};
+
+export const PARTNER_AREA_NAMES = {
+  street: 'Kestrel St.', park: 'Kestrel Park', quikstop: 'the Quik-Stop', bodega: "Miguel's bodega", habibs: "Habib's",
+};
+
+const inWindow = (row, m) => (row.from > row.to ? (m >= row.from || m < row.to) : (m >= row.from && m < row.to));
+
+/** Where one of the three is at a minute of the day: a schedule row (never null for them). */
+export function partnerTarget(kind, minuteOfDay) {
+  const rows = PARTNER_SCHEDULES[kind];
+  if (!rows) return null;
+  return rows.find((row) => inWindow(row, minuteOfDay)) || rows[0];
+}
+
+/** "Kestrel Park · grading papers by the bench", or "teaching" when she is off the map. */
+export function partnerWhereabouts(kind, minuteOfDay) {
+  const row = partnerTarget(kind, minuteOfDay);
+  if (!row) return '';
+  return row.away ? row.note : `${PARTNER_AREA_NAMES[row.area] || row.area} · ${row.note}`;
+}

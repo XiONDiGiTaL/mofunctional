@@ -259,11 +259,35 @@ Three adults can be dated: **Stephanie** (31, relaxed, low-maintenance), **Melan
 particular) and **Diana** (36, independent and exacting). They are approachable when the heart is
 over their head — the heart means *you could try*, not *she is interested*.
 
+**How they look.** Their faces, hair and clothes come from the owner's sheet
+(`assets/ref/partner_face_bank.png`): Diana with straight brown hair to the shoulders and a grey tee,
+Stephanie with long, messy black hair and a black zip hoodie, Melanie with a mass of black curls
+and a black tank top. The faces are baked into portraits and 3D head textures by
+`scripts/bake-npc-faces.py`; the hair below the jaw is real geometry.
+
+**Where they are.** Each of them has her own day, all over the block (`world/schedules.js`):
+
+| | Morning | Afternoon | Evening |
+| --- | --- | --- | --- |
+| **Diana** | park 07:00, Quik-Stop coffee 08:30 | work in Park Slope | bus stop, Kestrel St. 17:00-19:00 |
+| **Melanie** | Miguel's bodega 07:00-08:00 | teaching, then the park 15:00-18:00 | Habib's 18:00-20:00, Kestrel St. 20:00-21:00 |
+| **Stephanie** | asleep until 11 | the park 11:00-14:00, Quik-Stop 14:00-16:00 | the 1120 stoop, Habib's 19:00-21:00, the bench until 01:00 |
+
+She walks in through the door when her time comes and out again when it is over. LoveLine shows
+where each one is right now and her usual day. A live-in girlfriend is at home when her day has
+her off the map.
+
+**Up close.** Once she likes him enough (or is his girlfriend), her menu adds **Hug her**, **Lean
+in** (she kisses his cheek) and **Take her hand** — they walk around together, hand in hand,
+until he lets go, leaves, starts something else, or her day takes her somewhere. The first of each
+in a day is worth affection, morale and a little less stress; after that it is just nice.
+
 **FeedLove HEARTS.** The social app has a dating side: open FeedLove and tap **♥ HEARTS · DATING** at the top, or the **Find someone** banner at the top of LoveLine. Every morning it deals a fresh stack of
 profiles — strangers from around the boroughs, and, until he has matched with them, Stephanie,
 Melanie and Diana. Sending a heart takes a few minutes and there are ten a day. Strangers almost
 always say no (unmatched before the heart finishes animating; "do you have a car?"; left on read
-at 1:14 AM); the rare match ghosts him. The three answer: they match, send their number, appear
+at 1:14 AM); the rare match ghosts him. Strangers get generic painted thumbnails (Mo never meets
+them); the three have their real faces. The three answer: they match, send their number, appear
 in Txtr as contacts, and from the app he can text them or ask them out through the same date
 planner as everywhere else.
 

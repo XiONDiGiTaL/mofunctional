@@ -23,6 +23,7 @@ import { migrate, SAVE_VERSION } from '../src/systems/migrate.js';
 import * as dating from '../src/systems/dating.js';
 import * as dealer from '../src/systems/dealer.js';
 import { earn } from '../src/core/state.js';
+import { partnerTarget, PARTNER_SCHEDULES, PARTNER_AREA_NAMES } from '../src/world/schedules.js';
 
 let passed = 0;
 let failed = 0;
@@ -631,6 +632,47 @@ check('fellowship: the inner circle tithes a fifth', () => {
   g.state.fellowship.titheOwed = 0;
   earn(g, 100, 'test');
   near(g.state.fellowship.titheOwed, 10, 0.01, 'tithe');
+  return true;
+});
+
+check('partners: every minute of the day has one row, in a real place', () => {
+  for (const id of romance.PARTNER_KEYS) {
+    for (let m = 0; m < 1440; m += 5) {
+      const hits = PARTNER_SCHEDULES[id].filter((r) => (r.from > r.to ? (m >= r.from || m < r.to) : (m >= r.from && m < r.to)));
+      eq(hits.length, 1, `${id} @${m}`);
+      if (!hits[0].away) eq(!!PARTNER_AREA_NAMES[hits[0].area], true, `${id} area`);
+    }
+  }
+  eq(partnerTarget('stephanie', 12 * 60).area, 'park');
+  eq(partnerTarget('diana', 8 * 60 + 45).area, 'quikstop');
+  eq(!!partnerTarget('melanie', 10 * 60).away, true, 'melanie teaching');
+  return true;
+});
+
+check('partners: she is awake (texts, dates) whenever she is out', () => {
+  for (const id of romance.PARTNER_KEYS) {
+    for (const row of PARTNER_SCHEDULES[id]) {
+      if (row.away) continue;
+      const g = stubGame();
+      g.state.clock.m = row.from + 1;
+      eq(romance.partnerAround(g.state, id), true, `${id} ${row.note}`);
+    }
+  }
+  return true;
+});
+
+check('gestures: the first hug of the day counts, the second is just nice', () => {
+  const g = stubGame();
+  const st = romance.partnerState(g.state, 'melanie');
+  st.met = true;
+  st.affection = 40;
+  romance.gesture(g, 'melanie', 'hug');
+  eq(st.affection, 40 + CONFIG.romance.gestureValues.hug.affection, 'first');
+  romance.gesture(g, 'melanie', 'hug');
+  eq(st.affection, 40 + CONFIG.romance.gestureValues.hug.affection, 'second');
+  g.state.clock.m += 1440;
+  romance.gesture(g, 'melanie', 'hug');
+  eq(st.affection, 40 + 2 * CONFIG.romance.gestureValues.hug.affection, 'next day');
   return true;
 });
 

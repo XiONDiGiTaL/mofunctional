@@ -730,3 +730,6 @@
 .dprof__res--match { background: #ff6a86; color: #fff; }
 .dmatch { align-items: center; gap: 8px; }
 .dnote { font-size: 11px; color: #ffe0e6; box-shadow: inset 3px 0 0 #ff6a86; }
+.lwhere { margin-top: 4px; color: #ffd0da; }
+.lsched summary { cursor: pointer; color: #ff9ab0; margin-top: 2px; }
+.lsched div { padding-left: 8px; }

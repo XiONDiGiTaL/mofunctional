@@ -10,6 +10,25 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### The three women, remodelled; schedules; hugs, hands and a kiss
+
+- **Look**: `assets/ref/partner_face_bank.png` (owner's sheet) baked into `NPC_FACES` for diana,
+  stephanie, melanie (explicit portrait boxes; the rest of the bank is byte-identical). Face specs
+  recoloured; new hair styles `shoulder`, `shag`, `curls` (shell cap + `hangingHair` geometry;
+  curls are icosahedra). Outfits: Diana grey tee and jeans, Stephanie black zip hoodie (`hoodie`),
+  Melanie black tank (`tank`: skin shoulders, scoop, straps, no collar band).
+- **Schedules**: `PARTNER_SCHEDULES` / `partnerTarget` / `partnerWhereabouts` in
+  `world/schedules.js`. The world adds a rig for each of the three in the street, park,
+  Quik-Stop, bodega and Habib's, shown only while her row names that area
+  (`World.partnerPresence`); she walks in/out through the area's door when the row changes. The
+  park no longer hard-codes them. Awake windows in `romance.js` match the schedules.
+- **Affection** (`world/affection.js`): hug and cheek-kiss beats (Mo held, like the handoff) and
+  hand-holding as a follow state. `romance.gesture()` pays once per kind per day
+  (`CONFIG.romance.gestures`, `.gestureValues`); offered from `partnerMenu` once affection is high
+  enough or she is his girlfriend.
+- **Phone**: LoveLine shows "Now:" and her usual day; HEARTS strangers use `ui/thumbs.js` SVGs.
+- 39 system checks (schedule coverage, awake-when-out, gesture once a day).
+
 ### Owner direction pass — the Fellowship ending, FeedLove dating, Dex, Rolo's arrival
 
 - **History**: 696f145 (authored by the Codebuff workspace with Codebuff trailers) was re-authored

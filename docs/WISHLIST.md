@@ -74,6 +74,9 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Stephanie / Melanie / Diana, hearts, flirt, dates, girlfriend, Cheeks, Afterglow | done |
 | Gifts, moving in, rent share, household behaviour | done |
 | **FeedLove dating**: browse profiles; most women reject Mo; the three answer, swap numbers, become contacts, set up dates | done |
+| The three modelled on the owner's sheet (faces, hair, outfits); stranger profiles get generic thumbnails | done |
+| Hugs, a kiss on Mo's cheek, holding hands and walking together | done |
+| The three have schedules across the park, Quik-Stop, bodega, Habib's and the street | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

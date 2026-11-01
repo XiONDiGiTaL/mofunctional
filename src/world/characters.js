@@ -132,6 +132,10 @@ const HAIR_SHELLS = {
   quiff: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.86 : 0.62 - 0.2 * Math.min(1, (Math.abs(a) - 1.1) / 2)), grow: 1.06 },
   bob: { tMin: (a) => (Math.abs(a) < 0.95 ? 0.7 : 0.18), grow: 1.09 },
   long: { tMin: (a) => (Math.abs(a) < 0.9 ? 0.82 : Math.abs(a) < 1.3 ? 0.3 : 0.02), grow: 1.08 },
+  // the three women: the shell is the cap; the length hangs below it as geometry (hangingHair)
+  shoulder: { tMin: (a) => (Math.abs(a) < 0.9 ? 0.84 : Math.abs(a) < 1.25 ? 0.32 : 0.02), grow: 1.08 },
+  shag: { tMin: (a) => (Math.abs(a) < 0.85 ? 0.8 : Math.abs(a) < 1.25 ? 0.3 : 0.02), grow: 1.11 },
+  curls: { tMin: (a) => (Math.abs(a) < 0.85 ? 0.8 : Math.abs(a) < 1.2 ? 0.28 : 0.0), grow: 1.17 },
   dread: { tMin: (a) => (Math.abs(a) < 1.05 ? 0.8 : 0.45), grow: 1.08 },
   braids: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.82 : 0.4), grow: 1.04 },
   durag: { tMin: (a) => (Math.abs(a) < 1.0 ? 0.8 : 0.5), grow: 1.04 },
@@ -179,6 +183,7 @@ function buildHead({ hh, kind, style = 'short', skinMat, hairColor }) {
   if (style === 'beanie') {
     g.add(prism(0.63 * hh, 0.65 * hh, 0.82 * hh, 0.84 * hh, 0.09 * hh, hair, [0, 0.83 * hh, -0.03 * hh], 10));
   }
+  if (style === 'shoulder' || style === 'shag' || style === 'curls') hangingHair(g, hh, style, kind);
   if (style === 'dread' || style === 'braids') {
     const count = style === 'dread' ? 9 : 2;
     for (let i = 0; i < count; i++) {
@@ -190,6 +195,71 @@ function buildHead({ hh, kind, style = 'short', skinMat, hairColor }) {
     }
   }
   return g;
+}
+
+/**
+ * Hair that falls past the jaw, for the three women: a curtain down the back to the shoulders and
+ * a lock on each side in front of them. Diana's is one clean straight sheet, Stephanie's is cut
+ * into uneven strands, and Melanie's is a mass of faceted curls (icosahedra, the PS1 way to say
+ * "round") over the cap and down her back. Positions are in head-heights from the neck joint.
+ */
+function hangingHair(g, hh, style, kind) {
+  const S = faceSpec(kind);
+  const hair = hairMat(parseInt(S.hair.slice(1), 16));
+  const light = hairMat(parseInt(S.hairLight.slice(1), 16));
+  const dark = hairMat(parseInt(S.hairDark.slice(1), 16));
+  if (style === 'shoulder') {
+    g.add(prism(0.66 * hh, 0.8 * hh, 0.42 * hh, 0.26 * hh, 1.2 * hh, hair, [0, 0.78 * hh, -0.2 * hh], 8));
+    for (const sx of [-1, 1]) {
+      g.add(prism(0.13 * hh, 0.17 * hh, 0.3 * hh, 0.2 * hh, 1.0 * hh, sx < 0 ? hair : light, [sx * 0.31 * hh, 0.6 * hh, 0.02 * hh], 6, [0, 0, sx * 0.12]));
+    }
+    return;
+  }
+  if (style === 'shag') {
+    g.add(prism(0.7 * hh, 0.82 * hh, 0.44 * hh, 0.3 * hh, 1.05 * hh, hair, [0, 0.8 * hh, -0.2 * hh], 8));
+    // uneven strands around the sides and back, and two that fall over the face edges
+    const strands = [[-1.35, 1.25], [-1.0, 1.05], [-2.0, 1.4], [-2.6, 1.3], [2.6, 1.35], [2.0, 1.2], [1.0, 1.1], [1.35, 1.3], [Math.PI, 1.45]];
+    strands.forEach(([a, len], i) => {
+      const p = headPoint(a, 0.62);
+      const m = i % 3 === 0 ? dark : hair;
+      g.add(prism(0.12 * hh, 0.05 * hh, 0.1 * hh, 0.04 * hh, len * hh, m, [p[0] * 1.08 * hh, 0.7 * hh, p[2] * 1.08 * hh], 5, [Math.cos(a) * -0.18, 0, Math.sin(a) * 0.2]));
+    });
+    for (const sx of [-1, 1]) g.add(prism(0.07 * hh, 0.03 * hh, 0.05 * hh, 0.03 * hh, 0.55 * hh, hair, [sx * 0.2 * hh, 0.9 * hh, 0.33 * hh], 4, [0.1, 0, sx * 0.25]));
+    return;
+  }
+  // curls: a big faceted crown, then a column of curls down the back and over the shoulders
+  const curl = (r, m, x, y, z) => {
+    const mesh = new THREE.Mesh(curlGeo(r * hh), m);
+    mesh.position.set(x * hh, y * hh, z * hh);
+    mesh.rotation.set(x * 3.1, y * 2.3, z * 1.7);
+    g.add(mesh);
+  };
+  let i = 0;
+  for (let ring = 0; ring < 4; ring++) {
+    const t = 0.95 - ring * 0.17;
+    const n = 7 + ring * 2;
+    for (let j = 0; j < n; j++) {
+      const a = -Math.PI + ((j + 0.5 + ring * 0.37) / n) * Math.PI * 2;
+      if (Math.abs(a) < (t < 0.9 ? 1.05 : 0.55)) continue; // keep the face clear
+      const p = headPoint(a, t);
+      const m = i++ % 4 === 0 ? light : i % 3 === 0 ? dark : hair;
+      curl(0.16 + (i % 3) * 0.025, m, p[0] * 1.2, t * 1.0 + 0.04, p[2] * 1.2);
+    }
+  }
+  for (let j = 0; j < 16; j++) {
+    const a = Math.PI * (0.45 + (j / 15) * 1.1) * (j % 2 ? 1 : -1);
+    const y = 0.48 - (j % 5) * 0.2;
+    const p = headPoint(a, 0.5);
+    const m = j % 4 === 0 ? light : j % 3 === 0 ? dark : hair;
+    curl(0.17 + (j % 3) * 0.02, m, p[0] * 1.25, y, p[2] * 1.15 - 0.04);
+  }
+}
+
+const curlCache = new Map();
+function curlGeo(r) {
+  const key = r.toFixed(3);
+  if (!curlCache.has(key)) curlCache.set(key, new THREE.IcosahedronGeometry(r, 0));
+  return curlCache.get(key);
 }
 
 /* --------------------------------- bodies --------------------------------- */
@@ -322,7 +392,7 @@ function buildBody(spec) {
   // neck: short and thick, running up inside the skull
   torso.add(loft(R([[0.40, 0.135, 0.135, -0.012], [0.47, 0.128, 0.128, -0.006], [0.53, 0.12, 0.12, 0]], k), skin, 8));
   // collar band
-  if (!suit) torso.add(loft(R([[0.425, 0.172, 0.165, -0.01], [0.452, 0.15, 0.142, -0.01]], k), shirtMat, 10));
+  if (!suit && !spec.tank) torso.add(loft(R([[0.425, 0.172, 0.165, -0.01], [0.452, 0.15, 0.142, -0.01]], k), shirtMat, 10));
 
   const head = joint(torso, 0, 0.50 * k, 0);
   const headGroup = buildHead({ hh: headH, kind, style: hairStyle, skinMat: tone(skinColor, 0.95), hairColor });
@@ -372,9 +442,11 @@ const CAST = {
   // Rolo, the phone dealer: navy hoodie, grey sweats, never in a hurry
   rolo: { height: 1.76, build: 0.96, shirt: 0x1f2c4a, pants: 0x4a4a50, longSleeves: true },
   // the three women on the block, and the clinic's nurse
-  stephanie: { height: 1.66, build: 0.98, shirt: 0xd9a86a, pants: 0x3a3a44 },
-  melanie: { height: 1.68, build: 1.0, shirt: 0x8a4a5a, pants: 0x2e323a, longSleeves: true },
-  diana: { height: 1.72, build: 1.0, shirt: 0x2e3a4a, pants: 0x24262c, longSleeves: true },
+  // dressed as in the owner's sheet: Stephanie's black zip hoodie, Melanie's black tank top,
+  // Diana's grey tee
+  stephanie: { height: 1.66, build: 0.98, shirt: 0x19191c, pants: 0x2a2c34, longSleeves: true, hoodie: true },
+  melanie: { height: 1.68, build: 1.0, shirt: 0x141416, pants: 0x24252b, tank: true },
+  diana: { height: 1.72, build: 1.0, shirt: 0x8c8e92, pants: 0x3a4a66 },
   nurse: { height: 1.70, build: 1.0, shirt: 0xdfe6e0, pants: 0x5a6a72, longSleeves: true },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
@@ -447,10 +519,24 @@ export function createNPC(kind = 'kev') {
     pantsMat: retroMaterial(`npcPants${kind}`, { color: spec.pants ?? 0x2c3038, ambient: 0.6 }),
     shoeMat: retroMaterial(`npcShoe${kind}`, { color: 0x2a2622 }),
     armMat: spec.longSleeves ? shirt : skinTone,
-    sleeveMat: shirt,
+    // a tank top has no sleeves: the shoulder caps are skin
+    sleeveMat: spec.tank ? skinTone : shirt,
     handMat: skinTone,
   });
   rig.root.name = kind;
+  const { k } = rig;
+  if (spec.hoodie) {
+    // zip line, two drawstrings, and the hood bunched at the back of the neck
+    const zip = retroMaterial('hoodiezip', { color: 0x8a8a8e, ambient: 0.8 });
+    rig.torso.add(box(0.012 * k, 0.5 * k, 0.012 * k, zip, [0, 0.17 * k, 0.128 * k]));
+    for (const sx of [-1, 1]) rig.torso.add(box(0.012 * k, 0.16 * k, 0.012 * k, zip, [sx * 0.045 * k, 0.33 * k, 0.13 * k]));
+    rig.torso.add(loft(R([[0.47, 0.3, 0.12, -0.11], [0.4, 0.34, 0.14, -0.12], [0.33, 0.24, 0.1, -0.12]], k), shirt, 8));
+  }
+  if (spec.tank) {
+    // the scoop: chest and shoulders show above the neckline, two straps over them
+    rig.torso.add(loft(R([[0.452, 0.19, 0.13, -0.015], [0.43, 0.3, 0.17, -0.004], [0.39, 0.32, 0.2, 0.012]], k, 0.9), skinTone, 10));
+    for (const sx of [-1, 1]) rig.torso.add(box(0.045 * k, 0.06 * k, 0.2 * k, shirt, [sx * 0.11 * k, 0.43 * k, 0]));
+  }
   if (kind === 'miguel' || kind === 'habib' || kind === 'clerk') {
     // shop apron, hanging from the chest
     const { k } = rig;

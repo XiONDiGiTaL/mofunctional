@@ -397,6 +397,14 @@ export const CONFIG = {
     moveInDays: 7,
     moveInAffection: 55,
     cheekAffection: { stephanie: 42, melanie: 58, diana: 72 },
+    // hugs, a kiss on his cheek, holding hands: the affection each needs before it is offered
+    // (a girlfriend always), and what the first of each kind in a day is worth
+    gestures: { hug: 30, kiss: 45, hand: 55 },
+    gestureValues: {
+      hug: { affection: 2, morale: 4, stress: -4 },
+      kiss: { affection: 3, morale: 5, stress: -3 },
+      hand: { affection: 2, morale: 4, stress: -5 },
+    },
     cheekCooldownMinutes: 24 * 60,
     afterglowHours: 24,
     giftCooldownDays: 3,

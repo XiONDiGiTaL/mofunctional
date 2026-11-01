@@ -26,10 +26,13 @@ export const PARTNER_KEYS = ['stephanie', 'melanie', 'diana'];
 export const partner = (id) => (PARTNER_KEYS.includes(id) ? CONFIG.partners[id] : null);
 export const isPartnerId = (id) => PARTNER_KEYS.includes(id);
 
-/** Hours each of them is around the block. Diana is a morning person; that is the joke. */
+/**
+ * Hours each of them is awake and answering (texts, flirting, dates). Where they actually are
+ * hour by hour lives in world/schedules.js. Diana is a morning person; that is the joke.
+ */
 const AVAILABILITY = {
-  stephanie: [[10 * 60, 23 * 60]],
-  melanie: [[9 * 60, 21 * 60]],
+  stephanie: [[10 * 60, 24 * 60], [0, 60]],
+  melanie: [[7 * 60, 21 * 60]],
   diana: [[7 * 60, 19 * 60]],
 };
 
@@ -51,6 +54,7 @@ export function romanceState(s) {
     p.lastCheeksAt = Number(p.lastCheeksAt) || -99999;
     p.lastGiftDay = Number(p.lastGiftDay) || 0;
     p.householdDay = Number(p.householdDay) || 0;
+    p.gestureDay = p.gestureDay && typeof p.gestureDay === 'object' ? p.gestureDay : {};
   }
   r.liveIn = PARTNER_KEYS.includes(r.liveIn) ? r.liveIn : null;
   // repair: a live-in flag must match the one live-in partner and her rent share must see it
@@ -465,6 +469,60 @@ export function breakUp(g, id) {
   logLine(g, `Broke up with ${p.name}.`, 'bad');
   g.toast(`${p.name} takes her things and does not slam the door, which is worse.`, 'bad');
   return true;
+}
+
+/* ------------------------------------------------------------------ hugs, hands, kisses */
+
+const GESTURE_LINES = {
+  hug: {
+    stephanie: ['She hugs like she means it and lets go like she does not.', '"Okay. That was a good one."'],
+    melanie: ['She hugs you properly, the way people hug at airports.', '"You needed that. Do not argue."'],
+    diana: ['A short hug, a firm one. Then she checks her watch, but slower than usual.', '"Fine. One more."'],
+  },
+  kiss: {
+    stephanie: ['A kiss on the cheek and a grin, like she got away with something.', '"Do not make it weird."'],
+    melanie: ['She kisses your cheek and fixes your collar while she is there.', '"Hi. Hello. That is all."'],
+    diana: ['She kisses your cheek, quick and precise, and that is somehow the best part of your week.', '"Do not tell anyone. I have a reputation."'],
+  },
+  hand: {
+    stephanie: ['She swings your hand a little when you walk. On purpose.'],
+    melanie: ['She laces her fingers through yours like it has always been that way.'],
+    diana: ['She takes your hand and sets the pace. It is a brisk pace.'],
+  },
+};
+
+/** "+affection today" or "again" — so a hug can be a hug without being a farm. */
+export function gestureSub(s, id, type) {
+  const st = partnerState(s, id);
+  return st.gestureDay[type] === dayOf(s.clock.m) ? 'again' : '+affection';
+}
+
+/**
+ * A hug, a kiss on his cheek, or her hand in his. The world plays it; this does the numbers: the
+ * first of each kind in a day is worth affection, morale and a little less stress; after that it
+ * is still nice, and only nice.
+ */
+export function gesture(g, id, type) {
+  const s = g.state;
+  const p = partner(id);
+  if (!p) return null;
+  const st = partnerState(s, id);
+  const day = dayOf(s.clock.m);
+  const fresh = st.gestureDay[type] !== day;
+  const val = CONFIG.romance.gestureValues[type] || { affection: 1, morale: 2, stress: -2 };
+  if (fresh) {
+    st.gestureDay[type] = day;
+    st.affection = clamp(st.affection + val.affection, 0, 100);
+    bump(s, 'morale', val.morale);
+    bump(s, 'stress', val.stress);
+  } else {
+    bump(s, 'morale', 1);
+  }
+  st.lastTalkDay = day;
+  const line = pick(GESTURE_LINES[type]?.[id] || ['She smiles.']);
+  g.toast(line, 'good');
+  logLine(g, `${p.name}: ${type === 'hand' ? 'holding hands' : type === 'kiss' ? 'a kiss on the cheek' : 'a hug'}.`, 'good');
+  return { fresh, affection: st.affection };
 }
 
 /* ------------------------------------------------------------------ Cheeks */

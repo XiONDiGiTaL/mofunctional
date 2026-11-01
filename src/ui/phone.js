@@ -21,6 +21,8 @@ import * as rent from '../systems/rent.js';
 import * as romance from '../systems/romance.js';
 import * as clinic from '../systems/clinic.js';
 import { ENDINGS } from '../systems/endings.js';
+import { strangerThumb } from './thumbs.js';
+import { partnerWhereabouts, PARTNER_SCHEDULES, PARTNER_AREA_NAMES } from '../world/schedules.js';
 
 const DEFAULT_REPLIES = [
   "ok",
@@ -743,7 +745,7 @@ export class Phone {
       const res = d.results[p.id];
       const avatar = p.partner
         ? `<img class="dprof__img" src="${portraitURL(p.partner, 'content')}" alt="" />`
-        : `<span class="dprof__img dprof__img--anon" style="--t:${p.tint}">${T(p.name[0])}</span>`;
+        : `<img class="dprof__img" src="${strangerThumb(p.id)}" alt="" />`;
       const verdict = res === 'match' ? '<span class="dprof__res dprof__res--match">MATCH · numbers swapped</span>'
         : res === 'ghost' ? '<span class="dprof__res">matched, then nothing</span>'
           : res === 'reject' ? '<span class="dprof__res dprof__res--no">no</span>' : '';
@@ -910,6 +912,8 @@ export class Phone {
           </div>
         </div>
         <div class="tiny mono-dim">${T(p.blurb)}</div>
+        <div class="tiny lwhere"><b>Now:</b> ${T(partnerWhereabouts(id, minuteOfDay(s.clock.m)))}</div>
+        <details class="lsched"><summary class="tiny">Her usual day</summary>${PARTNER_SCHEDULES[id].map((row) => `<div class="tiny mono-dim">${hhmm(row.from)}–${hhmm(row.to)} · ${T(row.away ? row.note : `${PARTNER_AREA_NAMES[row.area]}, ${row.note}`)}</div>`).join('')}</details>
         <div class="row row--wrap" style="margin-top:6px">
           <button class="btn btn--sm" data-act="datechat" data-arg="${id}">TALK</button>
           <button class="btn btn--sm" data-act="dateflirt" data-arg="${id}">FLIRT</button>
@@ -925,7 +929,7 @@ export class Phone {
         <span class="tiny">today's stack of profiles · send hearts · swap numbers</span>
       </button>
       ${cards}
-      <div class="tiny mono-dim">She has to be out and about: Stephanie after ten, Melanie through the day, Diana early. The park and the apartment are where you find them.
+      <div class="tiny mono-dim">Find her where her day takes her: the park, the Quik-Stop, the bodega, Habib's, the street. Get close and you can hug, hold hands, and let her kiss your cheek.
       <br><b>${T(romance.afterglowLabel(s) || 'No Afterglow right now.')}</b></div>
       ${this.footer()}`;
   }

@@ -2,15 +2,16 @@
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
-import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld } from './areas.js';
+import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
+import { Affection } from './affection.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
 import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
-import { isPartnerId, partnerState } from '../systems/romance.js';
+import { isPartnerId, partnerState, PARTNER_KEYS } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay } from '../core/util.js';
-import { scheduleTarget } from './schedules.js';
+import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES } from './schedules.js';
 import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
@@ -84,6 +85,7 @@ export class World {
   clearArea() {
     this.eating?.stop();
     this.handoff?.stop();
+    this.affection?.stop();
     this.substance?.stop();
     this.dance?.stop();
     this.collapse?.stop();
@@ -182,6 +184,25 @@ export class World {
       rig.npcDef = npc;
       // the three women carry a heart until one of them is actually his girlfriend
       if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
+    }
+    // Stephanie, Melanie and Diana go where their day takes them (schedules.js): each of them has
+    // a rig in every area she ever visits, shown only while her schedule has her here
+    if (PARTNER_AREA_NAMES[id]) {
+      const already = new Set(this.area.npcs.map((n) => n.kind));
+      for (const pid of PARTNER_KEYS) {
+        if (already.has(pid)) continue;
+        const rig = createNPC(pid);
+        rig.npcDef = { kind: pid, partner: true, talk: `partner_${pid}`, roam: 0.5 };
+        rig.root.visible = false;
+        this.root.add(rig.root);
+        this.npcRigs.push(rig);
+        if (!partnerState(g.state, pid).girlfriend) this.addHeart(rig, pid);
+        this.interactables.push({
+          id: `partner_${pid}`, label: `Talk to ${CONFIG.partners[pid].name}`, sub: '', x: 0, z: 0, radius: 1.6, hidden: true,
+          action: (gg) => partnerMenu(gg, pid),
+        });
+        this.partnerPresence(rig, 0, g, true);
+      }
     }
     // a talk prompt belongs to a person, not to the spot they started on: tie each one to its rig
     for (const rig of this.npcRigs) {
@@ -304,6 +325,94 @@ export class World {
     }
     return this.npcRigs.length;
   }
+
+  /**
+   * One of the three, in this area or not, by her schedule. Arriving while Mo is here she comes in
+   * through the area's door and walks to her spot; leaving, she walks out through it. On a fresh
+   * load she is simply where she should be.
+   */
+  partnerPresence(rig, dt, g, fresh = false) {
+    const def = rig.npcDef;
+    const row = partnerTarget(def.kind, minuteOfDay(g.state.clock.m));
+    const here = !!row && !row.away && row.area === this.areaId;
+    const talk = rig.talkIt || this.interactables.find((it) => it.id === def.talk);
+    if (talk) talk.sub = here ? row.note : '';
+    if (rig.holding && !here) {
+      // her day moves on even when his hand is in hers
+      this.affection.letGo();
+      g.toast(`${CONFIG.partners[def.kind].name} has to go${row?.note ? ` (${row.note})` : ''}. She squeezes your hand first.`, 'info');
+    }
+    if (rig.holding || this.affection?.beat?.rig === rig) { rig.walking = rig.holding ? this.walking : false; return; }
+    const door = this.area.spawn;
+    if (here) {
+      if (!rig.root.visible || rig.partnerRow !== row) {
+        if (!rig.root.visible) {
+          rig.root.visible = true;
+          if (fresh) rig.root.position.set(row.x, 0, row.z);
+          else rig.root.position.set(door.x, 0, door.z);
+        }
+        rig.partnerRow = row;
+        rig.leaving = false;
+        rig.wander = null;
+        rig.partnerWalk = { x: row.x, z: row.z, t: 0 };
+      }
+    } else if (rig.root.visible) {
+      if (fresh) { rig.root.visible = false; rig.partnerRow = null; }
+      else if (!rig.leaving) { rig.leaving = true; rig.partnerRow = null; rig.partnerWalk = { x: door.x, z: door.z, t: 0 }; }
+    }
+    if (talk) talk.hidden = !here || !rig.root.visible;
+    if (!rig.root.visible) { rig.walking = false; return; }
+    const walk = rig.partnerWalk;
+    if (walk) {
+      walk.t += dt;
+      const dx = walk.x - rig.root.position.x;
+      const dz = walk.z - rig.root.position.z;
+      const dist = Math.hypot(dx, dz);
+      // shelves and counters can stand between the door and her spot: after a few seconds of
+      // trying she is simply there (or gone), rather than pacing into a fridge
+      if (dist < 0.2 || walk.t > 7) {
+        if (walk.t > 7) rig.root.position.set(walk.x, 0, walk.z);
+        rig.partnerWalk = null;
+        rig.walking = false;
+        if (rig.leaving) { rig.root.visible = false; rig.leaving = false; if (talk) talk.hidden = true; }
+        return;
+      }
+      rig.walking = true;
+      const step = Math.min(dist, 1.0 * dt);
+      const nx = rig.root.position.x + (dx / dist) * step;
+      const nz = rig.root.position.z + (dz / dist) * step;
+      if (!this.blocked(nx, nz)) { rig.root.position.x = nx; rig.root.position.z = nz; }
+      rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
+      return;
+    }
+    // at her spot: the same small idle patch as everyone else
+    this.patrolIdle(rig, dt);
+  }
+
+  /** Mo and one of the three: 'hug' or 'kiss' (she kisses his cheek). */
+  playAffection(type, kind) {
+    if (this.mode !== 'play') return false;
+    const rig = this.npcRigs.find((r) => r.npcDef?.kind === kind && r.root.visible);
+    if (!rig) return false;
+    if (!this.affection) this.affection = new Affection(this);
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    return this.affection.play(type, rig);
+  }
+
+  /** Walk around with her, hand in hand; `false` lets go. */
+  holdHands(kind, on = true) {
+    if (!this.affection) this.affection = new Affection(this);
+    if (!on) { this.affection.letGo(); return true; }
+    const rig = this.npcRigs.find((r) => r.npcDef?.kind === kind && r.root.visible);
+    if (!rig) return false;
+    this.affection.letGo();
+    this.affection.holdHands(rig);
+    return true;
+  }
+
+  holdingHands(kind) { return !!this.affection?.isHolding(kind); }
 
   /** Mo's half of the exchange: hand out, hand back, a smile. */
   playHandoff() {
@@ -440,7 +549,7 @@ export class World {
     // interrupted path): release it rather than strand the player
     if (s.flags.consuming && !this.substance?.active) s.flags.consuming = false;
     const canMove = !g.modalOpen && !g.phoneOpen && g.mode === 'play'
-      && !this.eating?.active && !this.handoff?.active && !this.substance?.active
+      && !this.eating?.active && !this.handoff?.active && !this.substance?.active && !this.affection?.active
       && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming;
 
     // Camera orbit: Q/E, the shoulder buttons, the right stick, or a mouse drag.
@@ -600,6 +709,9 @@ export class World {
         sleeping: settled && (mod >= 22 * 60 || mod < 7 * 60),
       });
     }
+    // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
+    if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();
+    this.affection?.update(dt);
 
     // street encounters, on a slow clock so they are events rather than background noise
     this.streetTimer = (this.streetTimer ?? 10) - dt;
@@ -840,6 +952,7 @@ export class World {
   patrolNPC(rig, dt, g) {
     const def = rig.npcDef;
     if (!def) return;
+    if (def.partner) { this.partnerPresence(rig, dt, g); return; }
 
     // A scheduled character walks to wherever they are supposed to be right now and stays
     // there until the window changes; unscheduled ones keep to a small patch near home.
@@ -873,6 +986,12 @@ export class World {
       return;
     }
 
+    this.patrolIdle(rig, dt);
+  }
+
+  /** Unscheduled (or settled) characters keep to a small patch near home: pick a spot, walk, stand. */
+  patrolIdle(rig, dt) {
+    const def = rig.npcDef || {};
     if (!rig.wander) {
       rig.wander = {
         homeX: rig.root.position.x,

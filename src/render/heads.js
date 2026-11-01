@@ -239,18 +239,21 @@ export const FACE_SPECS = {
     skin: '#ae7f6e', hair: '#3a281c', hairLight: '#5a4230', hairDark: '#1e150e', style: 'side',
     brow: '#30251a', eye: '#3a2c1e', lips: '#93604c', lipsLight: '#b07a62', age: 0.3, glasses: true,
   },
-  // ---- the three women on the block (all adults), painted in the same style as the cast
+  // ---- the three women on the block (all adults). Their faces come from the owner's partner
+  // sheet (assets/ref/partner_face_bank.png); these colours paint the hair and the back of the head
+  // to match it. Diana: brown, straight, to the shoulders. Stephanie: black, messy, past the
+  // shoulders. Melanie: black curls, a lot of them.
   stephanie: {
-    skin: '#d4a582', hair: '#c99a52', hairLight: '#ecc57e', hairDark: '#96702c', style: 'side',
-    brow: '#8a6a34', eye: '#5a6a4a', lips: '#b5716a', lipsLight: '#d1948a', age: 0.2, fem: true, jaw: 0.92,
+    skin: '#c39072', hair: '#141214', hairLight: '#2e2a2e', hairDark: '#060506', style: 'shag',
+    brow: '#141012', eye: '#3a2a1e', lips: '#a8705e', lipsLight: '#c48a76', age: 0.2, fem: true, jaw: 0.92,
   },
   melanie: {
-    skin: '#b17a56', hair: '#2e1d14', hairLight: '#4e3524', hairDark: '#160f0a', style: 'long',
-    brow: '#241811', eye: '#3a2618', lips: '#9a5348', lipsLight: '#c0756a', age: 0.3, fem: true, jaw: 0.93,
+    skin: '#b97a52', hair: '#18100c', hairLight: '#3a2618', hairDark: '#080504', style: 'curls',
+    brow: '#1a110c', eye: '#3a2618', lips: '#9a5a48', lipsLight: '#c07a66', age: 0.25, fem: true, jaw: 0.93,
   },
   diana: {
-    skin: '#9a6a4c', hair: '#171210', hairLight: '#332a24', hairDark: '#0a0706', style: 'bob',
-    brow: '#1a120c', eye: '#2c2018', lips: '#7f463a', lipsLight: '#a36252', age: 0.4, fem: true, jaw: 0.9,
+    skin: '#d39c82', hair: '#46281a', hairLight: '#653c24', hairDark: '#24140c', style: 'shoulder',
+    brow: '#3a2416', eye: '#4a3020', lips: '#c45a74', lipsLight: '#e07a92', age: 0.3, fem: true, jaw: 0.9,
   },
   nurse: {
     skin: '#c09a80', hair: '#241a14', hairLight: '#40302a', hairDark: '#100b08', style: 'long',
@@ -277,8 +280,8 @@ export function faceSpec(kind) {
 
 /** Where hair starts (t) at a given angle, for the back/side fill. */
 function hairStartT(a, S) {
-  const side = S.sideT ?? { bob: 0.2, long: 0.2, dread: 0.5, braids: 0.56, receding: 0.6, swept: 0.6, durag: 0.62, kufi: 0.62, beanie: 0.56, quiff: 0.6 }[S.style] ?? 0.6;
-  const back = S.backT ?? { bob: 0.16, long: 0.06, dread: 0.26, braids: 0.34, receding: 0.4, swept: 0.38, durag: 0.4, kufi: 0.45, beanie: 0.46, quiff: 0.38 }[S.style] ?? 0.4;
+  const side = S.sideT ?? { bob: 0.2, long: 0.2, shoulder: 0.2, shag: 0.2, curls: 0.24, dread: 0.5, braids: 0.56, receding: 0.6, swept: 0.6, durag: 0.62, kufi: 0.62, beanie: 0.56, quiff: 0.6 }[S.style] ?? 0.6;
+  const back = S.backT ?? { bob: 0.16, long: 0.06, shoulder: 0.04, shag: 0.04, curls: 0.04, dread: 0.26, braids: 0.34, receding: 0.4, swept: 0.38, durag: 0.4, kufi: 0.45, beanie: 0.46, quiff: 0.38 }[S.style] ?? 0.4;
   const k = smooth(Math.PI / 2, Math.PI, Math.abs(a));
   return side + (back - side) * k;
 }

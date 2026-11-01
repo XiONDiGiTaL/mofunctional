@@ -7,15 +7,18 @@ For every NPC this writes two JPEG data URLs:
              centre x 80), projected onto the low-poly skull as the 3D face texture
 plus the frame half-width and a sampled skin colour.
 
-Usage: python3 scripts/bake-npc-faces.py [assets/ref/npc_face_bank.png]
+Usage: python3 scripts/bake-npc-faces.py
 Panel boxes and landmarks (eye line, chin, centre, temple half-width; panel pixels) are measured
-from the 1024x1008 bank and listed below. Mo is not in here: he keeps his own sheet.
+from the 1024x1008 bank and listed below. The three women (Diana, Stephanie, Melanie) come from
+their own sheet, assets/ref/partner_face_bank.png (1024x1024, three tall panels), with an explicit
+portrait box because their panels are too tall to centre-crop. Mo is not in here: he keeps his
+own sheet.
 """
 import base64, io, json, sys
 from PIL import Image, ImageFilter
 
-src = sys.argv[1] if len(sys.argv) > 1 else 'assets/ref/npc_face_bank.png'
-im = Image.open(src).convert('RGB')
+BANK = Image.open('assets/ref/npc_face_bank.png').convert('RGB')
+PARTNERS = Image.open('assets/ref/partner_face_bank.png').convert('RGB')
 EYE_T = 0.515
 # kind: (panel box), eyeY, chinY, cx, halfW
 P = {
@@ -31,19 +34,27 @@ P = {
     'junkie':   ((691, 715, 854, 968), 128, 205, 82, 50),
     'clerk':    ((857, 715, 1021, 968), 128, 200, 84, 48),
 }
+# the three women: same landmarks, plus a portrait box (sheet pixels)
+P2 = {
+    'diana':     ((0, 0, 338, 1024), 455, 620, 172, 92, (22, 290, 322, 690)),
+    'stephanie': ((342, 0, 680, 1024), 450, 620, 170, 92, (362, 290, 662, 690)),
+    'melanie':   ((686, 0, 1024, 1024), 460, 622, 170, 90, (706, 290, 1006, 690)),
+}
 
 def jpeg(img, q=86):
     b = io.BytesIO(); img.save(b, 'JPEG', quality=q)
     return 'data:image/jpeg;base64,' + base64.b64encode(b.getvalue()).decode()
 
 out = {}
-for kind, (box, eye, chin, cx, hw) in P.items():
+entries = [(BANK, k, v, None) for k, v in P.items()] + [(PARTNERS, k, v[:5], v[5]) for k, v in P2.items()]
+for im, kind, (box, eye, chin, cx, hw), porbox in entries:
     x0, y0, x1, y1 = box
     panel = im.crop(box)
-    # portrait: centre-crop the panel to 3:4
+    # portrait: centre-crop the panel to 3:4 (or the explicit box)
     w, h = panel.size
     tw = int(h * 0.75)
-    por = panel.crop(((w - tw) // 2, 0, (w - tw) // 2 + tw, h)) if tw < w else panel
+    if porbox: por = im.crop(porbox)
+    else: por = panel.crop(((w - tw) // 2, 0, (w - tw) // 2 + tw, h)) if tw < w else panel
     por = por.resize((180, 240), Image.LANCZOS)
     # frontal: crown is derived so the eye line lands on the skull's eye line
     crown = chin - (chin - eye) / EYE_T
@@ -59,7 +70,7 @@ for kind, (box, eye, chin, cx, hw) in P.items():
     out[kind] = {'portrait': jpeg(por), 'frontal': jpeg(fr, 90), 'halfW': round(hw * s, 1), 'skin': skin}
     print(kind, skin, round(hw * s, 1))
 
-js = ("/**\n * NPC faces from the owner's reference bank (assets/ref/npc_face_bank.png).\n"
+js = ("/**\n * NPC faces from the owner's reference banks (assets/ref/npc_face_bank.png, partner_face_bank.png).\n"
       " * portrait: 180x240 HUD/phone portrait. frontal: 160x200 head-frame crop wrapped onto the 3D skull.\n"
       " * Regenerate with scripts/bake-npc-faces.py.\n */\n"
       "export const NPC_FACES = " + json.dumps(out, indent=1) + ";\n")
