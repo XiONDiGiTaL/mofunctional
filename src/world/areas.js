@@ -16,6 +16,8 @@ import { showFridge } from '../ui/fridge.js';
 import { STREET, BUILDINGS, building, streetSpawn } from './plan.js';
 import { partnerTarget } from './schedules.js';
 import { busMenu } from './places.js';
+import { buildVehicle } from './vehicles.js';
+import { ROAD } from './plan.js';
 import { signTex } from '../render/signs.js';
 import * as life from '../systems/life.js';
 import * as romance from '../systems/romance.js';
@@ -560,8 +562,28 @@ export function buildStreet(g) {
   };
   // parked along the far curb, clear of the crosswalks and of the near lane where a HailMary car
   // pulls up (one used to sit right on the park crosswalk, in the way of the crossing and the camera)
-  car(-7.2, 7.9, 0x5a6a78, 1);
-  car(17.4, 7.9, 0x6a4a3a, -1);
+  void car; // the old two-box car, kept for nowhere
+  // parked along both curbs: the new low-poly models, nose-to-tail like a real block. The near ones
+  // can be tried at night (searchCar); all of them are solid.
+  const parked = [];
+  for (const p of ROAD.parkedNear) {
+    const v = buildVehicle(p.type, p.color);
+    v.position.set(p.x, 0, ROAD.parkNearZ);
+    v.rotation.y = Math.random() < 0.5 ? 0 : Math.PI;
+    group.add(v);
+    parked.push({ ...p, z: ROAD.parkNearZ, len: v.userData.len, width: v.userData.width });
+  }
+  for (const p of ROAD.parkedFar) {
+    const v = buildVehicle(p.type, p.color);
+    v.position.set(p.x, 0, ROAD.parkFarZ);
+    v.rotation.y = Math.PI;
+    group.add(v);
+    parked.push({ ...p, z: ROAD.parkFarZ, len: v.userData.len, width: v.userData.width, far: true });
+  }
+  const parkedSolids = parked.map((p) => solid(p.x, p.z, p.len, p.width + 0.1, 1.4));
+  // the far sidewalk, so walking across the road ends somewhere
+  group.add(plane(60, 2.4, { name: 'farsidewalk', map: tex('sidewalk'), repeat: [20, 1] }, [3, 0.012, 10.3], [-Math.PI / 2, 0, 0]));
+  group.add(box(60, 0.18, 0.4, M.concrete, [3, 0.09, 9.25]));
 
   // street trees in planters, mailbox, news box, wall phone
   const tree = (tx, tz) => {
@@ -611,6 +633,10 @@ export function buildStreet(g) {
     { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
     { id: 'eastgate', label: 'Cross the street · park east gate', sub: 'past the lot', x: 28.4, z: 0.9, radius: 1.7, action: (gg) => { if (!gg.world?.playCross?.(28.4, 7.6, () => gg.goTo('park', 'eastgate'))) gg.goTo('park', 'eastgate'); } },
     { id: 'lotdice', label: 'The dice game by the wall', sub: 'late · $5 a roll · nobody asks your name', x: 29.9, z: -3.6, radius: 1.5, action: (gg) => lotDice(gg) },
+    // the near-curb parked cars: try the doors (at night)
+    ...ROAD.parkedNear.map((p, i) => ({ id: `parkedcar${i}`, label: 'Try the parked car', sub: `${p.type === 'convertible' ? 'the top is down. bold.' : 'see if anybody left it open'}`, x: p.x, z: 1.05, radius: 1.3, action: (gg) => searchCar(gg, i, p) })),
+    // across the road on foot, at the far curb: the park gate
+    { id: 'parkGateFar', label: 'Into Kestrel Park', sub: 'through the gate', x: 9.35, z: 10.2, radius: 1.6, action: (gg) => gg.goTo('park', 'street') },
     { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 6.6, z: -4.8, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
@@ -624,12 +650,15 @@ export function buildStreet(g) {
 
   return {
     group,
-    bounds: { ...STREET.bounds },
+    // the road is walkable now (traffic is solid and stops for him); the far sidewalk is the edge
+    bounds: { ...STREET.bounds, maxZ: 10.8 },
     // Mo walks the sidewalk, but the camera may hang out over the road (and a little past the
     // block's ends): the curb is not a wall. Treating it as one collapsed the arm whenever he
     // stood near the street and set off the sideways swing.
-    camBounds: { minX: STREET.bounds.minX - 2, maxX: STREET.bounds.maxX + 2, minZ: STREET.bounds.minZ, maxZ: STREET.roadZ[1] - 0.2 },
+    camBounds: { minX: STREET.bounds.minX - 2, maxX: STREET.bounds.maxX + 2, minZ: STREET.bounds.minZ, maxZ: 14.5 },
+    traffic: { lanes: [{ z: ROAD.laneEastZ, dir: 1 }, { z: ROAD.laneWestZ, dir: -1 }], x0: STREET.bounds.minX - 4, x1: STREET.bounds.maxX + 4, rate: [3, 9], bus: 0.07 },
     solids: [
+      ...parkedSolids,
       solid(-4.2, -5.2, 1.5, 1.0, 1.0), solid(-7.5, 0.2, 2.0, 0.7, 0.9), solid(6.5, -5.8, 2.3, 0.4),
       solid(9.5, -5.6, 0.7, 0.7, 0.9), solid(-13.5, -5.7, 0.7, 0.7, 0.9), solid(5.0, -6.2, 1.1, 0.4), solid(-12.6, -5.0, 0.8, 0.6, 0.95),
       solid(-5.0, 0.9, 0.5, 0.5, 0.65),
@@ -930,6 +959,49 @@ function lotDice(g) {
       { label: 'Walk away.', sub: '', effect: () => {} },
     ],
   });
+}
+
+/**
+ * A parked car at night: try the doors. Mostly locked. Sometimes change in the cupholder, a
+ * sandwich somebody forgot, a pack of loosies, once in a while something worth selling. Sometimes
+ * the alarm. In daylight, someone is always watching. Once per car per night.
+ */
+function searchCar(g, i, p) {
+  const s = g.state;
+  const mod = minuteOfDay(s.clock.m);
+  if (mod >= 6 * 60 && mod < 20 * 60) {
+    g.openModal({ kicker: 'KESTREL ST.', title: 'Broad Daylight', body: 'A woman on the third floor across the street is watching you with her whole face. You put your hands in your pockets and admire the car instead.', choices: [{ label: 'Nice car.', effect: () => {} }] });
+    return;
+  }
+  s.carsTried = s.carsTried || {};
+  const night = dayOf(s.clock.m - 6 * 60);
+  if (s.carsTried[i] === night) { g.toast('You already tried that one tonight. It did not get less locked.', 'info'); return; }
+  s.carsTried[i] = night;
+  g.advance(4);
+  bump(s, 'risk', 1);
+  const r = Math.random();
+  const open = p.type === 'convertible' || r < 0.38;
+  let body;
+  if (!open) {
+    if (Math.random() < 0.18) {
+      bump(s, 'stress', 8);
+      g.audio?.sfx?.('alarm');
+      body = 'Locked. You pull the handle once and the car SCREAMS. Every light on the block comes on. You walk away at the exact speed of a man with nothing to hide.';
+    } else body = 'Locked. All four doors. Somebody on this block learned a lesson once.';
+  } else {
+    const roll = Math.random();
+    if (roll < 0.4) { const cash = Math.round((0.25 + Math.random() * 3.5) * 100) / 100; g.earnMoney(cash, 'loose change'); body = `Open. ${money(cash)} in loose change in the cupholder, some of it sticky.`; }
+    else if (roll < 0.65) { const it = pick(['sandwich', 'bar', 'ramen', 'beans']); addItem(s, it, 1); body = `Open. A ${CONFIG.items[it].name.toLowerCase()} on the passenger seat, still sealed. Somebody is going to be sad about this.`; }
+    else if (roll < 0.8) { addItem(s, 'loosies', 1); body = 'Open. Half a pack of cigarettes in the door pocket. You leave the parking ticket where it is.'; }
+    else if (roll < 0.9) {
+      const vals = Object.values(CONFIG.items).filter((x) => x.kind === 'valuable');
+      const it = pick(vals);
+      addItem(s, it.id, 1);
+      bump(s, 'risk', 3);
+      body = `Open. Under the seat: a ${it.name}. You stand there for a second knowing exactly what kind of person picks it up. You pick it up.`;
+    } else body = 'Open. Nothing. Fast food bags and a cassette of somebody\'s wedding. You close the door gently, like that makes it better.';
+  }
+  g.openModal({ kicker: 'KESTREL ST. · LATE', title: 'The Parked Car', body, choices: [{ label: 'Keep walking.', effect: () => {} }] });
 }
 
 function speak(g, id, words = 10) {

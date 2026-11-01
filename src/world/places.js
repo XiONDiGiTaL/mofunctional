@@ -513,6 +513,7 @@ export function buildAvenue(g) {
     group,
     bounds: { minX: -15.5, maxX: 15.5, minZ: -5.6, maxZ: 1.3 },
     camBounds: { minX: -17, maxX: 17, minZ: -5.6, maxZ: 9 },
+    traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
     solids: [solid(3.0, -3.8, 2.2, 1.4), solid(12.5, 0.6, 0.3, 0.3)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
     spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),

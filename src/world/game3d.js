@@ -8,6 +8,7 @@ import { buildWalkup, buildAvenue, buildRestaurant } from './places.js';
 import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
 import { RideCar } from './ridecar.js';
+import { Traffic } from './traffic.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
@@ -100,6 +101,8 @@ export class World {
     this.collapse?.stop();
     this.dealerWalker?.remove();
     this.rideCar?.remove();
+    this.traffic?.remove();
+    this.traffic = null;
     this.crossing = null;
     if (this.titleScene) {
       this.titleScene.dispose();
@@ -257,6 +260,8 @@ export class World {
     // a HailMary car that is already waiting here is parked at the curb when he steps out
     if (!this.rideCar) this.rideCar = new RideCar(this);
     this.rideCar.sync(g, true);
+    // cars up and down the road, where there is a road
+    this.traffic = this.area.traffic ? new Traffic(this, this.area.traffic) : null;
   }
 
   /**
@@ -839,6 +844,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.dealerWalker?.update(dt);
     this.rideCar?.sync(g);
     this.rideCar?.update(dt);
+    this.traffic?.update(dt, g);
 
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {

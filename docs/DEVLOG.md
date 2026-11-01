@@ -10,6 +10,20 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Cars and traffic
+
+- `world/vehicles.js`: extruded side-profile bodies (compact, sedan, taxi, coupe, convertible,
+  gt) plus a bus; `randomCar` mixes types and 1999 colours. Used for parked cars, traffic and the
+  HailMary car.
+- `plan.js ROAD`: near/far parking lines and two lanes; parked spots clear the crosswalks; the
+  HailMary pickup slides into the nearest gap (`freeCurbX`).
+- Street: walkable road (bounds maxZ 10.8), a far sidewalk with a gate into the park, parked cars
+  as low (camera-ignored) solids, `searchCar` at night (once per car per night; locked, change,
+  food, loosies, a valuable, or the alarm).
+- `world/traffic.js`: spawn at the ends, keep a gap, stop for Mo in the lane, honk (new `honk`,
+  `honk2` sfx), moving solids so Mo cannot walk through cars. Kestrel and Ashby both have it.
+- 55 checks.
+
 ### Crossing the street; HailMary
 
 - A parked car sat on the park crosswalk (x 9.6), blocking the crossing and the camera; both

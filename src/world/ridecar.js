@@ -10,28 +10,15 @@ import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box } from '../render/retro.js';
 import { rideState, DESTINATIONS, fareTo, tooClose, ride } from '../systems/rides.js';
 import { money } from '../core/util.js';
+import { buildVehicle } from './vehicles.js';
+import { ROAD } from './plan.js';
 
-const LANE_Z = 2.5;
+const LANE_Z = ROAD.parkNearZ;
 
+/** The HailMary car: a black sedan with a pink light-up placard in the windshield. */
 function buildCar() {
-  const g = new THREE.Group();
-  const black = retroMaterial('car_black', { color: 0x0e0f12, ambient: 0.9 });
-  const trim = retroMaterial('car_trim', { color: 0x8a8e94 });
-  const glass = retroMaterial('car_glass', { color: 0x1a2430, emissive: 0.15 });
-  const head = retroMaterial('car_head', { color: 0xfff2c4, emissive: 1.2, unlit: true });
-  const tail = retroMaterial('car_tail', { color: 0xff2a1a, emissive: 1.0, unlit: true });
-  const tyre = retroMaterial('car_tyre', { color: 0x050505 });
-  g.add(box(4.2, 0.62, 1.7, black, [0, 0.55, 0]));
-  g.add(box(2.2, 0.5, 1.5, glass, [-0.2, 1.1, 0]));
-  g.add(box(2.3, 0.06, 1.56, black, [-0.2, 1.38, 0]));
-  g.add(box(4.24, 0.08, 1.72, trim, [0, 0.36, 0]));
-  for (const [x, z] of [[1.35, 0.78], [1.35, -0.78], [-1.35, 0.78], [-1.35, -0.78]]) g.add(box(0.62, 0.62, 0.22, tyre, [x, 0.31, z]));
-  for (const z of [0.55, -0.55]) {
-    g.add(box(0.06, 0.16, 0.34, head, [2.12, 0.62, z]));
-    g.add(box(0.06, 0.14, 0.3, tail, [-2.12, 0.62, z]));
-  }
-  // a little light-up placard in the windshield, so it reads as the ride
-  g.add(box(0.04, 0.16, 0.5, retroMaterial('car_placard', { color: 0xff6ab0, emissive: 1.2, unlit: true }), [0.92, 1.05, 0.25]));
+  const g = buildVehicle('sedan', 0x0e0f12);
+  g.add(box(0.04, 0.16, 0.5, retroMaterial('car_placard', { color: 0xff6ab0, emissive: 1.2, unlit: true }), [0.95, 1.05, 0.25]));
   return g;
 }
 

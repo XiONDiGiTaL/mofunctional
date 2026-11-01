@@ -284,6 +284,9 @@ export class Audio {
       case 'munch': this.noise(0.06, 0.11, 1900); setTimeout(() => this.noise(0.05, 0.07, 1300), 120); setTimeout(() => this.noise(0.05, 0.06, 1100), 250); return;
       case 'gulp': this.sweep(240, 120, 0.16, 'sine', 0.14); setTimeout(() => this.sweep(220, 110, 0.14, 'sine', 0.11), 260); return;
       case 'puff': return this.noise(0.5, 0.05, 700);
+      // a car horn: two flat, slightly sour tones on top of each other
+      case 'honk': this.blip(392, 0.32, 'square', 0.1); this.blip(466, 0.32, 'square', 0.08); return;
+      case 'honk2': this.blip(392, 0.12, 'square', 0.1); setTimeout(() => { this.blip(392, 0.14, 'square', 0.1); this.blip(466, 0.14, 'square', 0.08); }, 170); return;
       default: return this.blip(600, 0.04);
     }
   }

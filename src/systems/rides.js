@@ -13,7 +13,17 @@
 import { CONFIG } from '../core/config.js';
 import { money, pick } from '../core/util.js';
 import { pushMessage, logLine } from '../core/state.js';
-import { building, STREET, PARK } from '../world/plan.js';
+import { building, STREET, PARK, ROAD } from '../world/plan.js';
+
+/** On Kestrel the car pulls into the nearest gap between parked cars. */
+function freeCurbX(x) {
+  const clear = (cx) => ROAD.parkedNear.every((p) => Math.abs(p.x - cx) > 4.6);
+  for (let d = 0; d < 20; d += 0.5) {
+    if (clear(x + d)) return x + d;
+    if (clear(x - d)) return x - d;
+  }
+  return x;
+}
 
 const C = () => CONFIG.rides;
 
@@ -50,12 +60,12 @@ export function rideState(s) {
 export function pickupFor(g) {
   const area = g.world?.areaId || 'street';
   const mx = g.world?.mo?.root?.position?.x ?? 0;
-  if (area === 'street') return { area: 'street', x: Math.max(STREET.bounds.minX + 2, Math.min(STREET.bounds.maxX - 2, mx)) };
+  if (area === 'street') return { area: 'street', x: freeCurbX(Math.max(STREET.bounds.minX + 2, Math.min(STREET.bounds.maxX - 2, mx))) };
   if (area === 'avenue') return { area: 'avenue', x: Math.max(-13, Math.min(13, mx)) };
   if (area === 'restaurant') return { area: 'avenue', x: -4.5 };
-  if (area === 'park') return { area: 'street', x: PARK.gate.x };
+  if (area === 'park') return { area: 'street', x: freeCurbX(PARK.gate.x) };
   const b = building(area);
-  return { area: 'street', x: b ? b.door : building('apartment').door };
+  return { area: 'street', x: freeCurbX(b ? b.door : building('apartment').door) };
 }
 
 export function callRide(g) {

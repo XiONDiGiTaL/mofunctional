@@ -96,6 +96,7 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Amazin' online store, next-day delivery | done |
 | Walk across the street at the crosswalks; the parked car moved off the crossing | done |
 | HailMary car service: a car that shows up at the curb, destinations, "it's up the road" pushback | done |
+| Low-poly vehicle models from the owner's sheet; parked cars searchable at night; traffic that stops and honks, solid | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

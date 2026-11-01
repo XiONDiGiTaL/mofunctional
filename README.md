@@ -83,6 +83,7 @@ stress, dependence and risk for the day just ended.
 | **Kestrel Park** | across the road (Mo walks over the crosswalk by the Fellowship, or the one by the lot to the east gate): benches, a half-court, chess, a boombox, people |
 | **1104 Kestrel St.** | the walk-up west of the bodega: a lobby and four floors of hallway, real minutes on the stairs. A man asleep by the steps, Ray & Denise arguing on two, Mrs. Petrakis's soup in 3B, Squeak selling from his coat on four (a few items a day, hallway prices), Stephanie's door in 5C, the roof, and a knock on every door |
 | **Ashby Avenue** | by the B44 from the stop on Kestrel (or a 45-minute walk): people walking somewhere else, a newsstand (papers, scratch-offs), Ashby Pawn & Gold (sell a valuable now, cheap), a sax player |
+| **The road** | walkable now: cars parked along both curbs (new low-poly models — 90s compact, sedan, taxi, sports coupe, convertible, exotic GT, and the B44 bus — in street colours), and traffic in both lanes that keeps its distance, stops for Mo when he is in the road, leans on the horn, and drives on. Cars are solid. At night, the cars on the near curb can be tried: mostly locked, sometimes loose change, food, cigarettes or something worth selling, sometimes the alarm |
 | **The lot** | past the clinic: chain-link, a burnt-out Buick, a graffiti wall, a dice game after dark, and a crosswalk to the park's new east gate |
 | **Lucia's** | a red-sauce trattoria on Ashby: sit-down meals, and the best date on the list |
 

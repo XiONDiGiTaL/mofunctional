@@ -55,6 +55,28 @@ export const LANDMARKS = [
   { id: 'eastgate', name: 'Park · east gate', x: 28.4, z: 1.1, icon: 'park' },
 ];
 
+/**
+ * Kestrel's lanes: cars park along the near curb, traffic runs eastbound then westbound, and more
+ * cars park along the far curb. Parked spots stay clear of both crosswalks; a HailMary car pulls
+ * into a gap between them.
+ */
+export const ROAD = {
+  parkNearZ: 2.35,
+  laneEastZ: 4.4,
+  laneWestZ: 6.7,
+  parkFarZ: 8.35,
+  parkedNear: [
+    { x: -21.6, type: 'sedan', color: 0x5a6a78 }, { x: -16.4, type: 'compact', color: 0x7a1e1a },
+    { x: -12.2, type: 'sedan', color: 0x8a8c90 }, { x: -4.6, type: 'compact', color: 0x2a4a5a },
+    { x: 0.6, type: 'convertible', color: 0x1e3a6a }, { x: 15.4, type: 'sedan', color: 0xc8b070 },
+    { x: 20.6, type: 'coupe', color: 0xc8121a }, { x: 25.0, type: 'compact', color: 0x2a2c30 },
+  ],
+  parkedFar: [
+    { x: -18.5, type: 'compact', color: 0xa8a090 }, { x: -7.2, type: 'sedan', color: 0x3a5a3a },
+    { x: 3.0, type: 'taxi' }, { x: 17.4, type: 'sedan', color: 0x6a4a3a }, { x: 22.6, type: 'gt', color: 0xf2f2f0 },
+  ],
+};
+
 /** Where the dealer meets Mo: beside the apartment stoop, clear of both doors and the cart. */
 export const MEET_SPOT = { x: -7.6, z: -4.2, label: 'the hydrant by the 1120 stoop' };
 

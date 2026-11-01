@@ -34,6 +34,7 @@ import * as health from '../src/systems/health.js';
 import * as fights from '../src/systems/fights.js';
 import * as shopSys from '../src/systems/shop.js';
 import * as rides from '../src/systems/rides.js';
+import { ROAD } from '../src/world/plan.js';
 
 let passed = 0;
 let failed = 0;
@@ -925,6 +926,20 @@ check('rides: the car comes, waits, and leaves a no-show; same-block asks are re
   g.state.clock.m += CONFIG.rides.waitMinutes;
   rides.tickRide(g);
   eq(rides.rideState(g.state).status, 'none', 'no-show');
+  return true;
+});
+
+check('road: parked cars stay off both crosswalks; a HailMary pickup lands in a gap between them', () => {
+  for (const p of ROAD.parkedNear) {
+    eq(Math.abs(p.x - 9.35) > 4, true, `near ${p.x} clear of the park crosswalk`);
+    eq(Math.abs(p.x - 28.4) > 3, true, `near ${p.x} clear of the east crosswalk`);
+  }
+  const g = stubGame();
+  for (const x of [-21.6, 0.6, 15.4, 20.6]) {
+    g.world = { areaId: 'street', mo: { root: { position: { x } } } };
+    const p = rides.pickupFor(g);
+    eq(ROAD.parkedNear.every((c) => Math.abs(c.x - p.x) > 4.5), true, `pickup at ${p.x.toFixed(1)} clear`);
+  }
   return true;
 });
 
