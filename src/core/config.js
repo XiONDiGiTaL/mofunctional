@@ -704,9 +704,9 @@ export const CONFIG = {
     kidMorale: -3,
     dogLike: -25,
     copRisk: 14,
-    dealerHp: 3,
-    toughHp: 4,
-    civilianHp: 2,
+    dealerHp: 5,
+    toughHp: 7,
+    civilianHp: 3,
     fleeChance: 0.55,
   },
   // the subway: one fare, one train every so often, and a real wait if he misses it

@@ -85,6 +85,31 @@ check('a dealer takes a few and then can be searched exactly once', () => {
   eq(second.reason, 'searched');
 });
 
+check('nobody folds on the first punch', () => {
+  const { s, g } = stub();
+  const first = brawl.strike(g, { kind: 'passer_m', key: 'a', label: 'a man' });
+  eq(first.result, 'fight');
+  ok(first.hp >= 1, 'still standing after one');
+  ok(CONFIG.brawl.civilianHp >= 3, 'a civilian takes a few');
+  ok(CONFIG.brawl.toughHp > CONFIG.brawl.dealerHp, 'a thug lasts longer than a dealer');
+});
+
+check('two people do not share one health pool', () => {
+  const { s, g } = stub();
+  const a = brawl.strike(g, { kind: 'passer_m', key: 'one' });
+  const b = brawl.strike(g, { kind: 'passer_m', key: 'two' });
+  eq(a.hp, b.hp, 'each starts fresh');
+  eq(b.maxHp, a.maxHp);
+});
+
+check('a swing carries the running total, not the kind', () => {
+  const { s, g } = stub();
+  const first = brawl.strike(g, { kind: 'dex', key: 'dex' });
+  eq(first.hp, CONFIG.brawl.dealerHp - 1);
+  const second = brawl.strike(g, { kind: 'dex', key: 'dex', hp: first.hp, maxHp: first.maxHp });
+  eq(second.hp, first.hp - 1);
+});
+
 check('the gun is left where it fell', () => {
   ok(/Live by the gun/.test(brawl.GUN_REFUSAL), 'the line is the line');
 });

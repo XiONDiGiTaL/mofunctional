@@ -1,7 +1,7 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
-import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax } from './characters.js';
+import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
@@ -721,7 +721,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   /** One punch. The world answers for whoever it lands on. */
   throwPunch(g) {
     if ((this.punchCool || 0) > 0) return;
-    this.punchCool = 0.45;
+    this.punchCool = 0.34;
     this.punchT = 0.34;
     const rig = this.punchTarget();
     if (!rig) {
@@ -729,15 +729,20 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       g.toast('You swing at the air. The air takes it personally and does nothing.', 'info');
       return;
     }
-    const def = rig.npcDef || { kind: 'civilian' };
-    const key = def.kind || 'civilian';
-    const res = brawl.strike(g, { ...def, key });
+    const def = rig.npcDef || (rig === this.thug ? { kind: 'thug', tough: true, label: 'the man' } : { kind: 'civilian' });
+    // health is per body: two different civilians used to share one pool, so the second one
+    // dropped to the first one's leftovers and went down in a single punch
+    if (!rig.npcId) rig.npcId = `${def.kind || 'passer'}-${(this.npcSerial = (this.npcSerial || 0) + 1)}`;
+    const key = rig.npcId;
+    const maxHp = rig.brawlHpMax || brawl.hpFor(def);
+    const res = brawl.strike(g, { ...def, key, hp: rig.brawlHp, maxHp, label: def.label || def.name || def.kind });
+    if (typeof res.hp === 'number') { rig.brawlHp = res.hp; rig.brawlHpMax = maxHp; }
     g.audio?.sfx?.(res.result === 'refused' ? 'deny' : 'hit');
     g.toast(res.line, res.result === 'refused' || res.result === 'dog' ? 'bad' : 'info');
     if (res.result === 'cop') { this.startChase(g, 'cop'); return; }
     if (res.result === 'fled') { rig.flee = 5; return; }
     if (res.result === 'ko') {
-      this.knockDown(rig);
+      this.knockDown(rig, g);
       g.openModal({
         kicker: 'THE STREET · SOMEBODY IS DOWN',
         title: 'Out Cold',
@@ -754,10 +759,37 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     }
   }
 
-  knockDown(rig) {
+  knockDown(rig, g) {
     rig.down = true;
+    rig.downT = 0;
+    rig.downDay = g ? Math.floor(g.state.clock.m / 1440) : undefined;
+    rig.flee = 0;
+    rig.root.rotation.set(0, rig.root.rotation.y, 0);
     rig.root.rotation.z = Math.PI / 2;
-    rig.root.position.y = 0.18;
+    rig.root.position.y = 0.16;
+    animateDown(rig);
+  }
+
+  /** Somebody who is out does not walk, talk, patrol or animate: they lie there until morning. */
+  npcDown(rig, dt, s) {
+    if (rig.downDay !== undefined && Math.floor(s.clock.m / 1440) !== rig.downDay) {
+      this.getUp(rig);
+      return;
+    }
+    rig.downT = (rig.downT || 0) + dt;
+    if (rig.talkIt) rig.talkIt.visible = false;
+    animateDown(rig);
+  }
+
+  getUp(rig) {
+    rig.down = false;
+    rig.downT = 0;
+    rig.downDay = undefined;
+    rig.brawlHp = undefined;
+    rig.brawlHpMax = undefined;
+    rig.root.rotation.set(0, rig.root.rotation.y, 0);
+    rig.root.position.y = 0;
+    if (rig.talkIt) rig.talkIt.visible = true;
   }
 
   /** A cop has decided the conversation is over. */
@@ -942,10 +974,10 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   updateThug(dt) {
     const rig = this.thug;
     if (!rig) return;
+    if (rig.down) { animateDown(rig); return; }
     if (this.thugPunchT > 0) {
       this.thugPunchT = Math.max(0, this.thugPunchT - dt);
-      const k = Math.sin((1 - this.thugPunchT / 0.35) * Math.PI);
-      rig.armR.pivot.rotation.x = -1.5 * k;
+      punchPose(rig, 1 - this.thugPunchT / 0.34);
     }
     if (this.thugLeaving) {
       rig.root.rotation.y += Math.PI * dt * 2;
@@ -968,8 +1000,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
   /** A swing from the fight meter: Mo's arm, and on a miss, his. */
   playPunch(landed) {
-    this.punchT = 0.35;
-    if (!landed) { this.thugPunchT = 0.35; this.tilt = 1; }
+    this.punchT = 0.34;
+    if (!landed) { this.thugPunchT = 0.34; this.tilt = 1; }
   }
 
   /** Mo's half of the exchange: hand out, hand back, a smile. */
@@ -1277,8 +1309,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       withdrawal: s.stats.withdrawal,
       speed: 1,
     });
-    // a punch reads on the shoulder even though the walk cycle owns the rest of the arm
-    if (this.punchT > 0) this.mo.armR.pivot.rotation.x = -2.1 * Math.sin((1 - this.punchT / 0.34) * Math.PI);
+    // the swing is his whole body: wind up, drive through, recover
+    if (this.punchT > 0) punchPose(this.mo, 1 - this.punchT / 0.34);
     this.eating?.update(dt);
     this.handoff?.update(dt);
     this.substance?.update(dt);
@@ -1295,6 +1327,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const mod = minuteOfDay(s.clock.m);
     for (const rig of this.npcRigs) {
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
+      if (rig.down) { this.npcDown(rig, dt, s); continue; }
       this.patrolNPC(rig, dt, g);
       if (rig.talkIt) { rig.talkIt.x = rig.root.position.x; rig.talkIt.z = rig.root.position.z; }
       if (rig.heart) {
@@ -1334,13 +1367,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       // and the other kind of cop: high, near a patrol, at night, once
       else if (canMove && !this.thug && this.areaId !== 'precinct' && this.copNear(7) && police.crookedRoll(s, dt)) this.crookedCop(g);
     }
-    // a swing: his right arm out and back
-    if (this.punchT > 0) {
-      this.punchT = Math.max(0, this.punchT - dt);
-      const k = Math.sin((1 - this.punchT / 0.35) * Math.PI);
-      this.mo.armR.pivot.rotation.x = -1.5 * k;
-      this.mo.armR.elbow.rotation.x = -0.2 * k;
-    }
+    // a swing: timed here, posed with the rest of him where the animation is applied
+    if (this.punchT > 0) this.punchT = Math.max(0, this.punchT - dt);
 
     // street encounters, on a slow clock so they are events rather than background noise
     this.streetTimer = (this.streetTimer ?? 10) - dt;

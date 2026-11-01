@@ -591,6 +591,52 @@ function poseSax(rig, t) {
   if (rig.saxProp) rig.saxProp.rotation.z = 0.185 + pump * 0.014;
 }
 
+/**
+ * A punch with a body behind it: he winds the shoulder back, turns the hips and chest through
+ * the swing, drives the elbow open, and pulls the other hand in as a counterweight. `u` runs
+ * 0..1 across the swing. A straight arm held out at shoulder height was the whole animation
+ * before this, and it read like a man pointing at something.
+ */
+export function punchPose(rig, u) {
+  const swing = u < 0.32 ? u / 0.32 : u < 0.52 ? 1 : 1 - Math.min(1, (u - 0.52) / 0.48);
+  const wind = Math.max(0, 1 - u / 0.32);
+  const s = swing * (1 + 0.12 * wind);
+  // right arm: guard at the chin, elbow opens into the punch
+  rig.armR.pivot.rotation.set(-0.5 - 1.0 * s + 0.18 * wind, 0, 0.16 - 0.3 * s);
+  rig.armR.elbow.rotation.set(-1.5 + 1.38 * s, 0, 0);
+  // left arm comes back to the ribs, which is what makes it look like weight
+  rig.armL.pivot.rotation.set(0.3 * s, 0, -0.14 - 0.22 * s);
+  rig.armL.elbow.rotation.set(-1.15 - 0.45 * s, 0, 0);
+  // hips and chest turn into it; the head stays on the person he hit
+  rig.hips.rotation.y = -0.3 * s;
+  rig.torso.rotation.set(0.07 * s, -0.45 * s, 0.05 * s);
+  rig.head.rotation.set(0.04, 0.32 * s, 0);
+  rig.legL.pivot.rotation.x = -0.2 * s;
+  rig.legR.pivot.rotation.x = 0.24 * s;
+  rig.legL.knee.rotation.x = 0.12 * s;
+  rig.legR.knee.rotation.x = 0.06 * s;
+}
+
+/**
+ * Out cold on the pavement: limbs loose where they fell, chest still moving. The world lays the
+ * root down once; this keeps the body from getting back into the idle cycle and walking off
+ * while it lies there.
+ */
+export function animateDown(rig) {
+  rig.hips.position.y = rig.hipY - 0.02;
+  rig.hips.rotation.set(0, 0, 0);
+  rig.torso.rotation.set(0, 0, 0);
+  rig.legL.pivot.rotation.set(-0.3, 0, -0.18);
+  rig.legL.knee.rotation.set(0.55, 0, 0);
+  rig.legR.pivot.rotation.set(0.14, 0, 0.22);
+  rig.legR.knee.rotation.set(0.2, 0, 0);
+  rig.armL.pivot.rotation.set(0.18, 0, -1.1);
+  rig.armL.elbow.rotation.set(-0.4, 0, 0);
+  rig.armR.pivot.rotation.set(0.26, 0, 0.95);
+  rig.armR.elbow.rotation.set(-0.3, 0, 0);
+  rig.head.rotation.set(-0.14, 0.4, 0.12);
+}
+
 /** The same song, every day, a little better than it needs to be. */
 export function animateSax(rig, dt) {
   rig.saxT = (rig.saxT || 0) + dt;

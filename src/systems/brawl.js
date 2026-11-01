@@ -51,6 +51,14 @@ export function classify(kind = '', def = {}) {
   return 'civilian';
 }
 
+/** How many landed punches a kind of person takes before they go down. */
+export function hpFor(target = {}) {
+  const kind = classify(target.kind, target);
+  if (kind === 'tough') return C().toughHp;
+  if (kind === 'dealer') return C().dealerHp;
+  return C().civilianHp;
+}
+
 /** Can he swing right now? The world also checks that somebody is in range. */
 export function canSwing(s) {
   return s.clock.m - brawlState(s).lastSwingAt >= 1; // one swing a minute, in game time is too slow
@@ -100,29 +108,34 @@ export function strike(g, target = {}) {
     return { kind, result: 'cop', line: 'Your knuckles find the badge before the face. The radio is already at his mouth.' };
   }
 
-  // dealers and thugs take a few; civilians take one or two before they break
-  const hpMax = kind === 'tough' ? C().toughHp : kind === 'dealer' ? C().dealerHp : C().civilianHp;
+  // Every punch is worth one, and everybody takes more than one: nobody folds on the first hit.
+  // Health belongs to the person, not to their kind, so `key` must identify a body, and the
+  // world hands the running total back in on the next swing.
+  const maxHp = Number(target.maxHp) || hpFor(target);
   const id = target.key || target.kind || 'somebody';
-  const hp = Math.max(0, (b.hp[id] ?? hpMax) - (1 + (Math.random() < 0.35 ? 1 : 0)));
+  const label = target.label || (kind === 'civilian' ? 'somebody' : kind);
+  const before = Number.isFinite(target.hp) ? Math.min(target.hp, maxHp) : b.hp[id] ?? maxHp;
+  const hp = Math.max(0, before - 1);
   b.hp[id] = hp;
 
   if (hp <= 0) {
     delete b.hp[id];
     b.knockouts += 1;
     bump(s, 'risk', kind === 'civilian' ? 3 : 1);
-    logLine(g, `Knocked out ${id === 'civilian' ? 'somebody' : id}.`, 'bad');
-    return { kind, result: 'ko', hp: 0, line: pick(KO_LINES), lootable: true, id };
+    logLine(g, `Knocked out ${label}.`, 'bad');
+    return { kind, result: 'ko', hp: 0, maxHp, line: pick(KO_LINES), lootable: true, id, label };
   }
 
-  if (kind === 'civilian' && Math.random() < C().fleeChance) {
-    return { kind, result: 'fled', hp, line: pick(FLEE_LINES) };
+  // somebody who has taken two thinks about the rest of their evening
+  if (kind === 'civilian' && hp <= maxHp - 2 && Math.random() < C().fleeChance) {
+    return { kind, result: 'fled', hp, maxHp, line: pick(FLEE_LINES) };
   }
 
   // they hit back: a civilian's uncle, a dealer with a ring on, a thug with everything to lose
   const back = kind === 'civilian' ? 4 : kind === 'dealer' ? 7 : 10;
   bump(s, 'energy', -back);
   bump(s, 'stress', 5);
-  return { kind, result: 'fight', hp, hpMax, hitBack: back, line: pick(HIT_BACK[kind] || HIT_BACK.civilian) };
+  return { kind, result: 'fight', hp, maxHp, hitBack: back, line: pick(HIT_BACK[kind] || HIT_BACK.civilian) };
 }
 
 const KO_LINES = [
