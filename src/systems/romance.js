@@ -68,6 +68,35 @@ export function romanceState(s) {
   return r;
 }
 
+/** What she says to him across the apartment, unprompted. Kept here with the rest of her voice. */
+const HOME_CHAT = {
+  stephanie: [
+    '"Your ceiling has a stain shaped like Florida. I have been staring at it for an hour."',
+    '"I am not moving. The remote is mine and the couch has accepted me."',
+    '"Do not look at the fridge. I already looked at the fridge. There is nothing in the fridge."',
+    '"You are pacing. Sit down. Nothing gets solved by a man pacing in a kitchen this small."',
+  ],
+  melanie: [
+    '"I graded forty-one essays today. Forty-one. One of them was about you, somehow."',
+    '"There is soup. Do not ask what is in it, just eat it."',
+    '"Your rent is on the table and so is mine. Look at us, being adults."',
+    '"I am not nagging. I am narrating the thing you are about to do."',
+  ],
+  diana: [
+    '"I ran past the bodega and Miguel waved without looking up. It is the best part of my day."',
+    '"Coffee is made. I am going to be asleep by ten and you are not, and that is fine."',
+    '"You are doing the thing where you stand in the doorway and think. Out with it."',
+    '"I put a chair by the window. It is a chair for one. It can be a chair for two."',
+  ],
+};
+
+/** One line for whoever is in his kitchen. Falls back to her ordinary chat if she has none. */
+export function homeChat(id) {
+  const lines = HOME_CHAT[id];
+  if (lines && lines.length) return pick(lines);
+  return CONFIG.partners?.[id]?.chat?.[0] || '"Hey." She does not look up.';
+}
+
 export const partnerState = (s, id) => romanceState(s).partners[id];
 export const liveInPartner = (s) => { const r = romanceState(s); return r.liveIn ? CONFIG.partners[r.liveIn] : null; };
 export const isGirlfriend = (s, id) => !!romanceState(s).partners[id]?.girlfriend;

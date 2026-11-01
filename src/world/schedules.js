@@ -106,20 +106,92 @@ export const PARTNER_SCHEDULES = {
 
 export const PARTNER_AREA_NAMES = {
   street: 'Kestrel St.', park: 'Kestrel Park', quikstop: 'the Quik-Stop', bodega: "Miguel's bodega", habibs: "Habib's",
+  apartment: 'Unit 3B',
 };
+
+/**
+ * A live-in girlfriend's day, built around Unit 3B instead of the block.
+ *
+ * These rows replace her street day the moment she moves in, and they are the only place her home
+ * is described: she sleeps here, eats here, watches the TV here, and leaves for her shift, her
+ * errands and her own evening. The street rows above are untouched, so a girlfriend who has not
+ * moved in still lives her ordinary life — being somebody's girlfriend does not relocate anybody.
+ *
+ * `pose` is what she is doing with her body at that spot ('sit' folds her onto the couch, 'sleep'
+ * lies her down); `area: 'apartment'` is what the room reads to decide she is in it.
+ */
+export const LIVE_IN_SCHEDULES = {
+  // the night owl, at home: up late, asleep late, in the way of the fridge
+  stephanie: [
+    { from: 0, to: 7 * 60 + 30, area: 'apartment', x: -2.2, z: -2.2, note: 'asleep, diagonally, across the whole bed', pose: 'sleep' },
+    { from: 7 * 60 + 30, to: 11 * 60, area: 'apartment', x: 2.2, z: -1.0, note: 'awake first, smoking at the window', pose: 'sit' },
+    { from: 11 * 60, to: 14 * 60, area: 'street', x: -9.0, z: -3.4, note: 'on the 1120 stoop, doing nothing on purpose' },
+    { from: 14 * 60, to: 17 * 60, area: 'apartment', x: 2.2, z: -1.0, note: 'on the couch with the TV she has claimed', pose: 'sit' },
+    { from: 17 * 60, to: 19 * 60, area: 'bodega', x: -0.8, z: -1.2, note: 'buying cigarettes she will not share' },
+    { from: 19 * 60, to: 23 * 60, area: 'apartment', x: 1.0, z: 2.6, note: 'eating standing up at the counter' },
+    { from: 23 * 60, to: 24 * 60, area: 'apartment', x: -1.5, z: 1.2, note: 'late TV, volume low', pose: 'sit' },
+  ],
+  // the teacher: an early riser, out for school, home to grade and to eat
+  melanie: [
+    { from: 0, to: 6 * 60 + 15, area: 'apartment', x: -2.2, z: -2.2, note: 'asleep on her side, one arm off the bed', pose: 'sleep' },
+    { from: 6 * 60 + 15, to: 7 * 60 + 45, area: 'apartment', x: 2.0, z: -2.6, note: 'coffee, standing at the counter, already dressed' },
+    { from: 7 * 60 + 45, to: 15 * 60, away: true, note: 'teaching' },
+    { from: 15 * 60, to: 16 * 60, area: 'bodega', x: -0.8, z: -1.2, note: 'a buttered roll, because school' },
+    { from: 16 * 60, to: 18 * 60 + 30, area: 'apartment', x: 2.2, z: -1.0, note: 'grading papers on the couch', pose: 'sit' },
+    { from: 18 * 60 + 30, to: 20 * 60, area: 'habibs', x: 1.8, z: 0.6, note: "chicken over rice at Habib's" },
+    { from: 20 * 60, to: 22 * 60, area: 'apartment', x: 1.0, z: 2.6, note: 'doing the dishes she did not make dirty' },
+    { from: 22 * 60, to: 24 * 60, area: 'apartment', x: -1.5, z: 1.2, note: 'reading in bed with the lamp on', pose: 'sit' },
+  ],
+  // the morning person: a run before the block is up, out to work, home before dark
+  diana: [
+    { from: 0, to: 6 * 60, area: 'apartment', x: -2.2, z: -2.2, note: 'asleep by 22:30, like a functioning adult', pose: 'sleep' },
+    { from: 6 * 60, to: 7 * 60 + 30, area: 'street', x: 7.8, z: -4.2, note: 'running the block before it wakes up' },
+    { from: 7 * 60 + 30, to: 8 * 60 + 30, area: 'apartment', x: 2.0, z: -2.6, note: 'back from the run, drinking water at the sink' },
+    { from: 8 * 60 + 30, to: 9 * 60 + 15, area: 'quikstop', x: 2.7, z: -0.4, note: 'coffee, black, standing up' },
+    { from: 9 * 60 + 15, to: 17 * 60, away: true, note: 'at work in Park Slope' },
+    { from: 17 * 60, to: 19 * 60, area: 'street', x: 7.8, z: -4.2, note: 'off the bus, by the stop' },
+    { from: 19 * 60, to: 22 * 60 + 30, area: 'apartment', x: 2.2, z: -1.0, note: 'on the couch, feet on the coffee table', pose: 'sit' },
+    { from: 22 * 60 + 30, to: 24 * 60, area: 'apartment', x: -1.5, z: 1.2, note: 'in bed with the light off and her phone on', pose: 'sleep' },
+  ],
+};
+
+/**
+ * Where she moves around inside Unit 3B when she is home: a handful of spots that are known to be
+ * clear of the furniture (they are checked again at runtime, and anything blocked is dropped).
+ */
+export const PARTNER_HOME_SPOTS = [
+  { x: -1.9, z: 1.5 },
+  { x: 2.2, z: -1.0, pose: 'sit' },
+  { x: 1.0, z: 2.6 },
+  { x: 2.0, z: -2.6 },
+  { x: -1.1, z: 0.5 },
+  { x: -1.5, z: 1.2, pose: 'sit' },
+];
 
 const inWindow = (row, m) => (row.from > row.to ? (m >= row.from || m < row.to) : (m >= row.from && m < row.to));
 
-/** Where one of the three is at a minute of the day: a schedule row (never null for them). */
-export function partnerTarget(kind, minuteOfDay) {
-  const rows = PARTNER_SCHEDULES[kind];
+/**
+ * Where one of the three is at a minute of the day: a schedule row (never null for them).
+ * `liveIn` is the state's one live-in partner id; when it is this partner, her day is the
+ * apartment-based one instead of the block's. Every caller that knows the state should pass it,
+ * or the answer will disagree with where she actually is.
+ */
+export function partnerTarget(kind, minuteOfDay, liveIn = null) {
+  const rows = (liveIn && liveIn === kind && LIVE_IN_SCHEDULES[kind]) || PARTNER_SCHEDULES[kind];
   if (!rows) return null;
   return rows.find((row) => inWindow(row, minuteOfDay)) || rows[0];
 }
 
+/** Is she home in Unit 3B right now? The one question the apartment and the phone both ask. */
+export function partnerAtHome(kind, minuteOfDay, liveIn = null) {
+  if (!liveIn || liveIn !== kind) return false;
+  const row = partnerTarget(kind, minuteOfDay, liveIn);
+  return !!row && !row.away && row.area === 'apartment';
+}
+
 /** "Kestrel Park · grading papers by the bench", or "teaching" when she is off the map. */
-export function partnerWhereabouts(kind, minuteOfDay) {
-  const row = partnerTarget(kind, minuteOfDay);
+export function partnerWhereabouts(kind, minuteOfDay, liveIn = null) {
+  const row = partnerTarget(kind, minuteOfDay, liveIn);
   if (!row) return '';
   return row.away ? row.note : `${PARTNER_AREA_NAMES[row.area] || row.area} · ${row.note}`;
 }

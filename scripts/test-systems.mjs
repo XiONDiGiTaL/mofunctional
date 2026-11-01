@@ -23,7 +23,9 @@ import { migrate, SAVE_VERSION } from '../src/systems/migrate.js';
 import * as dating from '../src/systems/dating.js';
 import * as dealer from '../src/systems/dealer.js';
 import { earn } from '../src/core/state.js';
-import { partnerTarget, PARTNER_SCHEDULES, PARTNER_AREA_NAMES, strangerRunIns } from '../src/world/schedules.js';
+import { partnerTarget, partnerAtHome, PARTNER_SCHEDULES, LIVE_IN_SCHEDULES, PARTNER_AREA_NAMES, strangerRunIns } from '../src/world/schedules.js';
+import { Audio } from '../src/core/audio.js';
+import { ceilingFor, armLength, armMax, eyeHeight, liftFor } from '../src/world/cameraLimits.js';
 import { STRANGERS, STRANGER_BY_ID } from '../src/core/strangers.js';
 import * as social from '../src/systems/social.js';
 import * as block from '../src/systems/block.js';
@@ -996,6 +998,112 @@ check('laundromat: $60k, less weekly than 1104, and laundering needs it and lift
   Math.random = mr;
   eq(r.level, 1, 'level 1');
   eq(market.weeklyIncome(g.state) > before, true, 'more each week');
+  return true;
+});
+
+check('partner: a live-in girlfriend lives in Unit 3B on the same clock the world reads', () => {
+  // not living together: the street day is the one everybody else uses
+  eq(partnerTarget('stephanie', 3 * 60).away, true, 'ordinary night is off the map');
+  // moved in: the same minute is her bed, in the flat
+  const bed = partnerTarget('stephanie', 3 * 60, 'stephanie');
+  eq(bed.area, 'apartment', 'live-in rows name the apartment');
+  eq(!!bed.away, false, 'not away');
+  eq(bed.pose, 'sleep', 'asleep at 3am');
+  eq(partnerAtHome('stephanie', 3 * 60, 'stephanie'), true, 'home');
+  // she still has a life: midday she is out on the stoop, evening she is back with the TV
+  eq(partnerAtHome('stephanie', 12 * 60 + 30, 'stephanie'), false, 'out at midday');
+  eq(partnerTarget('stephanie', 12 * 60 + 30, 'stephanie').area, 'street', 'on the stoop');
+  eq(partnerAtHome('stephanie', 15 * 60, 'stephanie'), true, 'back in the afternoon');
+  // only the one who moved in changes
+  eq(partnerTarget('melanie', 3 * 60, 'stephanie').away, true, 'nobody else is relocated');
+  eq(partnerAtHome('melanie', 3 * 60, 'stephanie'), false, 'and nobody else is home');
+  return true;
+});
+
+check('partner: every live-in day covers 24 hours with no gaps or double rows', () => {
+  for (const [id, rows] of Object.entries(LIVE_IN_SCHEDULES)) {
+    // count how many rows contain each minute of the day — the same test the world does when it
+    // asks "is she here right now", not a subtraction, so a row ending at 24:00 cannot wrap
+    const hits = new Array(1440).fill(0);
+    for (const row of rows) {
+      for (let m = 0; m < 1440; m++) {
+        const wraps = row.from > row.to;
+        const inside = wraps ? (m >= row.from || m < row.to) : (m >= row.from && m < row.to);
+        if (inside) hits[m] += 1;
+      }
+    }
+    eq(hits.filter((c) => c === 0).length, 0, `${id}: no uncovered minute`);
+    eq(hits.filter((c) => c > 1).length, 0, `${id}: no double-booked minute`);
+  }
+  return true;
+});
+
+check('partner: being a girlfriend changes no schedule until she moves in', () => {
+  const s = createState();
+  const before = JSON.stringify(PARTNER_SCHEDULES);
+  romance.romanceState(s).partners.melanie.girlfriend = true;
+  eq(JSON.stringify(PARTNER_SCHEDULES), before, 'the street rows are untouched');
+  eq(partnerTarget('melanie', 9 * 60).away, true, 'a girlfriend still goes to work');
+  romance.romanceState(s).liveIn = 'melanie';
+  eq(partnerAtHome('melanie', 9 * 60, romance.romanceState(s).liveIn), false, 'live-in and at work');
+  eq(partnerAtHome('melanie', 23 * 60, romance.romanceState(s).liveIn), true, 'live-in and in bed');
+  return true;
+});
+
+check('audio: the music and effects buses are separate, clamped, and need no AudioContext', () => {
+  const a = new Audio();
+  a.setVolume(0.4);
+  a.setSfxVolume(0.8);
+  eq(a.volumes.music, 0.4, 'music');
+  eq(a.volumes.sfx, 0.8, 'sfx');
+  a.setSfxVolume(9);
+  eq(a.volumes.sfx, 1, 'clamped up');
+  a.setVolume(-4);
+  eq(a.volumes.music, 0, 'clamped down');
+  eq(a.ready, false, 'no context started by a volume change');
+  return true;
+});
+
+check('settings: an older save loads with an effects level instead of silent', () => {
+  const s = createState();
+  delete s.settings.sfxVolume;
+  const fresh = createState();
+  // what applyState does with a save: fresh defaults, then whatever the save had
+  const merged = { ...fresh.settings, ...s.settings };
+  eq(merged.sfxVolume, CONFIG.audio.sfxVolume, 'defaulted from CONFIG');
+  eq(typeof merged.volume, 'number', 'music volume kept');
+  return true;
+});
+
+check('camera: the indoor eye stays under the ceiling at every zoom setting', () => {
+  const ceil = ceilingFor({ camCeil: 2.7 });
+  eq(+ceil.toFixed(3), 2.4, 'apartment ceiling less a hand');
+  // the bug this replaces: 1.98 x 1.35 x 1.4 = 3.74 m of eye in a 2.7 m room
+  eq(+(1.98 * 1.35 * 1.4).toFixed(2), 3.74, 'what the old formula reached');
+  for (const h of [0.8, 1, 1.35]) {
+    for (const d of [0.7, 1, 1.4]) {
+      const y = eyeHeight(true, h, d, ceil);
+      eq(y <= ceil, true, `eye ${y} under ${ceil} at height ${h} distance ${d}`);
+      eq(y > 1.2, true, 'and still above his waist');
+      // the shortened-arm lift cannot push it through the ceiling either
+      const lifted = Math.min(ceil, y + (armMax(true, 2.45, d) - 0.42) * liftFor(true, false));
+      eq(lifted <= ceil, true, 'lift capped by the ceiling');
+    }
+  }
+  return true;
+});
+
+check('camera: zoom spends the room on the arm, and the street keeps its full range', () => {
+  const room = armLength(true, { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 });
+  eq(+room.toFixed(2), 2.45, 'a room wants most of its short side');
+  eq(+armMax(true, room, 1.4).toFixed(3), +(room * 1.25).toFixed(3), 'indoors, 25% more arm, not 40%');
+  eq(armMax(true, room, 0.7) < room, true, 'zooming in still shortens it');
+  const street = armLength(false);
+  eq(street, 4.1, 'the street arm');
+  eq(+armMax(false, street, 1.4).toFixed(2), 5.74, 'outdoors the distance slider still works');
+  eq(+armMax(false, street, 0.7).toFixed(2), 2.87, 'and so does zooming in');
+  eq(liftFor(true, false) < liftFor(false, false), true, 'a room lifts the eye less');
+  eq(armLength(true, { minX: 0, maxX: 3, minZ: 0, maxZ: 3 }), 1.8, 'tiny rooms have a floor');
   return true;
 });
 

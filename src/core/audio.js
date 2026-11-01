@@ -13,6 +13,7 @@ export class Audio {
     this.musicPlaying = false;
     this._level = 0;
     this._vol = CONFIG.audio.musicVolume;
+    this._sfx = CONFIG.audio.sfxVolume;
   }
 
   async init() {
@@ -27,7 +28,7 @@ export class Audio {
       return;
     }
     this.sfxGain = this.ctx.createGain();
-    this.sfxGain.gain.value = CONFIG.audio.sfxVolume;
+    this.sfxGain.gain.value = this._sfx;
     this.sfxGain.connect(this.ctx.destination);
 
     this.musicGain = this.ctx.createGain();
@@ -144,11 +145,26 @@ export class Audio {
     t.stopTimer = setTimeout(() => t.el.pause(), fade * 1000 + 120);
   }
 
+  /** Music bus level. Never restarts a track: it is a gain, and the track keeps its position. */
   setVolume(v) {
     this._vol = Math.max(0, Math.min(1, Number(v) || 0));
     if (this.musicGain) this.musicGain.gain.value = this._vol;
     // wired tracks take their level from the bus; an unwired fallback carries it itself
     if (this.current && !this.current.wired) this.current.el.volume = this._vol;
+  }
+
+  /**
+   * Everything the game synthesises goes through sfxGain — footsteps, doors, eating, the phone,
+   * voices — so one slider covers all of it without touching the soundtrack on the music bus.
+   */
+  setSfxVolume(v) {
+    this._sfx = Math.max(0, Math.min(1, Number(v) || 0));
+    if (this.sfxGain) this.sfxGain.gain.value = this._sfx;
+  }
+
+  /** Read back for the settings UI (before the context exists, the stored value is all there is). */
+  get volumes() {
+    return { music: this._vol, sfx: this._sfx };
   }
 
   /** 0..1 rms of the current music frame, smoothed. */

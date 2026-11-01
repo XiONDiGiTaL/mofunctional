@@ -181,6 +181,8 @@ export class Phone {
     };
     if (s.camDist !== undefined) set('camdist', `${Math.round(s.camDist * 100)}%`);
     if (s.camHeight !== undefined) set('camheight', `${Math.round(s.camHeight * 100)}%`);
+    if (s.volume !== undefined) set('musicvol', `${Math.round(s.volume * 100)}%`);
+    if (s.sfxVolume !== undefined) set('sfxvol', `${Math.round(s.sfxVolume * 100)}%`);
   }
 
   /**
@@ -949,7 +951,14 @@ export class Phone {
         <span class="tiny mono-dim">Distance pulls the arm back; height raises the eye on it.</span>
       </div>
       <div class="app__h">Volume</div>
-      <input type="range" min="0" max="100" value="${Math.round(s.settings.volume * 100)}" data-act="volume" style="width:100%" />
+      <div class="kv"><span class="mono-dim">Music</span><b data-live="musicvol">${Math.round((s.settings.volume ?? 0.7) * 100)}%</b></div>
+      <input type="range" min="0" max="100" value="${Math.round((s.settings.volume ?? 0.7) * 100)}" data-act="volume" style="width:100%" />
+      <div class="kv"><span class="mono-dim">Sound effects</span><b data-live="sfxvol">${Math.round((s.settings.sfxVolume ?? 0.5) * 100)}%</b></div>
+      <input type="range" min="0" max="100" value="${Math.round((s.settings.sfxVolume ?? 0.5) * 100)}" data-act="sfxvolume" style="width:100%" />
+      <div class="row" style="margin-top:4px">
+        <button class="btn btn--sm ${s.settings.muted ? 'btn--primary' : ''}" data-act="mute">${s.settings.muted ? 'UNMUTE' : 'MUTE ALL'}</button>
+        <span class="tiny mono-dim">Two buses: the soundtrack, and everything the game makes itself.</span>
+      </div>
       <div class="app__h">Save / Load</div>
       <div class="list">
         ${[1, 2, 3].map((n) => {
@@ -1027,7 +1036,7 @@ export class Phone {
           </div>
         </div>
         <div class="tiny mono-dim">${T(p.blurb)}</div>
-        <div class="tiny lwhere"><b>Now:</b> ${T(partnerWhereabouts(id, minuteOfDay(s.clock.m)))}</div>
+        <div class="tiny lwhere"><b>Now:</b> ${T(partnerWhereabouts(id, minuteOfDay(s.clock.m), s.romance?.liveIn))}</div>
         <details class="lsched"><summary class="tiny">Her usual day</summary>${PARTNER_SCHEDULES[id].map((row) => `<div class="tiny mono-dim">${hhmm(row.from)}–${hhmm(row.to)} · ${T(row.away ? row.note : `${PARTNER_AREA_NAMES[row.area]}, ${row.note}`)}</div>`).join('')}</details>
         <div class="row row--wrap" style="margin-top:6px">
           <button class="btn btn--sm" data-act="datechat" data-arg="${id}">TALK</button>
@@ -1319,7 +1328,9 @@ export class Phone {
       camreset() { g.setCamera?.('reset'); },
       togglecrt() { g.toggleCRT(); },
       toggle43() { g.toggle43(); },
-      volume(arg, num, elem) { s.settings.volume = Number(elem.value) / 100; g.audio.setVolume(s.settings.volume); },
+      volume(arg, num, elem) { g.setMusicVolume?.(elem ? Number(elem.value) / 100 : s.settings.volume); },
+      sfxvolume(arg, num, elem) { g.setSfxVolume?.(elem ? Number(elem.value) / 100 : (s.settings.sfxVolume ?? 0.5)); },
+      mute() { g.setMuted?.(!s.settings.muted); },
       save(arg) { g.saveSlot(Number(arg)); },
       load(arg) { g.loadSlot(Number(arg)); this.close(); },
       quitmenu() { this.close(); g.quitToMenu(); },

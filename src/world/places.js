@@ -487,9 +487,63 @@ export function buildAvenue(g) {
   // the pawn shop, gold letters on black
   group.add(box(1.1, 2.3, 0.12, M.door, [10.5, 1.15, -6.32]));
   group.add(plane(3.0, 0.6, { name: 'av_psign', map: signTex('signPawn', [{ text: 'ASHBY PAWN & GOLD', color: '#ffd23a', size: 10 }, { text: 'WE BUY ANYTHING (ALMOST)', color: '#e8e0c0', size: 6 }], { w: 128, h: 28, bg: '#0e0e0e', border: '#ffd23a' }), emissive: 1, unlit: true }, [10.5, 3.0, -6.3]));
-  // the newsstand: a green box with a man inside it
-  group.add(box(2.2, 2.2, 1.4, retroMaterial('av_kiosk', { color: 0x2a5a3a }), [3.0, 1.1, -3.8]));
-  group.add(box(2.0, 0.5, 0.2, retroMaterial('av_papers', { color: 0xe8e0c8 }), [3.0, 1.0, -3.0]));
+  // ---- the newsstand. An open stall rather than a green cube: a counter with a ledge, a roof, a
+  // striped awning, the papers stacked where you can read the front page from the street, a rack
+  // of magazines, and a man standing behind it who is actually in the scene (see the seller NPC
+  // below). Everything is boxes and planes in the same palette as the rest of the avenue.
+  const NEWS = {
+    body: retroMaterial('av_kiosk', { color: 0x2a5a3a }),
+    trim: retroMaterial('av_kiosk_trim', { color: 0x16331f }),
+    counter: retroMaterial('av_kiosk_counter', { color: 0x5a3f28, map: tex('wood') }),
+    paper: retroMaterial('av_papers', { color: 0xe8e0c8 }),
+    paper2: retroMaterial('av_papers2', { color: 0xd6cdb0 }),
+    brass: retroMaterial('av_kiosk_brass', { color: 0xc8a050, ambient: 0.95 }),
+    lamp: retroMaterial('av_kiosk_lamp', { color: 0xfff2c4, emissive: 1.1, unlit: true }),
+  };
+  group.add(box(2.3, 1.0, 0.62, NEWS.body, [3.0, 0.5, -3.12]));          // counter front
+  group.add(box(2.42, 0.08, 0.74, NEWS.counter, [3.0, 1.04, -3.08]));    // ledge
+  group.add(box(2.42, 0.06, 0.06, NEWS.brass, [3.0, 1.08, -2.73]));      // brass edge
+  group.add(box(2.3, 0.14, 0.62, NEWS.trim, [3.0, 0.07, -3.12]));        // kick plate
+  group.add(box(2.3, 2.2, 0.12, NEWS.body, [3.0, 1.12, -3.98]));         // back wall
+  for (const x of [1.92, 4.08]) group.add(box(0.12, 2.2, 1.0, NEWS.body, [x, 1.12, -3.5]));
+  group.add(box(2.46, 0.12, 1.14, NEWS.trim, [3.0, 2.26, -3.5]));        // roof
+  // the awning: eight stripes, tipped out over the counter
+  for (let i = 0; i < 8; i++) {
+    const stripe = box(0.31, 0.05, 0.72, retroMaterial(`av_awning${i % 2}`, { color: i % 2 ? 0xe8e0c8 : 0x2a5a3a }), [1.94 + i * 0.303, 2.12, -3.02]);
+    stripe.rotation.x = -0.2;
+    group.add(stripe);
+  }
+  group.add(plane(2.3, 0.42, { name: 'av_newsign', map: signTex('signNews', [{ text: 'NEWSSTAND', color: '#f4efdc', size: 15 }, { text: 'PAPERS · MAGAZINES · SCRATCH-OFFS', color: '#cfd8c8', size: 5 }], { w: 160, h: 32, bg: '#16331f', border: '#cfd8c8' }), emissive: 0.9, unlit: true }, [3.0, 2.55, -3.1]));
+  group.add(box(0.16, 0.10, 0.16, NEWS.lamp, [3.0, 2.18, -3.06]));       // bulb under the lip
+  // the papers: stacks on the ledge with the top copy face-up, so the headlines are readable
+  const PAGES = [
+    ['THE KESTREL DISPATCH', 'METS LOSE AGAIN; FANS "NOT SURPRISED, JUST TIRED"'],
+    ['THE KESTREL DISPATCH', 'CITY VOWS TO FIX POTHOLES "BY 2000"; POTHOLES UNMOVED'],
+    ['THE ASHBY LEDGER', 'Y2K: EXPERTS SAY ELEVATORS "PROBABLY FINE"'],
+    ['THE ASHBY LEDGER', 'GOLDEN FELLOWSHIP BUYS SECOND THEATER'],
+  ];
+  [2.16, 2.58, 3.42, 3.84].forEach((x, i) => {
+    group.add(box(0.34, 0.12 + (i % 2) * 0.05, 0.28, i % 2 ? NEWS.paper2 : NEWS.paper, [x, 1.14 + (i % 2) * 0.02, -3.06]));
+    const [head, sub] = PAGES[i];
+    group.add(plane(0.31, 0.25, {
+      name: `av_page${i}`,
+      map: signTex(`newsPage${i}`, [{ text: head, color: '#1a1a1a', size: 7 }, { text: sub, color: '#3a3a3a', size: 4 }], { w: 96, h: 76, bg: '#efe9d8', border: '#b8b0a0' }),
+      emissive: 0.55, unlit: true,
+    }, [x, 1.205 + (i % 2) * 0.02, -3.06], [-Math.PI / 2, 0, 0]));
+  });
+  // the magazine rack on the back wall: coloured covers, all facing out
+  const COVERS = [0xc8322a, 0x2a4a8a, 0xd8b93a, 0x8a2a8a, 0x2a7a5a, 0xc86a2a];
+  COVERS.forEach((c, i) => {
+    group.add(box(0.24, 0.32, 0.03, retroMaterial(`av_mag${i}`, { color: c }), [2.24 + i * 0.27, 1.52, -3.9]));
+    group.add(box(0.20, 0.05, 0.032, NEWS.paper, [2.24 + i * 0.27, 1.62, -3.905]));
+  });
+  // clutter: a crate of spare papers, a thermos, a radio, a stool, and a hand-written sign
+  group.add(box(0.46, 0.34, 0.36, NEWS.counter, [4.22, 0.17, -2.95]));
+  group.add(box(0.40, 0.10, 0.30, NEWS.paper, [4.22, 0.39, -2.95]));
+  group.add(box(0.10, 0.24, 0.10, retroMaterial('av_thermos', { color: 0x8a8a86 }), [3.98, 1.16, -3.2]));
+  group.add(box(0.28, 0.16, 0.14, retroMaterial('av_radio', { color: 0x2a2a2e }), [2.02, 1.16, -3.2]));
+  group.add(box(0.05, 0.18, 0.02, NEWS.brass, [3.62, 1.19, -2.96]));
+  group.add(plane(0.34, 0.16, { name: 'av_nochange', map: signTex('signNoChange', [{ text: 'NO CHANGE', color: '#2a2a2a', size: 9 }, { text: 'EXACT PLEASE', color: '#5a5a5a', size: 5 }], { w: 64, h: 32, bg: '#e8e0c0', border: '#a89870' }), unlit: true }, [3.62, 1.30, -2.96]));
   // the bus stop and its shelter
   group.add(box(0.12, 2.6, 0.12, M.metal, [12.5, 1.3, 0.6]));
   group.add(box(1.2, 0.5, 0.08, retroMaterial('av_bussign', { color: 0x2a4a6a, emissive: 0.15 }), [12.5, 2.5, 0.6]));
@@ -509,6 +563,9 @@ export function buildAvenue(g) {
     { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
     { kind: 'cop', x: -13.9, z: -5.0, rot: 0.3, still: true, act: 'talk' },
     { kind: 'cop2', x: -11.0, z: -5.2, rot: -0.4, still: true },
+    // the paper seller: a person behind the counter, not a voice inside a box. `talk` points at
+    // the newsstand prompt, so the prompt follows him and the papers are bought from him.
+    { kind: 'passer_m', x: 3.0, z: -3.55, rot: Math.PI, still: true, talk: 'av_news', act: 'talk' },
   ];
   const s = g.state;
   const interactables = [
@@ -516,7 +573,7 @@ export function buildAvenue(g) {
     { id: 'av_precinct', label: 'Enter the 84th Precinct', sub: 'the desk sergeant has seen everything', x: -12.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('precinct', 'avenue') },
     { id: 'av_laundry', label: "Enter Dee's Wash & Fold", sub: 'laundry · vending machines · a TV', x: 5.0, z: -5.2, radius: 1.4, action: (gg) => gg.goTo('laundromat', 'avenue') },
     { id: 'av_pawn', label: 'Ashby Pawn & Gold', sub: 'sell something, fast and cheap', x: 10.5, z: -5.2, radius: 1.5, action: (gg) => pawnMenu(gg) },
-    { id: 'av_news', label: 'The newsstand', sub: `a paper · ${money(0.5)}`, x: 3.0, z: -2.5, radius: 1.3, action: (gg) => newsstand(gg) },
+    { id: 'av_news', label: 'Buy a paper from the man in the box', sub: `papers · scratch-offs · ${money(0.5)}`, x: 3.0, z: -2.95, radius: 1.7, action: (gg) => newsstand(gg) },
     { id: 'av_sax', label: 'The sax player', sub: 'plays one song very well', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'ASHBY AVE.', title: 'The Sax Player', body: 'He plays the same song every day and every day it is better than it needs to be. His case has four dollars and a subway token in it.', choices: [
       { label: 'Drop a dollar in the case.', sub: '$1 · +morale', disabled: s.money < 1, effect: () => { gg.spendMoney(1, 'sax player'); bump(s, 'morale', 5); bump(s, 'stress', -3); gg.toast('He nods without stopping. That is the deal.', 'good'); } },
       { label: 'Stand and listen for a song.', sub: '10 min', effect: () => { gg.advance(10); bump(s, 'morale', 3); bump(s, 'stress', -4); } },
@@ -529,6 +586,18 @@ export function buildAvenue(g) {
     timer -= dt;
     if (timer > 0 || gg.modalOpen || gg.phoneOpen) return;
     timer = 18 + Math.random() * 14;
+    // the man in the box calls out when Mo is near enough to be a customer; otherwise the
+    // avenue's own ambience carries on as before
+    const pos = gg.world?.mo?.root?.position;
+    if (pos && Math.hypot(pos.x - 3.0, pos.z + 2.95) < 4.5 && Math.random() < 0.5) {
+      gg.toast(pick([
+        '"Paper! Paper! Mets lose again!" He says it in the flat voice of a man who has said it eleven thousand times.',
+        'The man in the box taps the stack twice, which is how you know it is today\'s.',
+        '"Scratch-offs are behind the counter. Everything is behind the counter. That is what a counter is."',
+        'He turns the radio down for you, which is the closest thing to a welcome on this avenue.',
+      ]), 'info');
+      return;
+    }
     gg.toast(pick([
       'A cab leans on its horn for a full block for no reason anyone can see.',
       'Somebody walks past on a phone the size of a brick, yelling "SELL" into it.',
@@ -542,7 +611,7 @@ export function buildAvenue(g) {
     bounds: { minX: -15.5, maxX: 15.5, minZ: -5.6, maxZ: 1.3 },
     camBounds: { minX: -17, maxX: 17, minZ: -5.6, maxZ: 9 },
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
-    solids: [solid(3.0, -3.8, 2.2, 1.4), solid(12.5, 0.6, 0.3, 0.3)],
+    solids: [solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
     spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
@@ -565,7 +634,7 @@ function newsstand(g) {
   ];
   g.openModal({
     kicker: 'ASHBY AVE. · NEWSSTAND', title: 'The Paper',
-    body: `The man in the box has a radio, a cigar he is not smoking, and every paper in the city.\n\nToday: "${pick(HEADLINES)}"`,
+    body: `The man in the box has a radio, a cigar he is not smoking, and every paper in the city. The awning has been the same two greens since 1987 and he will tell you that without being asked.\n\nToday: "${pick(HEADLINES)}"`,
     choices: [
       { label: 'Buy a paper and read it.', sub: `${money(0.5)} · 20 min · +morale`, disabled: s.money < 0.5, effect: () => { if (!g.spendMoney(0.5, 'newspaper')) return; g.advance(20); bump(s, 'morale', 4); bump(s, 'stress', -3); g.toast('You read the whole thing, including the horoscope. Yours says "a door opens." It does not say which.', 'good'); } },
       { label: 'Scratch-off ticket.', sub: `${money(2)} · probably not`, disabled: s.money < 2, effect: () => {

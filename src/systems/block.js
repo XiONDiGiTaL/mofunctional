@@ -133,7 +133,9 @@ export function sightings(s) {
   const day = dayOf(s.clock.m);
   const out = [];
   for (const id of romance.PARTNER_KEYS) {
-    const row = partnerTarget(id, mod);
+    // the same live-in id the apartment and the world use, or the post would put her on the
+    // block while she is asleep in Mo's bed
+    const row = partnerTarget(id, mod, s.romance?.liveIn);
     if (!row || row.away) continue;
     const who = romance.partnerState(s, id).met ? CONFIG.partners[id].name : PARTNER_SIGHTINGS[id];
     out.push({ text: `${cap(who)} is at ${PARTNER_AREA_NAMES[row.area]} right now, ${row.note}.`, who: 'Lenny' });
