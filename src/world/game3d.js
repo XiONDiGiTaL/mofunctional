@@ -5,6 +5,8 @@ import { createMo, createAddison, createNPC, createCat, animateMo, animateAddiso
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant } from './places.js';
+import * as fights from '../systems/fights.js';
+import { FightMeter } from '../ui/fight.js';
 import { TitleScene } from './title.js';
 import { EatAnim } from './eating.js';
 import { DealerWalker, HandoffBeat } from './handoff.js';
@@ -90,6 +92,8 @@ export class World {
     this.eating?.stop();
     this.handoff?.stop();
     this.affection?.stop();
+    this.fightMeter?.close();
+    this.removeThug?.();
     this.substance?.stop();
     this.dance?.stop();
     this.collapse?.stop();
@@ -450,6 +454,90 @@ export class World {
 
   holdingHands(kind) { return !!this.affection?.isHolding(kind); }
 
+  /** A man in a grey hood steps out in front of Mo and wants his wallet. */
+  startMugging(g) {
+    const s = g.state;
+    const mo = this.mo.root;
+    const yaw = mo.rotation.y;
+    const rig = createNPC('unknown');
+    rig.root.position.set(mo.position.x + Math.sin(yaw) * 1.4, 0, mo.position.z + Math.cos(yaw) * 1.4);
+    rig.root.rotation.y = yaw + Math.PI;
+    this.root.add(rig.root);
+    this.thug = rig;
+    this.walking = false;
+    this.vel?.set(0, 0, 0);
+    this.moveTarget = null;
+    const fight = fights.startMugging(g);
+    const end = (result) => {
+      if (result === 'won') {
+        this.thugLeaving = true;
+        g.toast('He backs off, then runs. Your hand hurts in a way you will remember.', 'good');
+      } else if (result === 'lost') {
+        const r = fights.robbed(g);
+        this.removeThug();
+        g.toast(`Everything goes sideways and then dark. They took ${r.cash ? `$${r.cash.toFixed(2)}` : 'nothing (you had nothing)'}${r.taken.length ? ` and ${r.taken.join(', ')}` : ''}.`, 'bad');
+        g.collapseSequence?.('beaten');
+      } else {
+        this.thugLeaving = true;
+      }
+    };
+    g.openModal({
+      kicker: 'LATE · SOMEBODY IN A GREY HOOD',
+      title: 'Wallet',
+      body: `${fight.line}
+
+He is close enough that you can smell the cold on his jacket. Nobody else is around. Of course nobody else is around.`,
+      choices: [
+        { label: 'Fight.', sub: `energy ${Math.round(s.stats.energy)} · every miss costs`, effect: () => {
+          if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
+          setTimeout(() => this.fightMeter.open({ hp: fight.hp, onSwing: (landed) => fights.exchange(g, fight, landed), done: end }), 60);
+        } },
+        { label: 'Hand over some cash.', sub: 'about a quarter of it', effect: () => { const n = fights.payOff(g); g.toast(`$${n.toFixed(2)}. He counts it in front of you, which is the insulting part.`, 'bad'); end('paid'); } },
+        { label: 'Run.', sub: 'if your legs are up to it', effect: () => {
+          if (fights.tryRun(g)) { g.toast('You run. You run like 1993. He does not bother.', 'info'); end('ran'); }
+          else {
+            g.toast('He catches your jacket. Now you have to fight.', 'bad');
+            if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
+            setTimeout(() => this.fightMeter.open({ hp: fight.hp, onSwing: (landed) => fights.exchange(g, fight, landed), done: end }), 60);
+          }
+        } },
+      ],
+    });
+  }
+
+  updateThug(dt) {
+    const rig = this.thug;
+    if (!rig) return;
+    if (this.thugPunchT > 0) {
+      this.thugPunchT = Math.max(0, this.thugPunchT - dt);
+      const k = Math.sin((1 - this.thugPunchT / 0.35) * Math.PI);
+      rig.armR.pivot.rotation.x = -1.5 * k;
+    }
+    if (this.thugLeaving) {
+      rig.root.rotation.y += Math.PI * dt * 2;
+      rig.root.position.x += Math.sin(rig.root.rotation.y) * 3 * dt;
+      rig.root.position.z += Math.cos(rig.root.rotation.y) * 3 * dt;
+      animateNPC(rig, dt, { walking: true });
+      this.thugGone = (this.thugGone || 0) + dt;
+      if (this.thugGone > 2.5) this.removeThug();
+      return;
+    }
+    animateNPC(rig, dt, {});
+  }
+
+  removeThug() {
+    if (this.thug?.root.parent) this.thug.root.parent.remove(this.thug.root);
+    this.thug = null;
+    this.thugLeaving = false;
+    this.thugGone = 0;
+  }
+
+  /** A swing from the fight meter: Mo's arm, and on a miss, his. */
+  playPunch(landed) {
+    this.punchT = 0.35;
+    if (!landed) { this.thugPunchT = 0.35; this.tilt = 1; }
+  }
+
   /** Mo's half of the exchange: hand out, hand back, a smile. */
   playHandoff() {
     if (!this.handoff) this.handoff = new HandoffBeat(this);
@@ -752,6 +840,21 @@ export class World {
     if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();
     this.affection?.update(dt);
     this.area?.tick?.(g, dt, this);
+
+    // trouble after dark: somebody steps out of the shadows in the park, the alley end or the lot
+    this.muggerTimer = (this.muggerTimer ?? 20) - dt;
+    if (this.muggerTimer <= 0) {
+      this.muggerTimer = 40;
+      if (canMove && !this.thug && fights.shouldMug(s, this.areaId, this.mo.root.position.x)) this.startMugging(g);
+    }
+    this.updateThug(dt);
+    // a swing: his right arm out and back
+    if (this.punchT > 0) {
+      this.punchT = Math.max(0, this.punchT - dt);
+      const k = Math.sin((1 - this.punchT / 0.35) * Math.PI);
+      this.mo.armR.pivot.rotation.x = -1.5 * k;
+      this.mo.armR.elbow.rotation.x = -0.2 * k;
+    }
 
     // street encounters, on a slow clock so they are events rather than background noise
     this.streetTimer = (this.streetTimer ?? 10) - dt;

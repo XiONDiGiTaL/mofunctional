@@ -10,6 +10,25 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Credits, employment checks, the lot; hookups and the clap; the laptop; TradeHarder; fights; Amazin'
+
+- Credits name XiØN; work-of-fiction and real-life drug-use disclaimer (SAMHSA line) in the
+  credits and README. Dale's talk branches on `job.employed`; the HUD objective swaps GO TO WORK
+  for FIND WORK when unemployed.
+- Street extended east to x 31.4: the lot (`lotDice`), crosswalk, park `eastgate` both ways.
+- `systems/health.js` (the clap: infect, healthTick drain, treatClap at clinic reception,
+  accuse via an sms reply on her thread, postAboutHer onto `state.stoopPosts`).
+  `dating.hookupMenu` (hers/his), more `open` women, `risky` doubles the chance.
+- `systems/block.js`: postToStoop, a daily gig, a daily stoop sale; NextStoop POST tab.
+- `ui/sites.js` (installSites on Phone): investView, shopView, tubeView, boardView, xxxView,
+  webView, stoopPostBody, siteActions. `ui/laptop.js`: Laptop extends Phone with a laptop shell;
+  `g.openLaptop()`; `phoneOpen` covers both.
+- `systems/market.js` (seeded per-save price walks, buy/sell with fee, properties, weekly rent
+  on new day, tenant trouble and actions). `systems/shop.js` (catalog at retail, next-day
+  delivery). `systems/fights.js` + `ui/fight.js` (FightMeter) + World.startMugging / playPunch;
+  clinic takes 'beaten' collapses.
+- 53 system checks.
+
 ### Threads, Gus, the camera; 1104, the bus, Ashby, Lucia's; HardLuck Bet; Nia
 
 - **Txtr**: messages are grouped into one thread per contact (`threadKeyOf` = sms identity

@@ -137,6 +137,7 @@ export function recoverHere(g, { cause = 'collapse', free = false } = {}) {
 export function shouldTakeHimIn(s, cause = 'collapse') {
   if (!life.isHoused(s)) return true;              // no bed to send him to
   if (cause === 'overdose') return true;
+  if (cause === 'beaten') return true;   // somebody called it in
   if ((s.counters.collapsed || 0) >= C.collapse.collapsesBeforeClinic) return true;
   return Math.random() < C.collapse.chance;
 }

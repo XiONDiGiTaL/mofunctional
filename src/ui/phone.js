@@ -20,6 +20,7 @@ import * as social from '../systems/social.js';
 import * as block from '../systems/block.js';
 import * as casino from '../systems/casino.js';
 import { postImage } from './feedart.js';
+import { installSites, siteActions, stoopPostBody } from './sites.js';
 import * as sms from '../systems/sms.js';
 
 /** One thread per contact: "RAE", "RAE VELL" and "RAE VELL (LANDLORD)" are the same person. */
@@ -105,7 +106,14 @@ export class Phone {
       if (e.target.tagName !== 'INPUT' || e.target.type === 'range') return;
       if (e.key === 'Escape') { e.target.blur(); return; }
       e.stopPropagation();
-      if (e.key === 'Enter' && e.target.id === 'feedtext') { e.preventDefault(); this.actions.posttyped.call(this); this.render(); }
+      // Enter sends whatever box it is in
+      const send = { feedtext: 'posttyped', stooptext: 'stooppost', boardtext: 'boardpost' }[e.target.id];
+      if (e.key === 'Enter' && send) {
+        e.preventDefault();
+        const btn = this.body.querySelector(`[data-act="${send}"]`);
+        this.actions[send].call(this, btn?.dataset.arg);
+        this.render();
+      }
     });
     this.root.appendChild(this.wrap);
     this.render();
@@ -1107,13 +1115,15 @@ export class Phone {
       body += board.map((x) => `<div class="nstoop"><div class="nstoop__cat">${T(x.cat)}</div>
         <div class="nstoop__who">${T(x.who)} <span>· ${T(x.where)} · ${hhmm(x.minute)}</span></div><div>${T(x.text)}</div>
         <div class="tiny mono-dim">${x.replies} repl${x.replies === 1 ? 'y' : 'ies'}</div></div>`).join('');
+    } else if (tab === 'post') {
+      body = stoopPostBody(this);
     } else {
       const lore = block.loreUnlocked(s);
       body = `${lore.map((x) => `<details class="nstoop nstoop--lore"><summary><b>${T(x.title)}</b></summary><div>${T(x.body)}</div></details>`).join('')}
         ${lore.length < block.LORE.length ? `<div class="tiny mono-dim">Pat from the block association adds a page every day. ${block.LORE.length - lore.length} more to come.</div>` : ''}`;
     }
     return `${this.header('NextStoop', 'KESTREL ST.')}
-      <div class="feedtabs feedtabs--stoop">${tabBtn('now', 'SEEN NOW')}${tabBtn('board', 'THE BOARD')}${tabBtn('lore', 'HISTORY')}</div>
+      <div class="feedtabs feedtabs--stoop">${tabBtn('now', 'SEEN NOW')}${tabBtn('board', 'THE BOARD')}${tabBtn('lore', 'HISTORY')}${tabBtn('post', 'POST')}</div>
       ${body}
       ${this.footer()}`;
   }
@@ -1162,6 +1172,7 @@ export class Phone {
     const g = this.g;
     const s = g.state;
     return {
+      ...siteActions(g, s),
       go(arg) { this.app = arg; this.msgId = null; },
       pay(arg) { g.payBill(arg); },
       work() { if (g.world?.areaId !== 'street') { g.toast('You have to be at the store to clock in.', 'info'); return; } const ok = workShift(g); if (ok) this.close(); },
@@ -1311,7 +1322,7 @@ export class Phone {
       clinic() { clinic.checkIn(g); },
       clincheck() { clinic.checkIn(g); },
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
-      hookup(arg) { this.close(); dating.hookup(g, arg); },
+      hookup(arg) { this.close(); dating.hookupMenu(g, arg); },
       blocktab(arg) { this.blockTab = arg; },
       casgame(arg) { this.casinoGame = arg; },
       casbet(arg, num) { this.casinoBet = num; },
@@ -1358,6 +1369,12 @@ export class Phone {
 
   get apps() {
     return {
+      invest: this.investView,
+      shop: this.shopView,
+      tube: this.tubeView,
+      board: this.boardView,
+      xxx: this.xxxView,
+      web: this.webView,
       home: this.homeView,
       bank: this.bankView,
       jobs: this.jobsView,
@@ -1394,3 +1411,6 @@ function epilogueFor(g) {
   if (billInfo(g, 'rent').owedCycles === 0 && s.job.employed) return 'functional';
   return 'quiet';
 }
+
+// the newer screens (TradeHarder, Amazin', the laptop's sites) live in sites.js
+installSites(Phone);

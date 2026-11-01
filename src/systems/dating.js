@@ -20,6 +20,7 @@ import { dayOf, minuteOfDay, hhmm } from '../core/util.js';
 import { bump, logLine, pushMessage } from '../core/state.js';
 import * as romance from './romance.js';
 import { STRANGERS, STRANGER_BY_ID } from '../core/strangers.js';
+import * as health from './health.js';
 
 const D = CONFIG.dating;
 
@@ -170,7 +171,24 @@ export function hookupAvailable(s, id) {
  * The night. No dates, no affection meter, nothing explicit: a text, a train, a door, a fade to
  * black, and the ride home. She might flake instead. If Mo has a girlfriend, somebody might see.
  */
-export function hookup(g, id) {
+/** Where: her place (the long train home after), or his (she leaves before the radiator wakes up). */
+export function hookupMenu(g, id) {
+  const s = g.state;
+  const w = STRANGER_BY_ID[id];
+  const av = hookupAvailable(s, id);
+  if (!w || !av.ok) { g.toast(`${w?.name || 'She'}: ${av.reason}.`, 'info'); return; }
+  g.openModal({
+    kicker: `${w.name.toUpperCase()} · ${w.hood.toUpperCase()}`, title: 'Tonight',
+    body: `"${pickLine(['you up?', 'so. tonight?', 'i\'m bored. entertain me.', 'my roommate is out. or yours could be.'])}"\n\nNot a date. Not a boyfriend. Just tonight.`,
+    choices: [
+      { label: 'Go to hers.', sub: `${w.hood} · the train home after`, effect: () => hookup(g, id, 'hers') },
+      { label: 'Invite her over.', sub: 'Unit 3B · she leaves early', effect: () => hookup(g, id, 'his') },
+      { label: 'Not tonight.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+export function hookup(g, id, where = 'hers') {
   const s = g.state;
   const d = datingState(s);
   const w = STRANGER_BY_ID[id];
@@ -206,12 +224,20 @@ export function hookup(g, id) {
       pushMessage(g, { from: p.name.toUpperCase(), subject: '', body: 'somebody saw you get on the train with a girl from that app at midnight. do not text me today.' });
       caught = `\n\nYour phone buzzes on the ride home. It is ${p.name}. Somebody saw you.`;
     }
+    // and sometimes she leaves him something to remember her by
+    let souvenir = false;
+    if (Math.random() < CONFIG.health.clapChance * (w.risky ? 2 : 1)) souvenir = health.infect(g, w.id);
+    void souvenir;
     if (g.world && g.world.areaId !== 'apartment') g.goTo('apartment');
     g.fadeIn?.();
+    const story = where === 'his'
+      ? `She looks around Unit 3B like it is a museum of a man. She says the radiator is "a lot." The door closes.\n\nShe is gone before the radiator wakes up, and she has taken one of your good socks, which is a choice.`
+      : `${pickLine(H.nightLines)}\n\nThe door closed. Later: the long train home, the car empty except for a man asleep on his own shoulder. ${w.name} did not ask you to stay and you did not ask to.`;
+    if (where === 'his') bump(s, 'energy', 6); // no train home
     g.openModal({
-      kicker: `${w.hood.toUpperCase()} · ${hhmm(s.clock.m)}`,
+      kicker: `${(where === 'his' ? 'UNIT 3B' : w.hood).toUpperCase()} · ${hhmm(s.clock.m)}`,
       title: w.name,
-      body: `${pickLine(H.nightLines)}\n\nThe door closed. Later: the long train home, the car empty except for a man asleep on his own shoulder. ${w.name} did not ask you to stay and you did not ask to.${caught}`,
+      body: `${story}${caught}`,
       choices: [{ label: 'Go to bed.', effect: () => {} }],
     });
     logLine(g, `A night with ${w.name}. Not a date.`, caught ? 'bad' : 'good');

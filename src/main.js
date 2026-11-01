@@ -14,6 +14,7 @@ import { World } from './world/game3d.js';
 import { HUD } from './ui/hud.js';
 import { Modal } from './ui/modal.js';
 import { Phone } from './ui/phone.js';
+import { Laptop } from './ui/laptop.js';
 import { Menu } from './ui/menu.js';
 import { Threads } from './ui/threads.js';
 import { ENDINGS } from './systems/endings.js';
@@ -64,6 +65,7 @@ class Game {
     this.hud.show(false);
     this.modal = new Modal(this.uiEl, this);
     this.phone = new Phone(this.uiEl, this);
+    this.laptop = new Laptop(this.uiEl, this);
     this.threads = new Threads(this.uiEl, this);
     this.menu = new Menu(this.uiEl, this);
 
@@ -91,7 +93,8 @@ class Game {
     console.info('[MO: FUNCTIONAL] booted', CONFIG.meta.version);
   }
 
-  get phoneOpen() { return this.phone.isOpen; }
+  // the laptop is the phone's engine in another body: either one being open pauses the world
+  get phoneOpen() { return this.phone.isOpen || !!this.laptop?.isOpen; }
   // the shop board and the fridge door are modal too, they just are not the Modal
   get modalOpen() { return this.modal.isOpen || !!this.overlayOpen; }
 
@@ -111,7 +114,8 @@ class Game {
     // the map is its own overlay; it closes itself on M or ESC
     if (inp.take('map') && this.mode === 'play' && !this.phoneOpen && !this.modal.isOpen) this.toggleMap();
     if (inp.take('pause')) {
-      if (this.phone.isOpen) this.phone.close();
+      if (this.laptop?.isOpen) this.laptop.close();
+      else if (this.phone.isOpen) this.phone.close();
       else if (this.modal.isOpen) this.modal.close();
       else if (this.mode === 'play') this.togglePause();
     }
@@ -289,7 +293,13 @@ class Game {
   togglePhone() {
     if (this.mode !== 'play') return;
     if (this.modal.isOpen) return;
+    if (this.laptop?.isOpen) { this.laptop.close(); return; }
     this.phone.toggle();
+  }
+
+  openLaptop(app = null) {
+    if (this.mode !== 'play' || this.phone.isOpen) return;
+    this.laptop.open(app);
   }
 
   openPhone(app = null) {

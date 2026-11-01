@@ -29,6 +29,10 @@ import * as social from '../src/systems/social.js';
 import * as block from '../src/systems/block.js';
 import * as casino from '../src/systems/casino.js';
 import * as sister from '../src/systems/sister.js';
+import * as market from '../src/systems/market.js';
+import * as health from '../src/systems/health.js';
+import * as fights from '../src/systems/fights.js';
+import * as shopSys from '../src/systems/shop.js';
 
 let passed = 0;
 let failed = 0;
@@ -821,6 +825,78 @@ check('nia: she only asks when the bond is good; yes brings her over with food, 
   sister.sisterTick(g);
   eq(sister.sisterState(g.state).status, 'none', 'gone');
   eq(g.state.inventory.some((i) => i.id === 'nia_meal'), true, 'food on the radiator');
+  return true;
+});
+
+check('market: prices are stable per save and day; buying and selling moves the money honestly', () => {
+  const g = stubGame();
+  g.state.money = 1000;
+  g.state.clock.m = 4 * 1440 + 600;
+  const p = market.priceOf(g.state, 'FEED');
+  eq(market.priceOf(g.state, 'FEED'), p, 'stable');
+  market.buy(g, 'FEED', 2);
+  near(g.state.money, 1000 - p * 2 - CONFIG.market.fee, 0.01, 'bought');
+  const before = g.state.money;
+  market.sell(g, 'FEED', 2);
+  near(g.state.money, before + p * 2 - CONFIG.market.fee, 0.01, 'sold same day');
+  return true;
+});
+
+check('property: 1104 pays weekly rent minus upkeep; Squeak can pay in product', () => {
+  const g = stubGame();
+  g.state.money = 120000;
+  eq(market.buyProperty(g, 'walkup'), true, 'bought');
+  const m0 = g.state.money;
+  const mr = Math.random; Math.random = () => 0.99; // a quiet week
+  market.propertyNewDay(g, 8);
+  Math.random = mr;
+  near(g.state.money - m0, 8 * market.PROPERTIES.walkup.rent - market.PROPERTIES.walkup.upkeep, 0.01, 'week');
+  const units = market.marketState(g.state).properties.walkup.units;
+  const sq = units.findIndex((u) => u.name.startsWith('Squeak'));
+  units[sq].status = 'offer';
+  market.tenantAction(g, sq, 'accept');
+  eq(units[sq].status, 'product', 'product');
+  return true;
+});
+
+check('health: the clap shows the next day, drains by the hour, and the clinic cures it', () => {
+  const g = stubGame();
+  g.state.clock.m = 600;
+  health.infect(g, 'w1');
+  health.healthTick(g, 1);
+  eq(health.clapSymptomatic(g.state), false, 'not yet');
+  g.state.clock.m = 1440 + 600;
+  const e = g.state.stats.energy;
+  health.healthTick(g, 2);
+  eq(health.clapSymptomatic(g.state), true, 'shows');
+  eq(g.state.stats.energy < e, true, 'drains');
+  g.state.money = 100;
+  health.treatClap(g);
+  eq(health.hasClap(g.state), false, 'cured');
+  return true;
+});
+
+check('fights: losing takes cash and something from his pockets; danger only late, only in some places', () => {
+  const g = stubGame();
+  g.state.clock.m = 12 * 60;
+  eq(fights.dangerous(g.state, 'park'), false, 'noon');
+  g.state.clock.m = 23 * 60 + 30;
+  eq(fights.dangerous(g.state, 'park'), true, 'late park');
+  eq(fights.dangerous(g.state, 'apartment'), false, 'home');
+  g.state.money = 100;
+  const r = fights.robbed(g);
+  eq(r.cash > 0 && g.state.money < 100, true, 'cash taken');
+  return true;
+});
+
+check('shop: an order is paid now and delivered the next day', () => {
+  const g = stubGame();
+  g.state.money = 500;
+  const it = shopSys.catalog()[0];
+  shopSys.order(g, it.id, 1);
+  eq(shopSys.shopState(g.state).orders.length, 1, 'ordered');
+  shopSys.shopNewDay(g, 2);
+  eq(g.state.inventory.some((i) => i.id === it.id), true, 'delivered');
   return true;
 });
 

@@ -152,3 +152,74 @@ export function sightings(s) {
 }
 
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/* ------------------------------------------------------------------ posting, and asking around */
+
+import { bump as _bump } from '../core/state.js';
+import { addItem as _addItem } from '../core/state.js';
+
+const REPLIERS = ['Gloria (4B)', 'Lenny', 'Mr. Okafor', 'Dee from the laundromat', 'Pat (block association)', 'Teresa R.', 'anonymous'];
+const REPLY_LINES = [
+  '"who is this"', '"ok"', '"this is not what the app is for"', '"lol"', '"same"', '"call your mother"',
+  '"is this the guy from 1120"', '"thoughts and prayers"', '"there are CHILDREN on this app"', '"real"',
+];
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+/** Mo posts on NextStoop. The block answers, the way the block answers. */
+export function postToStoop(g, text) {
+  const s = g.state;
+  s.stoopPosts = s.stoopPosts || [];
+  const n = 1 + Math.floor(Math.random() * 3);
+  const replies = Array.from({ length: n }, () => `${rand(REPLIERS)}: ${rand(REPLY_LINES)}`);
+  s.stoopPosts.unshift({ who: 'Mo (1120)', text, replies, day: dayOf(s.clock.m) });
+  if (s.stoopPosts.length > 20) s.stoopPosts.pop();
+  g.advance(5);
+  _bump(s, 'morale', 2);
+}
+
+const GIGS = [
+  { who: 'Gloria (4B)', text: 'needs an air conditioner carried up four flights', pay: 25, minutes: 40, energy: -12 },
+  { who: 'Mr. Okafor', text: 'needs somebody to wait for the cable guy (the cable guy is late)', pay: 20, minutes: 120, energy: -2 },
+  { who: 'Dee from the laundromat', text: 'needs a hand folding forty pounds of somebody else\'s laundry', pay: 18, minutes: 60, energy: -6 },
+  { who: 'Pat (block association)', text: 'is paying cash to scrape gum off the bench', pay: 15, minutes: 45, energy: -5 },
+  { who: 'Teresa R.', text: 'needs a dog walked. The dog is large. The dog is named Pudding.', pay: 22, minutes: 50, energy: -8 },
+];
+
+/** Once a day: a neighbour with a cash gig. */
+export function gigToday(s) {
+  const day = dayOf(s.clock.m);
+  if (s.stoopGigDay === day) return null;
+  return GIGS[(day * 7) % GIGS.length];
+}
+export function takeGig(g) {
+  const s = g.state;
+  const gig = gigToday(s);
+  if (!gig) return false;
+  s.stoopGigDay = dayOf(s.clock.m);
+  g.advance(gig.minutes);
+  _bump(s, 'energy', gig.energy);
+  _bump(s, 'morale', 4);
+  g.earnMoney(gig.pay, `NextStoop gig: ${gig.who}`);
+  g.toast(`${gig.who} pays you $${gig.pay} in small bills and a thank-you that sounds like it costs them.`, 'good');
+  return true;
+}
+
+/** Once a day: a neighbour selling something cheap (a valuable at a fraction of retail). */
+export function saleToday(s) {
+  const day = dayOf(s.clock.m);
+  if (s.stoopSaleDay === day) return null;
+  const vals = Object.values(CONFIG.items).filter((it) => it.kind === 'valuable');
+  const it = vals[(day * 13) % vals.length];
+  return { id: it.id, name: it.name, price: Math.max(3, Math.round((it.value || 10) * 0.6)), who: NEIGHBORS[(day * 3) % NEIGHBORS.length].name };
+}
+export function buySale(g) {
+  const s = g.state;
+  const sale = saleToday(s);
+  if (!sale || !g.spendMoney(sale.price, `NextStoop: ${sale.name}`)) return false;
+  s.stoopSaleDay = dayOf(s.clock.m);
+  _addItem(s, sale.id, 1);
+  g.advance(20);
+  g.toast(`${sale.who} hands it over in a plastic bag on the stoop. "It works. Mostly. Don't ask."`, 'good');
+  return true;
+}

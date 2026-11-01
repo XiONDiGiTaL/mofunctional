@@ -20,6 +20,7 @@ import { signTex } from '../render/signs.js';
 import * as life from '../systems/life.js';
 import * as romance from '../systems/romance.js';
 import * as clinic from '../systems/clinic.js';
+import * as health from '../systems/health.js';
 
 const M = {
   floor: retroMaterial('floor', { map: tex('linoleum') }),
@@ -129,7 +130,7 @@ export function buildApartment(g) {
     { id: 'fridge', label: 'Open the fridge', sub: 'eat · store food for later', x: 2.7, z: -2.9, action: (gg) => showFridge(gg) },
     { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
     { id: 'tv', label: 'Turn on the TV', sub: 'waste time productively', x: -2.6, z: 1.0, action: (gg) => tvMenu(gg) },
-    { id: 'laptop', label: 'Use the laptop', sub: 'open BidBay', x: 1.4, z: 0.1, action: (gg) => gg.openPhone('bidbay') },
+    { id: 'laptop', label: 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
     { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -3.0, z: 2.4, action: (gg) => stashMenu(gg) },
     { id: 'door', label: 'Leave the apartment', sub: 'go outside', x: 0, z: 3.9, action: (gg) => gg.goTo('street', 'apartment') },
   ];
@@ -1729,6 +1730,13 @@ function clinicReception(g) {
     body: 'A clipboard on a string. Your name is already on it, in somebody else\'s handwriting.\n\nA notice taped to the glass: WALK-INS WELCOME · NO INSURANCE · NO JUDGEMENT · NO EXCEPTIONS.',
     choices: [
       { label: 'Check in for today.', sub: 'free · 10 min', effect: () => { clinic.checkIn(g); } },
+      ...(health.clapSymptomatic(s) ? [{
+        label: 'Ask, quietly, about the burning.', sub: `${money(CONFIG.health.clapCureCost)} · antibiotics · 40 min`,
+        effect: () => {
+          health.treatClap(g);
+          g.openModal({ kicker: 'KESTREL CLINIC', title: 'The Clap', body: `${CONFIG.clinic.nurse} does not look up from the chart. "Gonorrhoea. Everybody calls it the clap. Take all of these, all of them, even when it stops hurting. And maybe ask next time." She hands you a pamphlet with a cartoon condom on it giving a thumbs up.`, choices: [{ label: 'Take the pills. All of them.', effect: () => {} }] });
+        },
+      }] : []),
       { label: 'Ask about the hospital bill.', sub: l.debt.hospital ? money(l.debt.hospital) : 'nothing on file', effect: () => { g.toast(l.debt.hospital ? `Kings County has you down for ${money(l.debt.hospital)}. It grows about 1% a day.` : 'Nothing outstanding. Enjoy it.', 'info'); } },
       { label: 'Sit back down.', sub: '', effect: () => {} },
     ],

@@ -352,6 +352,37 @@ export const CONFIG = {
     squeakStock: [2, 4],
   },
 
+  // what a night with a stranger can leave behind
+  health: {
+    clapChance: 0.16,          // per hookup; double with the risky ones
+    clapCureCost: 45,
+    clapDrainPerHour: { energy: -0.7, morale: -0.9, stress: 0.5 },
+    postBackfire: 0.45,
+  },
+
+  // TradeHarder: stocks and property
+  market: {
+    fee: 1,
+    listingCost: 200,
+  },
+
+  // trouble after dark
+  fights: {
+    fromHour: 23, toHour: 4,
+    chancePerCheck: 0.22,      // a check every ~40 s of play somewhere dangerous
+    cooldownHours: 30,
+    thugHits: 3,
+    hitEnergy: 18,
+    payOffShare: 0.25,
+    robCashShare: [0.3, 0.6],
+  },
+
+  // Amazin', the online store
+  shop: {
+    markup: 2.1,
+    shipping: 4.99,
+  },
+
   // HardLuck Bet, the casino app
   casino: {
     bets: [1, 5, 20, 100],

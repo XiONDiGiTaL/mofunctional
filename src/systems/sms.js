@@ -20,6 +20,7 @@ import * as clinic from './clinic.js';
 import * as life from './life.js';
 import { STRANGERS } from '../core/strangers.js';
 import * as sister from './sister.js';
+import * as health from './health.js';
 
 /** Senders that are people, with the face the UI should draw. */
 const PEOPLE = {
@@ -151,6 +152,17 @@ export function replyOptions(message, s) {
     return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect }));
   }
   const id = identityFor(message?.from);
+  // the woman who gave him the clap: he knows, now, and he can say so
+  const clapFrom = health.clapFrom(s);
+  if (clapFrom && health.clapSymptomatic(s) && !health.healthState(s).clap.accused) {
+    const w = STRANGERS.find((x) => x.id === clapFrom);
+    if (w && identityFor(message?.from).name === w.name) {
+      return [
+        { act: 'accuse', label: 'You gave me the clap.', category: 'personal', sender: w.name },
+        ...SETS.personal.map((o) => ({ ...o, category: 'personal', sender: w.name })),
+      ];
+    }
+  }
   // Nia asking to come over: yes or no, once
   if (message?.kind === 'nia_visit') {
     if (sister.sisterState(s).status !== 'asked' || message.replies?.length) return [];
@@ -228,6 +240,9 @@ function applyAct(g, message, opt) {
       s.npc.nia = (s.npc.nia || 0) + 2;
       life.lifeState(s).counselor = true;
       followUp(g, message.from, 'thank you', '“That is the first true thing you have said to me in a year. I am not going to make it a whole thing. I love you. Eat something.”');
+      return;
+    case 'accuse':
+      health.accuse(g);
       return;
     case 'nia_yes':
       sister.answerVisit(g, true);

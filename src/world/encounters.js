@@ -78,7 +78,7 @@ export function strangerMenu(g, id) {
     choices.push({
       label: 'Ask if she wants to get out of here.', sub: av.ok ? 'a night · not a date' : av.reason,
       disabled: !av.ok,
-      effect: () => dating.hookup(g, id),
+      effect: () => dating.hookupMenu(g, id),
     });
   }
   choices.push({ label: 'Leave her be.', sub: '', effect: () => {} });

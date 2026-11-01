@@ -21,6 +21,7 @@ import { money, pick, dayOf, minuteOfDay, randInt } from '../core/util.js';
 import { bump, addItem, removeItem, countItem, inventoryList, logLine } from '../core/state.js';
 import * as romance from '../systems/romance.js';
 import { partnerTarget } from './schedules.js';
+import * as market from '../systems/market.js';
 
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 const M = {
@@ -340,7 +341,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     interactables,
     tick,
     ambient: 'street',
-    enterToast: f === 0 ? '1104 Kestrel. The lobby smells like a hundred years of dinners.' : null,
+    enterToast: f === 0 ? (market.owns(s, 'walkup') ? '1104 Kestrel. Your building. The lobby still smells like a hundred years of dinners, but now they are your dinners.' : '1104 Kestrel. The lobby smells like a hundred years of dinners.') : null,
   };
 }
 

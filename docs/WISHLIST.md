@@ -85,6 +85,15 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | HardLuck Bet casino app (slots, blackjack, roulette) | done |
 | Nia visits with home-cooked meals, earned by how Mo answers her | done |
 | The B44 to Ashby Avenue (newsstand, pawn, sax player) and Lucia's restaurant (meals, a date) | done |
+| Credits by XiØN, a fiction and real-life drug-use disclaimer | done |
+| Dale and the objective check whether Mo is employed | done |
+| The lot past the clinic (dice, park east gate) | done |
+| More open app women, hers/his place, the clap, accuse, NextStoop warning | done |
+| NextStoop POST: own posts, a daily paid gig, a stoop sale | done |
+| Laptop (Netscrape): MeTube, Kestrel Underground, DialUpDelights, and every phone app | done |
+| TradeHarder stocks and property (1104, the lot; tenants) | done |
+| Muggings after dark: pay, run or fight (swing meter); robbed and clinic on a loss | done |
+| Amazin' online store, next-day delivery | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

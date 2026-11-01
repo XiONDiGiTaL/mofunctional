@@ -55,6 +55,20 @@ export const APPS = {
     name: 'LoveLine', tag: 'somebody on the block', a: '#ff6b8a', b: '#8a1f4a',
     icon: svg('<path d="M12 20.5S3.5 15 3.5 9.5A4.5 4.5 0 0 1 12 6.8a4.5 4.5 0 0 1 8.5 2.7c0 5.5-8.5 11-8.5 11z"/>'),
   },
+  // a parody of the trading apps, and real estate when he can afford it
+  invest: {
+    name: 'TradeHarder', tag: 'buy high, sell low, repeat', a: '#5ae07a', b: '#0a3a2a',
+    icon: svg('<path d="M3.5 18.5 9 12l4 3.5 7.5-9"/><path d="M15.5 6.5h5v5"/>'),
+  },
+  // the online store
+  shop: {
+    name: "Amazin'", tag: 'everything, eventually, by the door', a: '#ffae3d', b: '#2a2a3a',
+    icon: svg('<path d="M4 7.5h16l-1.5 12h-13z"/><path d="M8.5 7.5a3.5 3.5 0 0 1 7 0"/><path d="M8 14c2.5 2 5.5 2 8 0"/>'),
+  },
+  // the laptop's sites
+  tube: { name: 'MeTube', tag: 'broadcast yourself (please don\'t)', a: '#ff4a4a', b: '#3a0a0a', icon: svg('<rect x="3" y="6" width="18" height="12" rx="3"/><path d="m10.5 9.5 4 2.5-4 2.5z" fill="currentColor"/>') },
+  board: { name: 'Kestrel Underground', tag: 'anon bbs · est. 1997', a: '#9aa3ad', b: '#141820', icon: svg('<path d="M4 5h16v10H9l-5 4z"/>') },
+  xxx: { name: 'DialUpDelights', tag: '18+ · loading 4%', a: '#ff5ab0', b: '#2a0a2a', icon: svg('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M4 14h16M9 4v16M14 4v16"/>') },
   // a parody of the betting apps: slots, blackjack, a wheel. the house is real
   casino: {
     name: 'HardLuck Bet', tag: 'the house always wins · you are a guest', a: '#ffd23a', b: '#5a1a8a',
@@ -130,7 +144,7 @@ export function serviceAvatar(name, cls = '') {
 
 /** The home-screen layout: the grid, then the dock. */
 // LoveLine lives inside FeedLove now (its LOVELINE tab); NextStoop takes its place on the grid
-export const HOME_GRID = ['jobs', 'bidbay', 'calendar', 'inventory', 'bills', 'social', 'block', 'casino', 'clinic', 'fellowship', 'rolo'];
+export const HOME_GRID = ['jobs', 'bidbay', 'shop', 'calendar', 'inventory', 'bills', 'social', 'block', 'invest', 'casino', 'clinic', 'fellowship', 'rolo'];
 
 // Rolo's text thread lives inside Txtr, so it wears Txtr's brand
 APPS.dealer = { ...APPS.messages };

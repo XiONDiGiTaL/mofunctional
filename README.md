@@ -83,6 +83,7 @@ stress, dependence and risk for the day just ended.
 | **Kestrel Park** | across the road: benches, a half-court, chess, a boombox, people |
 | **1104 Kestrel St.** | the walk-up west of the bodega: a lobby and four floors of hallway, real minutes on the stairs. A man asleep by the steps, Ray & Denise arguing on two, Mrs. Petrakis's soup in 3B, Squeak selling from his coat on four (a few items a day, hallway prices), Stephanie's door in 5C, the roof, and a knock on every door |
 | **Ashby Avenue** | by the B44 from the stop on Kestrel (or a 45-minute walk): people walking somewhere else, a newsstand (papers, scratch-offs), Ashby Pawn & Gold (sell a valuable now, cheap), a sax player |
+| **The lot** | past the clinic: chain-link, a burnt-out Buick, a graffiti wall, a dice game after dark, and a crosswalk to the park's new east gate |
 | **Lucia's** | a red-sauce trattoria on Ashby: sit-down meals, and the best date on the list |
 
 Every door on the block is built the same way so it can be found at a glance: a recessed door in
@@ -127,6 +128,8 @@ due next), an icon grid and a dock. Every app is a parody with its own name, ico
 | **Pocket Lint** | inventory as illustrated tiles; eat, drink, smoke or sell from here |
 | **Landlordly** | a thermostat dial that counts down the days to rent |
 | **FeedLove** | the social app (a heart, not a camera), in four tabs: **FEED** (Mo's profile, a box to type his own posts or a random one, and a timeline of everyone he follows — Mom, Nia, Kev, Dale, Rae, Miguel's bodega and its cat, Habib's, the Fellowship, the Quik-Stop, the park, and the three once he has met them — with pictures and likes), **PEOPLE** (following, followers, people you may know), **♥ HEARTS** (the dating side) and **LOVELINE** (the three, where they are, and her day) |
+| **TradeHarder** | stocks (nine 1999 tickers on a daily seeded walk: dot-coms, a bank, the Fellowship's media arm, a Y2K survival company) and property: 1104 Kestrel ($100,000, eight units of weekly rent, tenants who fall behind, move out, or offer to pay in product) and the lot ($30,000) |
+| **Amazin'** | buy things (electronics, gifts, comforts, food that keeps) at retail; delivered by the door next morning |
 | **HardLuck Bet** | an online casino: slots, blackjack and roulette for real money. The odds are honest (slots return about 93%), the first $10 bet is free, a losing day stings, and winnings are tithed like any other income |
 | **NextStoop** | the neighbourhood app: **SEEN NOW** (neighbours posting who is where, from the real schedules — useful for finding people), **THE BOARD** (a day of lost-and-found, safety, free stuff and complaints) and **HISTORY** (the lore of Kestrel Street, a page a day) |
 | **Blessed+** | the Fellowship's "live" Sunday stream and the tithe |
@@ -259,6 +262,32 @@ and the more of his money and his say they take.
 Signing the pledge ends the game: **Fully Functional**. Mo stops using, is housed, employed and
 more than functional — and none of it is his. It is the ending where someone else saved him, which
 is not what this game is about. Walking out instead keeps the run going.
+
+## The laptop
+
+The laptop on the table in Unit 3B opens a laptop screen the way the phone opens (the same apps
+run on both): Netscrape Navigator and its bookmarks — FeedLove, NextStoop, LinkedOut, TradeHarder,
+Amazin', HardLuck Bet, BidBay, **MeTube** (videos and memes from 1999; a time sink with a little
+morale in it), **Kestrel Underground** (an anonymous message board: rumours about the Fellowship,
+Dex, the 1996 night at Quik-Stop #14, Gus, the walk-up; Mo can post into any thread) and
+**DialUpDelights** (an adult site where every model is a mosaic and each page takes six minutes on
+dial-up; a little better, once or twice a day).
+
+## After dark
+
+Late at night in the park, at the alley and walk-up end of the block, past the clinic, or on
+Ashby, somebody in a grey hood may step out and want his wallet. Hand over a quarter of his cash,
+run (energy decides), or fight: a swing meter, F or Space in the green lands, three that land and
+he runs. Every miss is a hit back. At zero energy Mo goes down, is robbed (cash and a few things,
+food first) and wakes up at the clinic.
+
+## The clap
+
+A night with one of the open FeedLove women can leave something behind. It shows up the next day
+and drains energy and morale by the hour until Mo pays for antibiotics at Kestrel Clinic (or puts
+them on the hospital bill). Once it shows, he can text her "You gave me the clap" (she is gone
+after that), or post a warning about her on NextStoop — which the block may applaud, or which she
+may answer, and the block takes her side.
 
 ## Nia
 
