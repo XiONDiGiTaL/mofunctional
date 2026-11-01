@@ -39,6 +39,18 @@ const CHASE_MID = [
 /** Seconds into the pull-off at which he leans out and yells. */
 const SHOUT_AT = [1.2, 3.2];
 
+/** What Mo yells back, once, a beat after the first earful. */
+const MO_REPLY = [
+  '"I am coming! I am COMING!"',
+  '"Wait — WAIT —"',
+  '"You saw me! You SAW me standing there!"',
+  '"Five more seconds! FIVE!"',
+];
+
+const REPLY_AT = 1.9;
+/** ...and when the kerb takes his feet out from under him. */
+const STUMBLE_AT = 2.5;
+
 /** The HailMary car: a black sedan with a pink light-up placard in the windshield. */
 function buildCar() {
   const g = buildVehicle('sedan', 0x0e0f12);
@@ -62,6 +74,8 @@ export class RideCar {
     this.baseX = 0;
     this.grace = -1;
     this.shout = 0;
+    this.replied = false;
+    this.tripped = false;
   }
 
   /** Called on area load (fresh) and every frame. */
@@ -115,6 +129,8 @@ export class RideCar {
     this.baseX = r.x;
     this.grace = -1;
     this.shout = 0;
+    this.replied = false;
+    this.tripped = false;
     this.speed = 0;
     this.parked = !!inPlace;
     this.waitT = 0;
@@ -159,6 +175,8 @@ export class RideCar {
     this.lastCall = false;
     this.grace = -1;
     this.shout = 0;
+    this.replied = false;
+    this.tripped = false;
   }
 
   update(dt, g) {
@@ -169,10 +187,11 @@ export class RideCar {
     // spawns and then stopping dead, which read as a jump cut rather than a car
     const chasing = this.grace >= 0 && !this.leaving;
     if (chasing) {
-      // rolling off: it is already moving, and it keeps adding speed while he runs, so a catch
-      // at the door is something he has to earn in the first second or two
+      // rolling off: it starts under a walk and keeps adding speed through the window, so a catch
+      // at three or four seconds is still there for a man who committed on the first frame, and
+      // gone for one who stood at the kerb deciding
       const elapsed = CONFIG.rides.graceSeconds - this.grace;
-      const cruise = Math.min(CONFIG.rides.chaseSpeed, 1.7 + elapsed * 0.55);
+      const cruise = Math.min(CONFIG.rides.chaseSpeed, 1.0 + elapsed * 0.40);
       this.speed = Math.min(cruise, (this.speed || 0) + 6 * dt);
       this.targetX = p.x + 3;
       if (p.x < this.baseX + 14) p.x += Math.min(3, this.speed * dt);
@@ -222,6 +241,8 @@ export class RideCar {
           // out of time: the car starts off down the block, but a sprint can still catch it
           this.grace = CONFIG.rides.graceSeconds;
           this.shout = 0;
+          this.replied = false;
+          this.tripped = false;
           this.targetX = this.baseX + 3;
           if (this.interact) this.interact.radius = 2.4;
           g?.audio?.sfx?.('honk');
@@ -235,6 +256,17 @@ export class RideCar {
             this.shout++;
             this.flashT = 1.4;
             g?.audio?.sfx?.('honk');
+          }
+          // he gives the driver some of it back, and the kerb takes it out of him
+          if (!this.replied && into >= REPLY_AT) {
+            this.replied = true;
+            g?.toast?.(`You: ${pick(MO_REPLY)}`, 'info');
+          }
+          if (!this.tripped && into >= STUMBLE_AT) {
+            this.tripped = true;
+            const v = this.world.vel;
+            if (v) { v.x *= 0.6; v.z *= 0.6; }
+            g?.toast?.('You catch a boot on the kerb and stumble.', 'bad');
           }
           // at the door, alongside it: standing behind the car or at the far kerb does not count
           const mo = this.world.mo?.root?.position;
