@@ -10,8 +10,9 @@ import { DealerWalker, HandoffBeat } from './handoff.js';
 import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
 import { isPartnerId, partnerState, PARTNER_KEYS } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
-import { clamp, lerp, minuteOfDay } from '../core/util.js';
-import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES } from './schedules.js';
+import { clamp, lerp, minuteOfDay, dayOf } from '../core/util.js';
+import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, strangerRunIns, strangerTarget } from './schedules.js';
+import { strangerMenu, strangerLabel } from './encounters.js';
 import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
@@ -203,6 +204,23 @@ export class World {
         });
         this.partnerPresence(rig, 0, g, true);
       }
+      // and whichever of the FeedLove women are out on the block here today
+      const day = dayOf(g.state.clock.m);
+      const seen = new Set();
+      for (const run of strangerRunIns(day)) {
+        if (run.area !== id || seen.has(run.id)) continue;
+        seen.add(run.id);
+        const rig = createNPC(run.id);
+        rig.npcDef = { kind: run.id, stranger: true, talk: `stranger_${run.id}`, roam: 0.4 };
+        rig.root.visible = false;
+        this.root.add(rig.root);
+        this.npcRigs.push(rig);
+        this.interactables.push({
+          id: `stranger_${run.id}`, label: strangerLabel(g.state, run.id), sub: '', x: 0, z: 0, radius: 1.4, hidden: true,
+          action: (gg) => strangerMenu(gg, run.id),
+        });
+        this.partnerPresence(rig, 0, g, true);
+      }
     }
     // a talk prompt belongs to a person, not to the spot they started on: tie each one to its rig
     for (const rig of this.npcRigs) {
@@ -333,10 +351,14 @@ export class World {
    */
   partnerPresence(rig, dt, g, fresh = false) {
     const def = rig.npcDef;
-    const row = partnerTarget(def.kind, minuteOfDay(g.state.clock.m));
+    const mod = minuteOfDay(g.state.clock.m);
+    const row = def.stranger ? strangerTarget(def.kind, dayOf(g.state.clock.m), mod) : partnerTarget(def.kind, mod);
     const here = !!row && !row.away && row.area === this.areaId;
     const talk = rig.talkIt || this.interactables.find((it) => it.id === def.talk);
-    if (talk) talk.sub = here ? row.note : '';
+    if (talk) {
+      talk.sub = here ? row.note : '';
+      if (def.stranger) talk.label = strangerLabel(g.state, def.kind);
+    }
     if (rig.holding && !here) {
       // her day moves on even when his hand is in hers
       this.affection.letGo();
@@ -952,7 +974,7 @@ export class World {
   patrolNPC(rig, dt, g) {
     const def = rig.npcDef;
     if (!def) return;
-    if (def.partner) { this.partnerPresence(rig, dt, g); return; }
+    if (def.partner || def.stranger) { this.partnerPresence(rig, dt, g); return; }
 
     // A scheduled character walks to wherever they are supposed to be right now and stays
     // there until the window changes; unscheduled ones keep to a small patch near home.

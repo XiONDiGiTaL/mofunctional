@@ -21,6 +21,7 @@ import * as clinic from '../systems/clinic.js';
 import * as scheduler from '../systems/scheduler.js';
 import * as events from '../systems/events.js';
 import { useSubstance } from '../systems/needs.js';
+import { STRANGERS } from '../core/strangers.js';
 
 const STATS = [
   ['energy', 'Energy'], ['hunger', 'Food'], ['hygiene', 'Hygiene'],
@@ -34,7 +35,7 @@ const PLACES = [
 ];
 
 // the NPC kinds the world knows how to build, and which ones the panel's pickers have chosen
-const NPC_KINDS = ['kev', 'rae', 'dale', 'dex', 'nia', 'miguel', 'habib', 'homeless', 'junkie', 'clerk', 'rolo', 'stephanie', 'melanie', 'diana'];
+const NPC_KINDS = ['kev', 'rae', 'dale', 'dex', 'nia', 'miguel', 'habib', 'homeless', 'junkie', 'clerk', 'rolo', 'stephanie', 'melanie', 'diana', ...STRANGERS.map((w) => w.id)];
 const debugSel = {};
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

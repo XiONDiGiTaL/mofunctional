@@ -21,7 +21,6 @@ import * as rent from '../systems/rent.js';
 import * as romance from '../systems/romance.js';
 import * as clinic from '../systems/clinic.js';
 import { ENDINGS } from '../systems/endings.js';
-import { strangerThumb } from './thumbs.js';
 import { partnerWhereabouts, PARTNER_SCHEDULES, PARTNER_AREA_NAMES } from '../world/schedules.js';
 
 const DEFAULT_REPLIES = [
@@ -745,8 +744,9 @@ export class Phone {
       const res = d.results[p.id];
       const avatar = p.partner
         ? `<img class="dprof__img" src="${portraitURL(p.partner, 'content')}" alt="" />`
-        : `<img class="dprof__img" src="${strangerThumb(p.id)}" alt="" />`;
+        : `<img class="dprof__img" src="${portraitURL(p.face, 'content')}" alt="" />`;
       const verdict = res === 'match' ? '<span class="dprof__res dprof__res--match">MATCH · numbers swapped</span>'
+        : res === 'hookup' ? '<span class="dprof__res dprof__res--match">MATCH · not for dating</span>'
         : res === 'ghost' ? '<span class="dprof__res">matched, then nothing</span>'
           : res === 'reject' ? '<span class="dprof__res dprof__res--no">no</span>' : '';
       return `<div class="dprof">
@@ -769,6 +769,20 @@ export class Phone {
           <button class="btn btn--sm btn--primary" data-act="dmdate" data-arg="${id}">ASK OUT</button>
         </div>`;
       }).join('')}</div>` : ''}
+      ${(() => {
+        const late = dating.hookupContacts(s);
+        if (!late.length) return '';
+        return `<div class="app__h">Not for dating</div>
+        <div class="list">${late.map((w) => {
+          const av = dating.hookupAvailable(s, w.id);
+          const h = d.hookups[w.id];
+          return `<div class="listitem dmatch">
+            <img class="chat__face" src="${portraitURL(w.id, 'content')}" alt="" />
+            <div class="grow"><div class="name">${T(w.name)}, ${w.age} <span class="tiny mono-dim">· ${T(w.hood)}</span></div><div class="meta">${h.count ? `${h.count} night${h.count === 1 ? '' : 's'} · ` : ''}${av.ok ? 'she is up' : T(av.reason)}</div></div>
+            <button class="btn btn--sm btn--primary" data-act="hookup" data-arg="${w.id}" ${av.ok ? '' : 'disabled'}>HOOK UP</button>
+          </div>`;
+        }).join('')}</div>`;
+      })()}
       <div class="app__h">Today's stack · ${Math.max(0, left)} hearts left</div>
       <div class="list">${dating.profilesToday(s).map(card).join('')}</div>
       <div class="tiny mono-dim">A heart takes ${CONFIG.dating.heartMinutes} minutes of staring. New faces every morning.</div>`;
@@ -1094,6 +1108,7 @@ export class Phone {
       clinic() { clinic.checkIn(g); },
       clincheck() { clinic.checkIn(g); },
       feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
+      hookup(arg) { this.close(); dating.hookup(g, arg); },
       openhearts() { this.app = 'social'; this.msgId = null; this.feedTab = 'hearts'; this.heartNote = ''; },
       heart(arg) {
         const res = dating.sendHeart(g, arg);

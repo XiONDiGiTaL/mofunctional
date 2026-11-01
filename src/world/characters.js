@@ -14,6 +14,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, taper } from '../render/retro.js';
 import { tex } from '../render/textures.js';
 import { HEAD, headGeometry, headPoint, shellGeometry, headTexture, faceSpec } from '../render/heads.js';
+import { STRANGERS } from '../core/strangers.js';
 
 /* ------------------------------- materials ------------------------------- */
 
@@ -136,6 +137,9 @@ const HAIR_SHELLS = {
   shoulder: { tMin: (a) => (Math.abs(a) < 0.9 ? 0.84 : Math.abs(a) < 1.25 ? 0.32 : 0.02), grow: 1.08 },
   shag: { tMin: (a) => (Math.abs(a) < 0.85 ? 0.8 : Math.abs(a) < 1.25 ? 0.3 : 0.02), grow: 1.11 },
   curls: { tMin: (a) => (Math.abs(a) < 0.85 ? 0.8 : Math.abs(a) < 1.2 ? 0.28 : 0.0), grow: 1.17 },
+  // hair pulled back tight (a bun at the back), and bantu knots
+  bun: { tMin: (a) => (Math.abs(a) < 1.0 ? 0.8 : 0.5), grow: 1.04 },
+  knots: { tMin: (a) => (Math.abs(a) < 1.0 ? 0.8 : 0.48), grow: 1.03 },
   dread: { tMin: (a) => (Math.abs(a) < 1.05 ? 0.8 : 0.45), grow: 1.08 },
   braids: { tMin: (a) => (Math.abs(a) < 1.1 ? 0.82 : 0.4), grow: 1.04 },
   durag: { tMin: (a) => (Math.abs(a) < 1.0 ? 0.8 : 0.5), grow: 1.04 },
@@ -184,6 +188,21 @@ function buildHead({ hh, kind, style = 'short', skinMat, hairColor }) {
     g.add(prism(0.63 * hh, 0.65 * hh, 0.82 * hh, 0.84 * hh, 0.09 * hh, hair, [0, 0.83 * hh, -0.03 * hh], 10));
   }
   if (style === 'shoulder' || style === 'shag' || style === 'curls') hangingHair(g, hh, style, kind);
+  if (style === 'bun') {
+    const p = headPoint(Math.PI, 0.72);
+    const bun = new THREE.Mesh(curlGeo(0.2 * hh), hairMat(hairColor));
+    bun.position.set(0, 0.74 * hh, p[2] * 1.12 * hh);
+    g.add(bun);
+  }
+  if (style === 'knots') {
+    // six knots in two rows over the crown
+    for (const [a, t] of [[-0.9, 0.9], [0, 0.98], [0.9, 0.9], [-2.0, 0.78], [Math.PI, 0.8], [2.0, 0.78]]) {
+      const p = headPoint(a, t);
+      const knot = new THREE.Mesh(curlGeo(0.12 * hh), hairMat(hairColor));
+      knot.position.set(p[0] * 1.12 * hh, (t + 0.06) * hh, p[2] * 1.12 * hh);
+      g.add(knot);
+    }
+  }
   if (style === 'dread' || style === 'braids') {
     const count = style === 'dread' ? 9 : 2;
     for (let i = 0; i < count; i++) {
@@ -209,14 +228,16 @@ function hangingHair(g, hh, style, kind) {
   const light = hairMat(parseInt(S.hairLight.slice(1), 16));
   const dark = hairMat(parseInt(S.hairDark.slice(1), 16));
   if (style === 'shoulder') {
-    g.add(prism(0.66 * hh, 0.8 * hh, 0.42 * hh, 0.26 * hh, 1.2 * hh, hair, [0, 0.78 * hh, -0.2 * hh], 8));
+    // hairLen: 1 is to the shoulders; the app women run from a short 0.9 to past the shoulder blades
+    const n = S.hairLen || 1;
+    g.add(prism(0.66 * hh, 0.8 * hh, 0.42 * hh, 0.26 * hh, 1.2 * n * hh, hair, [0, 0.78 * hh, -0.2 * hh], 8));
     for (const sx of [-1, 1]) {
-      g.add(prism(0.13 * hh, 0.17 * hh, 0.3 * hh, 0.2 * hh, 1.0 * hh, sx < 0 ? hair : light, [sx * 0.31 * hh, 0.6 * hh, 0.02 * hh], 6, [0, 0, sx * 0.12]));
+      g.add(prism(0.13 * hh, 0.17 * hh, 0.3 * hh, 0.2 * hh, 1.0 * n * hh, sx < 0 ? hair : light, [sx * 0.31 * hh, 0.6 * hh, 0.02 * hh], 6, [0, 0, sx * 0.12]));
     }
     return;
   }
   if (style === 'shag') {
-    g.add(prism(0.7 * hh, 0.82 * hh, 0.44 * hh, 0.3 * hh, 1.05 * hh, hair, [0, 0.8 * hh, -0.2 * hh], 8));
+    g.add(prism(0.7 * hh, 0.82 * hh, 0.44 * hh, 0.3 * hh, 1.05 * (S.hairLen || 1) * hh, hair, [0, 0.8 * hh, -0.2 * hh], 8));
     // uneven strands around the sides and back, and two that fall over the face edges
     const strands = [[-1.35, 1.25], [-1.0, 1.05], [-2.0, 1.4], [-2.6, 1.3], [2.6, 1.35], [2.0, 1.2], [1.0, 1.1], [1.35, 1.3], [Math.PI, 1.45]];
     strands.forEach(([a, len], i) => {
@@ -451,6 +472,10 @@ const CAST = {
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
 };
+// the twenty dating-app women, dressed from their roster entry
+STRANGERS.forEach((w, i) => {
+  CAST[w.id] = { height: 1.62 + (i % 5) * 0.025, build: 0.96, shirt: w.look.shirt, pants: w.look.pants, longSleeves: !!w.look.longSleeves };
+});
 
 export function createMo() {
   const rig = buildBody({

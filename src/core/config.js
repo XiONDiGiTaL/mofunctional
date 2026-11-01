@@ -271,6 +271,38 @@ export const CONFIG = {
       'if your pics are in a bathroom mirror, keep scrolling',
     ],
     tints: ['#c86a8a', '#7a6ac8', '#c8a06a', '#6ac8a8', '#c86a6a', '#6a9ac8'],
+    // the few app women who are not looking for a boyfriend (core/strangers.js `open`)
+    hookup: {
+      matchChance: 45,        // percent, on a heart, for an open one
+      fromHour: 22, toHour: 3,
+      cooldownDays: 3,
+      minEnergy: 20,
+      flakeChance: 0.15,
+      runInNumberChance: 0.5,   // an open one met on the block gives him her number
+      minutes: 180,
+      morale: 14, stress: -12, energy: -10, hygiene: -10,
+      caughtChance: 0.3, caughtAffection: 25,
+      openers: [
+        'ok you are funny looking in a way i am into. that is all you get.',
+        'i do not date. i do not do brunch. i do sometimes do this.',
+        'you look like trouble that knows how to leave in the morning.',
+        'one rule: do not fall in love with me. you will want to. do not.',
+      ],
+      flakeLines: [
+        'something came up. something being my ex. sorry not sorry',
+        'actually never mind. delete my number',
+        'my roommate says you look like a cop. not risking it',
+      ],
+      nightLines: [
+        'Her apartment is a fourth-floor walk-up with a radiator worse than yours, which feels like a sign.',
+        'She has a cat that watches the entire time. Not the entire time. The door closes on the cat.',
+        'She puts on a record before she says anything. It is a good record. You do not ask what it is.',
+        'She lives above a laundromat. Everything smells like dryer sheets and decisions.',
+      ],
+    },
+    // app women who turn up on the block: how many a day, and for how long
+    runInsPerDay: 3,
+    runInMinutes: 90,
     rejectLines: [
       '"lol no"',
       'She unmatched you before the heart finished animating.',

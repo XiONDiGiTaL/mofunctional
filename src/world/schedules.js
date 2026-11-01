@@ -7,6 +7,8 @@
  * the cardboard by the bodega all day, the corner junkie drifting between the alley and the
  * bench, Rae doing the walk-around he calls an inspection.
  */
+import { CONFIG } from '../core/config.js';
+import { STRANGERS } from '../core/strangers.js';
 
 export const STREET_SCHEDULES = {
   dale: [
@@ -119,4 +121,62 @@ export function partnerWhereabouts(kind, minuteOfDay) {
   const row = partnerTarget(kind, minuteOfDay);
   if (!row) return '';
   return row.away ? row.note : `${PARTNER_AREA_NAMES[row.area] || row.area} · ${row.note}`;
+}
+
+/* ------------------------------------------------------------------ app women, in person */
+
+/**
+ * A few of the twenty FeedLove women turn up on the block each day: one at the bus stop, one in
+ * the park, one buying coffee. Same for a given day every time (seeded), never on a spot the
+ * three use, an hour and a half each, starting between 09:00 and 21:15.
+ */
+const RUN_IN_SPOTS = {
+  street: [[2.8, -2.4, 'waiting for somebody who is late'], [-5.6, -2.0, 'on the payphone to somebody she is mad at'], [11.5, -3.0, 'smoking, looking at nothing'], [4.6, -1.4, 'walking a dog that is walking her']],
+  park: [[2.0, -2.2, 'on her phone by the path'], [-3.0, 4.4, 'reading on the grass'], [5.6, 1.0, 'watching the hoops, not the players']],
+  quikstop: [[2.6, 1.8, 'reading the back of a cereal box']],
+  bodega: [[1.0, -2.0, 'waiting on a sandwich']],
+  habibs: [[0.4, 1.8, 'eating standing up']],
+};
+
+function seeded(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const runInCache = new Map();
+/** Today's run-ins: [{ id, area, x, z, note, from, to }] (minutes of the day). */
+export function strangerRunIns(day) {
+  if (runInCache.has(day)) return runInCache.get(day);
+  const r = seeded(day * 7919 + 3);
+  const pool = STRANGERS.slice();
+  const areas = Object.keys(RUN_IN_SPOTS);
+  const used = new Set();
+  const out = [];
+  const n = CONFIG.dating.runInsPerDay;
+  const len = CONFIG.dating.runInMinutes;
+  while (out.length < n && pool.length) {
+    const w = pool.splice(Math.floor(r() * pool.length), 1)[0];
+    const area = areas[Math.floor(r() * areas.length)];
+    const spots = RUN_IN_SPOTS[area].filter((_, i) => !used.has(`${area}${i}`));
+    if (!spots.length) continue;
+    const k = Math.floor(r() * spots.length);
+    const [x, z, note] = spots[k];
+    used.add(`${area}${RUN_IN_SPOTS[area].indexOf(spots[k])}`);
+    const from = 9 * 60 + Math.floor(r() * 50) * 15; // 09:00-21:15, so it never crosses midnight
+    out.push({ id: w.id, area, x, z, note, from, to: from + len });
+  }
+  if (runInCache.size > 8) runInCache.clear();
+  runInCache.set(day, out);
+  return out;
+}
+
+/** Where one of them is right now: a row like a partner's, or { away: true }. */
+export function strangerTarget(id, day, minuteOfDay) {
+  const hit = strangerRunIns(day).find((x) => x.id === id && minuteOfDay >= x.from && minuteOfDay < x.to);
+  return hit || { away: true };
 }

@@ -74,7 +74,8 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Stephanie / Melanie / Diana, hearts, flirt, dates, girlfriend, Cheeks, Afterglow | done |
 | Gifts, moving in, rent share, household behaviour | done |
 | **FeedLove dating**: browse profiles; most women reject Mo; the three answer, swap numbers, become contacts, set up dates | done |
-| The three modelled on the owner's sheet (faces, hair, outfits); stranger profiles get generic thumbnails | done |
+| The three modelled on the owner's sheet (faces, hair, outfits) | done |
+| Twenty app women from the owner's sheet: real faces in HEARTS, 3D models, run-ins on the block, a few open to hooking up (not dating) | done |
 | Hugs, a kiss on Mo's cheek, holding hands and walking together | done |
 | The three have schedules across the park, Quik-Stop, bodega, Habib's and the street | done |
 | Live-in partner paths around furniture | todo |

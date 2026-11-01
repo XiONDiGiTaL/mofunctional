@@ -23,7 +23,8 @@ import { migrate, SAVE_VERSION } from '../src/systems/migrate.js';
 import * as dating from '../src/systems/dating.js';
 import * as dealer from '../src/systems/dealer.js';
 import { earn } from '../src/core/state.js';
-import { partnerTarget, PARTNER_SCHEDULES, PARTNER_AREA_NAMES } from '../src/world/schedules.js';
+import { partnerTarget, PARTNER_SCHEDULES, PARTNER_AREA_NAMES, strangerRunIns } from '../src/world/schedules.js';
+import { STRANGERS, STRANGER_BY_ID } from '../src/core/strangers.js';
 
 let passed = 0;
 let failed = 0;
@@ -565,12 +566,53 @@ check('dating: strangers almost always say no; the three always match and become
         eq(romance.partnerState(g.state, p.partner).met, true, 'becomes a contact');
         if (!g.state.messages.some((m) => m.from === CONFIG.partners[p.partner].name.toUpperCase())) throw new Error('no text with her number');
       } else {
-        strangers++;
-        if (res.result === 'reject') rejects++;
+        const w = STRANGER_BY_ID[p.face];
+        if (!w.open) {
+          strangers++;
+          if (res.result === 'reject') rejects++;
+          if (res.result === 'hookup') throw new Error(`${w.name} is not open but hooked up`);
+        } else if (!['hookup', 'reject', 'ghost'].includes(res.result)) throw new Error(`open ${w.name}: ${res.result}`);
       }
     }
   }
   if (rejects / strangers < 0.8) throw new Error(`strangers said no only ${rejects}/${strangers}`);
+  return true;
+});
+
+check('hookups: open app women can become a night, late, with a cooldown; never a date', () => {
+  const g = stubGame();
+  const w = STRANGERS.find((x) => x.open);
+  g.state.clock.m = 10 * 60;
+  dating.addHookupContact(g, w.id);
+  eq(dating.hookupContacts(g.state).some((x) => x.id === w.id), true, 'contact');
+  eq(dating.hookupAvailable(g.state, w.id).ok, false, 'not at 10:00');
+  g.state.clock.m = 23 * 60;
+  g.state.stats.energy = 80;
+  eq(dating.hookupAvailable(g.state, w.id).ok, true, 'at 23:00');
+  const old = CONFIG.dating.hookup.flakeChance;
+  CONFIG.dating.hookup.flakeChance = 0;
+  const morale = g.state.stats.morale;
+  dating.hookup(g, w.id);
+  CONFIG.dating.hookup.flakeChance = old;
+  eq(dating.datingState(g.state).hookups[w.id].count, 1, 'counted');
+  eq(g.state.stats.morale > morale - 1, true, 'morale');
+  g.state.clock.m = 1440 + 23 * 60;
+  eq(dating.hookupAvailable(g.state, w.id).ok, false, 'cooldown');
+  eq(romance.isPartnerId(w.id), false, 'not dateable');
+  return true;
+});
+
+check('run-ins: a few app women a day, each in a real place for a while', () => {
+  for (let day = 1; day <= 10; day++) {
+    const list = strangerRunIns(day);
+    eq(list.length, CONFIG.dating.runInsPerDay, 'count');
+    for (const r of list) {
+      eq(!!STRANGER_BY_ID[r.id], true, 'roster');
+      eq(!!PARTNER_AREA_NAMES[r.area], true, 'area');
+      eq(r.to - r.from, CONFIG.dating.runInMinutes, 'length');
+    }
+    eq(JSON.stringify(strangerRunIns(day)), JSON.stringify(list), 'same every time');
+  }
   return true;
 });
 

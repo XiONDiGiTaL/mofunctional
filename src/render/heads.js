@@ -12,6 +12,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { MO_FACE } from './mo_face_data.js';
 import { NPC_FACES } from './npc_faces_data.js';
+import { STRANGERS } from '../core/strangers.js';
 
 /* --------------------------------- shape --------------------------------- */
 
@@ -266,6 +267,16 @@ export const FACE_SPECS = {
   },
 };
 
+// the twenty dating-app women: faces from their sheet, colours from their roster entry
+for (const w of STRANGERS) {
+  const L = w.look;
+  FACE_SPECS[w.id] = {
+    skin: L.skin, hair: L.hair, hairLight: L.hairLight, hairDark: L.hairDark, style: L.style,
+    brow: L.hairDark, eye: '#3a2a1e', lips: '#9a5a50', lipsLight: '#bf7a6c', age: 0.25, fem: true, jaw: 0.92,
+    hairLen: L.hairLen,
+  };
+}
+
 const toHex = (c) => '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
 export function faceSpec(kind) {
   const S = FACE_SPECS[kind] || FACE_SPECS.kev;
@@ -280,8 +291,8 @@ export function faceSpec(kind) {
 
 /** Where hair starts (t) at a given angle, for the back/side fill. */
 function hairStartT(a, S) {
-  const side = S.sideT ?? { bob: 0.2, long: 0.2, shoulder: 0.2, shag: 0.2, curls: 0.24, dread: 0.5, braids: 0.56, receding: 0.6, swept: 0.6, durag: 0.62, kufi: 0.62, beanie: 0.56, quiff: 0.6 }[S.style] ?? 0.6;
-  const back = S.backT ?? { bob: 0.16, long: 0.06, shoulder: 0.04, shag: 0.04, curls: 0.04, dread: 0.26, braids: 0.34, receding: 0.4, swept: 0.38, durag: 0.4, kufi: 0.45, beanie: 0.46, quiff: 0.38 }[S.style] ?? 0.4;
+  const side = S.sideT ?? { bun: 0.56, knots: 0.58, bob: 0.2, long: 0.2, shoulder: 0.2, shag: 0.2, curls: 0.24, dread: 0.5, braids: 0.56, receding: 0.6, swept: 0.6, durag: 0.62, kufi: 0.62, beanie: 0.56, quiff: 0.6 }[S.style] ?? 0.6;
+  const back = S.backT ?? { bun: 0.36, knots: 0.36, bob: 0.16, long: 0.06, shoulder: 0.04, shag: 0.04, curls: 0.04, dread: 0.26, braids: 0.34, receding: 0.4, swept: 0.38, durag: 0.4, kufi: 0.45, beanie: 0.46, quiff: 0.38 }[S.style] ?? 0.4;
   const k = smooth(Math.PI / 2, Math.PI, Math.abs(a));
   return side + (back - side) * k;
 }

@@ -10,6 +10,21 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### The twenty app women: faces, hookups, run-ins
+
+- `assets/ref/app_women_bank.png` (owner's 5x4 sheet) baked as `w0`..`w19` in `NPC_FACES`.
+  `core/strangers.js` is the roster: name, age, hood, bio, `open`, and a `look` that heads.js
+  (face specs) and characters.js (CAST) read. New hair styles `bun`, `knots`; `shoulder`/`shag`
+  take `hairLen`. `ui/thumbs.js` (generic SVGs) is gone.
+- `systems/dating.js`: the daily stack is a seeded draw from the roster. Open women can match as
+  `hookup` (`CONFIG.dating.hookup`): `hookupContacts`, `hookupAvailable` (22:00-03:00, cooldown,
+  energy), `hookup` (flake chance; fade, 3 h, stats; a girlfriend may find out), and
+  `addHookupContact` for run-ins. `d.seen` remembers what happened with each.
+- `world/schedules.js` `strangerRunIns(day)` / `strangerTarget`: three a day, seeded, 90 min,
+  09:00-21:15 starts, spots clear of the three. The world places them through the same presence
+  code as the partners; `world/encounters.js` is the talk menu.
+- 41 system checks (open/closed behaviour, hookup window and cooldown, run-ins).
+
 ### The three women, remodelled; schedules; hugs, hands and a kiss
 
 - **Look**: `assets/ref/partner_face_bank.png` (owner's sheet) baked into `NPC_FACES` for diana,

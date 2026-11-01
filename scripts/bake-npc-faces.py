@@ -11,7 +11,8 @@ Usage: python3 scripts/bake-npc-faces.py
 Panel boxes and landmarks (eye line, chin, centre, temple half-width; panel pixels) are measured
 from the 1024x1008 bank and listed below. The three women (Diana, Stephanie, Melanie) come from
 their own sheet, assets/ref/partner_face_bank.png (1024x1024, three tall panels), with an explicit
-portrait box because their panels are too tall to centre-crop. Mo is not in here: he keeps his
+portrait box because their panels are too tall to centre-crop. The twenty dating-app women (w0-w19)
+come from assets/ref/app_women_bank.png. Mo is not in here: he keeps his
 own sheet.
 """
 import base64, io, json, sys
@@ -46,7 +47,19 @@ def jpeg(img, q=86):
     return 'data:image/jpeg;base64,' + base64.b64encode(b.getvalue()).decode()
 
 out = {}
-entries = [(BANK, k, v, None) for k, v in P.items()] + [(PARTNERS, k, v[:5], v[5]) for k, v in P2.items()]
+# the twenty women from the dating app (assets/ref/app_women_bank.png, a 5x4 grid): w0..w19 in
+# reading order. Panel boxes are inset from the frames; landmarks are per row, panel pixels.
+APP = Image.open('assets/ref/app_women_bank.png').convert('RGB')
+APP_X = [22, 221, 420, 620, 819]
+APP_Y = [20, 259, 527, 800]
+APP_ROW = [(87, 160), (84, 160), (92, 170), (85, 165)]  # eye line, chin
+P3 = {}
+for r, y in enumerate(APP_Y):
+    for c, x in enumerate(APP_X):
+        eye, chin = APP_ROW[r]
+        P3[f'w{r * 5 + c}'] = ((x + 2, y + 2, x + 182, y + 184), eye - 2, chin - 2, 90, 50)
+entries = ([(BANK, k, v, None) for k, v in P.items()] + [(PARTNERS, k, v[:5], v[5]) for k, v in P2.items()]
+           + [(APP, k, v, None) for k, v in P3.items()])
 for im, kind, (box, eye, chin, cx, hw), porbox in entries:
     x0, y0, x1, y1 = box
     panel = im.crop(box)

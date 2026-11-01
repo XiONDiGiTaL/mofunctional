@@ -7,13 +7,19 @@
  * numbers, and from then on they are ordinary contacts in Txtr and go through the same romance
  * system as meeting them in the park — chatting, dates, everything.
  *
+ * The strangers are a fixed cast of twenty (core/strangers.js), so the same faces come round
+ * again. Most say no. A few (`open`) are not looking for a boyfriend but might be looking for
+ * company: a heart can become a hookup contact — a night, a fade to black, no dates, no future —
+ * and she can turn up in person on the block (world/schedules.js strangerRunIns).
+ *
  * Headless: deterministic per day (a stranger's profile does not change if you reopen the app),
  * capped hearts per day, state in `state.dating`, created lazily.
  */
 import { CONFIG } from '../core/config.js';
-import { dayOf } from '../core/util.js';
+import { dayOf, minuteOfDay, hhmm } from '../core/util.js';
 import { bump, logLine, pushMessage } from '../core/state.js';
 import * as romance from './romance.js';
+import { STRANGERS, STRANGER_BY_ID } from '../core/strangers.js';
 
 const D = CONFIG.dating;
 
@@ -22,6 +28,9 @@ export function datingState(s) {
   const d = s.dating;
   d.results = d.results || {};
   d.matched = d.matched || {};
+  d.seen = d.seen || {};        // stranger id -> what happened in the app: 'reject' | 'ghost' | 'hookup'
+  d.hookups = d.hookups || {};  // stranger id -> { since, lastDay, count, flaked }
+  d.hookupCount = Number(d.hookupCount) || 0;
   return d;
 }
 
@@ -41,19 +50,12 @@ export function profilesToday(s) {
   const day = dayOf(s.clock.m);
   const d = datingState(s);
   const r = rng(day * 9973 + 17);
-  const pick = (arr) => arr[Math.floor(r() * arr.length)];
   const out = [];
-  for (let i = 0; i < D.strangersPerDay; i++) {
-    const name = pick(D.names);
-    out.push({
-      id: `d${day}-${i}`,
-      name,
-      age: 23 + Math.floor(r() * 22),
-      hood: pick(D.hoods),
-      bio: pick(D.bios),
-      tint: D.tints[Math.floor(r() * D.tints.length)],
-      partner: null,
-    });
+  // a seeded shuffle of the twenty; today's stack is the first few
+  const deck = STRANGERS.slice();
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+  for (const w of deck.slice(0, D.strangersPerDay)) {
+    out.push({ id: `d${day}-${w.id}`, name: w.name, age: w.age, hood: w.hood, bio: w.bio, face: w.id, partner: null });
   }
   // the three show up in the stack until he has matched with them, one or two a day
   for (const id of romance.PARTNER_KEYS) {
@@ -105,16 +107,118 @@ export function sendHeart(g, profileId) {
     return { ok: true, result: 'match', line: D.partnerOpener[id] || '', partner: id };
   }
 
-  // strangers: mostly no. a rare match that goes nowhere.
+  // strangers: mostly no. a rare match that goes nowhere. and a few who are not looking for a
+  // boyfriend, which is not the same as not looking.
+  const w = STRANGER_BY_ID[prof.face];
   const roll = Math.random() * 100 + (s.stats.hygiene - 50) * 0.05 + (s.stats.morale - 50) * 0.05;
+  if (w?.open && !d.hookups[w.id]?.flaked && (d.hookups[w.id] || roll >= 100 - D.hookup.matchChance)) {
+    d.results[profileId] = 'hookup';
+    d.seen[w.id] = 'hookup';
+    if (!d.hookups[w.id]) d.hookups[w.id] = { since: day, lastDay: 0, count: 0, flaked: false };
+    bump(s, 'morale', 5);
+    const line = pickLine(D.hookup.openers);
+    pushMessage(g, { from: w.name.toUpperCase(), subject: 'FeedLove match', body: `${line}\n\nnot a date. not a boyfriend. text me after ${D.hookup.fromHour}:00.\n\n— ${w.name}` });
+    logLine(g, `${w.name} matched on FeedLove. Not for dating.`, 'info');
+    return { ok: true, result: 'hookup', line };
+  }
   if (roll >= 100 - D.strangerGhostChance) {
     d.results[profileId] = 'ghost';
+    if (w) d.seen[w.id] = 'ghost';
     bump(s, 'morale', 2);
     return { ok: true, result: 'ghost', line: pickLine(D.ghostLines) };
   }
   d.results[profileId] = 'reject';
+  if (w) d.seen[w.id] = 'reject';
   bump(s, 'morale', -1);
   return { ok: true, result: 'reject', line: pickLine(D.rejectLines) };
+}
+
+/* ------------------------------------------------------------------ hookups */
+
+/** The women he can text for a night: matched in the app or met on the block, not flaked. */
+export function hookupContacts(s) {
+  const d = datingState(s);
+  return Object.keys(d.hookups).filter((id) => STRANGER_BY_ID[id] && !d.hookups[id].flaked).map((id) => STRANGER_BY_ID[id]);
+}
+
+/** Make her a hookup contact (a run-in that went well). */
+export function addHookupContact(g, id) {
+  const d = datingState(g.state);
+  const w = STRANGER_BY_ID[id];
+  if (!w || d.hookups[id]) return false;
+  d.hookups[id] = { since: dayOf(g.state.clock.m), lastDay: 0, count: 0, flaked: false };
+  d.seen[id] = 'hookup';
+  pushMessage(g, { from: w.name.toUpperCase(), subject: 'the number', body: `it's ${w.name}. from earlier. after ${D.hookup.fromHour}:00, if you're around.` });
+  return true;
+}
+
+/** { ok, reason } — late at night, once every few days with each of them. */
+export function hookupAvailable(s, id) {
+  const d = datingState(s);
+  const h = d.hookups[id];
+  if (!h || h.flaked) return { ok: false, reason: 'she is not answering' };
+  const mod = minuteOfDay(s.clock.m);
+  const from = D.hookup.fromHour * 60, to = D.hookup.toHour * 60;
+  const late = from > to ? (mod >= from || mod < to) : (mod >= from && mod < to);
+  if (!late) return { ok: false, reason: `after ${hhmm(from)}` };
+  if (h.lastDay && dayOf(s.clock.m) - h.lastDay < D.hookup.cooldownDays) return { ok: false, reason: 'not again this soon' };
+  if (s.stats.energy < D.hookup.minEnergy) return { ok: false, reason: 'too tired' };
+  return { ok: true };
+}
+
+/**
+ * The night. No dates, no affection meter, nothing explicit: a text, a train, a door, a fade to
+ * black, and the ride home. She might flake instead. If Mo has a girlfriend, somebody might see.
+ */
+export function hookup(g, id) {
+  const s = g.state;
+  const d = datingState(s);
+  const w = STRANGER_BY_ID[id];
+  const av = hookupAvailable(s, id);
+  if (!w || !av.ok) { g.toast(`${w?.name || 'She'}: ${av.reason}.`, 'info'); return false; }
+  const h = d.hookups[id];
+  const H = D.hookup;
+  if (Math.random() < H.flakeChance) {
+    h.flaked = true;
+    g.advance(30);
+    bump(s, 'morale', -4);
+    pushMessage(g, { from: w.name.toUpperCase(), subject: '', body: pickLine(H.flakeLines) });
+    g.toast(`${w.name} stopped answering halfway through "where are you".`, 'bad');
+    return { ok: true, result: 'flake' };
+  }
+  const finish = () => {
+    g.advance(H.minutes, { noCollapse: true });
+    h.lastDay = dayOf(s.clock.m);
+    h.count += 1;
+    d.hookupCount += 1;
+    bump(s, 'morale', H.morale);
+    bump(s, 'stress', H.stress);
+    bump(s, 'energy', H.energy);
+    bump(s, 'hygiene', H.hygiene);
+    // a girlfriend on the block hears about it, sometimes
+    const gf = romance.PARTNER_KEYS.find((pid) => romance.isGirlfriend(s, pid));
+    let caught = '';
+    if (gf && Math.random() < H.caughtChance) {
+      const st = romance.partnerState(s, gf);
+      st.affection = Math.max(0, st.affection - H.caughtAffection);
+      bump(s, 'morale', -10);
+      const p = CONFIG.partners[gf];
+      pushMessage(g, { from: p.name.toUpperCase(), subject: '', body: 'somebody saw you get on the train with a girl from that app at midnight. do not text me today.' });
+      caught = `\n\nYour phone buzzes on the ride home. It is ${p.name}. Somebody saw you.`;
+    }
+    if (g.world && g.world.areaId !== 'apartment') g.goTo('apartment');
+    g.fadeIn?.();
+    g.openModal({
+      kicker: `${w.hood.toUpperCase()} · ${hhmm(s.clock.m)}`,
+      title: w.name,
+      body: `${pickLine(H.nightLines)}\n\nThe door closed. Later: the long train home, the car empty except for a man asleep on his own shoulder. ${w.name} did not ask you to stay and you did not ask to.${caught}`,
+      choices: [{ label: 'Go to bed.', effect: () => {} }],
+    });
+    logLine(g, `A night with ${w.name}. Not a date.`, caught ? 'bad' : 'good');
+  };
+  if (g.fadeOut) g.fadeOut(finish, 420);
+  else finish();
+  return { ok: true, result: 'night' };
 }
 
 const pickLine = (arr) => arr[Math.floor(Math.random() * arr.length)];

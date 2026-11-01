@@ -286,8 +286,21 @@ in a day is worth affection, morale and a little less stress; after that it is j
 profiles — strangers from around the boroughs, and, until he has matched with them, Stephanie,
 Melanie and Diana. Sending a heart takes a few minutes and there are ten a day. Strangers almost
 always say no (unmatched before the heart finishes animating; "do you have a car?"; left on read
-at 1:14 AM); the rare match ghosts him. Strangers get generic painted thumbnails (Mo never meets
-them); the three have their real faces. The three answer: they match, send their number, appear
+at 1:14 AM); the rare match ghosts him.
+
+**The other twenty.** The strangers are a fixed cast of twenty women (`core/strangers.js`), with
+faces, hair and clothes from the owner's app sheet (`assets/ref/app_women_bank.png`), so the same
+faces come round again. None of them can be dated. Most say no. A few are not looking for a
+boyfriend but might be looking for company: a heart can come back as **MATCH · not for dating**,
+and she goes under *Not for dating* in HEARTS with a **HOOK UP** button — after 22:00, once every
+few days with each of them, not when Mo is exhausted. It is a fade to black and the long train
+home: morale up, stress down, energy and hygiene down. Sometimes she flakes and is gone. If Mo has
+a girlfriend, somebody might see him leave, and she will hear about it.
+
+**Running into them.** Three of the twenty are out on the block each day (the street, the park,
+the Quik-Stop, the bodega, Habib's) for an hour and a half. Until he has seen her in the app she
+is just "the woman"; she may remember turning him down, or matching, and one of the open ones may
+give him her number on the spot. The three answer: they match, send their number, appear
 in Txtr as contacts, and from the app he can text them or ask them out through the same date
 planner as everywhere else.
 
