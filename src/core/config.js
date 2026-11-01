@@ -428,6 +428,37 @@ export const CONFIG = {
     fine: 250,
     parkChance: 0.55,      // a patrol in the park on a given night visit
     seeRange: 6,
+    // a bribe is a gamble, and the price is the odds. $50 is a maybe; $100 is a maybe with
+    // a straighter face. Neither is a guarantee, and a refused bribe is remembered.
+    bribe: {
+      low: 50, high: 100,
+      lowChance: 0.52, highChance: 0.8,
+      failFineExtra: 60,       // on top of the usual fine: he tried to buy a cop
+      failMorale: -12,
+    },
+    // the other kind of cop: one a night, and only if Mo is carrying a habit and a wallet
+    crooked: {
+      perNight: 1,
+      chance: 0.05,            // per second, near a patrol, at night, while high
+      discount: 0.45,          // what he charges against the usual price
+      lines: [
+        '"You look like a man who appreciates a discount." He does not break stride. The bag changes hands in a doorway that smells like rain.',
+        '"Evidence room has a leak." He says it like a weather report. "Things go missing in a leak."',
+        '"I am not doing this." He is, though. He was always going to do this. He just wanted to say the sentence out loud.',
+      ],
+    },
+  },
+
+  // LonelyFans: the app nobody admits to having. The subscription is $2 a day, the pictures are
+  // not real, and the whole thing is a joke about what people pay for.
+  fans: {
+    name: 'LonelyFans',
+    daily: 2,
+    dignityMorale: 22,          // below this, the app tells him what it thinks of him
+    dignityLine: 'have some dignity man, hit the pipe or something instead!',
+    selfie: { stress: -9, morale: -5, minutes: 6 },
+    cheeks: { price: 500, stress: -26, morale: -14, energy: -10, minutes: 180, cooldownDays: 4 },
+    subscribeLine: 'Welcome. Your card is on file. So is your face, but we sell that to someone else.',
   },
 
   // Meatball, the stray on Kestrel
@@ -569,6 +600,23 @@ export const CONFIG = {
     cheekCooldownMinutes: 24 * 60,
     afterglowHours: 24,
     giftCooldownDays: 3,
+    // Ending something to move somebody else in. She does not shout, which is worse: she goes
+    // quiet, she is heartbroken, and the only way back in is patience, gifts and luck.
+    heartbreak: {
+      affectionLoss: 46,
+      moodStart: 10,
+      blockMoodLoss: 8,
+      begCooldownMinutes: 180,
+      begChanceBase: 0.18,      // plus mood and affection, see romance.beg()
+      blockChanceBase: 0.38,    // and a high mood makes her less likely to block him
+      silenceMoodLoss: 2,
+      resumeMood: 62,           // out of heartbreak at this mood, with this much affection
+      resumeAffection: 26,
+      apologyMood: 12,          // one honest apology a day
+      giftMood: { flowers: 10, chocolates: 11, ring: 28, food: 14, cash: 13 },
+      giftAffection: { flowers: 2, chocolates: 2, ring: 6, food: 3, cash: 1 },
+      ringAffection: 6,
+    },
     activities: {
       coffee: { id: 'coffee', name: 'Coffee at the bodega', where: 'bodega', cost: 6, minutes: 45, affection: 9, morale: 5, stress: -3, energy: -2 },
       dinner: { id: 'dinner', name: 'Dinner at Habib\'s', where: 'habibs', cost: 28, minutes: 90, affection: 16, morale: 10, stress: -6, energy: 4 },

@@ -1736,6 +1736,8 @@ export function partnerMenu(g, id) {
   const s = g.state;
   const st = romance.partnerState(s, id);
   if (!st.met) romance.meetPartner(g, id);
+  // it ended badly: standing in front of her is an apology, not a flirt
+  if (st.heartbroken) return romance.openReconcileMenu(g, id);
   const atHome = g.world?.areaId === 'apartment' && s.romance?.liveIn === id;
   const choices = [
     {

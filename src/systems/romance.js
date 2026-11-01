@@ -20,7 +20,7 @@
  */
 import { CONFIG } from '../core/config.js';
 import { clamp, chance, pick, money, dayOf, minuteOfDay, hhmm, uid } from '../core/util.js';
-import { bump, logLine, pushMessage, addItem, countItem, earn, spend } from '../core/state.js';
+import { bump, logLine, pushMessage, addItem, countItem, earn, spend, hasItem, removeItem } from '../core/state.js';
 
 export const PARTNER_KEYS = ['stephanie', 'melanie', 'diana'];
 export const partner = (id) => (PARTNER_KEYS.includes(id) ? CONFIG.partners[id] : null);
@@ -55,6 +55,16 @@ export function romanceState(s) {
     p.lastGiftDay = Number(p.lastGiftDay) || 0;
     p.householdDay = Number(p.householdDay) || 0;
     p.gestureDay = p.gestureDay && typeof p.gestureDay === 'object' ? p.gestureDay : {};
+    // how it ended, if it ended badly. `mood` is the only way back in after a heartbreak.
+    p.heartbroken = !!p.heartbroken;
+    p.blocked = !!p.blocked;
+    p.reconciling = !!p.reconciling;
+    p.heartbreakDay = Number(p.heartbreakDay) || 0;
+    p.mood = clamp(Number.isFinite(Number(p.mood)) ? Number(p.mood) : (p.heartbroken ? 10 : 50), 0, 100);
+    p.lastBegAt = Number(p.lastBegAt) || -99999;
+    // -1, not 0: day numbers start at 0, so "she heard the apology on day 0" is indistinguishable from
+    // "never" if this starts at zero, and the first apology of the run would be refused
+    p.reconcileDay = Number.isFinite(Number(p.reconcileDay)) && p.reconcileDay !== undefined ? Number(p.reconcileDay) : -1;
   }
   r.liveIn = PARTNER_KEYS.includes(r.liveIn) ? r.liveIn : null;
   // repair: a live-in flag must match the one live-in partner and her rent share must see it
@@ -275,6 +285,10 @@ export function startDate(g, id, activityId) {
     g.toast(`${p.name} says she does not know you well enough for that. Talk to her first.`, 'bad');
     return { ok: false, reason: 'too soon' };
   }
+  if (partnerState(s, id).heartbroken && !partnerState(s, id).reconciling) {
+    g.toast(`${p.name} is not going anywhere with you. Not yet.`, 'bad');
+    return { ok: false, reason: 'heartbroken' };
+  }
   if (s.money < activity.cost) {
     g.toast(`That costs ${money(activity.cost)}. You have ${money(s.money)}.`, 'bad');
     g.audio.sfx('deny');
@@ -439,8 +453,17 @@ export function canAskMoveIn(s, id) {
   const st = partnerState(s, id);
   const p = partner(id);
   if (!p || !st.girlfriend || romanceState(s).liveIn) return false;
+  if (st.heartbroken) return false;
   const days = dayOf(s.clock.m) - (st.sinceDay || dayOf(s.clock.m));
   return days >= CONFIG.romance.moveInDays && st.affection >= CONFIG.romance.moveInAffection;
+}
+
+/** Somebody lives here and it is not her: the move-in is possible, and it costs the household. */
+export function canMoveInOver(s, id) {
+  const r = romanceState(s);
+  const st = partnerState(s, id);
+  if (!r.liveIn || r.liveIn === id) return false;
+  return st.girlfriend && !st.heartbroken && st.affection >= CONFIG.romance.moveInAffection;
 }
 
 export function askMoveIn(g, id) {
@@ -449,6 +472,22 @@ export function askMoveIn(g, id) {
   const s = g.state;
   const r = romanceState(s);
   const st = partnerState(s, id);
+  // one live-in at a time, ever. Moving forward means the one in the kitchen moves out.
+  if (r.liveIn && r.liveIn !== id) {
+    const other = CONFIG.partners[r.liveIn];
+    if (!st.girlfriend) { g.toast(`${p.name} is not your girlfriend. ${other.name} lives here. Sort one thing out at a time.`, 'info'); return false; }
+    if (st.affection < CONFIG.romance.moveInAffection) { g.toast(`${p.name} says it is too soon. ${other.name} is in the kitchen.`, 'bad'); return false; }
+    g.openModal({
+      kicker: `UNIT 3B · ${other.name.toUpperCase()}`,
+      title: 'Somebody Lives Here',
+      body: `${other.name}'s things are in the bathroom. Her rent share is in the ledger. She is asleep in the other room, or she is not asleep, and either way she can hear this conversation through the wall, which is the whole problem with this apartment.\n\nAsking ${p.name} to move in means ${other.name} moves out. Today.`,
+      choices: [
+        { label: `Do it. ${other.name} moves out.`, sub: 'this ends a relationship', effect: () => { endLiveIn(g, r.liveIn, 'replaced'); askMoveIn(g, id); } },
+        { label: 'No. Not like this.', sub: '', effect: () => {} },
+      ],
+    });
+    return false;
+  }
   if (r.liveIn) { g.toast(`${CONFIG.partners[r.liveIn].name} already lives here.`, 'info'); return false; }
   if (!st.girlfriend) { g.toast('Ask her to be your girlfriend first. One thing at a time.', 'info'); return false; }
   const days = dayOf(s.clock.m) - (st.sinceDay || dayOf(s.clock.m));
@@ -489,15 +528,213 @@ export function breakUp(g, id) {
   const r = romanceState(s);
   const st = partnerState(s, id);
   if (!st.girlfriend) return false;
+  const wasLiveIn = r.liveIn === id;
   st.girlfriend = false;
   st.liveIn = false;
   st.affection = clamp(st.affection - 35);
-  if (r.liveIn === id) r.liveIn = null;
+  if (wasLiveIn) endLiveIn(g, id, 'broke up', { quiet: true });
+  else {
+    st.heartbroken = true;
+    st.heartbreakDay = dayOf(s.clock.m);
+    st.mood = Math.min(st.mood ?? 50, CONFIG.romance.heartbreak.moodStart);
+    st.reconciling = false;
+  }
   bump(s, 'morale', -22);
   bump(s, 'stress', 18);
   logLine(g, `Broke up with ${p.name}.`, 'bad');
   g.toast(`${p.name} takes her things and does not slam the door, which is worse.`, 'bad');
   return true;
+}
+
+/* ------------------------------------------------------------------ heartbreak */
+
+const HB = () => CONFIG.romance.heartbreak;
+
+export const isHeartbroken = (s, id) => !!romanceState(s).partners[id]?.heartbroken;
+export const isBlocked = (s, id) => !!romanceState(s).partners[id]?.blocked;
+export const moodOf = (s, id) => romanceState(s).partners[id]?.mood ?? 50;
+export const canDateAgain = (s, id) => { const st = partnerState(s, id); return !st.heartbroken || !!st.reconciling; };
+
+/**
+ * She moves out and it is final: girlfriend off, live-in off, heartbroken on, and the only door
+ * back in is her mood (gifts, apologies, patience) or a lucky text.
+ */
+export function endLiveIn(g, id, reason = 'replaced', { quiet = false } = {}) {
+  const p = partner(id);
+  if (!p) return false;
+  const s = g.state;
+  const r = romanceState(s);
+  const st = partnerState(s, id);
+  const H = HB();
+  st.girlfriend = false;
+  st.liveIn = false;
+  st.heartbroken = true;
+  st.heartbreakDay = dayOf(s.clock.m);
+  st.reconciling = false;
+  st.blocked = false;
+  st.mood = Math.min(st.mood ?? 50, H.moodStart);
+  st.affection = clamp(st.affection - H.affectionLoss);
+  st.lastBegAt = -99999;
+  if (r.liveIn === id) r.liveIn = null;
+  bump(s, 'morale', quiet ? -6 : -20);
+  bump(s, 'stress', quiet ? 6 : 16);
+  logLine(g, `${p.name} moved out of Unit 3B. Heartbroken.`, 'bad');
+  if (!quiet) g.toast(`${p.name} packs in forty minutes and says one sentence on the way out. It is not the sentence you wanted.`, 'bad');
+  pushMessage(g, {
+    from: p.name.toUpperCase(),
+    subject: '',
+    body: pick([
+      'do not call me. do not text me. i mean it, and i never mean it, so you know it is bad.',
+      'i hope she is worth the radiator.',
+      'i am not crying about you. i am crying about the forty minutes i spent packing.',
+    ]),
+    kind: 'heartbroken',
+  });
+  return true;
+}
+
+const reconcileReady = (s, id) => {
+  const st = partnerState(s, id);
+  const H = HB();
+  return (st.mood ?? 0) >= H.resumeMood && st.affection >= H.resumeAffection;
+};
+
+/** She is out of the heartbreak: dating resumes like it always did. */
+export function restore(g, id) {
+  const p = partner(id);
+  if (!p) return false;
+  const s = g.state;
+  const st = partnerState(s, id);
+  st.heartbroken = false;
+  st.blocked = false;
+  st.reconciling = false;
+  st.mood = Math.max(st.mood ?? 50, 68);
+  bump(s, 'morale', 12);
+  bump(s, 'stress', -8);
+  logLine(g, `${p.name} is talking to you again.`, 'good');
+  g.toast(`${p.name} looks at you for the first time in a while. It is not forgiveness. It is a door left open.`, 'good');
+  pushMessage(g, {
+    from: p.name.toUpperCase(),
+    subject: '',
+    body: pick(['you are not off the hook. but you can sit down.', 'one coffee. do not make it a whole thing.', 'i am still angry. i am also still here. both can be true.']),
+  });
+  return true;
+}
+
+/**
+ * Begging by text. It can go three ways: she blocks him, she agrees to see him once, or the
+ * message sits there and does nothing, which is the most common outcome in real life.
+ */
+export function beg(g, id) {
+  const p = partner(id);
+  if (!p) return { ok: false, reason: 'nobody' };
+  const s = g.state;
+  const st = partnerState(s, id);
+  const H = HB();
+  if (!st.heartbroken) return { ok: false, reason: 'not heartbroken' };
+  if (st.blocked) return { ok: false, reason: 'blocked' };
+  if (s.clock.m - st.lastBegAt < H.begCooldownMinutes) return { ok: false, reason: 'cooldown' };
+  st.lastBegAt = s.clock.m;
+  g.advance(5);
+  const mood = st.mood ?? 50;
+  const blockChance = Math.max(0.04, H.blockChanceBase - (mood / 100) * 0.24 - (st.affection / 100) * 0.12);
+  const yesChance = H.begChanceBase + (mood / 100) * 0.35 + (st.affection / 100) * 0.2;
+  const roll = Math.random();
+  if (roll < blockChance) {
+    st.blocked = true;
+    st.mood = clamp(mood - H.blockMoodLoss);
+    bump(s, 'morale', -10);
+    bump(s, 'stress', 8);
+    logLine(g, `${p.name} blocked your number.`, 'bad');
+    return { ok: true, outcome: 'blocked', line: `${p.name} blocked you dude, yikes..` };
+  }
+  if (roll < blockChance + yesChance) {
+    st.reconciling = true;
+    st.mood = clamp(mood + 6);
+    bump(s, 'morale', 6);
+    logLine(g, `${p.name} will see you. Once.`, 'good');
+    return { ok: true, outcome: 'meet', line: pick(['fine. one drink. do not be weird.', 'i am not saying yes. i am saying i will be at the park.', 'you get one hour. one.']) };
+  }
+  st.mood = clamp(mood - H.silenceMoodLoss);
+  return { ok: true, outcome: 'silence', line: 'Read. No reply. The little typing bubble shows up twice and gives up both times.' };
+}
+
+/** What she does with each gesture. Kept out of the modal literal so the prose stays readable. */
+const RECONCILE_LINES = {
+  apology: 'You say the whole thing without a joke in it, which takes longer than you thought. She listens with her arms folded and does not help you.\n\n"Okay," she says, at the end. Just that.',
+  ring: 'She turns it over twice. "You are not buying your way back in." She puts it on anyway, on the wrong finger, on purpose.',
+  cash: 'She looks at the money for a long second. "This is not an apology. But it is forty dollars."',
+  food: 'You bring food, put it on the table, and do not say anything clever. She eats it. That is the conversation.',
+  flowers: 'She takes the flowers and does not thank you, and then, quietly, because she is who she is: "You remembered."',
+  chocolates: 'She opens the box before she decides whether she is still angry. It is hard to be furious at chocolate. She manages.',
+};
+
+/** The in-person way back: an apology, and then things she can hold in her hands. */
+export function reconcileGift(g, id, kind) {
+  const p = partner(id);
+  if (!p) return { ok: false, reason: 'nobody' };
+  const s = g.state;
+  const st = partnerState(s, id);
+  const H = HB();
+  if (!st.heartbroken) return { ok: false, reason: 'not heartbroken' };
+  const day = dayOf(s.clock.m);
+  // an apology is worth its own amount; the gifts have theirs
+  let mood = kind === 'apology' ? H.apologyMood : (H.giftMood[kind] || 0);
+  let aff = H.giftAffection[kind] || 0;
+  if (kind === 'apology') {
+    if (st.reconcileDay === day) { g.toast(`${p.name} has heard the apology today. She is not collecting them.`, 'info'); return { ok: false, reason: 'again' }; }
+    st.reconcileDay = day;
+  } else if (kind === 'cash') {
+    if (!spend(g, 40, `${p.name} — money, which is not an apology`)) { g.toast('You do not have $40 to hand her.', 'bad'); return { ok: false, reason: 'short' }; }
+  } else if (kind === 'food') {
+    if (!spend(g, 18, `${p.name} — dinner`)) { g.toast('You cannot cover dinner right now.', 'bad'); return { ok: false, reason: 'short' }; }
+  } else {
+    if (!hasItem(s, kind)) { g.toast(`You do not have ${CONFIG.items[kind]?.name || kind}.`, 'bad'); return { ok: false, reason: 'none' }; }
+    removeItem(s, kind, 1);
+  }
+  st.mood = clamp((st.mood ?? 50) + mood);
+  st.affection = clamp(st.affection + aff);
+  if (kind === 'cash') { mood = 6; aff = 1; }
+  g.advance(12);
+  bump(s, 'stress', 2);
+  const ready = reconcileReady(s, id);
+  g.openModal({
+    kicker: `${p.name.toUpperCase()} · HEARTBROKEN`,
+    title: kind === 'apology' ? 'Sorry' : kind === 'ring' ? 'The Ring' : 'For Her',
+    body: `${RECONCILE_LINES[kind] || RECONCILE_LINES.apology}\n\nMood ${Math.round(st.mood)}/100 · affection ${Math.round(st.affection)}/100${ready ? '\n\nShe is still hurt. She is also still here. Dating can resume.' : ''}`,
+    choices: [{ label: ready ? 'She is talking to you again.' : 'Let her think.', effect: () => {} }],
+  });
+  if (ready) restore(g, id);
+  return { ok: true, mood: st.mood, affection: st.affection, restored: ready };
+}
+
+/** What Mo can do, standing in front of her, after it ended badly. */
+export function openReconcileMenu(g, id) {
+  const p = partner(id);
+  if (!p) return;
+  const s = g.state;
+  const st = partnerState(s, id);
+  const H = HB();
+  const ready = reconcileReady(s, id);
+  const rings = hasItem(s, 'ring');
+  const flowers = hasItem(s, 'flowers');
+  const choc = hasItem(s, 'chocolates');
+  const day = dayOf(s.clock.m);
+  const choices = [
+    { label: 'Apologize. Properly.', sub: st.reconcileDay === day ? 'she has heard it today' : `+${H.apologyMood} mood`, disabled: st.reconcileDay === day, effect: () => reconcileGift(g, id, 'apology') },
+    { label: 'Buy her dinner.', sub: '$18 · +mood', effect: () => reconcileGift(g, id, 'food') },
+    { label: 'Hand her $40.', sub: 'it is not an apology and she says so', effect: () => reconcileGift(g, id, 'cash') },
+    { label: 'Give her flowers.', sub: flowers ? '+mood' : 'you do not have any', disabled: !flowers, effect: () => reconcileGift(g, id, 'flowers') },
+    { label: 'Give her chocolates.', sub: choc ? '+mood' : 'you do not have any', disabled: !choc, effect: () => reconcileGift(g, id, 'chocolates') },
+    { label: 'Give her the ring.', sub: rings ? 'a big gesture' : 'you do not have it', disabled: !rings, effect: () => reconcileGift(g, id, 'ring') },
+    { label: 'Leave her be.', sub: '', effect: () => {} },
+  ];
+  g.openModal({
+    kicker: `${p.name.toUpperCase()} · HEARTBROKEN`,
+    title: 'After It Ended Badly',
+    body: `${p.name} is here because her life did not stop when the relationship did, which is the most annoying thing about her.\n\nMood ${Math.round(st.mood)}/100 · affection ${Math.round(st.affection)}/100.\n\n${st.blocked ? 'Your number is blocked. This is the only way to reach her.' : 'You could also text her. It might go badly.'}\n\nOut of heartbreak at mood ${H.resumeMood} and affection ${H.resumeAffection}${ready ? '. She is there.' : '.'}`,
+    choices,
+  });
 }
 
 /* ------------------------------------------------------------------ hugs, hands, kisses */
@@ -561,6 +798,7 @@ export function cheeksAvailable(s, id) {
   const st = partnerState(s, id);
   if (!p) return false;
   const need = CONFIG.romance.cheekAffection[id] ?? 60;
+  if (st.heartbroken) return false;
   if (st.affection < need) return false;
   if (s.clock.m - st.lastCheeksAt < CONFIG.romance.cheekCooldownMinutes) return false;
   if (afterglowActive(s)) return false;

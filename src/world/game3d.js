@@ -521,9 +521,52 @@ export class World {
     return this.npcRigs.some((r) => (r.npcDef?.kind === 'cop' || r.npcDef?.kind === 'cop2') && r.root.visible && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range);
   }
 
-  /** "Turn around." A search; booked if he is holding. */
+  /**
+   * "Turn around." High and holding, he gets an offer before he gets a search: $50 or $100 to be
+   * somebody else's problem. It is a roll, and a refused bribe goes on the report.
+   */
   copStop(g) {
     this.haltMo();
+    const s = g.state;
+    if (police.canBribe(s)) {
+      const B = CONFIG.police.bribe;
+      g.openModal({
+        kicker: 'POLICE · A FLASHLIGHT IN YOUR FACE',
+        title: 'A Conversation',
+        body: `${police.copLine('offer')}\n\nYou are holding, and he knows it. He has not said what he wants. He does not have to.`,
+        choices: [
+          { label: `Offer him $${B.low}.`, sub: `${Math.round(B.lowChance * 100)}% · a maybe`, effect: () => this.bribeTry(g, B.low) },
+          { label: `Offer him $${B.high}.`, sub: `${Math.round(B.highChance * 100)}% · a straighter face`, disabled: s.money < B.high, effect: () => this.bribeTry(g, B.high) },
+          { label: 'Say nothing. Let him search.', sub: 'it is cheaper and it is worse', effect: () => this.copSearch(g) },
+        ],
+      });
+      return;
+    }
+    this.copSearch(g);
+  }
+
+  bribeTry(g, amount) {
+    const res = police.bribe(g, amount);
+    if (res.outcome === 'bribe') {
+      g.openModal({
+        kicker: 'POLICE · NOT SEEN',
+        title: `$${res.cost}`,
+        body: `${res.line}\n\nThe money is gone. The pockets are not. He is already looking at somebody else.`,
+        choices: [{ label: 'Walk. Do not run.', effect: () => {} }],
+      });
+      return;
+    }
+    if (res.outcome === 'short') return;
+    const b = res.booked || { items: [], fine: 0 };
+    g.openModal({
+      kicker: 'POLICE · BOOKED', title: 'Attempted Bribery',
+      body: `He looks at the money, then at you, and there it is: the small smile of a man having a better night than you.\n\nConfiscated: ${b.items.join(', ') || 'nothing they admit to'}.\nFine: $${b.fine.toFixed(2)}, with the bribery on top.`,
+      choices: [{ label: 'Get in the car.', effect: () => this.toHolding(g, b) }],
+    });
+  }
+
+  /** The ordinary stop: clean means a warning, holding anything means a night in a cell. */
+  copSearch(g) {
     const res = police.search(g);
     if (!res.booked) {
       g.openModal({ kicker: 'POLICE · A FLASHLIGHT IN YOUR FACE', title: 'Stopped', body: police.copLine('clean'), choices: [{ label: 'Go home.', effect: () => {} }] });
@@ -533,6 +576,21 @@ export class World {
       kicker: 'POLICE · A FLASHLIGHT IN YOUR FACE', title: 'Booked',
       body: `${police.copLine('booked')}\n\nConfiscated: ${res.items.join(', ')}.\nFine: $${res.fine.toFixed(2)}.`,
       choices: [{ label: 'Get in the car.', effect: () => this.toHolding(g, res) }],
+    });
+  }
+
+  /** One a night, and only at night: the cop who does not want to search Mo, he wants to sell him. */
+  crookedCop(g) {
+    const s = g.state;
+    const off = police.crookedOffer(s);
+    g.openModal({
+      kicker: 'NIGHT · A COP AT YOUR SHOULDER',
+      title: 'Evidence Room',
+      body: `${off.line}\n\n${off.name}. $${off.price.toFixed(2)}. In a bag that has already been somewhere official.`,
+      choices: [
+        { label: `Take it. $${off.price.toFixed(2)}`, disabled: !off.affordable, effect: () => { const r = police.crookedDeal(g, off.product); if (r.ok) g.toast(`$${r.price.toFixed(2)} for ${r.item}. He does not count it. Somewhere, a form is missing.`, 'info'); } },
+        { label: 'Walk away.', sub: '', effect: () => police.crookedDecline(g) },
+      ],
     });
   }
 
@@ -990,6 +1048,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (this.copTimer <= 0) {
       this.copTimer = 1.5;
       if (canMove && !this.thug && this.areaId !== 'precinct' && police.isHigh(s) && !police.searchedTonight(s) && this.copNear(CONFIG.police.seeRange)) this.copStop(g);
+      // and the other kind of cop: high, near a patrol, at night, once
+      else if (canMove && !this.thug && this.areaId !== 'precinct' && this.copNear(7) && police.crookedRoll(s, dt)) this.crookedCop(g);
     }
     // a swing: his right arm out and back
     if (this.punchT > 0) {

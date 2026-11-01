@@ -5,6 +5,7 @@ import {
   addItem, removeItem, countItem, hasItem, earn, spend, logLine, pushMessage,
 } from '../core/state.js';
 import { bump } from '../core/state.js';
+import * as fans from './fans.js';
 
 /* ------------------------------ bills ------------------------------ */
 
@@ -151,6 +152,8 @@ export function onNewDay(g, day, prevDay) {
   s.events.today = 0;
   s.social.lastPost = s.social.lastPost || 0;
   runAutopay(g);
+  // a subscription is a bill with better branding: it renews, or it lapses and emails you
+  fans.onNewDay(g, day);
 
   for (const key of ['rent', 'power', 'phone']) {
     const info = billInfo(g, key);

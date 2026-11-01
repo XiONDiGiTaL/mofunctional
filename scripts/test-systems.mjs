@@ -12,7 +12,7 @@
  */
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { CONFIG } from '../src/core/config.js';
-import { createState, clock, bump } from '../src/core/state.js';
+import { createState, clock, bump, addItem, countItem } from '../src/core/state.js';
 import { billInfo, rentPerCycle, rentShare, runAutopay, setAutopay } from '../src/systems/economy.js';
 import * as rent from '../src/systems/rent.js';
 import * as romance from '../src/systems/romance.js';
@@ -40,6 +40,8 @@ import * as shopSys from '../src/systems/shop.js';
 import * as rides from '../src/systems/rides.js';
 import { ROAD } from '../src/world/plan.js';
 import * as police from '../src/systems/police.js';
+import * as fans from '../src/systems/fans.js';
+import { APPS, APP_SHELVES, DOCK } from '../src/ui/apps.js';
 
 let passed = 0;
 let failed = 0;
@@ -1181,6 +1183,293 @@ check('camera: zoom spends the room on the arm, and the street keeps its full ra
   eq(+armMax(false, street, 0.7).toFixed(2), 2.87, 'and so does zooming in');
   eq(liftFor(true, false) < liftFor(false, false), true, 'a room lifts the eye less');
   eq(armLength(true, { minX: 0, maxX: 3, minZ: 0, maxZ: 3 }), 1.8, 'tiny rooms have a floor');
+  return true;
+});
+
+
+/* ------------------------------------------------- sender-aligned messages */
+
+check('sms: STOP goes back to the sender it was sent to, never to BidBay', () => {
+  const senders = ['THE GOLDEN FELLOWSHIP', 'FEEDLOVE', "AMAZIN'", 'HAILMARY', 'CIVIC RELIEF PROGRAM'];
+  for (const from of senders) {
+    const g = stubGame();
+    const m = { id: `st-${from}`, from, subject: 'notice', body: 'A word from us.', read: false };
+    g.state.messages.push(m);
+    const opts = sms.replyOptions(m, g.state);
+    const i = opts.findIndex((o) => o.act === 'stop');
+    if (i < 0) throw new Error(`${from} has no STOP chip`);
+    eq(opts[i].sender, sms.identityFor(from).name, `${from} chip is labelled with its sender`);
+    sms.sendReply(g, m, i);
+    const unsubs = g.state.messages.filter((x) => x.subject === 'Unsubscribed (mostly)');
+    eq(unsubs.length, 1, `${from}: one unsubscribe reply`);
+    eq(unsubs[0].from, from, `${from} answered its own STOP`);
+  }
+  return true;
+});
+
+check('sms: the chips follow the message, not just the sender', () => {
+  const s = createState();
+  const church = sms.replyOptions({ from: 'THE GOLDEN FELLOWSHIP', subject: 'Sunday', body: 'We gather at ten for the service.' }, s).map((o) => o.act);
+  if (!church.includes('pray')) throw new Error('no church-specific chip on a service notice');
+  const autopay = sms.replyOptions({ from: 'SHALE PAY', subject: 'AutoPay', body: 'AutoPay paid rent.', kind: 'autopay' }, s).map((o) => o.act);
+  if (!autopay.includes('autopayoff')) throw new Error('no AutoPay chip on an AutoPay receipt');
+  const bill = sms.replyOptions({ from: 'MUNICIPAL POWER', subject: 'Power', body: 'Amount outstanding: $41.' }, s).map((o) => o.act);
+  if (!bill.includes('extension')) throw new Error('no extension chip on a bill notice');
+  const shipping = sms.replyOptions({ from: 'HAILMARY', subject: 'Ride', body: 'Your driver is outside.' }, s).map((o) => o.act);
+  if (shipping.includes('pray')) throw new Error('church chip leaked onto a taxi text');
+  return true;
+});
+
+check('sms: replies are attributed to the person or brand that sent the message', () => {
+  const s = createState();
+  for (const from of ['NIA', 'KEV', 'STEPHANIE', 'RAE VELL', 'DALE', 'BIDBAY', 'KESTREL CLINIC']) {
+    const opts = sms.replyOptions({ from, body: 'x' }, s);
+    if (!opts.length) throw new Error(`${from}: no replies`);
+    for (const o of opts) eq(o.sender, sms.identityFor(from).name, `${from} reply sender`);
+  }
+  return true;
+});
+
+/* ------------------------------------------------------- live-in exclusivity */
+
+check('romance: one live-in only, and moving on ends the first relationship', () => {
+  const g = stubGame();
+  const s = g.state;
+  const r = romance.romanceState(s);
+  const day = Math.floor(s.clock.m / 1440) + 1;
+  const steph = romance.partnerState(s, 'stephanie');
+  Object.assign(steph, { met: true, girlfriend: true, liveIn: true, affection: 80, dates: 4, sinceDay: day - 30 });
+  const mel = romance.partnerState(s, 'melanie');
+  Object.assign(mel, { met: true, girlfriend: true, affection: 80, dates: 4, sinceDay: day - 30 });
+  r.liveIn = 'stephanie';
+  romance.romanceState(s);           // repairs the flags to match the live-in
+
+  eq(romance.canAskMoveIn(s, 'melanie'), false, 'a second live-in is never offered outright');
+  eq(romance.canAskMoveIn(s, 'stephanie'), false, 'the one who lives there is not asked again');
+  romance.askMoveIn(g, 'melanie');
+  const ask = g.modals[g.modals.length - 1];
+  if (!ask || !/Somebody Lives Here/.test(ask.title || '')) throw new Error('no override prompt');
+  eq(r.liveIn, 'stephanie', 'nothing changes until he confirms');
+  ask.choices[0].effect();
+
+  eq(r.liveIn, 'melanie', 'the new girlfriend is the one live-in');
+  eq(romance.partnerState(s, 'melanie').liveIn, true, 'her flag');
+  eq(romance.isGirlfriend(s, 'stephanie'), false, 'the first relationship is over');
+  eq(romance.partnerState(s, 'stephanie').liveIn, false, 'she does not live here');
+  eq(romance.isHeartbroken(s, 'stephanie'), true, 'she is heartbroken');
+  if ((romance.partnerState(s, 'stephanie').mood ?? 50) > 20) throw new Error('her mood did not drop');
+  return true;
+});
+
+check('romance: begging can get him blocked, and a blocked text is not delivered', () => {
+  const g = stubGame();
+  const s = g.state;
+  romance.romanceState(s);
+  Object.assign(romance.partnerState(s, 'diana'), { met: true, girlfriend: true, liveIn: true, affection: 80, sinceDay: 1 });
+  s.romance.liveIn = 'diana';
+  romance.endLiveIn(g, 'diana', 'test');
+  eq(romance.isHeartbroken(s, 'diana'), true, 'heartbroken');
+  eq(romance.isBlocked(s, 'diana'), false, 'not blocked yet');
+
+  const opts = sms.replyOptions({ from: 'DIANA', body: 'do not call me' }, s);
+  eq(opts.map((o) => o.act).join(','), 'beg,space', 'a heartbroken thread only offers begging and space');
+
+  const rnd = Math.random;
+  Math.random = () => 0;               // the worst branch
+  const res = romance.beg(g, 'diana');
+  Math.random = rnd;
+  eq(res.outcome, 'blocked', 'she blocked him');
+  eq(romance.isBlocked(s, 'diana'), true, 'blocked state');
+
+  const m = { id: 'b1', from: 'DIANA', subject: '', body: 'x', read: false };
+  s.messages.push(m);
+  sms.sendReply(g, m, 0);
+  const failed = (m.replies || []).filter((r) => r.failed);
+  eq(failed.length, 2, 'the message and the NOT DELIVERED marker are both marked failed');
+  eq(failed[1].text, 'NOT DELIVERED', 'the marker');
+  if (!g.toasts.some((t) => /blocked you dude/i.test(t))) throw new Error('no blocked toast');
+  return true;
+});
+
+check('romance: in-person gifts lift her mood out of heartbreak and dating resumes', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 200;
+  romance.romanceState(s);
+  Object.assign(romance.partnerState(s, 'stephanie'), { met: true, girlfriend: true, liveIn: true, affection: 60, sinceDay: 1 });
+  s.romance.liveIn = 'stephanie';
+  romance.endLiveIn(g, 'stephanie', 'test');
+  const st = romance.partnerState(s, 'stephanie');
+  st.mood = 30;
+  st.affection = 60;                    // a long relationship, which the breakup did not erase
+  romance.openReconcileMenu(g, 'stephanie');
+  const menu = g.modals[g.modals.length - 1];
+  if (!/After It Ended Badly/.test(menu.title)) throw new Error('no reconcile menu');
+  eq(romance.canDateAgain(s, 'stephanie'), false, 'no dates while heartbroken');
+
+  romance.reconcileGift(g, 'stephanie', 'apology');
+  const afterApology = st.mood;
+  if (afterApology <= 30) throw new Error('an apology did nothing');
+  romance.reconcileGift(g, 'stephanie', 'apology');     // once a day
+  eq(st.mood, afterApology, 'the second apology today is refused');
+  romance.reconcileGift(g, 'stephanie', 'food');
+  romance.reconcileGift(g, 'stephanie', 'cash');
+  eq(romance.isHeartbroken(s, 'stephanie'), false, 'out of heartbreak');
+  eq(romance.isBlocked(s, 'stephanie'), false, 'and unblocked');
+  eq(romance.canDateAgain(s, 'stephanie'), true, 'dating can resume');
+  if (s.money >= 200) throw new Error('the gifts were free');
+  return true;
+});
+
+/* --------------------------------------------------------------- police */
+
+check('police: a bribe is a roll of the dice, and a refusal costs more than the search', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 400;
+  s.high.level = 60;
+  addItem(s, 'bliss', 1);
+  const p = police.policeState(s);
+  eq(police.canBribe(s), true, 'high, holding, with cash');
+
+  const rnd = Math.random;
+  Math.random = () => 0;                 // taken
+  const good = police.bribe(g, 50);
+  Math.random = rnd;
+  eq(good.outcome, 'bribe', 'the money worked');
+  eq(s.money, 350, 'fifty dollars gone');
+  eq(countItem(s, 'bliss'), 1, 'the pockets stay full');
+  eq(p.bribes, 1, 'counted');
+
+  const g2 = stubGame();
+  const s2 = g2.state;
+  s2.money = 400;
+  s2.high.level = 60;
+  addItem(s2, 'bliss', 1);
+  Math.random = () => 0.99;              // refused
+  const bad = police.bribe(g2, 50);
+  Math.random = rnd;
+  eq(bad.outcome, 'refused', 'he would not take it');
+  eq(countItem(s2, 'bliss'), 0, 'booked anyway');
+  if (bad.booked.fine <= CONFIG.police.fine) throw new Error('no bribery penalty on the fine');
+  eq(police.policeState(s2).bribeFails, 1, 'counted');
+  return true;
+});
+
+check('police: one crooked cop a night, and his bag is cheaper than the corner', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 100;
+  s.high.level = 60;
+  s.clock.m = 23 * 60;
+  eq(police.crookedTonight(s), false, 'nobody has offered yet');
+  const off = police.crookedOffer(s);
+  if (!off || off.price >= (CONFIG.items[off.product]?.price || 0)) throw new Error('no discount');
+  const res = police.crookedDeal(g, off.product);
+  eq(res.ok, true, 'the deal went through');
+  eq(police.crookedTonight(s), true, 'the night is spent');
+  eq(countItem(s, off.product), 1, 'the evidence is in his pocket');
+  eq(police.crookedRoll(s, 1), false, 'he does not come back tonight');
+  const g2 = stubGame();
+  const s2 = g2.state;
+  s2.high.level = 60;
+  s2.clock.m = 13 * 60;
+  const rnd = Math.random;
+  Math.random = () => 0;
+  eq(police.crookedRoll(s2, 0.05), false, 'no crooked cop in the afternoon');
+  s2.clock.m = 23 * 60;
+  eq(police.crookedRoll(s2, 0.05), true, 'but at night he will find you');
+  Math.random = rnd;
+  return true;
+});
+
+/* ------------------------------------------------------------- LonelyFans */
+
+check('fans: locked until subscribed, and the subscription is charged daily', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 100;
+  eq(fans.buySelfie(g, 'velvet').reason, 'locked', 'locked by default');
+  const sub = fans.subscribe(g);
+  eq(sub.ok, true, 'subscribed');
+  eq(s.money, 100 - CONFIG.fans.daily, 'two dollars today');
+  eq(fans.isSubscribed(s), true, 'on');
+  const day = Math.floor(s.clock.m / 1440) + 1;
+  const charged = fans.onNewDay(g, day + 1);
+  eq(charged.charged, true, 'renews the next day');
+  s.money = 0;
+  const lapsed = fans.onNewDay(g, day + 2);
+  eq(lapsed.lapsed, true, 'no money, no subscription');
+  eq(fans.isSubscribed(s), false, 'lapsed');
+  return true;
+});
+
+check('fans: a picture lowers stress and morale, and the app refuses at the bottom', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 100;
+  fans.subscribe(g);
+  s.stats.stress = 60;
+  s.stats.morale = 60;
+  const buy = fans.buySelfie(g, 'velvet');
+  eq(buy.ok, true, 'bought');
+  if (s.stats.stress >= 60) throw new Error('stress did not fall');
+  if (s.stats.morale >= 60) throw new Error('morale did not fall');
+  const before = s.money;
+  s.stats.morale = 5;
+  eq(fans.buySelfie(g, 'velvet').reason, 'dignity', 'the dignity gate');
+  eq(s.money, before, 'and it did not take his money');
+  const modal = g.modals[g.modals.length - 1];
+  if (!/dignity man/i.test(modal.body)) throw new Error('no dignity line in the prompt');
+  return true;
+});
+
+check('fans: some models offer more, for $500, and not every night', () => {
+  const g = stubGame();
+  const s = g.state;
+  s.money = 900;
+  fans.subscribe(g);
+  eq(fans.cheeksOffer(s, 'velvet'), null, 'velvet does not offer that');
+  const off = fans.cheeksOffer(s, 'cherry');
+  eq(!!off, true, 'cherry does');
+  eq(off.price, CONFIG.fans.cheeks.price, 'the price');
+  const res = fans.buyCheeks(g, 'cherry');
+  eq(res.ok, true, 'bought');
+  eq(Math.round(s.money), 900 - CONFIG.fans.daily - CONFIG.fans.cheeks.price, 'paid, subscription included');
+  eq(fans.cheeksOffer(s, 'cherry'), null, 'not again tonight');
+  return true;
+});
+
+/* ------------------------------------------------------------- phone + save */
+
+check('phone: the shelves hold every app once, so the home screen cannot sprawl', () => {
+  const seen = new Set();
+  for (const shelf of APP_SHELVES) {
+    if (!shelf.apps.length) throw new Error(`${shelf.id} is empty`);
+    for (const id of shelf.apps) {
+      if (!APPS[id]) throw new Error(`${id} is not in the catalog`);
+      if (seen.has(id)) throw new Error(`${id} appears on two shelves`);
+      seen.add(id);
+    }
+  }
+  if (!seen.has('fans')) throw new Error('LonelyFans is not on a shelf');
+  if (APP_SHELVES.length > 5) throw new Error('too many shelves to fit a tab strip');
+  for (const id of DOCK) if (!APPS[id]) throw new Error(`dock app ${id} missing`);
+  return true;
+});
+
+check('migrate: a v3 save gains the new blocks and keeps its live-in', () => {
+  const data = {
+    v: 3,
+    romance: { liveIn: 'diana', partners: { diana: { met: true, girlfriend: true, liveIn: true, affection: 70 } } },
+  };
+  const out = migrate(data);
+  eq(out.v, SAVE_VERSION, 'bumped');
+  eq(!!out.fans && typeof out.fans === 'object', true, 'fans block created');
+  eq(!!out.police && typeof out.police === 'object', true, 'police block created');
+  eq(out.romance.liveIn, 'diana', 'she still lives there');
+  eq(out.romance.partners.diana.heartbroken, false, 'nobody is heartbroken retroactively');
+  eq(out.romance.partners.diana.girlfriend, true, 'still his girlfriend');
   return true;
 });
 

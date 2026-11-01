@@ -11,7 +11,7 @@ import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js'
 import { portraitURL } from '../render/faces.js';
 import { kindForName } from './threads.js';
 import { THEMES, SCALES, themeLabel } from './themes.js';
-import { APPS, HOME_GRID, DOCK, appIcon, serviceAvatar } from './apps.js';
+import { APPS, APP_SHELVES, DOCK, appIcon, serviceAvatar } from './apps.js';
 import { itemIcon } from './icons.js';
 import * as dealer from '../systems/dealer.js';
 import * as life from '../systems/life.js';
@@ -22,6 +22,7 @@ import * as casino from '../systems/casino.js';
 import { postImage } from './feedart.js';
 import { installSites, siteActions, stoopPostBody } from './sites.js';
 import * as sms from '../systems/sms.js';
+import * as fans from '../systems/fans.js';
 
 /** One thread per contact: "RAE", "RAE VELL" and "RAE VELL (LANDLORD)" are the same person. */
 const threadKeyOf = (m) => String(sms.identityFor(m.from).name || m.from || '').toUpperCase();
@@ -50,6 +51,7 @@ export class Phone {
     this.bidItem = null;
     this.bidPrice = null;
     this.log = [];
+    this.homeTab = 'street';
   }
 
   get isOpen() { return !!this.wrap; }
@@ -250,7 +252,8 @@ export class Phone {
           <span>Fit for the day: ${fit}</span>
         </div>
       </div>
-      <div class="mohome__grid">${HOME_GRID.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
+      <div class="mohome__tabs">${APP_SHELVES.map((sh) => `<button class="mohome__tab${sh.id === this.homeTab ? ' is-on' : ''}" data-act="hometab" data-arg="${sh.id}">${sh.name}</button>`).join('')}</div>
+      <div class="mohome__grid">${(APP_SHELVES.find((x) => x.id === this.homeTab) || APP_SHELVES[0]).apps.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
       <div class="mohome__signal">${s.flags.phoneLate ? 'Shale Mobile · signal degraded (bill overdue)' : 'Shale Mobile · weak but honest'}</div>
       <div class="mohome__dock">${DOCK.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0, label: false })).join('')}</div>
     </div>`;
@@ -468,7 +471,9 @@ export class Phone {
         const sep = m.day !== day ? `<div class="chat__day">DAY ${m.day}</div>` : '';
         day = m.day;
         return sep + `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`
-          + (m.replies || []).map((r) => `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div>${mo}</div>`).join('');
+          + (m.replies || []).map((r) => r.failed
+            ? `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out chat__bubble--failed">${T(r.text)}</div>${mo}</div>`
+            : `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div>${mo}</div>`).join('');
       }).join('');
       const opts = sms.replyOptions(last, s);
       const quick = opts.length ? opts.map((o) => o.label) : ['Leave it.'];
@@ -522,6 +527,56 @@ export class Phone {
           </button>`).join('') : '<div class="empty">No messages. Everyone is giving you space. That is what that is.</div>'}
       </div>
       <div class="tiny mono-dim">Replies you send from the HUD thread show up here too.</div>
+      ${this.footer()}`;
+  }
+
+  /* ------------------------------ LONELYFANS ------------------------------ */
+
+  /**
+   * The subscription app. Locked until it is paid for, and deliberately unglamorous: a price, a
+   * handle, a line of pitch, and a picture described rather than shown.
+   */
+  fansView() {
+    const s = this.g.state;
+    const f = fans.fansState(s);
+    const info = fans.summary(s);
+    if (!f.subscribed) {
+      return `${this.header('LonelyFans', 'LOCKED')}
+        <div class="fans__lock">
+          <b>Nobody is thinking about you yet.</b>
+          <p class="tiny">${T('A subscription is $2 a day. It renews itself until you tell it not to. That is the entire product.')}</p>
+          <p class="tiny mono-dim">${info.spent ? `You have spent ${'$'}${info.spent.toFixed(2)} here before.` : 'You have never paid for this. Hold on to that.'}</p>
+        </div>
+        <button class="btn btn--primary" data-act="fanssub">SUBSCRIBE · ${'$'}${info.daily.toFixed(2)}/DAY</button>
+        <button class="btn btn--ghost" data-act="fansauto">AutoPay: ${f.autopay ? 'ON' : 'OFF'}${f.autopay && !s.autopay?.on ? ' (Shale Pay is off)' : ''}</button>
+        ${this.footer()}`;
+    }
+    const warn = fans.blocksForDignity(s)
+      ? `<div class="fans__warn">${T(CONFIG.fans.dignityLine)}</div>`
+      : '';
+    const rows = fans.MODELS.map((m) => {
+      const r = f.models[m.id];
+      const offer = fans.cheeksOffer(s, m.id);
+      return `<div class="fans__model">
+        <div class="row row--between"><b>${T(m.name)}</b><span class="tiny mono-dim">${T(m.handle)}</span></div>
+        <div class="tiny mono-dim">${T(m.tag)}</div>
+        <div class="fans__pitch">${T(m.pitch)}</div>
+        <div class="row row--between fans__buy">
+          <span class="tiny mono-dim">${r.bought} bought · ${'$'}${m.price.toFixed(2)} each</span>
+          <button class="btn btn--sm btn--primary" data-act="fansbuy" data-arg="${m.id}">PICTURE · ${'$'}${m.price.toFixed(2)}</button>
+        </div>
+        ${offer ? `<button class="btn btn--sm btn--gold" data-act="fanscheeks" data-arg="${m.id}">SHE IS OFFERING MORE · ${'$'}${offer.price}</button>` : ''}
+      </div>`;
+    }).join('');
+    return `${this.header('LonelyFans', `$${info.daily.toFixed(2)}/DAY`)}
+      <div class="fans__bar">
+        <span>${info.bought} pictures · ${'$'}${info.spent.toFixed(2)} spent</span>
+        <button class="btn btn--sm btn--ghost" data-act="fansunsub">CANCEL</button>
+      </div>
+      <button class="btn btn--ghost btn--sm" data-act="fansauto">AutoPay: ${f.autopay ? 'ON' : 'OFF'}</button>
+      ${warn}
+      ${rows}
+      <div class="tiny mono-dim">${T('Nothing here is real and none of it is explicit. The stress comes off and the morale comes off with it, which is the trade.')}</div>
       ${this.footer()}`;
   }
 
@@ -1321,6 +1376,17 @@ export class Phone {
         });
         g.toast('Addison replies within a minute. Always a minute.', 'event');
       },
+      hometab(arg) { this.homeTab = arg || 'street'; },
+      fanssub() { const r = fans.subscribe(g); if (!r.ok && r.reason === 'short') return; },
+      fansauto() {
+        const f = fans.fansState(s);
+        f.autopay = !f.autopay;
+        if (f.autopay && !s.autopay?.on) setAutopay(g, true);
+        g.toast(f.autopay ? 'LonelyFans: AutoPay on. It renews with Shale Pay and you never think about it again.' : 'LonelyFans: AutoPay off. You will still be charged daily, you will just have to watch.', 'info');
+      },
+      fansunsub() { fans.unsubscribe(g); },
+      fansbuy(arg) { fans.buySelfie(g, arg); },
+      fanscheeks(arg) { fans.buyCheeks(g, arg); },
       theme(arg) { g.setTheme?.(arg); },
       scale(arg, num) { g.setScale?.(num); },
       camdist(arg, num, elem) { g.setCamera?.('dist', elem ? elem.value : 100); },
@@ -1410,6 +1476,7 @@ export class Phone {
       block: this.blockView,
       casino: this.casinoView,
       clinic: this.clinicView,
+      fans: this.fansView,
     };
   }
 }

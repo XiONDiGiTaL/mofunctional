@@ -13,7 +13,7 @@
 import { CONFIG } from '../core/config.js';
 import { money, dayOf, clamp } from '../core/util.js';
 import { bump, pushMessage, logLine } from '../core/state.js';
-import { billInfo, payBill } from './economy.js';
+import { billInfo, payBill, setAutopay } from './economy.js';
 import * as rent from './rent.js';
 import * as romance from './romance.js';
 import * as clinic from './clinic.js';
@@ -60,6 +60,7 @@ const BUSINESS = {
   'GOLDEN FELLOWSHIP': { category: 'service', service: 'THE GOLDEN FELLOWSHIP', name: 'The Golden Fellowship' },
   FEEDLOVE: { category: 'service', service: 'FEEDLOVE', name: 'FeedLove' },
   HAILMARY: { category: 'service', service: 'HAILMARY', name: 'HailMary' },
+  LONELYFANS: { category: 'service', service: 'LONELYFANS', name: 'LonelyFans' },
   "AMAZIN'": { category: 'service', service: "AMAZIN'", name: "Amazin'" },
   'HECTOR': { category: 'personal', kind: 'tenant_m', name: 'Hector (super, 1104)' },
   'DEE': { category: 'personal', kind: 'tenant_f', name: "Dee (Wash & Fold)" },
@@ -144,7 +145,58 @@ const SETS = {
     { act: 'wrong', label: 'Wrong number.' },
     { act: 'block', label: 'Do not text this again.' },
   ],
+  // she ended it badly. These are the only two chips a heartbroken man actually has.
+  heartbroken: [
+    { act: 'beg', label: 'Please. Talk to me.' },
+    { act: 'space', label: 'Give her space.' },
+  ],
 };
+
+/**
+ * Which app a service's "open" chip opens. It used to open the social feed for every one of
+ * them, which is how a Fellowship text ended up in FeedLove.
+ */
+const APP_FOR = {
+  BIDBAY: 'bidbay',
+  FEEDLOVE: 'social',
+  'THE GOLDEN FELLOWSHIP': 'fellowship',
+  'GOLDEN FELLOWSHIP': 'fellowship',
+  "AMAZIN'": 'shop',
+  HAILMARY: 'ride',
+  LONELYFANS: 'fans',
+  'CIVIC RELIEF PROGRAM': 'pantry',
+  GRUBHOPE: 'pantry',
+  'KESTREL CLINIC': 'clinic',
+  'KINGS COUNTY BILLING': 'bills',
+  'SHALE PAY': 'bank',
+  'SHALE BANK': 'bank',
+  'SHALE MOBILE': 'bills',
+  'MUNICIPAL POWER': 'bills',
+  LANDLORDLY: 'bills',
+};
+
+/**
+ * Replies that belong to this specific message rather than to the sender's category: a bill
+ * notice gets bill chips, a Fellowship notice gets church chips, an AutoPay receipt gets the
+ * switch that turns AutoPay off. This is what keeps Mo's side of a thread answering the text
+ * that is actually on the screen.
+ */
+function contextFor(id, message) {
+  const text = `${message?.subject || ''} ${message?.body || ''}`;
+  const out = [];
+  const add = (act, label) => { if (!out.some((o) => o.act === act)) out.push({ act, label }); };
+  if (message?.kind === 'autopay' && /autopay/i.test(text)) add('autopayoff', 'Turn AutoPay off.');
+  if (id.category === 'service' && /service|sunday|gather|prayer|pew|meeting|pledge/i.test(text)) {
+    add('pray', 'When is the next service?');
+    add('pledge', 'Ask about the pledge.');
+  }
+  if ((id.category === 'service' || id.category === 'bill') && /bill|due|outstanding|payment|balance/i.test(text)) {
+    add('extension', 'I need a few more days.');
+  }
+  if (id.category === 'auction' && /expired|sold|watching|ended|relisted/i.test(text)) add('sold', 'What sold?');
+  if (id.category === 'clinic' && /appointment|slots?|course|session/i.test(text)) add('book', 'Book a treatment.');
+  return out;
+}
 
 /**
  * The chips for a message. A message that carries its own choices (an authored event opened as a
@@ -175,8 +227,18 @@ export function replyOptions(message, s) {
       { act: 'nia_no', label: 'Not this week.', category: 'family', sender: id.name },
     ];
   }
+  // she ended it badly: begging or giving her space, nothing else
+  if (id.partner && romance.isHeartbroken(s, id.partner)) {
+    const blocked = romance.isBlocked(s, id.partner);
+    return SETS.heartbroken.map((o) => ({
+      ...o,
+      label: o.act === 'beg' && blocked ? 'Beg her to unblock you.' : o.label,
+      category: 'romantic', partner: id.partner, sender: id.name, blocked,
+    }));
+  }
   const base = SETS[id.category] || SETS.unknown;
-  return base.filter((opt) => {
+  const extra = contextFor(id, message).filter((o) => !base.some((b) => b.act === o.act));
+  return [...base, ...extra].filter((opt) => {
     if (id.category === 'landlord' && opt.act === 'pay') return billInfo({ state: s }, 'rent').owedCycles > 0;
     if (id.category === 'bill' && opt.act === 'paybill') {
       return ['power', 'phone'].some((k) => billInfo({ state: s }, k).owedCycles > 0);
@@ -201,8 +263,21 @@ export function sendReply(g, message, index) {
   const options = replyOptions(message, g.state);
   const opt = options[index];
   if (!opt) return null;
+  const day = dayOf(g.state.clock.m);
+  const who = identityFor(message.from);
+  // blocked: nothing leaves the phone, and the thread says so in the ugliest way it can
+  if (who.partner && romance.isBlocked(g.state, who.partner)) {
+    message.replies = message.replies || [];
+    message.replies.push({ text: opt.label, day, failed: true });
+    message.replies.push({ text: 'NOT DELIVERED', day, failed: true, system: true });
+    message.read = true;
+    g.audio?.sfx?.('deny');
+    g.toast('*She blocked you dude, yikes..*', 'bad');
+    logLine(g, `${who.name} did not receive that.`, 'bad');
+    return opt.label;
+  }
   message.replies = message.replies || [];
-  message.replies.push({ text: opt.label, day: dayOf(g.state.clock.m) });
+  message.replies.push({ text: opt.label, day });
   message.read = true;
   g.audio?.sfx?.('phone');
   if (opt.effect) {
@@ -285,6 +360,28 @@ function applyAct(g, message, opt) {
       return;
 
     /* ---- her ---- */
+    case 'beg': {
+      if (!partnerId) return;
+      const res = romance.beg(g, partnerId);
+      if (!res.ok) {
+        g.toast(res.reason === 'blocked' ? '*She blocked you dude, yikes..*' : `${name} is not answering that today.`, 'bad');
+        return;
+      }
+      if (res.outcome === 'meet') {
+        pushMessage(g, { from: message.from, subject: '', body: res.line });
+        g.toast(`${name} will see you. Once.`, 'good');
+      } else if (res.outcome === 'blocked') {
+        g.toast('*She blocked you dude, yikes..*', 'bad');
+      } else {
+        g.toast('Read. No reply. The typing bubble appears twice and gives up both times.', 'info');
+      }
+      return;
+    }
+    case 'space':
+      g.advance(2);
+      bump(s, 'morale', -2);
+      if (partnerId) romance.partnerState(s, partnerId).mood = Math.min(100, (romance.partnerState(s, partnerId).mood ?? 50) + 2);
+      return;
     case 'sweet':
       if (partnerId && romance.partnerState(s, partnerId).met) {
         const st = romance.partnerState(s, partnerId);
@@ -386,12 +483,12 @@ function applyAct(g, message, opt) {
       return;
     case 'book':
       g.advance(5);
-      followUp(g, 'KESTREL CLINIC', 'Appointment', `${clinic.nurseName} has a slot. Walk in through the front door on Kestrel and talk to her. It costs ${money(CONFIG.clinic.treatment.cost)}; if you cannot pay, it goes on the bill.`);
+      followUp(g, message.from, 'Appointment', `${clinic.nurseName} has a slot. Walk in through the front door on Kestrel and talk to her. It costs ${money(CONFIG.clinic.treatment.cost)}; if you cannot pay, it goes on the bill.`);
       g.toast('Walk to the clinic on Kestrel Street and speak to the nurse.', 'info');
       return;
     case 'cost':
       g.advance(2);
-      followUp(g, 'KESTREL CLINIC', 'What it costs', `A treatment is ${money(CONFIG.clinic.treatment.cost)} and about ${CONFIG.clinic.treatment.minutes} minutes. The daily check-in is free. You cannot afford neither, which is why we keep saying it.`);
+      followUp(g, message.from, 'What it costs', `A treatment is ${money(CONFIG.clinic.treatment.cost)} and about ${CONFIG.clinic.treatment.minutes} minutes. The daily check-in is free. You cannot afford neither, which is why we keep saying it.`);
       return;
 
     /* ---- Civic Relief ---- */
@@ -401,12 +498,16 @@ function applyAct(g, message, opt) {
       return;
     case 'docs':
       g.advance(3);
-      followUp(g, 'CIVIC RELIEF PROGRAM', 'Required documents', 'State ID and your lease for Unit 3B. Originals. The photocopier is broken and has been for eleven years.');
+      followUp(g, message.from, 'Required documents', 'State ID and your lease for Unit 3B. Originals. The photocopier is broken and has been for eleven years.');
       return;
-    case 'stop':
+    case 'stop': {
+      // the sender answers, not BidBay. This used to say "BidBay" to the Fellowship.
       g.advance(2);
-      followUp(g, 'BIDBAY', 'Unsubscribed (mostly)', 'You will still receive transactional messages, because those are not marketing, they are consequences.');
+      const brand = identityFor(message.from).name;
+      followUp(g, message.from, 'Unsubscribed (mostly)', `You have been taken off ${brand}'s marketing list.\n\nYou will still receive transactional messages, because those are not marketing, they are consequences.`);
+      g.toast(`${brand}: STOP received. They will be in touch anyway.`, 'info');
       return;
+    }
 
     /* ---- bills ---- */
     case 'paybill': {
@@ -418,13 +519,26 @@ function applyAct(g, message, opt) {
     case 'extension':
       g.advance(10);
       bump(s, 'stress', 4);
-      followUp(g, 'MUNICIPAL POWER', 'Extension requested', 'A payment arrangement has been noted on your account. It will not stop the notice. It is a nice note.');
+      followUp(g, message.from, 'Extension requested', 'A payment arrangement has been noted on your account. It will not stop the notice. It is a nice note.');
       return;
 
     /* ---- services ---- */
     case 'open':
       g.advance(2);
-      if (g.openPhone) g.openPhone(id.category === 'service' ? 'social' : 'home');
+      if (g.openPhone) g.openPhone(APP_FOR[norm(message.from)] || 'home');
+      return;
+    case 'pray':
+      g.advance(4);
+      followUp(g, message.from, 'Service times', 'Sunday at 10:00 and Wednesday at 19:00. The Wednesday one is smaller and the coffee is better. Nobody has ever said that out loud in the hall.');
+      return;
+    case 'pledge':
+      g.advance(4);
+      followUp(g, message.from, 'The pledge', 'It is not a contract. It is a promise, written down, which is a contract with better lighting.\n\nYou can come and read it any time. You can also come and not read it.');
+      return;
+    case 'autopayoff':
+      g.advance(2);
+      if (s.autopay?.on) setAutopay(g, false);
+      followUp(g, message.from, 'AutoPay off', 'AutoPay is off. Every bill is yours again, personally, one at a time, at the worst possible moment.');
       return;
 
     /* ---- unknown ---- */

@@ -697,3 +697,37 @@ Not fully verified (needs human play):
 
 **Last known good state:** menu → new game → intro → apartment → phone → shift at
 Quik-Stop → rent payment → BidBay sale → ending screen. All of that is wired.
+
+### Sender-aligned texts, one live-in, heartbreak, bribes, LonelyFans, phone shelves
+
+- **The STOP bug.** Replying STOP to the Golden Fellowship produced a BidBay unsubscribe.
+  `sms.applyAct('stop')` had `'BIDBAY'` baked into it; it now answers as `message.from`. The
+  same hard-coding was in `open` (every service opened FeedLove), the clinic replies, the relief
+  office's documents reply and the power extension — all now resolve from the sender.
+- **Chips follow the message.** `contextFor()` adds the replies that belong to the text on the
+  screen: a service notice gets service times and the pledge, an AutoPay receipt gets the switch
+  that turns AutoPay off, a bill reminder gets an extension, an ended listing gets "what sold?".
+- **One live-in, ever.** `askMoveIn()` with somebody already in the kitchen opens an override
+  prompt instead of refusing silently; confirming calls `endLiveIn()` (girlfriend off, live-in
+  off, heartbroken on, mood at 10, affection −46) and then moves the new girlfriend in. Her rent
+  share follows `romanceState().liveIn`, so only one contribution can ever apply.
+- **Heartbreak and the way back.** A heartbroken ex answers texts with two chips only: beg, or
+  give her space. Begging is a roll — she may block him (`NOT DELIVERED` bubbles in the thread,
+  "*She blocked you dude, yikes..*") or agree to one date. Blocked or not, the in-person route is
+  `openReconcileMenu()`: an apology once a day, dinner, cash, flowers, chocolates, the ring. At
+  mood 62 and affection 26 she is out of heartbreak, unblocked, and dating resumes normally.
+- **Bribes.** High, holding and carrying $50, `copStop()` offers $50 (52%) or $100 (80%) before the
+  search. A refusal books him anyway, with a $60 bribery penalty on the fine.
+- **The crooked cop.** `police.crookedRoll()` fires once a night, 21:00–05:00, near a patrol,
+  while high; `crookedCop()` sells evidence-room product at 45% off. One per night by design.
+- **LonelyFans** (`systems/fans.js`): locked until subscribed at $2/day, renews at the day
+  rollover through `economy.onNewDay` (AutoPay carries it or it lapses with a text), pictures
+  lower stress and morale, a dignity gate refuses under 22 morale with "have some dignity man, hit
+  the pipe or something instead!", and two of the four models offer more for $500. Described,
+  never shown.
+- **Phone shelves.** `APP_SHELVES` in `ui/apps.js` groups every app into four tabs (The Street,
+  Money, Life, After Dark); the home screen shows one shelf at a time, so adding apps no longer
+  lengthens a single scroll. A test asserts every app appears exactly once.
+- **Save v4** creates the `fans` and `police` blocks and the partner heartbreak fields additively:
+  an old save keeps its live-in and nobody becomes heartbroken retroactively.
+- Checks: `npm run check` 80/80 modules; `npm test` 82/82.
