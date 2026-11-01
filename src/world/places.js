@@ -70,6 +70,32 @@ function stairs(g, dir) {
   g.toast(`1104 Kestrel · ${FLOOR_NAMES[next]}.${dir > 0 && slow > 1 ? ' The stairs are winning.' : ''}`, 'info');
 }
 
+/** The elevator: pick a floor. It stops where it likes on the way, which costs a minute or two. */
+function elevator(g) {
+  const s = g.state;
+  const w = walkupState(s);
+  g.openModal({
+    kicker: '1104 KESTREL · THE ELEVATOR',
+    title: 'Going Somewhere',
+    body: 'A box the size of a phone booth. A sign: CAPACITY 4 PERSONS (2 ADULTS). Somebody has scratched "PRAY" into the brass next to the emergency button.',
+    choices: [
+      ...FLOOR_NAMES.map((name, n) => ({
+        label: n === w.floor ? `${name} (you are here)` : name,
+        sub: n === w.floor ? '' : `${1 + Math.abs(n - w.floor)} min`,
+        disabled: n === w.floor,
+        effect: () => {
+          g.advance(1 + Math.abs(n - w.floor));
+          w.floor = n;
+          g.world?.loadArea('walkup', g, 'elevator');
+          g.hud?.setPrompt?.(null);
+          g.toast(n === 0 ? 'The doors open on the lobby after thinking about it.' : `1104 Kestrel · ${name}. The elevator dings once, like it is surprised too.`, 'info');
+        },
+      })),
+      { label: 'Take the stairs instead.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
 /** Behind each door, something. Once per door per day; the rest of the time nobody answers. */
 const KNOCKS = [
   { text: 'Nobody answers. A TV is on very loud. A game show. Somebody just won a car.' },
@@ -266,12 +292,24 @@ export function buildWalkup(g, { partnerMenu } = {}) {
   const stairX = 0.75;
   for (let i = 0; i < 8; i++) group.add(box(1.5, 0.18 + i * 0.18, 0.3, M.concrete, [stairX, (0.18 + i * 0.18) / 2, -3.7 - i * 0.28]));
   group.add(box(0.06, 0.9, 2.4, M.metal, [stairX - 0.78, 1.2, -4.7]));
-  if (f > 0) for (let i = 0; i < 6; i++) group.add(box(1.5, 0.14, 0.3, M.concrete, [-0.75, 2.62 - i * 0.12, -5.6 + i * 0.28])); // the flight down, overhead
+  // the flight down, on the west side: a railed well with the first steps showing, and a sign
+  if (f > 0) {
+    group.add(plane(1.1, 1.6, { name: 'wu_well', color: 0x0a0a0c }, [-1.05, 0.006, -3.3], [-Math.PI / 2, 0, 0]));
+    for (let i = 0; i < 4; i++) group.add(box(1.0, 0.06, 0.3, M.concrete, [-1.05, 0.02 - i * 0.002, -2.75 - i * 0.36]));
+    group.add(box(0.05, 0.9, 1.6, M.metal, [-0.47, 0.45, -3.3]));
+    group.add(box(1.1, 0.05, 0.05, M.metal, [-1.05, 0.9, -2.5]));
+    group.add(plane(0.9, 0.3, { name: 'wu_downsign', map: signTex('wuDown', [{ text: 'STAIRS ▼ DOWN', color: '#ffe9a0', size: 8 }], { w: 64, h: 18, bg: '#2a2420', border: '#c8a050' }), emissive: 0.7, unlit: true }, [-1.6, 1.95, -3.3], [0, Math.PI / 2, 0]));
+  }
+  group.add(plane(0.9, 0.3, { name: 'wu_upsign', map: signTex('wuUp', [{ text: f < FLOOR_NAMES.length - 1 ? 'STAIRS ▲ UP' : 'ROOF ▲', color: '#ffe9a0', size: 8 }], { w: 64, h: 18, bg: '#2a2420', border: '#c8a050' }), emissive: 0.7, unlit: true }, [1.6, 1.95, -3.0], [0, -Math.PI / 2, 0]));
+  // the elevator, at the north end: a brass panel, doors the colour of 1962, a floor dial
+  group.add(box(1.0, 2.2, 0.1, retroMaterial('wu_elev', { color: 0x8a7a5a, emissive: 0.05 }), [-0.95, 1.1, -D / 2 + 0.12]));
+  group.add(box(0.02, 2.1, 0.11, retroMaterial('wu_elevseam', { color: 0x2a2418 }), [-0.95, 1.05, -D / 2 + 0.13]));
+  group.add(plane(0.5, 0.2, { name: `wu_elevdial${f}`, map: signTex(`wuElevDial${f}`, [{ text: `◀ ${f === 0 ? 'L' : f + 1} ▶`, color: '#ffb84a', size: 9 }], { w: 48, h: 16, bg: '#1a120a', border: '#8a6a3a' }), emissive: 0.9, unlit: true }, [-0.95, 2.4, -D / 2 + 0.18]));
   group.add(plane(1.0, 0.4, { name: `wu_floornum${f}`, map: signTex(`wuFloor${f}`, [{ text: f === 0 ? 'LOBBY' : `FLOOR ${f + 1}`, color: '#f2e8c8', size: 10 }], { w: 64, h: 24, bg: '#2a2420', border: '#8a7452' }), emissive: 0.6, unlit: true }, [-W / 2 + 0.1, 1.9, -3.4], [0, Math.PI / 2, 0]));
 
   const interactables = [];
   const npcs = [];
-  const solids = [solid(stairX, -4.8, 1.6, 2.6)];
+  const solids = [solid(stairX, -4.8, 1.6, 2.6), ...(f > 0 ? [solid(-1.05, -3.6, 1.1, 1.2, 0.9)] : [])];
   const door = (side, z, label, action, sub = '') => {
     const x = side * (W / 2 - 0.07);
     group.add(box(0.1, 2.2, 1.0, M.door, [x, 1.1, z]));
@@ -309,12 +347,14 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     interactables.push({ id: 'wu_squeak', label: 'Talk to Squeak', sub: 'the hallway, at hallway prices', x: -0.9, z: -2.2, radius: 1.2, action: (gg) => squeakMenu(gg) });
   }
   if (f === 4) {
-    group.add(box(1.0, 2.2, 0.12, retroMaterial('wu_roofdoor', { color: 0x6a6a6a }), [-0.8, 1.1, -D / 2 + 0.1]));
-    group.add(plane(0.8, 0.22, { name: 'wu_roofsign', map: signTex('wuRoof', [{ text: 'ROOF · ALARM WILL SOUND', color: '#ff6a5a', size: 6 }], { w: 96, h: 16, bg: '#1a1a1a', border: '#5a5a5a' }), emissive: 0.6, unlit: true }, [-0.8, 2.4, -D / 2 + 0.18]));
-    interactables.push({ id: 'wu_roof', label: 'Go up to the roof', sub: 'the alarm has not worked since 1989', x: -0.8, z: -D / 2 + 0.9, radius: 1.0, action: (gg) => roof(gg) });
+    // the last flight goes to the roof door, at the top of the east stairs
+    group.add(box(1.0, 2.0, 0.12, retroMaterial('wu_roofdoor', { color: 0x6a6a6a }), [stairX, 2.4, -D / 2 + 0.1]));
+    group.add(plane(0.8, 0.22, { name: 'wu_roofsign', map: signTex('wuRoof', [{ text: 'ROOF · ALARM WILL SOUND', color: '#ff6a5a', size: 6 }], { w: 96, h: 16, bg: '#1a1a1a', border: '#5a5a5a' }), emissive: 0.6, unlit: true }, [1.6, 2.4, -2.6], [0, -Math.PI / 2, 0]));
+    interactables.push({ id: 'wu_roof', label: 'Up the last flight to the roof', sub: 'the alarm has not worked since 1989', x: stairX - 0.2, z: -3.2, radius: 0.9, action: (gg) => roof(gg) });
   }
   if (f < FLOOR_NAMES.length - 1) interactables.push({ id: 'wu_up', label: `Up to the ${FLOOR_NAMES[f + 1]}`, sub: `${CONFIG.walkup.stairMinutes} min · the stairs`, x: stairX - 0.2, z: -3.2, radius: 0.9, action: (gg) => stairs(gg, 1) });
-  if (f > 0) interactables.push({ id: 'wu_down', label: `Down to the ${FLOOR_NAMES[f - 1]}`, sub: '', x: -0.6, z: -3.9, radius: 0.9, action: (gg) => stairs(gg, -1) });
+  if (f > 0) interactables.push({ id: 'wu_down', label: `Stairs down to the ${FLOOR_NAMES[f - 1]}`, sub: 'the west stairwell', x: -1.05, z: -2.4, radius: 1.0, action: (gg) => stairs(gg, -1) });
+  interactables.push({ id: 'wu_elev', label: 'Take the elevator', sub: 'any floor · it is slow · it is not safe', x: -0.95, z: -D / 2 + 0.9, radius: 1.0, action: (gg) => elevator(gg) });
 
   // overheard through the doors, now and then
   let timer = 6 + Math.random() * 6;
@@ -336,7 +376,9 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     bounds: { minX: -W / 2 + 0.25, maxX: W / 2 - 0.25, minZ: -D / 2 + 0.3, maxZ: D / 2 - 0.3 },
     solids,
     spawn: { x: 0, z: D / 2 - 1.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'up' ? { x: stairX - 0.2, z: -2.6, rot: 0 } : from === 'down' ? { x: -0.6, z: -3.0, rot: 0 } : { x: 0, z: D / 2 - 1.6, rot: Math.PI }),
+    // up the stairs: at the top of the east flight; down them: at the foot of the west well;
+    // out of the elevator: in front of its doors
+    spawnFor: (from) => (from === 'up' ? { x: stairX - 0.2, z: -2.4, rot: 0 } : from === 'down' ? { x: -0.95, z: -1.7, rot: 0 } : from === 'elevator' ? { x: -0.95, z: -D / 2 + 1.5, rot: 0 } : { x: 0, z: D / 2 - 1.6, rot: Math.PI }),
     npcs,
     interactables,
     tick,
