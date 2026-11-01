@@ -4,7 +4,7 @@ import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../r
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
-import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct } from './places.js';
+import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
 import * as police from '../systems/police.js';
 import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
@@ -26,7 +26,7 @@ import { maybeStreetEvent } from '../systems/street.js';
 const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
-  walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct,
+  walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
 };
 
 export class World {
@@ -199,6 +199,7 @@ export class World {
       }
       const row = id === 'street' && !npc.debug ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
       rig.root.position.set(row && !row.away ? row.x : npc.x, 0, row && !row.away ? row.z : npc.z);
+      if (npc.scale) rig.root.scale.setScalar(npc.scale); // the kids
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
       // the three women carry a heart until one of them is actually his girlfriend

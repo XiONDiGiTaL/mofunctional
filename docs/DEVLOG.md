@@ -10,6 +10,15 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Dee's Wash & Fold
+
+- `buildLaundromat` / `buildLaundryBack` (places.js), a front on Ashby; items soda, water, chips.
+  Acts: fold. NPC defs can carry `scale` (the kids).
+- `market.PROPERTIES.laundromat` ($60k, flat 780, upkeep 190, a 30% weekly repair); property
+  `level` multiplies the weekly take by 1 + 0.15 per level; `market.launder` (owner of the
+  laundromat only; `CONFIG.laundromat.upgradeCosts`, 8% fee, a 4% audit with a fine).
+- Dee texts the week's take; rides and the map know the laundromat. 58 checks.
+
 ### Keys in dialogs, the bus stop, the police, the payphone, night scenes
 
 - `Modal`: a highlighted choice (`.choice--sel`), F/Enter/Space/E pick it, W/S/arrows move it,

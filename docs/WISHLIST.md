@@ -106,6 +106,7 @@ been built and checked. Status: **done** · **partial** · **todo**.
 | Night: the alley pee, the censored stairwell couple | done |
 | Park cops at night, searches when high, booking, the 84th Precinct on Ashby | done |
 | The payphone: coin return, stash, Dex's night calls | done |
+| Dee's Wash & Fold: vending, laundry, change, people; buy it; the back room (PC, laundering into property levels) | done |
 | Live-in partner paths around furniture | todo |
 | Relationship events (bad day, disagreement, special occasion) | partial |
 

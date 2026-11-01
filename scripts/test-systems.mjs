@@ -981,6 +981,24 @@ check('police: a clean search is a warning; holding gets everything taken and th
   return true;
 });
 
+check('laundromat: $60k, less weekly than 1104, and laundering needs it and lifts a property a level', () => {
+  const g = stubGame();
+  g.state.money = 300000;
+  eq(market.PROPERTIES.laundromat.price, 60000, 'price');
+  const net = (p) => (p.flat || 0) + p.units * p.rent - p.upkeep;
+  eq(net(market.PROPERTIES.laundromat) < net(market.PROPERTIES.walkup), true, 'less than 1104');
+  market.buyProperty(g, 'walkup');
+  eq(market.launder(g, 'walkup'), null, 'no back room without the laundromat');
+  market.buyProperty(g, 'laundromat');
+  const before = market.weeklyIncome(g.state);
+  const mr = Math.random; Math.random = () => 0.99;
+  const r = market.launder(g, 'walkup');
+  Math.random = mr;
+  eq(r.level, 1, 'level 1');
+  eq(market.weeklyIncome(g.state) > before, true, 'more each week');
+  return true;
+});
+
 /* ------------------------------------------------------------------ report */
 
 console.log(log.join('\n'));

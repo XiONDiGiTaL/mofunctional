@@ -115,6 +115,7 @@ export function portfolioValue(s) {
 export const PROPERTIES = {
   walkup: { id: 'walkup', name: '1104 Kestrel St.', blurb: 'five-floor walk-up, eight units, one Squeak', price: 100000, units: 8, rent: 165, upkeep: 220 },
   lot: { id: 'lot', name: 'The lot past the clinic', blurb: 'chain-link, a Buick, a weekend flea market', price: 30000, units: 0, rent: 0, flat: 260, upkeep: 30 },
+  laundromat: { id: 'laundromat', name: "Dee's Wash & Fold", blurb: 'twenty machines, two vending machines, Dee, and a back room', price: 60000, units: 0, rent: 0, flat: 780, upkeep: 190 },
 };
 
 const TENANTS = ['Ray & Denise (2A)', 'Mr. Okafor (2B)', 'Mrs. Petrakis (3B)', 'Lenny (3A)', 'Squeak (4A)', 'The Nguyens (4D)', 'Stephanie (5C)', 'Teresa R. (5A)'];
@@ -159,13 +160,22 @@ export function propertyNewDay(g, day) {
       else if (u.status === 'behind') u.behind += 1;
       else if (u.status === 'product') addItem(s, pick(['bliss', 'static', 'mud', 'drip']), 2);
     }
-    const net = rent - p.upkeep;
+    // renovations (laundered in from the back room) lift the week's take
+    rent = Math.round(rent * (1 + (own.level || 0) * CONFIG.laundromat.upgradeBoost));
+    // the laundromat's week: a machine goes down now and then and Dee calls the repair guy
+    let repair = 0;
+    if (id === 'laundromat' && Math.random() < 0.3) {
+      repair = 90 + Math.floor(Math.random() * 120);
+      pushMessage(g, { from: 'DEE (LAUNDROMAT)', subject: '', body: `"Number ${4 + Math.floor(Math.random() * 12)} died. The repair guy came, looked at it, said 'oh no,' fixed it, and charged ${money(repair)}. It's out of this week's take."` });
+    }
+    const net = rent - p.upkeep - repair;
     if (net >= 0) earn(g, net, `${p.name}: the week's rent`);
     else spend(g, Math.min(s.money, -net), `${p.name}: upkeep`);
     own.income += net;
     // the week's trouble
     if (own.units.length) weekTrouble(g, own);
-    pushMessage(g, { from: 'HECTOR (SUPER, 1104)', subject: '', body: `"Week's done, boss. ${money(rent)} came in, ${money(p.upkeep)} went out on the boiler and the hallway lights.${own.units.some((u) => u.status === 'behind') ? ' Somebody\'s behind — check the app.' : ''}"`, kind: 'property' });
+    if (id === 'walkup') pushMessage(g, { from: 'HECTOR (SUPER, 1104)', subject: '', body: `"Week's done, boss. ${money(rent)} came in, ${money(p.upkeep)} went out on the boiler and the hallway lights.${own.units.some((u) => u.status === 'behind') ? ' Somebody\'s behind — check the app.' : ''}"`, kind: 'property' });
+    else if (id === 'laundromat') pushMessage(g, { from: 'DEE (LAUNDROMAT)', subject: '', body: `"Week's take: ${money(rent)} in quarters, ${money(p.upkeep)} out for soap, the gas bill and the guy who fixes the change machine. ${net >= 0 ? 'We\'re fine.' : 'We\'re not fine.'}"`, kind: 'property' });
   }
 }
 
@@ -211,5 +221,37 @@ export function tenantAction(g, unitIndex, action) {
 
 export const weeklyIncome = (s) => Object.entries(marketState(s).properties).reduce((a, [id, own]) => {
   const p = PROPERTIES[id];
-  return a + (p.flat || 0) + own.units.filter((u) => u.status === 'paying').length * p.rent - p.upkeep;
+  const gross = ((p.flat || 0) + own.units.filter((u) => u.status === 'paying').length * p.rent) * (1 + (own.level || 0) * CONFIG.laundromat.upgradeBoost);
+  return a + Math.round(gross) - p.upkeep;
 }, 0);
+
+/**
+ * The back room: wash cash through the laundromat's books and into a property's renovations, one
+ * level at a time (costs in CONFIG.laundromat.upgradeCosts, plus the machines' cut). Every level
+ * adds to that property's weekly take. Now and then the city reads the books: the renovation
+ * stands, and there is a fine. Only the laundromat's owner gets a back room.
+ */
+export function launder(g, id) {
+  const s = g.state;
+  const L = CONFIG.laundromat;
+  const m = marketState(s);
+  const own = m.properties[id];
+  if (!own || !m.properties.laundromat) return null;
+  const lvl = own.level || 0;
+  const cost = L.upgradeCosts[lvl];
+  if (!cost) return null;
+  const total = Math.round(cost * (1 + L.washFee));
+  if (s.money < total) return null;
+  spend(g, total, `renovations: ${PROPERTIES[id].name}`);
+  own.level = lvl + 1;
+  g.advance(30);
+  logLine(g, `${PROPERTIES[id].name} renovated to level ${own.level}.`, 'good');
+  if (Math.random() < L.auditChance) {
+    const fine = Math.min(s.money, L.auditFine);
+    spend(g, fine, 'City Department of Finance');
+    bump(s, 'stress', 12);
+    return { level: own.level, audit: true, fine };
+  }
+  bump(s, 'morale', 4);
+  return { level: own.level };
+}

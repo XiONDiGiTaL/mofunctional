@@ -146,6 +146,10 @@ export const CONFIG = {
     baklava:      { id: 'baklava',      name: 'Baklava', kind: 'food', price: 2.5, hunger: 14, energy: 6, morale: 8, hygiene: 0, value: 1.0 },
     mint_tea:     { id: 'mint_tea',     name: 'Mint Tea', kind: 'comfort', price: 1.5, stress: -5, morale: 3, value: 0.4 },
     coffee:       { id: 'coffee',       name: 'Quik-Stop Coffee', kind: 'comfort', price: 1.25, energy: 9, stress: 2, morale: 1, value: 0.2 },
+    // out of the laundromat machines
+    soda:         { id: 'soda',         name: 'Can of Soda', kind: 'comfort', price: 1.0, energy: 6, hunger: 2, morale: 3, value: 0.2 },
+    water:        { id: 'water',        name: 'Bottle of Water', kind: 'comfort', price: 1.0, energy: 3, stress: -2, hygiene: 1, value: 0.2 },
+    chips:        { id: 'chips',        name: 'Bag of Chips', kind: 'food', price: 0.75, hunger: 10, energy: 2, morale: 2, value: 0.2 },
     bliss:   { id: 'bliss',   name: 'Bliss Vial',     kind: 'substance', price: 35, value: 12 },
     static:  { id: 'static',  name: 'Static (pills)', kind: 'substance', price: 22, value: 8 },
     mud:     { id: 'mud',     name: 'Mud',            kind: 'substance', price: 18, value: 6 },
@@ -405,6 +409,17 @@ export const CONFIG = {
       'He runs one yellow, then another, then says "that was orange" with total confidence.',
       'Twelve minutes of silence, a pine tree air freshener and the city sliding past the window. It is honestly nice.',
     ],
+  },
+
+  // Dee's Wash & Fold on Ashby
+  laundromat: {
+    washCost: 3,
+    washMinutes: 45,
+    upgradeCosts: [8000, 15000, 25000],   // laundered into a property, level by level
+    upgradeBoost: 0.15,                   // weekly income per level
+    washFee: 0.08,                        // what the machines keep
+    auditChance: 0.04,
+    auditFine: 2000,
   },
 
   // the 84th Precinct

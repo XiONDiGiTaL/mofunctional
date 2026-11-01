@@ -480,6 +480,10 @@ export function buildAvenue(g) {
   }
   group.add(plane(3.2, 0.6, { name: 'av_pctsign', map: signTex('signPct', [{ text: '84TH PRECINCT', color: '#f2f2f0', size: 11 }, { text: 'POLICE · COURTESY · PROFESSIONALISM · PAPERWORK', color: '#b8c8e8', size: 5 }], { w: 160, h: 28, bg: '#1e2a4a', border: '#b8c8e8' }), emissive: 0.9, unlit: true }, [-12.5, 3.0, -6.3]));
   for (let i = 0; i < 3; i++) group.add(box(2.4 - i * 0.3, 0.12, 0.4, M.concrete, [-12.5, 0.06 + i * 0.12, -5.9 + i * 0.3]));
+  // Dee's Wash & Fold: a wide lit window full of machines, a sign in blue script
+  group.add(box(1.2, 2.3, 0.12, retroMaterial('av_lmdoor', { color: 0x4a6a8a }), [5.0, 1.15, -6.32]));
+  group.add(box(2.8, 1.6, 0.06, retroMaterial('av_lmwin', { color: 0xbfe0f0, emissive: 0.6, unlit: true }), [2.4, 1.4, -6.33]));
+  group.add(plane(3.6, 0.6, { name: 'av_lmsign', map: signTex('signLaundry', [{ text: "DEE'S WASH & FOLD", color: '#bfe8ff', size: 10 }, { text: 'COIN OP · DROP OFF · OPEN 6AM-MIDNIGHT', color: '#ffffff', size: 5 }], { w: 160, h: 28, bg: '#1a3a5a', border: '#bfe8ff' }), emissive: 1, unlit: true }, [3.6, 2.8, -6.3]));
   // the pawn shop, gold letters on black
   group.add(box(1.1, 2.3, 0.12, M.door, [10.5, 1.15, -6.32]));
   group.add(plane(3.0, 0.6, { name: 'av_psign', map: signTex('signPawn', [{ text: 'ASHBY PAWN & GOLD', color: '#ffd23a', size: 10 }, { text: 'WE BUY ANYTHING (ALMOST)', color: '#e8e0c0', size: 6 }], { w: 128, h: 28, bg: '#0e0e0e', border: '#ffd23a' }), emissive: 1, unlit: true }, [10.5, 3.0, -6.3]));
@@ -510,6 +514,7 @@ export function buildAvenue(g) {
   const interactables = [
     { id: 'av_lucias', label: "Enter Lucia's", sub: 'tablecloths · red sauce · a waiter in a vest', x: -4.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('restaurant', 'avenue') },
     { id: 'av_precinct', label: 'Enter the 84th Precinct', sub: 'the desk sergeant has seen everything', x: -12.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('precinct', 'avenue') },
+    { id: 'av_laundry', label: "Enter Dee's Wash & Fold", sub: 'laundry · vending machines · a TV', x: 5.0, z: -5.2, radius: 1.4, action: (gg) => gg.goTo('laundromat', 'avenue') },
     { id: 'av_pawn', label: 'Ashby Pawn & Gold', sub: 'sell something, fast and cheap', x: 10.5, z: -5.2, radius: 1.5, action: (gg) => pawnMenu(gg) },
     { id: 'av_news', label: 'The newsstand', sub: `a paper · ${money(0.5)}`, x: 3.0, z: -2.5, radius: 1.3, action: (gg) => newsstand(gg) },
     { id: 'av_sax', label: 'The sax player', sub: 'plays one song very well', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'ASHBY AVE.', title: 'The Sax Player', body: 'He plays the same song every day and every day it is better than it needs to be. His case has four dollars and a subway token in it.', choices: [
@@ -539,7 +544,7 @@ export function buildAvenue(g) {
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
     solids: [solid(3.0, -3.8, 2.2, 1.4), solid(12.5, 0.6, 0.3, 0.3)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
+    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
     interactables,
     tick,
@@ -760,6 +765,209 @@ function sergeant(g) {
     choices: [
       { label: 'Ask about the neighbourhood.', sub: '10 min', effect: () => { g.advance(10); g.toast(pick(['"The alley on Kestrel? We know. Everybody knows. The guy is only there after six, like a vampire with a pager."', '"The park at night is a bad idea with good lighting. Go home."', '"Golden Fellowship? Not a crime to sell tote bags. Yet."']), 'info'); } },
       { label: 'Never mind.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/* ================================================================== DEE'S WASH & FOLD */
+
+const VENDING = [
+  { id: 'soda', price: 1.0 }, { id: 'water', price: 1.0 }, { id: 'tallboy', price: 2.75 }, { id: 'chips', price: 0.75 },
+];
+
+function vending(g) {
+  const s = g.state;
+  g.openModal({
+    kicker: "DEE'S WASH & FOLD", title: 'The Machines',
+    body: 'Two vending machines that hum in different keys. One of them takes dollar bills if you smooth them out like you are apologising to them. The tall boys are in the second one, behind the water, like a secret everybody knows.',
+    choices: [
+      ...VENDING.map((v) => ({
+        label: `${CONFIG.items[v.id].name} — ${money(v.price)}`, sub: '', disabled: s.money < v.price,
+        effect: () => {
+          if (!g.spendMoney(v.price, 'vending machine')) return;
+          if (Math.random() < 0.07) { g.toast('The machine takes your money, thinks about it, and keeps it. You hit it once. Nothing. Twice. A can drops. Not the one you picked.', 'info'); addItem(s, 'soda', 1); return; }
+          addItem(s, v.id, 1);
+          g.toast(`${CONFIG.items[v.id].name}, with a thunk. It's in your pocket.`, 'good');
+        },
+      })),
+      { label: 'Walk away.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+function washers(g) {
+  const s = g.state;
+  s.laundry = s.laundry || {};
+  const day = dayOf(s.clock.m);
+  if (s.laundry.checkDay === day) { g.toast('You already went through the machines today. Dee is watching you now.', 'info'); return; }
+  s.laundry.checkDay = day;
+  g.advance(6);
+  const r = Math.random();
+  let body;
+  if (r < 0.45) { const c = Math.round((0.25 + Math.random() * 2.5) * 100) / 100; g.earnMoney(c, 'in the washers'); body = `${money(c)} in quarters, under a drum and in the lint trap of number 7. Laundromat money.`; }
+  else if (r < 0.6) { const vals = Object.values(CONFIG.items).filter((x) => x.kind === 'valuable'); const it = pick(vals); addItem(s, it.id, 1); bump(s, 'risk', 1); body = `Stuck in the gasket of a front-loader: a ${it.name}. Somebody is going to miss that. Not today.`; }
+  else if (r < 0.8) body = 'One sock. Somebody\'s, in every machine, always one. You leave the socks.';
+  else body = 'Nothing but warm air and a dryer sheet. Dee clears her throat from behind the counter.';
+  g.openModal({ kicker: "DEE'S WASH & FOLD", title: 'The Machines', body, choices: [{ label: 'Okay.', effect: () => {} }] });
+}
+
+function doLaundry(g) {
+  const s = g.state;
+  const L = CONFIG.laundromat;
+  g.openModal({
+    kicker: "DEE'S WASH & FOLD", title: 'Do a Load',
+    body: `${money(L.washCost)} for a wash and a dry. ${L.washMinutes} minutes of watching your three shirts go round with the TV on a game show nobody chose.`,
+    choices: [
+      { label: `Wash and dry — ${money(L.washCost)}`, sub: `${L.washMinutes} min · clean clothes · +hygiene`, disabled: s.money < L.washCost, effect: () => {
+        if (!g.spendMoney(L.washCost, 'laundry')) return;
+        g.advance(L.washMinutes);
+        bump(s, 'hygiene', 18); bump(s, 'morale', 5); bump(s, 'stress', -4);
+        g.toast('Warm clothes out of the dryer. You stand there holding them against your face for a second longer than a grown man should.', 'good');
+      } },
+      { label: 'Not today.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
+/**
+ * Dee's: a long room of washers down one wall and dryers stacked down the other, a folding table,
+ * two vending machines, plastic chairs, a TV in the corner, Dee behind the counter. Mothers
+ * folding, kids running the aisle. If Mo owns it, the door behind the counter is his.
+ */
+export function buildLaundromat(g) {
+  const s = g.state;
+  const group = new THREE.Group();
+  const W = 10, D = 8;
+  group.add(plane(W, D, { name: 'lm_floor', map: tex('tile'), repeat: [6, 5] }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(plane(W, D, { name: 'lm_ceil', map: tex('ceiling'), repeat: [3, 3] }, [0, 2.9, 0], [Math.PI / 2, 0, 0]));
+  const wall = retroMaterial('lm_wall', { color: 0xb8d0d8 });
+  group.add(box(W, 2.9, 0.16, wall, [0, 1.45, -D / 2]));
+  group.add(box(W, 2.9, 0.16, wall, [0, 1.45, D / 2]));
+  group.add(box(0.16, 2.9, D, wall, [-W / 2, 1.45, 0]));
+  group.add(box(0.16, 2.9, D, wall, [W / 2, 1.45, 0]));
+  for (const x of [-3, 0, 3]) group.add(box(1.4, 0.06, 0.3, M.lamp, [x, 2.86, 0]));
+  // washers down the west wall (round doors), dryers stacked down the east wall
+  const white = retroMaterial('lm_washer', { color: 0xe8ecec });
+  const door = retroMaterial('lm_door', { color: 0x4a5a6a, emissive: 0.15 });
+  for (let i = 0; i < 6; i++) {
+    const z = -3.0 + i * 1.0;
+    group.add(box(0.8, 0.9, 0.85, white, [-4.45, 0.45, z]));
+    group.add(box(0.04, 0.42, 0.42, door, [-4.03, 0.55, z]));
+    for (const y of [0.55, 1.5]) {
+      group.add(box(0.8, 0.85, 0.85, white, [4.45, y, z]));
+      group.add(box(0.04, 0.42, 0.42, door, [4.03, y, z]));
+    }
+  }
+  // the folding table down the middle, a laundry basket, two plastic chairs
+  group.add(box(3.4, 0.85, 1.0, retroMaterial('lm_table', { color: 0xd8d4c8 }), [0, 0.42, -0.4]));
+  group.add(box(0.5, 0.35, 0.4, retroMaterial('lm_basket', { color: 0x4a8ac8 }), [-1.0, 1.02, -0.4]));
+  for (let i = 0; i < 3; i++) group.add(box(0.36, 0.06, 0.3, retroMaterial(`lm_fold${i}`, { color: [0xe8e0d0, 0x8a2a3a, 0x2a4a8a][i] }), [0.6 + i * 0.4, 0.88 + i * 0.03, -0.4]));
+  for (const x of [-1.6, -0.9]) group.add(box(0.45, 0.45, 0.45, retroMaterial('lm_chair', { color: 0xe86a2a }), [x, 0.22, 2.6]));
+  // vending machines by the door, the TV up in the corner, Dee's counter at the back
+  group.add(box(0.9, 1.9, 0.75, retroMaterial('lm_vend1', { color: 0xc8121a, emissive: 0.2 }), [2.9, 0.95, 3.4]));
+  group.add(box(0.9, 1.9, 0.75, retroMaterial('lm_vend2', { color: 0x1a4a8a, emissive: 0.2 }), [3.9, 0.95, 3.4]));
+  for (const x of [2.9, 3.9]) group.add(box(0.6, 1.0, 0.04, retroMaterial('lm_vendglass', { color: 0xbfe0f0, emissive: 0.6, unlit: true }), [x, 1.2, 3.02]));
+  group.add(box(0.7, 0.5, 0.5, retroMaterial('lm_tv', { color: 0x1a1a1a }), [-4.4, 2.4, 3.4]));
+  group.add(box(0.5, 0.36, 0.04, retroMaterial('lm_tvscreen', { map: tex('static'), emissive: 0.6, unlit: true }), [-4.4, 2.4, 3.12]));
+  group.add(box(2.4, 1.05, 0.7, M.wood, [0, 0.52, -3.4]));
+  group.add(box(1.0, 2.2, 0.08, M.door, [2.4, 1.1, -3.92]));
+  group.add(plane(0.8, 0.2, { name: 'lm_private', map: signTex('lmPrivate', [{ text: 'PRIVATE', color: '#ff6a5a', size: 8 }], { w: 48, h: 14, bg: '#1a1a1a', border: '#5a5a5a' }), emissive: 0.6, unlit: true }, [2.4, 2.35, -3.85]));
+  group.add(box(1.1, 2.3, 0.12, M.door, [0, 1.15, D / 2 - 0.1]));
+
+  const owner = market.owns(s, 'laundromat');
+  const npcs = [
+    { kind: 'tenant_f', x: 0, z: -2.8, rot: 0, still: true, talk: 'lm_dee' },
+    { kind: 'w10', x: -0.6, z: 0.3, rot: Math.PI, still: true, act: 'fold' },
+    { kind: 'w7', x: 0.9, z: 0.3, rot: Math.PI, still: true, act: 'fold' },
+    // the kids, running the aisle between the machines and the table
+    { kind: 'passer_m', x: -2.5, z: 1.4, walker: [-3.4, 3.4], scale: 0.58 },
+    { kind: 'w3', x: 2.0, z: 1.9, walker: [-3.4, 3.4], scale: 0.55 },
+    { kind: 'passer_m2', x: -1.25, z: 2.6, rot: Math.PI, still: true, pose: 'sit' },
+  ];
+  const interactables = [
+    { id: 'lm_dee', label: 'Talk to Dee', sub: owner ? 'she works for you now' : 'she runs the place', x: 0, z: -2.4, radius: 1.3, action: (gg) => gg.openModal({ kicker: "DEE'S WASH & FOLD", title: 'Dee', body: owner ? '"Boss." She says it like a joke and also not. "Number four is making the noise again. I put a sign on it. The sign says NO. People still use it."' : '"Quarters are in the machine by the door. The change machine does not give change, it takes it. And do not sit on the folding table."', choices: [{ label: 'Got it.', effect: () => {} }] }) },
+    { id: 'lm_vend', label: 'Vending machines', sub: 'soda · water · tall boys · chips', x: 3.4, z: 2.7, radius: 1.3, action: (gg) => vending(gg) },
+    { id: 'lm_wash', label: 'Do a load of laundry', sub: `${money(CONFIG.laundromat.washCost)} · ${CONFIG.laundromat.washMinutes} min · +hygiene`, x: -3.6, z: -1.0, radius: 1.3, action: (gg) => doLaundry(gg) },
+    { id: 'lm_check', label: 'Check the machines for change', sub: 'once a day · people leave things', x: 3.6, z: -1.0, radius: 1.3, action: (gg) => washers(gg) },
+    { id: 'lm_tv', label: 'Sit and watch the TV', sub: '20 min', x: -1.3, z: 2.4, radius: 1.2, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -4); bump(gg.state, 'morale', 2); gg.toast('A game show. A woman wins a jet ski. She lives in Queens. Everybody in the laundromat claps a little, including you.', 'info'); } },
+    ...(owner ? [{ id: 'lm_back', label: 'The back room', sub: 'yours · the books, the computer', x: 2.4, z: -3.2, radius: 1.1, action: (gg) => gg.goTo('laundry_back', 'laundromat') }] : []),
+    { id: 'lm_exit', label: 'Out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('avenue', 'laundromat') },
+  ];
+  return {
+    group,
+    bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -D / 2 + 0.3, maxZ: D / 2 - 0.3 },
+    solids: [solid(-4.45, -0.5, 0.9, 6.0, 1.0), solid(4.45, -0.5, 0.9, 6.0, 2.0), solid(0, -0.4, 3.4, 1.0, 0.9), solid(0, -3.4, 2.4, 0.7, 1.1), solid(3.4, 3.4, 2.0, 0.8, 2.0)],
+    spawn: { x: 0, z: D / 2 - 1.5, rot: Math.PI },
+    spawnFor: (from) => (from === 'laundry_back' ? { x: 2.4, z: -2.5, rot: 0 } : { x: 0, z: D / 2 - 1.5, rot: Math.PI }),
+    npcs,
+    interactables,
+    ambient: 'street',
+    enterToast: owner ? "Dee's Wash & Fold. Yours. It smells like dryer sheets and a business plan." : "Dee's Wash & Fold. Warm air, dryer sheets, a TV nobody chose, and every machine going.",
+  };
+}
+
+/** The back room, for the owner: a desk, the computer, the safe, the books. */
+export function buildLaundryBack(g) {
+  const group = new THREE.Group();
+  const W = 4.5, D = 4;
+  group.add(plane(W, D, { name: 'lb_floor', map: tex('linoleum'), repeat: [2, 2] }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(plane(W, D, { name: 'lb_ceil', map: tex('ceiling') }, [0, 2.7, 0], [Math.PI / 2, 0, 0]));
+  const wall = retroMaterial('lb_wall', { color: 0x8a9a8a });
+  group.add(box(W, 2.7, 0.16, wall, [0, 1.35, -D / 2]));
+  group.add(box(W, 2.7, 0.16, wall, [0, 1.35, D / 2]));
+  group.add(box(0.16, 2.7, D, wall, [-W / 2, 1.35, 0]));
+  group.add(box(0.16, 2.7, D, wall, [W / 2, 1.35, 0]));
+  group.add(box(0.5, 0.06, 0.5, M.lamp, [0, 2.66, 0]));
+  group.add(box(1.6, 0.75, 0.8, M.wood, [-1.0, 0.375, -1.4]));
+  group.add(box(0.5, 0.42, 0.42, retroMaterial('lb_crt', { color: 0xd8d4c8 }), [-1.2, 0.96, -1.5]));
+  group.add(box(0.36, 0.28, 0.04, retroMaterial('lb_screen', { color: 0x2a6aa8, emissive: 0.7, unlit: true }), [-1.2, 0.98, -1.28]));
+  group.add(box(0.8, 1.0, 0.7, retroMaterial('lb_safe', { color: 0x3a3d42 }), [1.5, 0.5, -1.4]));
+  group.add(box(0.3, 0.3, 0.02, retroMaterial('lb_dial', { color: 0xb8bcc2 }), [1.5, 0.6, -1.04]));
+  for (let i = 0; i < 4; i++) group.add(box(0.5, 0.36, 0.4, retroMaterial('lb_box', { color: 0xb08a5a }), [1.6, 0.18 + (i % 2) * 0.36, 1.2 - Math.floor(i / 2) * 0.45]));
+  group.add(box(1.0, 2.2, 0.1, M.door, [0, 1.1, D / 2 - 0.08]));
+  const interactables = [
+    { id: 'lb_pc', label: 'Use the computer', sub: 'everything the laptop does', x: -1.1, z: -0.6, radius: 1.1, action: (gg) => gg.openLaptop() },
+    { id: 'lb_books', label: 'The books and the safe', sub: 'wash money into your properties', x: 1.4, z: -0.6, radius: 1.1, action: (gg) => launderMenu(gg) },
+    { id: 'lb_exit', label: 'Back out front', sub: '', x: 0, z: D / 2 - 0.8, radius: 1.0, action: (gg) => gg.goTo('laundromat', 'laundry_back') },
+  ];
+  return {
+    group,
+    bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -D / 2 + 0.3, maxZ: D / 2 - 0.3 },
+    solids: [solid(-1.0, -1.4, 1.6, 0.8, 0.8), solid(1.5, -1.4, 0.8, 0.7, 1.0), solid(1.6, 1.0, 0.6, 0.9, 0.8)],
+    spawn: { x: 0, z: D / 2 - 1.2, rot: Math.PI },
+    npcs: [],
+    interactables,
+    ambient: 'street',
+    enterToast: 'The back room. A desk, a beige computer, a safe older than Dee, and the hum of twenty machines through the wall.',
+  };
+}
+
+/** Wash cash through the machines and into a property's improvements: a level at a time. */
+function launderMenu(g) {
+  const s = g.state;
+  const L = CONFIG.laundromat;
+  const owned = Object.keys(market.marketState(s).properties);
+  g.openModal({
+    kicker: 'THE BACK ROOM', title: 'The Books',
+    body: `Cash goes in the machines on one side of the books and comes out the other side as "renovations." The machines keep ${Math.round(L.washFee * 100)}%. Every level adds ${Math.round(L.upgradeBoost * 100)}% to a property's weekly take.\n\nThere is always a small chance somebody from the city reads the books.`,
+    choices: [
+      ...owned.map((id) => {
+        const own = market.marketState(s).properties[id];
+        const lvl = own.level || 0;
+        const cost = L.upgradeCosts[lvl];
+        const total = cost ? Math.round(cost * (1 + L.washFee)) : 0;
+        return {
+          label: `${market.PROPERTIES[id].name} — level ${lvl}${cost ? ` → ${lvl + 1}` : ' (maxed)'}`,
+          sub: cost ? `${money(total)} washed in` : 'nothing left to renovate',
+          disabled: !cost || s.money < total,
+          effect: () => {
+            const r = market.launder(g, id);
+            if (r?.audit) g.openModal({ kicker: 'CITY DEPARTMENT OF FINANCE', title: 'Somebody Read the Books', body: `A man in a short-sleeved shirt and a tie asks about "these renovations." The renovations happen anyway; so does a fine of ${money(r.fine)}.`, choices: [{ label: 'Pay it.', effect: () => {} }] });
+            else if (r) g.toast(`${market.PROPERTIES[id].name}: renovated to level ${r.level}. The books look beautiful. Nobody has ever looked at books this clean.`, 'good');
+          },
+        };
+      }),
+      { label: 'Close the books.', sub: '', effect: () => {} },
     ],
   });
 }

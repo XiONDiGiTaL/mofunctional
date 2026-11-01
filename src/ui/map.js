@@ -145,8 +145,8 @@ function streetSVG(g, { mini = false, highlight = null } = {}) {
 const AREA_NAMES = {
   apartment: 'Unit 3B · 1120 Kestrel St.', bodega: 'Kestrel Bodega', habibs: "Habib's Corner",
   church: 'The Golden Fellowship', park: 'Kestrel Park', clinic: 'Kestrel Clinic', quikstop: 'Quik-Stop #14',
-  walkup: '1104 Kestrel St.', avenue: 'Ashby Avenue', restaurant: "Lucia's · Ashby Ave.", precinct: '84th Precinct' };
-const AREA_BUILDING = { apartment: 'apartment', bodega: 'bodega', habibs: 'habibs', church: 'church', clinic: 'clinic', park: null, quikstop: 'quikstop', walkup: 'walkup', avenue: null, restaurant: null, precinct: null };
+  walkup: '1104 Kestrel St.', avenue: 'Ashby Avenue', restaurant: "Lucia's · Ashby Ave.", precinct: '84th Precinct', laundromat: "Dee's Wash & Fold", laundry_back: "Dee's · the back room" };
+const AREA_BUILDING = { apartment: 'apartment', bodega: 'bodega', habibs: 'habibs', church: 'church', clinic: 'clinic', park: null, quikstop: 'quikstop', walkup: 'walkup', avenue: null, restaurant: null, precinct: null, laundromat: null, laundry_back: null };
 
 function shortLabel(label) {
   return String(label || '')

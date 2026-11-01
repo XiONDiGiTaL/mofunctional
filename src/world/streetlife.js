@@ -136,6 +136,16 @@ export function applyAct(rig, dt, life) {
     rig.head.rotation.x = Math.sin(t * 2.2) * 0.07;
     return;
   }
+  if (act === 'fold') {
+    // at the folding table: shake it out, fold it in half, in half again, onto the pile
+    const cyc = t % 3.2;
+    const lift = Math.sin(Math.min(1, cyc / 1.6) * Math.PI);
+    rig.armL.pivot.rotation.x = -0.75 - lift * 0.45; rig.armL.elbow.rotation.x = -0.55 + lift * 0.3; rig.armL.pivot.rotation.z = 0.15 + (cyc > 1.6 ? 0.35 : 0);
+    rig.armR.pivot.rotation.x = -0.75 - lift * 0.45; rig.armR.elbow.rotation.x = -0.55 + lift * 0.3; rig.armR.pivot.rotation.z = -0.15 - (cyc > 1.6 ? 0.35 : 0);
+    rig.torso.rotation.x = 0.18;
+    rig.head.rotation.x = 0.3;
+    return;
+  }
   if (act === 'talk') {
     // a quieter argue: one hand going, nodding
     rig.armR.pivot.rotation.x = -0.5 + Math.sin(t * 4) * 0.25;

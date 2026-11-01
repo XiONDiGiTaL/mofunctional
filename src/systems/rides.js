@@ -40,12 +40,13 @@ export const DESTINATIONS = [
   { id: 'avenue', name: 'Ashby Avenue', area: 'avenue', from: 'bus', group: 'ashby' },
   { id: 'lucias', name: "Lucia's on Ashby", area: 'restaurant', from: 'avenue', group: 'ashby' },
   { id: 'precinct', name: 'The 84th Precinct', area: 'avenue', from: 'precinct', group: 'ashby' },
+  { id: 'laundromat', name: "Dee's Wash & Fold", area: 'avenue', from: 'laundromat', group: 'ashby' },
 ];
 
 // which block an area is on, for "it's up the road"
 const AREA_GROUP = {
   street: 'kestrel', apartment: 'kestrel', walkup: 'kestrel', quikstop: 'kestrel', bodega: 'kestrel', habibs: 'kestrel',
-  church: 'kestrel', clinic: 'kestrel', park: 'kestrel', avenue: 'ashby', restaurant: 'ashby', precinct: 'ashby',
+  church: 'kestrel', clinic: 'kestrel', park: 'kestrel', avenue: 'ashby', restaurant: 'ashby', precinct: 'ashby', laundromat: 'ashby', laundry_back: 'ashby',
 };
 
 export function rideState(s) {
@@ -65,6 +66,7 @@ export function pickupFor(g) {
   if (area === 'avenue') return { area: 'avenue', x: Math.max(-13, Math.min(13, mx)) };
   if (area === 'restaurant') return { area: 'avenue', x: -4.5 };
   if (area === 'precinct') return { area: 'avenue', x: -12.5 };
+  if (area === 'laundromat' || area === 'laundry_back') return { area: 'avenue', x: 5.0 };
   if (area === 'park') return { area: 'street', x: freeCurbX(PARK.gate.x) };
   const b = building(area);
   return { area: 'street', x: freeCurbX(b ? b.door : building('apartment').door) };

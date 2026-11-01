@@ -62,6 +62,7 @@ const BUSINESS = {
   HAILMARY: { category: 'service', service: 'HAILMARY', name: 'HailMary' },
   "AMAZIN'": { category: 'service', service: "AMAZIN'", name: "Amazin'" },
   'HECTOR': { category: 'personal', kind: 'tenant_m', name: 'Hector (super, 1104)' },
+  'DEE': { category: 'personal', kind: 'tenant_f', name: "Dee (Wash & Fold)" },
 };
 
 const norm = (name = '') => String(name).toUpperCase().replace(/\(.*?\)/g, '').trim();
