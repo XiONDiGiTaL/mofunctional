@@ -85,13 +85,20 @@ export function callRide(g) {
   return { eta, pickup: p };
 }
 
+/**
+ * Call it off. Before the car is at the curb that is free — the driver has not driven anywhere
+ * for him yet — and once it is parked the usual fee applies.
+ */
 export function cancelRide(g) {
   const s = g.state;
   const r = rideState(s);
   if (r.status === 'none') return false;
+  const waited = r.status === 'waiting';
+  const fee = waited ? Math.min(s.money, C().cancelFee) : 0;
   r.status = 'none';
-  g.spendMoney?.(Math.min(s.money, C().cancelFee), 'HailMary cancel fee');
-  return true;
+  if (fee > 0) g.spendMoney?.(fee, 'HailMary cancel fee');
+  logLine(g, waited ? `Cancelled the HailMary (${money(fee)}).` : 'Cancelled the HailMary before it arrived.', 'info');
+  return { fee, driver: r.driver };
 }
 
 /** Game-time upkeep: the car arrives, waits, and gives up on him. */

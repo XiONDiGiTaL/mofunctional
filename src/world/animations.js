@@ -29,7 +29,7 @@ const mix = (a, b, t) => a + (b - a) * t;
 const STYLE = {
   vial: { prop: ['vial', 0xdfe9ff, 0.05, 0.12, 0.05], lift: 1.0, tip: 1.25, headBack: 0.35, beats: [0.7] },
   pill: { prop: ['pills', 0xf2f2f2, 0.05, 0.02, 0.05], lift: 1.0, tip: 0, headBack: 0.12, beats: [0.75, 1.05] },
-  pipe: { prop: ['pipe', 0x30251c, 0.05, 0.2, 0.05], lift: 1.0, tip: 0.15, headBack: 0.2, beats: [0.8, 1.9] },
+  pipe: { prop: ['pipe', 0xe4ece6, 0.011, 0.011, 0.14], lift: 1.0, tip: 0, headBack: 0.2, beats: [0.8, 1.9] },
   drop: { prop: ['dropper', 0xd8e8d0, 0.035, 0.11, 0.035], lift: 1.0, tip: 0.8, headBack: 0.42, beats: [0.6] },
 };
 
@@ -63,7 +63,7 @@ export class SubstanceUse {
     const [name, color, w, h, d] = this.conf.prop;
     const mat = retroMaterial(`use_${name}_${itemId}`, { color, ambient: 0.8 });
     const g = new THREE.Group();
-    g.add(box(w, h, d, mat, [0, 0, 0]));
+    if (this.style !== 'pipe') g.add(box(w, h, d, mat, [0, 0, 0]));
     if (this.style === 'pill') {
       // two pills in the fist, rolled flat
       g.add(box(0.028, 0.01, 0.028, mat, [0.02, 0.008, 0]));
@@ -73,10 +73,17 @@ export class SubstanceUse {
       g.add(box(w * 0.6, 0.02, d * 0.6, retroMaterial(`use_cap_${itemId}`, { color: 0x8a8a90 }), [0, h / 2, 0]));
     }
     if (this.style === 'pipe') {
-      // a short stem out of the fist and a bowl at the end
-      g.add(box(0.028, 0.028, 0.16, mat, [0, h * 0.35, 0.06]));
-      g.add(box(0.05, 0.05, 0.05, retroMaterial(`use_bowl_${itemId}`, { color: 0x4a3a2a }), [0, h * 0.42, 0.15]));
-      g.add(box(0.03, 0.03, 0.012, retroMaterial('use_ember2', { color: 0xff7a3a, emissive: 1, unlit: true }), [0, h * 0.42, 0.18]));
+      // The real thing at real size: a thin glass stem about the length of his hand with a small
+      // ball on the far end, built along +Z from the grip. It used to be a 20 cm brown plank,
+      // which read as a length of wood he was holding up beside his face, not a pipe.
+      const glass = retroMaterial(`use_stem_${itemId}`, { color: 0xe4ece6, emissive: 0.3, unlit: true, opacity: 0.58, transparent: true });
+      const ballMat = retroMaterial(`use_ball_${itemId}`, { color: 0xc9d2cf, emissive: 0.34, unlit: true, opacity: 0.62, transparent: true });
+      g.add(box(0.011, 0.011, 0.14, glass, [0, 0, 0.02]));
+      const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.017, 1), ballMat);
+      ball.position.set(0, 0.002, -0.05);
+      g.add(ball);
+      g.add(box(0.014, 0.006, 0.014, retroMaterial(`use_ember_${itemId}`, { color: 0xffa257, emissive: 1.1, unlit: true }), [0, -0.011, -0.05]));
+      g.add(box(0.006, 0.003, 0.006, retroMaterial('use_hole', { color: 0x3a3430, unlit: true }), [0, 0.0185, -0.052]));
     }
     if (this.style === 'drop') {
       g.add(box(0.02, 0.03, 0.02, retroMaterial(`use_tip_${itemId}`, { color: 0x9aa08a }), [0, -h / 2, 0.01]));
@@ -85,6 +92,14 @@ export class SubstanceUse {
     g.rotation.set(-0.5, 0, 0);
     mo.armR.elbow.add(g);
     this.prop = g;
+    this.grip = g.position.clone();
+    this.lips = new THREE.Vector3();
+    this.dir = new THREE.Vector3();
+    this.up = new THREE.Vector3();
+    this.sideV = new THREE.Vector3();
+    this.liftV = new THREE.Vector3();
+    this.inv = new THREE.Matrix4();
+    this.basis = new THREE.Matrix4();
     // the world does not own the audio; the Game does, and hands itself to World.update()
     this.sfx = this.world.game?.audio?.sfx?.bind(this.world.game.audio) || (() => {});
   }
@@ -123,6 +138,36 @@ export class SubstanceUse {
     void mo;
   }
 
+  /**
+   * Put the stem on his lips instead of hoping the arm pose lands it there: aim the pipe from the
+   * fist at the mouth every frame (world/title.js does the same thing) and slide it along the aim
+   * so the far end of the stem sits at the lips. Below the raise the pipe just sits in his hand.
+   */
+  aimPipe(mo, raised) {
+    const p = this.prop;
+    if (!p) return;
+    if (raised < 0.25) { p.position.copy(this.grip); p.rotation.set(-0.5, 0, 0); return; }
+    const head = mo.head.children.find((ch) => ch.isGroup) || mo.head;
+    const elbow = mo.armR.elbow;
+    head.updateWorldMatrix(true, false);
+    elbow.updateWorldMatrix(true, false);
+    this.lips.set(0, 0.24 * mo.headH, 0.43 * mo.headH);
+    head.localToWorld(this.lips);
+    elbow.worldToLocal(this.lips);
+    this.dir.copy(this.lips).sub(this.grip);
+    const reach = this.dir.length();
+    if (reach < 1e-4) return;
+    this.dir.normalize();
+    // the ball's hole stays up: world up, carried into forearm space
+    this.up.set(0, 1, 0).transformDirection(this.inv.copy(elbow.matrixWorld).invert());
+    this.sideV.crossVectors(this.up, this.dir).normalize();
+    this.liftV.crossVectors(this.dir, this.sideV);
+    this.basis.makeBasis(this.sideV, this.liftV, this.dir);
+    p.quaternion.setFromRotationMatrix(this.basis);
+    const slide = Math.max(-0.05, Math.min(0.03, reach - 0.09));
+    p.position.copy(this.grip).addScaledVector(this.dir, slide);
+  }
+
   update(dt) {
     if (!this.active) return;
     this.t += dt;
@@ -148,10 +193,12 @@ export class SubstanceUse {
     mo.armR.elbow.rotation.z = mix(0, -0.45, up);
     if (this.prop) {
       this.prop.visible = t < last + 0.7;
-      this.prop.rotation.x = -0.5 - range(t, 0.35, last) * c.tip;
+      if (this.style !== 'pipe') this.prop.rotation.x = -0.5 - range(t, 0.35, last) * c.tip;
     }
     mo.head.rotation.x = this.headBase + up * c.headBack + beat * (this.style === 'pill' ? 0.09 : 0.03);
     mo.torso.rotation.y = mix(this.torsoBase ?? 0, 0.12, up);
+    // after the head is turned, so the lips are where the head actually is this frame
+    if (this.style === 'pipe') this.aimPipe(mo, up);
 
     for (const b of c.beats) {
       if (t >= b && !this.fired.has(b)) {

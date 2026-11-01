@@ -32,8 +32,11 @@ export class RideCar {
     this.leaving = false;
     this.targetX = 0;
     this.marker = null;
+    this.flash = null;
     this.parked = false;
     this.waitT = 0;
+    this.flashT = 0;
+    this.lastCall = false;
   }
 
   /** Called on area load (fresh) and every frame. */
@@ -73,6 +76,17 @@ export class RideCar {
     marker.visible = !!inPlace;
     this.car.add(marker);
     this.marker = marker;
+    // its own headlights, so it can flash them: the shared car material is used by every sedan
+    const flashMat = retroMaterial('car_flash', { color: 0xfff6d0, emissive: 1.8, unlit: true });
+    const flash = new THREE.Group();
+    flash.add(box(0.07, 0.15, 0.36, flashMat, [2.44, 0.56, 0.6]));
+    flash.add(box(0.07, 0.15, 0.36, flashMat, [2.44, 0.56, -0.6]));
+    flash.visible = false;
+    this.car.add(flash);
+    this.flash = flash;
+    this.flashT = 0;
+    this.lastCall = false;
+    this.driver = r.driver;
     this.speed = 0;
     this.parked = !!inPlace;
     this.waitT = 0;
@@ -109,9 +123,12 @@ export class RideCar {
     if (this.car?.parent) this.car.parent.remove(this.car);
     this.car = null;
     this.marker = null;
+    this.flash = null;
     this.leaving = false;
     this.parked = false;
     this.waitT = 0;
+    this.flashT = 0;
+    this.lastCall = false;
   }
 
   update(dt, g) {
@@ -141,8 +158,22 @@ export class RideCar {
         this.marker.rotation.y = (this.world.camYaw || 0) - this.car.rotation.y;
       }
     }
+    if (this.flash) {
+      if (this.flashT > 0) {
+        this.flashT -= dt;
+        this.flash.visible = Math.floor(this.flashT * 7) % 2 === 0;
+        if (this.flashT <= 0) this.flash.visible = false;
+      } else if (this.flash.visible) this.flash.visible = false;
+    }
     if (this.parked && !this.leaving) {
       this.waitT = (this.waitT || 0) + dt;
+      // thirty seconds out: a second honk and the headlights, so leaving is not a surprise
+      if (!this.lastCall && CONFIG.rides.waitSeconds - this.waitT <= 30) {
+        this.lastCall = true;
+        this.flashT = 2.6;
+        g?.audio?.sfx?.('honk2');
+        g?.toast?.(`${this.driver || 'Your driver'} leans on the horn: thirty seconds, and then he is gone.`, 'bad');
+      }
       if (this.waitT >= CONFIG.rides.waitSeconds) {
         const res = noShowRide(g);
         if (res) {

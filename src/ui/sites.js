@@ -153,7 +153,7 @@ const VIEWS = {
     const p = rides.pickupFor(this.g);
     const where = p.area === 'avenue' ? 'the curb on Ashby Avenue' : 'the curb on Kestrel St.';
     const status = r.status === 'coming'
-      ? `<div class="card ride__card"><b>${T(r.driver)} is on the way.</b><div class="tiny">Black car · about ${Math.max(1, r.arriveAt - s.clock.m)} min · meet at the curb</div><button class="btn btn--sm" data-act="ridecancel">CANCEL · ${money(CONFIG.rides.cancelFee)}</button></div>`
+      ? `<div class="card ride__card"><b>${T(r.driver)} is on the way.</b><div class="tiny">Black car · about ${Math.max(1, r.arriveAt - s.clock.m)} min · meet at the curb</div><button class="btn btn--sm" data-act="ridecancel">CANCEL · FREE</button></div>`
       : r.status === 'waiting'
         ? `<div class="card ride__card ride__card--here"><b>Your car is at the curb.</b><div class="tiny">${T(r.driver)} waits until ${String(Math.floor((r.leaveAt % 1440) / 60)).padStart(2, '0')}:${String(r.leaveAt % 60).padStart(2, '0')}. Walk up to the black car and get in.</div><button class="btn btn--sm" data-act="ridecancel">CANCEL · ${money(CONFIG.rides.cancelFee)}</button></div>`
         : `<div class="card ride__card"><b>Need a ride?</b><div class="tiny">A black car to ${where} in ${CONFIG.rides.eta[0]}–${CONFIG.rides.eta[1]} min.</div><button class="btn btn--primary" data-act="ridecall" ${s.money >= CONFIG.rides.base ? '' : 'disabled'}>CALL A CAR</button></div>`;
@@ -161,7 +161,7 @@ const VIEWS = {
       ${status}
       <div class="app__h">Fares from here</div>
       <div class="list">${rides.DESTINATIONS.map((d) => `<div class="listitem"><div class="grow"><div class="name">${T(d.name)}</div><div class="meta">${rides.tooClose(this.g, d) ? 'up the road · the driver will tell you to walk' : money(rides.fareTo(this.g, d))}</div></div></div>`).join('')}</div>
-      <div class="tiny mono-dim">No-shows are charged ${money(CONFIG.rides.cancelFee)}. Drivers rate you too. You are a 3.1.</div>
+      <div class="tiny mono-dim">Cancel while the car is on its way and it costs nothing. Once it is at the curb, cancelling or no-showing is ${money(CONFIG.rides.cancelFee)}. Drivers rate you too. You are a 3.1.</div>
       ${this.footer()}`;
   },
 
@@ -280,7 +280,13 @@ export function siteActions(g, s) {
     invten(arg, num) { market.tenantAction(g, Number(arg), ['chance', 'evict', 'list', 'accept', 'refuse'][num]); },
     shopbuy(arg) { shop.order(g, arg, 1); },
     ridecall() { const r = rides.callRide(g); if (r) g.toast(`HailMary: car on the way, ${r.eta} min. Be at the curb.`, 'good'); },
-    ridecancel() { rides.cancelRide(g); g.toast('Cancelled. HailMary keeps the fee and a grudge.', 'info'); },
+    ridecancel() {
+      const res = rides.cancelRide(g);
+      if (!res) { g.toast('Nothing to cancel.', 'info'); return; }
+      g.toast(res.fee > 0
+        ? `Cancelled. HailMary keeps the ${money(res.fee)} and a grudge.`
+        : 'Cancelled, no charge. He had not reached the curb yet.', res.fee > 0 ? 'info' : 'good');
+    },
     tubewatch(arg) {
       g.advance(15);
       bump(s, 'morale', 3);
