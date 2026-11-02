@@ -9,6 +9,7 @@ import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightCl
 import { buildTower, buildHerRoom } from './houses.js';
 import { buildBathroom, buildRestroom } from './rooms.js';
 import { Courier } from './courier.js';
+import { Patrol, OUTSIDE } from './patrol.js';
 import { buildPawnShop, buildJays, buildReliefOffice } from './storefronts.js';
 import * as brawl from '../systems/brawl.js';
 import { worn } from '../systems/wardrobe.js';
@@ -111,6 +112,7 @@ export class World {
 
   clearArea() {
     this.cutHidden = null;
+    this.patrol?.clear();
     this.courier?.remove();
     if (this.hang) { this.hang.rig.root.parent?.remove(this.hang.rig.root); this.hang = null; }
     this.clearEncounter?.();
@@ -291,6 +293,13 @@ export class World {
         });
         this.partnerPresence(rig, 0, g, true);
       }
+    }
+    // anybody asleep where Mo can reach them has pockets, and might not stay asleep
+    for (const rig of this.npcRigs) {
+      if (rig.npcDef?.pose !== 'sleep' || rig.type === 'cat' || rig.npcDef?.partner) continue;
+      const it = { id: `sleeper_${rig.npcId || this.interactables.length}`, label: 'Go through his pockets', sub: 'he is asleep · probably', x: rig.root.position.x, z: rig.root.position.z, radius: 1.2, action: (gg) => this.sleeperLoot(gg, rig, it) };
+      rig.sleepIt = it;
+      this.interactables.push(it);
     }
     // a talk prompt belongs to a person, not to the spot they started on: tie each one to its rig
     for (const rig of this.npcRigs) {
@@ -867,7 +876,18 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   npcDown(rig, dt) {
     // two minutes of real time, not an in-game day: long enough to matter, short enough that
     // walking off the block and coming back is not a reset button
-    if (this.realT >= (rig.downUntil ?? 0)) { this.getUp(rig); return; }
+    if (this.realT >= (rig.downUntil ?? 0)) {
+      // the shot do not get up: two minutes and they are gone (the area brings them back tomorrow)
+      if (rig.dead) { this.dropBody(rig); return; }
+      this.getUp(rig);
+      return;
+    }
+    if (!rig.talkIt && !rig.bodyIt) {
+      const it = { id: `body_${rig.npcId || Math.random().toString(36).slice(2, 7)}`, label: 'Somebody is out cold', sub: 'check their pockets · or leave them', x: 0, z: 0, radius: 1.3, action: (gg) => this.downBodyMenu(gg, rig) };
+      rig.bodyIt = it;
+      this.interactables.push(it);
+    }
+    if (rig.bodyIt) { rig.bodyIt.x = rig.root.position.x; rig.bodyIt.z = rig.root.position.z; }
     rig.downT = (rig.downT || 0) + dt;
     animateDown(rig);
   }
@@ -906,6 +926,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       body: `${who[0].toUpperCase()}${who.slice(1)} is out. Breathing, which is the part that matters legally. Nobody on the block is looking, or nobody is admitting to it.\n\nYou can wait for them to come round. It takes a couple of minutes.`,
       choices: [
         { label: 'Go through their pockets.', sub: 'cash · whatever they had', effect: () => {
+          if (this.lootWitnessed(g)) return;
           const loot = brawl.loot(g, { ...def, key, label: def.kind });
           if (!loot.ok) { g.toast(loot.reason === 'searched' ? 'You already did that. Once is once.' : 'No.', 'info'); return; }
           g.toast(`${loot.cash ? `${money(loot.cash)}. ` : ''}${loot.items.length ? `And ${loot.items.join(', ')}.` : 'Otherwise, lint and a bus transfer.'}`, 'info');
@@ -937,7 +958,64 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     }
   }
 
+  /** A body that is not getting up: off the board, prompts and all. */
+  dropBody(rig) {
+    rig.down = false;
+    rig.gone = true;
+    rig.root.visible = false;
+    if (rig.talkIt) rig.talkIt.hidden = true;
+    if (rig.bodyIt) { this.interactables = this.interactables.filter((i) => i !== rig.bodyIt); rig.bodyIt = null; }
+    if (rig.patrol) this.patrol?.removeRig(rig);
+  }
+
+  /**
+   * The pockets of somebody asleep. Usually he sleeps through it; sometimes he does not, and a
+   * man woken up with a hand in his coat is not a man who wants to talk about it.
+   */
+  sleeperLoot(g, rig, it) {
+    if (this.lootWitnessed(g)) return;
+    const def = rig.npcDef || {};
+    if (Math.random() < 0.35) {
+      it.hidden = true;
+      rig.pose = null;
+      def.pose = null;
+      rig.baseY = 0;
+      rig.root.position.y = 0;
+      rig.root.rotation.set(0, Math.atan2(this.mo.root.position.x - rig.root.position.x, this.mo.root.position.z - rig.root.position.z), 0);
+      rig.guardT = CONFIG.brawl.guardSeconds * 2;
+      rig.swingDelay = 0.35;
+      def.tough = true;
+      bump(g.state, 'energy', -6);
+      bump(g.state, 'stress', 8);
+      this.tilt = 1;
+      g.audio?.sfx?.('punch');
+      g.toast(pick(['His eyes open while your hand is still in his coat. He is up and swinging before you are back on your feet. Fight or run.', 'He was not asleep. He was waiting. The first one catches you on the ear.', '"THAT IS MINE." He comes off the bench like a spring. Fight him or get gone.']), 'bad');
+      return;
+    }
+    const loot = brawl.loot(g, { ...def, key: rig.npcId || `sleeper_${def.kind}`, label: def.kind });
+    if (!loot.ok) { g.toast(loot.reason === 'searched' ? 'You already went through those pockets. He does not have new ones.' : 'No.', 'info'); return; }
+    it.hidden = true;
+    bump(g.state, 'morale', -3);
+    g.toast(`He does not wake up. ${loot.cash ? `${money(loot.cash)}. ` : ''}${loot.items.length ? `And ${loot.items.join(', ')}.` : 'Otherwise, a lighter and a photo of somebody you do not know.'} You feel exactly as good about it as you should.`, 'info');
+  }
+
+  /** 911: a patrol for wherever Mo is standing, if a car can get there. */
+  callCops(g) {
+    if (!OUTSIDE.has(this.areaId)) return false;
+    if (!this.patrol) this.patrol = new Patrol(this);
+    return this.patrol.call(g, { count: this.areaId === 'projects' ? 2 : 1 });
+  }
+
+  /** Going through somebody's pockets with a cop watching is a crime in progress. */
+  lootWitnessed(g) {
+    if (!this.copNear(12)) return false;
+    g.toast('"HEY. HEY! Step away from him." The officer is already running.', 'bad');
+    this.startChase(g, 'cop');
+    return true;
+  }
+
   getUp(rig) {
+    if (rig.bodyIt) { this.interactables = this.interactables.filter((i) => i !== rig.bodyIt); rig.bodyIt = null; }
     rig.down = false;
     rig.downT = 0;
     rig.downDay = undefined;
@@ -1687,6 +1765,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       this.syncTalkIt(rig);
       if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
       if (rig.down) { this.npcDown(rig, dt); continue; }
+      if (rig.patrol) continue; // driven by Patrol, below
       this.patrolNPC(rig, dt, g);
       if (rig.heart) {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
@@ -1710,6 +1789,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // anything else that takes Mo over (a meal, a hit, a fall) lets go of her hand first
     if (this.affection?.holding && (this.eating?.active || this.substance?.active || this.collapse?.active || this.dance?.active || this.handoff?.active)) this.affection.letGo();
     this.affection?.update(dt);
+    if (!this.patrol) this.patrol = new Patrol(this);
+    this.patrol.update(dt, g);
     this.area?.tick?.(g, dt, this);
 
     // trouble after dark: somebody steps out of the shadows in the park, the alley end or the lot

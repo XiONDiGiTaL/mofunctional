@@ -19,6 +19,7 @@ import { signTex } from '../render/signs.js';
 import { CONFIG } from '../core/config.js';
 import { money, pick, dayOf, minuteOfDay, randInt } from '../core/util.js';
 import { TRACKS } from '../systems/soundtrack.js';
+import { playArcade, GAMES } from '../ui/arcade.js';
 import { bump, addItem, removeItem, countItem, inventoryList, logLine } from '../core/state.js';
 import * as romance from '../systems/romance.js';
 import { partnerTarget } from './schedules.js';
@@ -1003,6 +1004,23 @@ function doLaundry(g) {
   });
 }
 
+/** A quarter in the slot, and the cabinet takes over the screen until he walks away. */
+function playCabinet(g, id) {
+  const s = g.state;
+  if (s.money < 0.25) { g.toast('Not even a quarter. The cabinet plays its attract loop at you, mockingly.', 'bad'); return; }
+  g.spendMoney(0.25, `arcade: ${GAMES[id].name}`);
+  g.audio?.sfx?.('cash');
+  const was = g.paused;
+  g.paused = true; // the block waits while he plays; the minutes are charged when he walks away
+  playArcade(g, id, (score, best, record) => {
+    g.paused = was;
+    g.advance(Math.max(5, Math.min(40, Math.round(score / 40))));
+    bump(s, 'stress', -4);
+    bump(s, 'morale', record ? 8 : 3);
+    g.toast(record ? `New high score on ${GAMES[id].name}: ${best}. You type in MO. Dee says "nice" without looking up, which from Dee is a parade.` : `${score} points. The cabinet asks for another quarter. It always asks for another quarter.`, record ? 'good' : 'info');
+  });
+}
+
 /**
  * Dee's: a long room of washers down one wall and dryers stacked down the other, a folding table,
  * two vending machines, plastic chairs, a TV in the corner, Dee behind the counter. Mothers
@@ -1048,6 +1066,20 @@ export function buildLaundromat(g) {
   group.add(plane(0.8, 0.2, { name: 'lm_private', map: signTex('lmPrivate', [{ text: 'PRIVATE', color: '#ff6a5a', size: 8 }], { w: 48, h: 14, bg: '#1a1a1a', border: '#5a5a5a' }), emissive: 0.6, unlit: true }, [2.4, 2.35, -3.85]));
   group.add(box(1.1, 2.3, 0.12, M.door, [0, 1.15, D / 2 - 0.1]));
 
+  // the arcade corner, back left: three cabinets, a marquee each, and the attract screens going
+  const CABS = [['snake', 'EVICTION SNAKE', '#3aff8a'], ['pac', 'PAC-MO', '#ffd23a'], ['roach', 'ROACH INVADERS', '#ff6a3a']];
+  CABS.forEach(([id, title, color], i) => {
+    const x = -3.3 + i * 0.85;
+    const body = retroMaterial(`lm_cab${i}`, { color: [0x1a2a4a, 0x3a1a4a, 0x4a1a1a][i] });
+    group.add(box(0.72, 1.7, 0.7, body, [x, 0.85, -3.45]));
+    group.add(box(0.72, 0.3, 0.42, body, [x, 1.95, -3.32]));
+    group.add(plane(0.66, 0.24, { name: `lm_marq${id}`, map: signTex(`lmMarq${id}`, [{ text: title, color, size: title.length > 10 ? 6 : 9 }], { w: 64, h: 20, bg: '#0a0a12', border: color }), emissive: 1.1, unlit: true }, [x, 1.95, -3.1]));
+    group.add(plane(0.5, 0.4, { name: `lm_scr${id}`, map: signTex(`lmScr${id}`, [{ text: 'INSERT', color: '#e8f4ff', size: 8 }, { text: 'COIN', color, size: 10 }], { w: 48, h: 40, bg: '#05060a', border: '#1a2a3a' }), emissive: 1, unlit: true }, [x, 1.38, -3.08], [-0.2, 0, 0]));
+    group.add(box(0.7, 0.08, 0.3, retroMaterial('lm_cabpanel', { color: 0x1a1a1a }), [x, 1.05, -3.05]));
+    group.add(box(0.05, 0.12, 0.05, retroMaterial('lm_stick', { color: 0xc8281e }), [x - 0.12, 1.14, -3.0]));
+    for (const bx of [0.05, 0.15]) group.add(box(0.06, 0.03, 0.06, retroMaterial(`lm_btn${bx}`, { color: bx < 0.1 ? 0xffd23a : 0x3a8aff }), [x + bx, 1.1, -3.02]));
+  });
+
   const owner = market.owns(s, 'laundromat');
   const npcs = [
     { kind: 'tenant_f', x: 0, z: -2.8, rot: 0, still: true, talk: 'lm_dee' },
@@ -1063,6 +1095,10 @@ export function buildLaundromat(g) {
     { id: 'lm_vend', label: 'Vending machines', sub: 'soda · water · tall boys · chips', x: 3.4, z: 2.7, radius: 1.3, action: (gg) => vending(gg) },
     { id: 'lm_wash', label: 'Do a load of laundry', sub: `${money(CONFIG.laundromat.washCost)} · ${CONFIG.laundromat.washMinutes} min · +hygiene`, x: -3.6, z: -1.0, radius: 1.3, action: (gg) => doLaundry(gg) },
     { id: 'lm_check', label: 'Check the machines for change', sub: 'once a day · people leave things', x: 3.6, z: -1.0, radius: 1.3, action: (gg) => washers(gg) },
+    ...['snake', 'pac', 'roach'].map((id, i) => ({
+      id: `lm_arcade_${id}`, label: `Play ${GAMES[id].name}`, sub: `$0.25 · ${GAMES[id].blurb}`, x: -3.3 + i * 0.85, z: -2.5, radius: 0.6,
+      action: (gg) => playCabinet(gg, id),
+    })),
     { id: 'lm_tv', label: 'Sit and watch the TV', sub: '20 min', x: -1.3, z: 2.4, radius: 1.2, seat: { x: -1.6, z: 2.6, y: 0.45, rot: -1.32 }, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -4); bump(gg.state, 'morale', 2); gg.toast('A game show. A woman wins a jet ski. She lives in Queens. Everybody in the laundromat claps a little, including you.', 'info'); } },
     ...(owner ? [{ id: 'lm_back', label: 'The back room', sub: 'yours · the books, the computer', x: 2.4, z: -3.2, radius: 1.1, action: (gg) => gg.goTo('laundry_back', 'laundromat') }] : []),
     { id: 'lm_exit', label: 'Out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('avenue', 'laundromat') },
@@ -1071,7 +1107,7 @@ export function buildLaundromat(g) {
     group,
     seats: [{ x: -0.9, z: 2.6, y: 0.45, rot: -1.32, label: 'Sit in a plastic chair' }],
     bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -D / 2 + 0.3, maxZ: D / 2 - 0.3 },
-    solids: [solid(-4.45, -0.5, 0.9, 6.0, 1.0), solid(4.45, -0.5, 0.9, 6.0, 2.0), solid(0, -0.4, 3.4, 1.0, 0.9), solid(0, -3.4, 2.4, 0.7, 1.1), solid(3.4, 3.4, 2.0, 0.8, 2.0)],
+    solids: [solid(-4.45, -0.5, 0.9, 6.0, 1.0), solid(4.45, -0.5, 0.9, 6.0, 2.0), solid(0, -0.4, 3.4, 1.0, 0.9), solid(0, -3.4, 2.4, 0.7, 1.1), solid(3.4, 3.4, 2.0, 0.8, 2.0), solid(-2.45, -3.45, 2.5, 0.75, 1.9)],
     spawn: { x: 0, z: D / 2 - 1.5, rot: Math.PI },
     spawnFor: (from) => (from === 'laundry_back' ? { x: 2.4, z: -2.5, rot: 0 } : { x: 0, z: D / 2 - 1.5, rot: Math.PI }),
     npcs,

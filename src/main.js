@@ -119,7 +119,7 @@ class Game {
   get overlayOpen() { return this.overlays.size > 0; }
   setOverlay(name, on) { if (on) this.overlays.add(name); else this.overlays.delete(name); }
   /** Anything on screen that the world must not talk over: a menu, the phone, a dialog, pause, debug. */
-  get uiBusy() { return this.mode !== 'play' || this.paused || this.debugOpen || this.phoneOpen || this.modalOpen || this.guideOpen; }
+  get uiBusy() { return this.mode !== 'play' || this.paused || this.debugOpen || this.phoneOpen || this.modalOpen || this.guideOpen || this.arcadeOpen; }
 
   /**
    * Background code (the world, the dealer) calls this before opening anything. While the player
