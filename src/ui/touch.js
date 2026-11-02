@@ -55,7 +55,7 @@ export function installTouch(game, root = document.body) {
   stick.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     sid = e.pointerId;
-    stick.setPointerCapture?.(e.pointerId);
+    try { stick.setPointerCapture?.(e.pointerId); } catch { /* a pointer the browser no longer tracks */ }
     const r = stick.getBoundingClientRect();
     cx = r.left + r.width / 2;
     cy = r.top + r.height / 2;

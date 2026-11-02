@@ -10,6 +10,46 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Seats, rooms you walk into, the Houses opened up, a guide, and touch
+
+- **Seats.** An area lists `seats` ({ x, z, rot, y, label }) and gets a "Sit down" prompt in front
+  of each; an interactable can carry `seat` too, and Mo sits before its menu opens. Seated, he
+  rests (stress down, a little energy back) until a step or a tap stands him up where he came
+  from. Benches, pews, desk, waiting and laundromat chairs, the bus stop, the platform.
+- **NPC heights.** `npcs[].y` lifts a rig (the sleeper lies on his platform bench, the cat sleeps
+  on the lottery machine, the token clerk sits on a tall stool, she lies on her bed). Rigs keep
+  `baseY` so idle animations add to it.
+- **The station.** The token booth is hollow with clear plexiglass and a transit clerk inside; the
+  grey slab by the Kestrel stairs was a solid "handrail" panel and is now posts and a bar.
+- **Waking up.** `world.freeMo()` releases every lock (eating, handoff, substance, dance, seat,
+  collapse pose, `flags.consuming`) when he wakes at home or the clinic, and movement lets him
+  walk out of any solid he starts inside.
+- **Camera.** Small rooms (no traffic, under 140 m², no camBounds of their own) are shot cutaway:
+  the eye may go 1.5 m past the walls and `cutaway()` hides any large mesh between the lens and
+  Mo each frame, so a doorway is an over-the-shoulder shot, not a look down at his head. Walking
+  at the camera indoors for half a second turns the view round, with the held direction kept on
+  its old basis until the input changes. Chain-link (`seeThrough` solids) never stops the camera.
+- **New rooms.** `world/rooms.js`: Unit 3B's bathroom (toilet-tank stash in `state.stash.toilet`,
+  broken shower, sink) and the Quik-Stop restroom. `world/storefronts.js`: Ashby Pawn & Gold
+  (Benny, glass cases, daily stock; buys and sells valuables and gifts, never food or
+  substances), Mr. Jay's as a walk-in store, and the Civic Relief office Downtown with queues that
+  move one person at a time and window 3 for recertification (or a new application).
+- **The bodega** has two aisles, a bread rack and a lottery terminal with scratch-offs and nightly
+  numbers; the cat sleeps on it.
+- **Kestrel Houses.** `world/houses.js`: the court is fenced on four sides with a working gate and
+  a real hoop, and `Hoops` runs a two-on-two (dribble, pass, shoot, rebound, possession changes).
+  The North and East towers are six-floor areas (`pjtower`, stairs only) with neighbours and three
+  women after dark; a visit fades out, costs time and money, can leave the clap (never
+  accusable: `accused`/`posted` are set), and ends in her room (`pjroom`) at the foot of the bed.
+- **The sax player** is `rasta` (tam with locks, shades, heavyset) with a fuller playing
+  animation, and his "Stand and listen" plays the next track of the soundtrack in order, held on
+  Ashby via `soundtrack.cue(id, seconds, area)`.
+- **Guide and touch.** `ui/guide.js` shows six illustrated pages at the start of a run and is How
+  To Play from both menus (controls on the last page). `ui/touch.js` adds a thumbstick and buttons
+  on phones and tablets (`(hover: none) and (pointer: coarse)`), and the HUD compacts for them.
+- New characters: transit, rasta, pawnbroker, baller1–4, wg1–3, caseworker, shopclerk; new
+  textures: chainlink, court, hawaiian, rastaKnit, clothes, sneakers, groceries.
+
 ### Español and Deutsch
 
 - A language setting: English (default), Spanish and German, from the title screen's Settings,

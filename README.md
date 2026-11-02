@@ -122,15 +122,15 @@ end. It just makes Monday harder.
 
 | Place | Why you go there |
 |---|---|
-| **Unit 3B** | Home. Bed, shower, fridge, TV, a laptop with the whole 1999 internet on it, and Chairman the cat. |
-| **Quik-Stop #14** | Work. Open 24 hours. Dale opens, Kev complains, and the coffee is exactly as good as it costs. |
-| **Kestrel Bodega** | Miguel's. Bacon, egg and cheese. Chopped cheese. A cat asleep on the lottery machine. |
+| **Unit 3B** | Home. Bed, fridge, TV, a closet, a laptop with the whole 1999 internet on it, and Chairman the cat. The bathroom has a shower that has never worked (so Mo washes at the sink) and a toilet tank where a stash stays out of his pockets. |
+| **Quik-Stop #14** | Work. Open 24 hours. Dale opens, Kev complains, the coffee is exactly as good as it costs, and the public restroom in the back has two stalls and one working tap. |
+| **Kestrel Bodega** | Miguel's. Two aisles, a bread rack, the grill, and a cat asleep on top of the lottery machine. Scratch-offs, tonight's numbers, or just scratch the cat. |
 | **Habib's Corner** | Halal, no pork, no nonsense. Chicken over rice that fixes most problems. |
 | **Kestrel Clinic** | Nurse Okafor, walk-ins welcome. Treatment on cash or on the bill, and she will not judge you out loud. |
 | **Kestrel Park** | Across the crosswalk. Benches, a half-court with a bent rim, chess, and a boombox somebody left a tape in. |
 | **1104 Kestrel St.** | The five-floor walk-up next door. Arguing neighbours, soup on three, a man selling things from his coat on four, and a roof. |
 | **The Golden Fellowship** | Sunday service with Addison Octavius. They will help Mo. That is what worries us. |
-| **Ashby Avenue** | One bus ride away: the newsstand, a sax player who means it, a pawn shop, Lucia's trattoria, the 84th Precinct and Dee's Wash & Fold. |
+| **Ashby Avenue** | One bus ride away: the newsstand, Lucia's trattoria, the 84th Precinct, Dee's Wash & Fold, and **Ashby Pawn & Gold**, where Benny in his palm-tree shirt buys and sells anything that is not food or drugs. The sax player on the corner plays the whole soundtrack in order if you stand and listen. |
 | **Kestrel St station** | Down the green-railed stairs on Kestrel or on Ashby. The platform runs under both, so it is also the short way between them. |
 
 <p align="center">
@@ -140,6 +140,9 @@ end. It just makes Monday harder.
 
 Every door is lit and signed, every shop keeps real opening hours, and the bodega closes when the
 bodega closes. Plan accordingly.
+
+**Take a seat.** Every bench, pew and chair can be sat on: walk up, press `F`, and Mo sits down
+for real. A sit takes the edge off stress and gives back a little energy. Walk off to stand up.
 
 ## Under the street: the K train
 
@@ -154,8 +157,8 @@ express on the far track does not stop for anybody, and you will feel it go by.
 | Stop | What is there |
 |---|---|
 | **7 Av · Park Slope** | Brownstones and strollers. Grounds for Hope pays cash for a dishwashing shift, and the dog-walker board pays for two hours with three very good boys. |
-| **Fulton St · Downtown** | Mr. Jay's for clothes, Ready Hands day labor (sign in early, get sent somewhere heavy, get paid), and a hot dog cart that is never wrong. |
-| **Kestrel Houses** | Towers around a courtyard. High risk, high reward. More on that below. |
+| **Fulton St · Downtown** | Mr. Jay's, a real store with racks, a sneaker wall and Jay at the register. The Civic Relief office, where every chair is taken and window 3 recertifies your food credit once the line ahead of you clears. Ready Hands day labor, and a hot dog cart that is never wrong. |
+| **Kestrel Houses** | Towers around a courtyard and a fenced half-court with a pickup game running. High risk, high reward. More on that below. |
 
 A ride is $1.50, and the car has its own entertainment.
 
@@ -305,6 +308,14 @@ shirt to show you why you should answer carefully. Paying is safe, walking away 
 fighting a man with a gun can end the run for good (you go back to your last save). Beat one
 anyway and his pockets are yours. The gun stays where it fell. Mo has his reasons.
 
+The towers are open, too: six floors of stairs (the elevator is a rumour), neighbours behind
+every door, and on a few floors a woman leaning on her door frame after dark, smoking, with
+prices she says like a menu. Pay, and the screen goes dark for an hour; you come to at the foot
+of her bed with her line about the dresser. Nothing is shown, and once in a while something is
+caught, with nobody to text about it. The half-court in the courtyard is fenced on four sides
+now, with a gate on the west end, a real hoop and four regulars running two-on-two. Ask for
+next if your knees are up to it.
+
 Some nights are better spent at home with the door locked and a bowl of instant ramen.
 
 ---
@@ -330,6 +341,19 @@ Movement is camera-relative: `W` always walks into the screen. Click the floor a
 
 Every key except `TAB` and `ESC` can be remapped from **ESC → Options**, which also has music and
 sound effect volume, camera distance and height, and the full controller reference.
+
+### Learning the ropes
+
+A new run opens with a short illustrated guide: where to clock in at the Quik-Stop, how the LIVE
+board on the sidewalk lists today's odd jobs, LinkedOut on the phone, Pocket Lint for everything
+in your pockets, food and the fridge, and what the party favors cost. Every page is in **How To
+Play** on the title screen and the pause menu, with the full controls on the last one.
+
+### On a phone or tablet
+
+On a touch screen the game puts a thumbstick on the left and buttons on the right (interact,
+next, punch, phone, map, pause). Drag anywhere else to turn the camera, or tap the floor to walk
+there. The HUD folds itself down to make room for your thumbs.
 
 ### Language
 

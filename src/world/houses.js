@@ -608,14 +608,14 @@ export function buildHerRoom(g) {
   group.add(box(1.0, 2.1, 0.08, retroMaterial('hr_door', { color: 0x5a3a2a }), [-1.0, 1.05, D / 2 - 0.07]));
 
   // her on the bed, along it, smoking
-  const npcs = [{ kind: w.kind, x: 0.05, z: -1.35, y: 0.45, rot: Math.PI, still: true, pose: 'sleep', talk: 'hr_her' }];
+  const npcs = [{ kind: w.kind, x: 0.05, z: -1.55, y: 0.45, rot: 0, still: true, pose: 'sleep', talk: 'hr_her' }];
   const interactables = [
     { id: 'hr_her', label: w.name, sub: 'money on the dresser', x: 0, z: -0.2, radius: 1.3, action: (gg) => herRoomMenu(gg) },
     { id: 'hr_dresser', label: 'The dresser', sub: 'where the money goes', x: 0.75, z: 0.2, radius: 0.9, action: (gg) => herRoomMenu(gg) },
   ];
   // a cigarette between her fingers, smoke curling off it
   const ember = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.08), retroMaterial('hr_cig', { color: 0xf2f2ea }));
-  ember.position.set(0.42, 0.72, -0.95);
+  ember.position.set(0.42, 0.72, -1.75);
   group.add(ember);
   const puff = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), retroMaterial('hr_smoke', { color: 0xd8d8d8, opacity: 0.35, transparent: true, unlit: true }));
   group.add(puff);
@@ -624,7 +624,7 @@ export function buildHerRoom(g) {
   const tick = (gg, dt) => {
     t += dt;
     const u = (t * 0.4) % 1;
-    puff.position.set(0.42 + Math.sin(t) * 0.05, 0.75 + u * 0.8, -0.95);
+    puff.position.set(0.42 + Math.sin(t) * 0.05, 0.75 + u * 0.8, -1.75);
     puff.scale.setScalar(0.6 + u * 1.6);
     puff.material.uniforms.uOpacity.value = 0.35 * (1 - u);
     // the line comes once he has stood there a second
@@ -635,8 +635,9 @@ export function buildHerRoom(g) {
     group,
     bounds: { minX: -W / 2 + 0.25, maxX: W / 2 - 0.25, minZ: -0.3, maxZ: D / 2 - 0.3 },
     solids: [solid(1.25, 0.2, 0.5, 1.1, 0.9)],
-    spawn: { x: -0.2, z: 0.1, rot: Math.PI },
-    spawnFor: () => ({ x: -0.2, z: 0.1, rot: Math.PI }),
+    // a step to the side of the bed's foot, so the first shot sees her past his shoulder
+    spawn: { x: -1.15, z: 0.35, rot: Math.PI },
+    spawnFor: () => ({ x: -1.15, z: 0.35, rot: Math.PI }),
     npcs,
     interactables,
     tick,

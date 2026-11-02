@@ -36,6 +36,18 @@ or a second call finds a finished order and does nothing. The thread ignores tap
 "typing". Orders are saved with the run: reload mid-order and he is still on his way (or
 standing there); leave him waiting three game hours and the order expires, uncharged.
 
+## Seats, heights and rooms
+
+- **Seats.** Add `seats: [{ x, z, rot, y, label, sub, action }]` to an area's return to make a
+  bench or chair sittable; `x, z` is where Mo sits, `rot` the way he faces, `y` the seat height
+  (0.46 by default). An existing interactable can take `seat: {...}` instead, and Mo sits before
+  its action runs. See `World.addSeats`, `sit` and `standUp` in `world/game3d.js`.
+- **NPC height.** `npcs: [{ ..., y }]` lifts a rig onto a bench, a bed or a machine.
+- **Small rooms** (no traffic, under 140 m², no `camBounds`) get the cutaway camera
+  automatically. Give a room `camBounds` to opt out. A solid with `seeThrough: true` stops Mo but
+  not the camera (chain-link).
+- **Area-held music.** `g.soundtrack.cue(trackId, seconds, areaId)` holds a track in one place.
+
 ## Languages
 
 English is the source. Nothing in the code is written against translation keys: lines are
