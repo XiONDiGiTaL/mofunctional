@@ -87,7 +87,7 @@ export function tryRun(g) {
 }
 
 /** One exchange: a swing that landed (true) or missed. Returns the fight's state after it. */
-export function exchange(g, fight, landed) {
+export function exchange(g, fight, landed, { quietWin = false } = {}) {
   const s = g.state;
   if (landed) {
     fight.hp -= 1;
@@ -96,7 +96,7 @@ export function exchange(g, fight, landed) {
     bump(s, 'energy', -C().hitEnergy);
     bump(s, 'stress', 4);
   }
-  if (fight.hp <= 0) { fight.over = 'won'; win(g); }
+  if (fight.hp <= 0) { fight.over = 'won'; if (!quietWin) win(g); }
   else if (s.stats.energy <= 0) { fight.over = 'lost'; }
   return fight;
 }
@@ -130,4 +130,33 @@ export function robbed(g) {
   bump(s, 'stress', 14);
   logLine(g, `Robbed: ${money(cash)}${taken.length ? ` and ${taken.join(', ')}` : ''}.`, 'bad');
   return { cash, taken };
+}
+
+/* ------------------------------------------------------------------ the far stops */
+
+/** How hard he is to put down: hits needed and how wide the green is on the meter. */
+export function toughness(kind) {
+  if (kind === 'boxer') return { hp: 5, zone: 0.14 };
+  if (kind === 'thug' || kind === 'thug_armed') return { hp: 4, zone: 0.16 };
+  return { hp: 3, zone: 0.18 };
+}
+
+/** What is in his pockets once he is down. */
+export function lootFor(kind, roll = Math.random) {
+  const out = { cash: 0, items: [] };
+  out.cash = Math.round((30 + roll() * 90) * 100) / 100;
+  out.items.push(roll() < 0.5 ? 'static_x' : 'bliss_x');
+  if (kind === 'thug_armed') out.items.push(roll() < 0.5 ? 'necklace' : 'watch');
+  return out;
+}
+
+/** A fight in the Houses that Mo won. */
+export function knockout(g, kind) {
+  const s = g.state;
+  const f = fightState(s);
+  f.won += 1;
+  bump(s, 'morale', 4);
+  bump(s, 'stress', -3);
+  bump(s, 'risk', 3);
+  logLine(g, `Put somebody on the pavement in the Houses (${kind}).`, 'bad');
 }

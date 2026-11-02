@@ -5,7 +5,7 @@ import { createMo, createAddison, createNPC, createCat, animateMo, animateAddiso
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
-import { buildSubway, buildParkSlope, buildBasement, buildProjects } from './district.js';
+import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub } from './underground.js';
 import * as brawl from '../systems/brawl.js';
 import { worn } from '../systems/wardrobe.js';
 import { bump } from '../core/state.js';
@@ -34,7 +34,7 @@ const BUILDERS = {
   apartment: buildApartment, street: buildStreet, church: buildChurch,
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
-  subway: buildSubway, parkslope: buildParkSlope, basement: buildBasement, projects: buildProjects,
+  subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
 };
 
 export class World {
@@ -104,6 +104,7 @@ export class World {
   }
 
   clearArea() {
+    this.clearEncounter?.();
     // a chase does not follow him through a door: the old rig used to keep walking at his new
     // coordinates and could arrest him in a room the cop was never in
     if (this.chaseRig) { this.chaseRig.root.parent?.remove(this.chaseRig.root); this.chaseRig = null; }
@@ -797,6 +798,11 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     g.audio?.sfx?.(res.result === 'refused' ? 'deny' : 'hit');
     g.toast(res.line, res.result === 'refused' || res.result === 'dog' ? 'bad' : 'info');
     if (res.result === 'cop') { this.startChase(g, 'cop'); return; }
+    // a man with a gun in his waistband does not trade punches for long
+    if (def.kind === 'thug_armed' && res.result !== 'ko' && Math.random() < CONFIG.projects.gunDeathChance * 0.5) {
+      g.deathSequence?.('shot');
+      return;
+    }
     // they square up: hands up for a moment, then their swing, then hands up again
     if (res.result === 'fight') {
       rig.guardT = CONFIG.brawl.guardSeconds;
@@ -1183,6 +1189,80 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   /** The next interactable in reach (X / the pad's X). */
+  /* ------------------------------ somebody comes up to him ------------------------------ */
+
+  /**
+   * A street encounter as a person rather than a pop-up: they come up the sidewalk from whichever
+   * end is further from Mo, stop a step away facing him, and wait with a prompt over them. Talking
+   * runs the conversation; ignoring them for long enough, or walking off, and they give up and go.
+   */
+  spawnEncounter({ kind, label, sub, id }, talk) {
+    if (this.encounter || this.areaId !== 'street') return false;
+    const mo = this.mo.root.position;
+    const b = this.area.bounds;
+    const fromX = mo.x - b.minX > b.maxX - mo.x ? Math.max(b.minX + 1, mo.x - 11) : Math.min(b.maxX - 1, mo.x + 11);
+    const rig = createNPC(kind);
+    rig.root.position.set(fromX, 0, -1.6);
+    this.root.add(rig.root);
+    const it = {
+      id: `encounter_${id}`, label, sub, x: fromX, z: -1.6, radius: 1.7,
+      action: () => { this.encounter.talked = true; it.hidden = true; talk(); },
+    };
+    this.interactables.push(it);
+    this.encounter = { rig, it, phase: 'approach', t: 0, talked: false, leaveX: fromX };
+    return true;
+  }
+
+  updateEncounter(dt, g) {
+    const e = this.encounter;
+    if (!e) return;
+    const p = e.rig.root.position;
+    const mo = this.mo.root.position;
+    e.t += dt;
+    let walking = false;
+    if (e.talked && e.phase !== 'leave' && !g.uiBusy) e.phase = 'leave';
+    if (e.phase === 'approach' || e.phase === 'wait') {
+      // a step short of him, on his side of the sidewalk
+      const tx = mo.x + Math.sign(p.x - mo.x || 1) * 1.3;
+      const tz = Math.max(-4, Math.min(0.6, mo.z));
+      const dx = tx - p.x, dz = tz - p.z;
+      const d = Math.hypot(dx, dz);
+      if (d > 0.25 && Math.hypot(mo.x - p.x, mo.z - p.z) < 18) {
+        walking = true;
+        p.x += (dx / d) * Math.min(d, 1.5 * dt);
+        p.z += (dz / d) * Math.min(d, 1.5 * dt);
+        e.rig.root.rotation.y = Math.atan2(dx, dz);
+      } else {
+        e.phase = 'wait';
+        e.rig.root.rotation.y = Math.atan2(mo.x - p.x, mo.z - p.z);
+      }
+      // ignored for most of a minute, or he walked off down the block: they go
+      if (!g.uiBusy && (e.t > 50 || Math.hypot(mo.x - p.x, mo.z - p.z) > 18)) {
+        if (e.phase === 'wait' && Math.random() < 0.5) g.toast('They give up on you and go back the way they came.', 'info');
+        e.phase = 'leave';
+      }
+    }
+    if (e.phase === 'leave') {
+      e.it.hidden = true;
+      const dx = e.leaveX - p.x;
+      walking = Math.abs(dx) > 0.2;
+      if (walking) { p.x += Math.sign(dx) * Math.min(Math.abs(dx), 1.4 * dt); e.rig.root.rotation.y = Math.sign(dx) > 0 ? Math.PI / 2 : -Math.PI / 2; }
+      else { this.clearEncounter(); return; }
+    }
+    e.it.x = p.x;
+    e.it.z = p.z;
+    animateNPC(e.rig, dt, { walking });
+  }
+
+  clearEncounter() {
+    const e = this.encounter;
+    if (!e) return;
+    e.rig.root.parent?.remove(e.rig.root);
+    const i = this.interactables.indexOf(e.it);
+    if (i >= 0) this.interactables.splice(i, 1);
+    this.encounter = null;
+  }
+
   /** Swing the camera back behind Mo, the way it sits when he walks into a room. */
   resetCamera() {
     if (!this.mo) return;
@@ -1483,6 +1563,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.dealerWalker?.update(dt);
     this.rideCar?.sync(g);
     this.rideCar?.update(dt, g);
+    this.updateEncounter(dt, g);
     this.traffic?.update(dt, g);
     this.streetLife?.update(dt, g);
     this.updateChase(dt, g);

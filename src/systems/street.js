@@ -1,30 +1,54 @@
 /**
  * Things that happen to you on Kestrel Street.
  *
- * One encounter at a time, on a cooldown, never during a shift and never while a panel is
- * already open. Each one is a small decision with a stat or money consequence, and each one
- * leaves a line in the log so the day has texture when you look back at it.
+ * Nothing here jumps in front of the player any more. A person with something to say is an actual
+ * person: they come up the sidewalk, stop a step away and wait with a prompt over them (the man in
+ * the long coat with a "Rolex", a panhandler with a cup), and the conversation is Mo walking over
+ * and pressing F. Ignore them and they give up and go. Things Mo only sees (kids on a curb, an
+ * argument over a stroller) are a line in the feed. Each encounter happens at most once a day,
+ * never twice in a row, and the block goes quiet for a good while between them.
  */
 import { CONFIG } from '../core/config.js';
 import { money, chance, pick, randInt, dayOf, minuteOfDay } from '../core/util.js';
 import { bump, addItem } from '../core/state.js';
 
-const COOLDOWN_MINUTES = 55;
+const COOLDOWN_MINUTES = 150;   // a couple of hours of block between one thing and the next
+
+/**
+ * The encounters. `npc` ones walk up and wait to be talked to (run is the conversation); `feed`
+ * ones are something Mo sees, told in a line. `when` limits them to the right hours or state.
+ */
+export const ENCOUNTERS = {
+  panhandler: { npc: { kind: 'homeless', label: 'A man with a cup', sub: 'he has been watching you come up the block' }, run: (g) => panhandler(g) },
+  watchGuy: { npc: { kind: 'drifter', label: 'The man in the long coat', sub: '"Rolex. Forty dollars."' }, run: (g) => watchGuy(g) },
+  preacher: { npc: { kind: 'passer_m2', label: 'A man with a leaflet', sub: 'the paper has a gold border' }, run: (g) => preacher(g) },
+  groceries: { npc: { kind: 'tenant_f', label: 'A woman with a split bag', sub: 'cans rolling toward the curb' }, run: (g) => spilledGroceries(g) },
+  sample: { npc: { kind: 'clerk', label: 'A promo kid with a tray', sub: 'free samples, apparently' }, when: (s) => s.stats.hunger < 40, run: (g) => freeSample(g) },
+  argument: { feed: ['Two people, one stroller, no baby. The argument is about a phone and has been for eleven minutes. The whole block is looking at the sky.', 'Somebody on a fire escape is yelling a list of things somebody else did in 1994. The list is long and specific.'] },
+  skaters: { feed: ['Four kids and a curb. One is very good, one is going to be, one is filming. They do not ask you to take a turn, which is a mercy.', 'A kid lands a trick off the bodega step and does not look around to see who saw. Everybody saw.'] },
+  alley: { feed: ['"Hey. Hey. You good?" comes out of the alley. It is not clear who is being asked. You do not stop to find out.', 'Something in the alley knocks over a can. It is either a cat or a decision. You keep walking.'], when: (s) => { const m = minuteOfDay(s.clock.m); return m > 20 * 60 || m < 5 * 60; } },
+};
 
 export function maybeStreetEvent(g) {
   const s = g.state;
   if (!g.world || g.world.areaId !== 'street') return;
-  if (g.modalOpen || g.phoneOpen || g.paused) return;
+  if (g.modalOpen || g.phoneOpen || g.paused || g.uiBusy) return;
+  if (g.world.encounter) return;                       // somebody is already waiting on him
   const now = s.clock.m;
-  if (s.street && now - s.street.lastAt < COOLDOWN_MINUTES) return;
-  if (!chance(0.42)) { s.street = { lastAt: now - COOLDOWN_MINUTES + 12 }; return; }
-  s.street = { lastAt: now };
-
-  const mod = minuteOfDay(now);
-  const pool = [panhandler, watchGuy, preacher, sidewalkArgument, spilledGroceries, skateKids];
-  if (mod > 20 * 60 || mod < 5 * 60) pool.push(nightAlley, nightAlley);
-  if (s.stats.hunger < 30) pool.push(freeSample);
-  pick(pool)(g);
+  const st = s.street || (s.street = { lastAt: -9999, seen: {}, last: null });
+  st.seen = st.seen || {};
+  if (now - st.lastAt < COOLDOWN_MINUTES) return;
+  if (!chance(0.5)) { st.lastAt = now - COOLDOWN_MINUTES + 30; return; }
+  const day = dayOf(now);
+  const ids = Object.keys(ENCOUNTERS).filter((id) => st.seen[id] !== day && id !== st.last && (!ENCOUNTERS[id].when || ENCOUNTERS[id].when(s)));
+  if (!ids.length) { st.lastAt = now; return; }
+  const id = pick(ids);
+  const ev = ENCOUNTERS[id];
+  st.lastAt = now;
+  st.seen[id] = day;
+  st.last = id;
+  if (ev.npc && g.world.spawnEncounter) g.world.spawnEncounter({ ...ev.npc, id }, () => ev.run(g));
+  else if (ev.feed) g.toast(pick(ev.feed), 'info');
 }
 
 /* -------------------------------- encounters ------------------------------- */
@@ -78,46 +102,19 @@ function preacher(g) {
   });
 }
 
-function sidewalkArgument(g) {
-  const s = g.state;
-  g.openModal({
-    kicker: 'KESTREL ST.',
-    title: 'Two People, One Stroller, No Baby',
-    body: 'The argument is about a phone. It has been about the phone for eleven minutes. Everyone on the block is pretending to look at the sky.',
-    choices: [
-      { label: 'Watch it happen.', sub: '-15 min · +morale', effect: () => { g.advance(15); bump(s, 'morale', 4); bump(s, 'stress', -2); g.toast('It resolves when someone says "aight" and walks away. The block exhales.', 'info'); } },
-      { label: 'Cross the street.', sub: '', effect: () => { g.advance(3); } },
-    ],
-  });
-}
-
 function spilledGroceries(g) {
   const s = g.state;
-  g.advance(12);
-  if (chance(0.5)) {
-    addItem(s, pick(['eggs', 'beans', 'cereal']), 1);
-    bump(s, 'morale', 3);
-    g.toast('A woman drops a bag outside the bodega. You help. She gives you the carton that survived.', 'good');
-  } else {
-    bump(s, 'morale', 2);
-    g.toast('A woman drops a bag outside the bodega. You help. She says nothing, which is fine.', 'info');
-  }
-}
-
-function skateKids(g) {
-  const s = g.state;
   g.openModal({
     kicker: 'KESTREL ST.',
-    title: 'Four Kids And A Curb',
-    body: 'One of them is very good. One of them is going to be very good. One of them is filming. They ask if you want a turn and you say no before you have decided to.',
+    title: 'A Split Bag',
+    body: 'The bottom went out of it right outside the bodega. Cans are heading for the curb at different speeds and she is trying to catch all of them with one hand.',
     choices: [
-      { label: 'Take a turn.', sub: 'risk of embarrassment', effect: () => {
-        g.advance(10);
-        if (chance(0.4)) { bump(s, 'morale', 10); bump(s, 'stress', -6); bump(s, 'energy', -5); g.toast('You land it. Nobody claps, but somebody nods.', 'good'); }
-        else { bump(s, 'energy', -6); bump(s, 'stress', 5); bump(s, 'morale', -2); g.toast('You do not land it. The filming kid has it on film forever.', 'bad'); }
+      { label: 'Help her pick it up.', sub: '12 min · +morale', effect: () => {
+        g.advance(12);
+        if (chance(0.5)) { addItem(s, pick(['eggs', 'beans', 'cereal']), 1); bump(s, 'morale', 3); g.toast('She gives you the carton that survived, and insists.', 'good'); }
+        else { bump(s, 'morale', 2); g.toast('She says nothing, which is fine. You both know.', 'info'); }
       } },
-      { label: 'Watch.', sub: '+morale', effect: () => { g.advance(8); bump(s, 'morale', 4); bump(s, 'stress', -3); } },
-      { label: 'Keep moving.', sub: '', effect: () => {} },
+      { label: 'Keep walking.', sub: '', effect: () => { bump(s, 'morale', -1); } },
     ],
   });
 }
@@ -127,23 +124,7 @@ function freeSample(g) {
   g.advance(4);
   addItem(s, 'bar', 1);
   bump(s, 'hunger', 2);
-  g.toast('A promo kid hands you a free sample and vanishes before you can say no.', 'good');
+  g.toast('He hands you a protein brick and a coupon for more protein bricks. "Stay strong, king."', 'good');
 }
 
-function nightAlley(g) {
-  const s = g.state;
-  g.openModal({
-    kicker: 'KESTREL ST. · NIGHT',
-    title: 'The Alley Has A Voice',
-    body: '“Hey. Hey. You good?” It is not clear who is being asked. It is not clear that anyone is there.',
-    choices: [
-      { label: 'Answer.', sub: 'risky', effect: () => {
-        if (chance(0.5)) { bump(s, 'stress', 9); bump(s, 'morale', -5); g.toast('Nobody answers back. You walk faster than you meant to.', 'bad'); }
-        else { const cash = randInt(6, 18); g.earnMoney(cash, 'Found in the alley'); g.toast(`A man steps out, apologises for scaring you, and hands you ${money(cash)} he says you dropped. You did not.`, 'event'); }
-      } },
-      { label: 'Do not answer. Keep walking.', sub: '+stress', effect: () => { bump(s, 'stress', 5); } },
-    ],
-  });
-}
-
-export const STREET_EVENT_IDS = ['panhandler', 'watchGuy', 'preacher', 'sidewalkArgument', 'spilledGroceries', 'skateKids', 'nightAlley'];
+export const STREET_EVENT_IDS = Object.keys(ENCOUNTERS);

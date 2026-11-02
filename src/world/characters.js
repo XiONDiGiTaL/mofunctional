@@ -484,6 +484,11 @@ const CAST = {
   inmate: { height: 1.76, build: 1.0, shirt: 0xd86a1a, pants: 0xd86a1a },
   // the man in the newsstand: cardigan over a collared shirt, has worn the same cap since 1987
   newsman: { height: 1.72, build: 1.1, shirt: 0x6a5a3a, pants: 0x3a3630, longSleeves: true },
+  // the Houses: the man on the bench, the courtyard's muscle (some of them armed), and the Tunnel's fighter
+  benchman: { height: 1.78, build: 1.06, shirt: 0x2a2a2e, pants: 0x3a3a40, longSleeves: true, hoodie: true },
+  thug: { height: 1.84, build: 1.18, shirt: 0x4a4a52, pants: 0x1e1e24, longSleeves: true, hoodie: true },
+  thug_armed: { height: 1.82, build: 1.14, shirt: 0x7a1e1e, pants: 0x1a1a1e, tank: true },
+  boxer: { height: 1.86, build: 1.22, shirt: 0x8a6448, pants: 0x1a2a4a, tank: true },
   // the kid who flies down the sidewalk on a red bike
   kid: { height: 1.32, build: 0.84, shirt: 0xe0c84a, pants: 0x2a4a8a },
   // an unsaved number: no face, just a grey hood and a question mark
@@ -525,8 +530,15 @@ export function applyOutfit(rig, outfit) {
     if (!base || typeof color !== 'number') continue;
     const key = `${slot}:${color}`;
     if (!cache[key]) {
+      // the retro materials are shader materials: the colour lives in uColor, and `m.color` does
+      // not exist, so setting it changed nothing and no outfit ever showed. A plain clone also
+      // deep-copies the shared light, fog and time uniforms and freezes them, so the clone
+      // shares every uniform with its base except its own colour.
       const m = base.clone();
-      if (m.color) m.color.setHex(color);
+      if (base.uniforms) {
+        for (const k of Object.keys(base.uniforms)) if (k !== 'uColor') m.uniforms[k] = base.uniforms[k];
+        m.uniforms.uColor = { value: new THREE.Color(color) };
+      } else if (m.color) m.color.setHex(color);
       cache[key] = m;
     }
     const from = current[slot] || base;
@@ -730,6 +742,16 @@ export function createNPC(kind = 'kev') {
     // the scoop: chest and shoulders show above the neckline, two straps over them
     rig.torso.add(loft(R([[0.452, 0.19, 0.13, -0.015], [0.43, 0.3, 0.17, -0.004], [0.39, 0.32, 0.2, 0.012]], k, 0.9), skinTone, 10));
     for (const sx of [-1, 1]) rig.torso.add(box(0.045 * k, 0.06 * k, 0.2 * k, shirt, [sx * 0.11 * k, 0.43 * k, 0]));
+  }
+  if (kind === 'thug_armed') {
+    // a handgun tucked into the waistband, grip out, where everybody can see it
+    const gm = retroMaterial('gun', { color: 0x141416 });
+    const gun = new THREE.Group();
+    gun.add(box(0.035 * k, 0.12 * k, 0.03 * k, gm, [0, 0, 0]));
+    gun.add(box(0.035 * k, 0.035 * k, 0.13 * k, gm, [0, 0.055 * k, -0.05 * k]));
+    gun.position.set(0.1 * k, -0.02 * k, 0.15 * k);
+    gun.rotation.x = 0.2;
+    rig.torso.add(gun);
   }
   if (kind === 'miguel' || kind === 'habib' || kind === 'clerk') {
     // shop apron, hanging from the chest

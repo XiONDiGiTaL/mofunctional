@@ -17,6 +17,7 @@ import { groupOf } from '../src/ui/notify.js';
 import * as brawlSys from '../src/systems/brawl.js';
 import { donate } from '../src/systems/fellowship.js';
 import { pullOffCruise } from '../src/systems/rides.js';
+import { maybeStreetEvent, ENCOUNTERS } from '../src/systems/street.js';
 import { ICON_IDS, itemIcon } from '../src/ui/icons.js';
 import { moveFood, fridgeCount } from '../src/systems/needs.js';
 import { BINDINGS, keysFor, rebind, resetBindings } from '../src/core/input.js';
@@ -1627,6 +1628,27 @@ check('HailMary: the pull-off stays under his walk long enough to catch it at fo
   eq(catchAt(1) !== null, true, 'at the door when it starts');
   eq(catchAt(4.97) > 4, true, 'a committed run from five metres back still makes it after four seconds');
   eq(catchAt(7), null, 'from seven metres back it is gone');
+  return true;
+});
+
+check('street: a person walks up instead of a pop-up, once a day each, never twice running', () => {
+  const g = stubGame();
+  const s = g.state;
+  const spawned = [];
+  g.world = { areaId: 'street', encounter: null, spawnEncounter: (spec) => { spawned.push(spec.id); return true; } };
+  g.uiBusy = false;
+  const real = Math.random;
+  Math.random = () => 0.1;  // always roll an encounter when the block allows one
+  try {
+    s.clock.m = 1440 + 9 * 60;
+    while (s.clock.m < 1440 + 23 * 60 + 30) { maybeStreetEvent(g); s.clock.m += 30; }
+  } finally { Math.random = real; }
+  eq(g.modals.length, 0, 'no pop-ups');
+  eq(spawned.length > 0, true, 'somebody walked up');
+  const today = spawned.filter((id) => ENCOUNTERS[id].npc);
+  eq(new Set(today).size, today.length, 'nobody twice in one day');
+  for (let i = 1; i < spawned.length; i++) eq(spawned[i] !== spawned[i - 1], true, 'not the same one twice running');
+  eq(spawned.length <= 15 * 60 / 150 + 1, true, 'the block is quiet between them');
   return true;
 });
 

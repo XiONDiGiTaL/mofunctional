@@ -10,6 +10,26 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### The underground restored, and the block stops interrupting
+
+- The station, Park Slope, Downtown, Kestrel Houses and the Tunnel are `world/underground.js`
+  again (silver K local that stops and opens its doors, an express that does not, rats on the
+  track bed, roaches on the wall, the token booth, the AUTHORIZED PERSONNEL door). `district.js`
+  keeps only the shared entrance and the closet. The entrances keep the real shaft on Kestrel (a
+  painted well on Ashby) with green picket railings, round globe lamps on two posts and the sign
+  on the back rail. Mr. Jay's sells whole outfits through `systems/wardrobe.js` (five more in
+  `CONFIG.outfits`). `CONFIG.subway` carries the train timings, stops, the bench prices, the
+  Tunnel purse; `CONFIG.jobsExtra` the café, dog and day-labor gigs.
+- Outfits showed nothing: `applyOutfit` set `m.color` on a shader material (the colour is
+  `uColor`) and its clone froze the shared light/fog/time uniforms. Fixed both.
+- Street encounters (`systems/street.js` ENCOUNTERS) are people, not pop-ups: `world.spawnEncounter`
+  walks one up the sidewalk, stops a step away with a prompt, and they leave if ignored for ~50 s
+  or if Mo walks off. Witnessed scenes are feed lines. Each at most once a day, never twice
+  running, 150 game minutes apart. Kev's, Nia's and Dale's events arrive as texts with reply
+  chips. Life events: at most 2 a day, 3 game hours apart.
+- Punching knows the new kinds (benchman is a dealer, the boxer is tough), and a punch on an armed
+  man can be fatal.
+
 ### Review of the district / HailMary chase work, and fixes on top
 
 - HailMary pull-off: rolls west (the way it leaves) instead of east then U-turning; keeps its

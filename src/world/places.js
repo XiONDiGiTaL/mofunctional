@@ -680,7 +680,7 @@ export function buildAvenue(g) {
     ]), 'info');
   };
   // the way down to the trains, east end of the avenue, clear of the bus stop
-  group.add(buildStationEntrance(14.4, 0.6, { name: 'ASHBY AVE' }));
+  group.add(buildStationEntrance(14.4, 0.6, { name: 'ASHBY AV', painted: true }));
   return {
     group,
     bounds: { minX: -15.5, maxX: 15.5, minZ: -5.6, maxZ: 1.3 },

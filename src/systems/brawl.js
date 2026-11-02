@@ -24,8 +24,8 @@ const C = () => CONFIG.brawl;
 const COP_KINDS = new Set(['cop', 'cop2', 'patrol', 'sergeant']);
 const KID_KINDS = new Set(['kid', 'kid_bike', 'bike_kid', 'child', 'boy', 'girl', 'schoolkid']);
 const DOG_KINDS = new Set(['dog', 'meatball', 'stray']);
-const DEALER_KINDS = new Set(['dex', 'dealer', 'pusher', 'squeak', 'corner']);
-const TOUGH_KINDS = new Set(['thug', 'mugger', 'tough', 'goon', 'projects_thug', 'armed']);
+const DEALER_KINDS = new Set(['dex', 'dealer', 'pusher', 'squeak', 'corner', 'benchman', 'rolo']);
+const TOUGH_KINDS = new Set(['thug', 'mugger', 'tough', 'goon', 'projects_thug', 'armed', 'boxer']);
 
 export function brawlState(s) {
   if (!s.brawl) s.brawl = {};

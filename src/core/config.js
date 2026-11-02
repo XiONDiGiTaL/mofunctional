@@ -516,9 +516,9 @@ export const CONFIG = {
   },
 
   events: {
-    minMinutesBetween: 95,
+    minMinutesBetween: 180,   // a few game hours between one thing and the next
     chancePerHour: 0.42,
-    maxPerDay: 3,
+    maxPerDay: 2,
   },
 
   /* ------------------------------------------------------------------ rent */
@@ -727,13 +727,31 @@ export const CONFIG = {
     loseSeconds: 4,          // ...for this long, and the cop gives up
 
   },
-  // cash work in Park Slope, once a day each, between `from` and `to` (24 h clock)
-  slopeJobs: {
-    dishes: { name: 'Dishwashing at the Slope Diner', from: 7, to: 15, hours: 4, pay: 52, energy: 20, line: 'Four hours of egg on plates and a radio playing the same oldies station. The cook pays you out of the register and gives you a plate for the road.' },
-    dogs: { name: 'Walking three good boys', from: 8, to: 17, hours: 2, pay: 30, energy: 10, morale: 6, line: 'Three dogs, six leashes worth of tangle, and the best two hours of your week.' },
-  },
+
   // the subway: one fare, one train every so often, and a real wait if he misses it
-  subway: { fare: 1.5, everySeconds: 46, dockSeconds: 18, rideMinutes: [6, 12] },
+  subway: {
+    fare: 1.5, everySeconds: 46, dockSeconds: 18, rideMinutes: [6, 12],
+    dwell: 12,                 // seconds the K local's doors stay open
+    localPeriod: [18, 32],     // seconds between locals
+    expressPeriod: [28, 48],   // the express on the far track, which does not stop
+    stops: [
+      { area: 'subway', name: 'Kestrel St · Ashby Av', mins: 14 },
+      { area: 'parkslope', name: '7 Av · Park Slope', mins: 22 },
+      { area: 'downtown', name: 'Fulton St · Downtown', mins: 16 },
+      { area: 'projects', name: 'Kestrel Houses', mins: 10 },
+    ],
+    // the man on the bench in the Houses: uncut, cheaper than Dex because the bench pays no rent
+    benchPrices: { bliss_x: 38, static_x: 24, mud_x: 20, drip_x: 10 },
+    armedChance: 0.45,         // somebody who walks up at night has a gun
+    shotChance: 0.5,           // losing a fight to him is the end of the run
+    pit: { purse: 80, raise: 30, maxPurse: 300 },
+  },
+  // cash gigs off the K train: once a day each, between `from` and `to`
+  jobsExtra: {
+    dishwasher: { name: 'Dishwashing, Grounds for Hope', from: 7, to: 15, hours: 5, pay: 62, energy: 22, line: 'Five hours of oat-milk foam crusted on mugs. The beard calls you "friend" and pays you in twenties.' },
+    dogwalk: { name: 'Walking three good boys', from: 8, to: 17, hours: 2, pay: 30, energy: 10, morale: 6, line: 'Three dogs, six leashes worth of tangle, and the best two hours of your week.' },
+    daylabor: { name: 'Day labor, Ready Hands', from: 6, to: 10, hours: 6, pay: 84, energy: 32, line: 'A fourth-floor walk-up, a sleeper sofa and a man who kept saying "pivot." Cash at the end, and a back that will remember.' },
+  },
   // the Basement: a purse, four rounds, once a night
   club: { payout: [120, 320], hp: 4 },
   projects: { gunDeathChance: 0.45 },
@@ -745,6 +763,12 @@ export const CONFIG = {
     { id: 'sunday', name: 'Sunday shirt', shirt: 0xe8e0c8, pants: 0x3a3a46, shoes: 0x2a2018, price: 40 },
     { id: 'dark', name: 'black hoodie', shirt: 0x24262c, pants: 0x24262c, shoes: 0x1a1a1e, price: 55 },
     { id: 'lucky', name: 'red jacket', shirt: 0x8a2a26, pants: 0x2c3038, shoes: 0x2a2622, price: 90 },
+    // Mr. Jay's, downtown
+    { id: 'flannel', name: 'red flannel and black jeans', shirt: 0x9a2a26, pants: 0x1e1e22, shoes: 0xc8963a, price: 64, note: 'wheat boots included, the whole borough has a pair' },
+    { id: 'jersey', name: 'Kestrel Knights jersey', shirt: 0x2a4a9a, pants: 0x3a5682, shoes: 0xf2f2ec, price: 85, note: 'fresh white sneakers, keep them clean' },
+    { id: 'army', name: 'army surplus jacket', shirt: 0x4e5a34, pants: 0x3a3a40, shoes: 0x2a2622, price: 45, note: 'never served, looks like he could have' },
+    { id: 'sweats', name: 'grey sweatsuit', shirt: 0x7a7c80, pants: 0x7a7c80, shoes: 0xf2f2ec, price: 38, note: 'comfortable is a lifestyle' },
+    { id: 'mustard', name: 'mustard tee and khakis', shirt: 0xd8b03a, pants: 0xb8a47a, shoes: 0x2a2622, price: 30, note: 'bold, cheap, on sale for a reason' },
   ],
 };
 

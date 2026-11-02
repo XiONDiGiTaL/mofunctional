@@ -47,9 +47,8 @@ const EVENTS = [
     when: (s) => s.job.employed && minuteOfDay(s.clock.m) > 6 * 60 && minuteOfDay(s.clock.m) < 20 * 60,
     run(g) {
       g.openModal({
-        kicker: 'DALE — QUIK-STOP #14',
-        title: 'A Small Favour',
-        body: '"Hey. So. Marcus is out and I need somebody for four hours. I know it\'s short notice. I know."\n\nDale is holding a clipboard like it is a shield. He has already decided you will say yes.',
+        sms: true, from: 'DALE',
+        body: 'hey. so. marcus is out and i need somebody for 4 hours. i know its short notice. i know.',
         choices: [
           { label: 'Take the overtime.', sub: '4h · +$46 · energy hit', effect: () => { g.advance(240, { working: true }); earn(g, 46, 'Overtime'); bump(g.state, 'energy', -14); bump(g.state, 'stress', 9); bump(g.state, 'morale', 4); } },
           { label: 'Decline. You have a body to attend to.', sub: '+morale, -relationship', effect: () => { bump(g.state, 'morale', 5); bump(g.state, 'stress', -4); g.state.npc.dale = Math.max(-5, g.state.npc.dale - 1); } },
@@ -61,13 +60,12 @@ const EVENTS = [
     id: 'nia_call', weight: 7, repeat: true,
     run(g) {
       g.openModal({
-        kicker: 'INCOMING CALL — NIA',
-        title: 'Your Sister, Calling',
-        body: '"I\'m not checking up on you. I\'m just — Mom asked. So now I\'m asking. Are you eating? Like actually eating?"\n\nThe clock on the microwave is wrong by four minutes. You have been staring at it for the whole first half of the call.',
+        sms: true, from: 'NIA',
+        body: 'not checking up on you. mom asked so now im asking. are you eating? like actually eating? call me',
         choices: [
-          { label: 'Talk to her properly. 40 minutes.', sub: '+morale · -40 min', effect: () => { g.advance(40); bump(g.state, 'morale', 11); bump(g.state, 'stress', -7); g.state.npc.nia++; } },
-          { label: 'Say you\'re fine. Short call.', sub: 'small +morale', effect: () => { g.advance(8); bump(g.state, 'morale', 3); g.state.npc.nia = Math.max(-4, g.state.npc.nia - 1); } },
-          { label: 'Let it ring. Then stare at the wall.', sub: '-morale', effect: () => { bump(g.state, 'morale', -8); bump(g.state, 'stress', 5); } },
+          { label: 'Call her. Talk properly.', sub: '+morale · -40 min', effect: () => { g.advance(40); bump(g.state, 'morale', 11); bump(g.state, 'stress', -7); g.state.npc.nia++; } },
+          { label: '"im fine. eating."', sub: 'small +morale', effect: () => { g.advance(8); bump(g.state, 'morale', 3); g.state.npc.nia = Math.max(-4, g.state.npc.nia - 1); } },
+          { label: 'Leave it on read.', sub: '-morale', effect: () => { bump(g.state, 'morale', -8); bump(g.state, 'stress', 5); } },
         ],
       });
     },
@@ -147,9 +145,8 @@ const EVENTS = [
     when: (s) => s.npc.kev > -3,
     run(g) {
       g.openModal({
-        kicker: 'KEV — COWORKER, ALLEGEDLY',
-        title: 'You Coming Out Or What',
-        body: '"Few of us are going to The Pit. Nothing crazy. Karaoke. Marcus is going to do the sad one. You should come, man."\n\nKev is already walking backwards toward the door, waving, certain he has won.',
+        sms: true, from: 'KEV',
+        body: 'few of us going to the pit tonight. karaoke. marcus doing the sad one. u coming or what',
         choices: [
           { label: 'Go out. 3 hours. Karaoke.', sub: '-3h · +morale · -$22', effect: () => { spend(g, 22, 'Night out'); g.advance(180); bump(g.state, 'morale', 13); bump(g.state, 'stress', -9); bump(g.state, 'energy', -10); bump(g.state, 'hygiene', -6); g.state.npc.kev++; } },
           { label: 'Say you have to be up early.', sub: 'small -morale', effect: () => { bump(g.state, 'morale', -3); g.state.npc.kev = Math.max(-5, g.state.npc.kev - 1); } },
@@ -240,9 +237,8 @@ const EVENTS = [
     when: (s) => !s.flags.recovering && (s.npc?.kev ?? 0) > -3,
     run(g) {
       g.openModal({
-        kicker: 'KESTREL PARK · MID-AFTERNOON',
-        title: 'Come Outside',
-        body: 'Kev is already at the park. You can hear the boombox through the phone.\n\n"Half-court is free. Bring nothing. You look like you have not been outside since Tuesday."',
+        sms: true, from: 'KEV',
+        body: 'at the park. half court is free. bring nothing. u look like u havent been outside since tuesday',
         choices: [
           {
             label: 'Go to the park.', sub: '15 min walk · +morale',

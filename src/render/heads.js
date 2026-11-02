@@ -315,6 +315,23 @@ export const FACE_SPECS = {
     skin: '#c89a78', hair: '#3a3a40', hairLight: '#55555c', hairDark: '#222226', style: 'beanie',
     brow: '#8a8a88', eye: '#3a2a1e', lips: '#8a5a48', lipsLight: '#a87262', beard: 'mustache', beardColor: '#b8b8b4', age: 0.85, browTilt: 0.08,
   },
+  // Kestrel Houses and the Tunnel
+  benchman: {
+    skin: '#5a3a28', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'durag',
+    brow: '#0e0c0a', eye: '#22180f', lips: '#4e2e22', lipsLight: '#6a4232', beard: 'stubble', beardColor: '#0e0c0a', age: 0.45,
+  },
+  thug: {
+    skin: '#9a6a48', hair: '#141210', hairLight: '#2a2622', hairDark: '#080706', style: 'crop',
+    brow: '#141210', eye: '#2a1e16', lips: '#6a4232', lipsLight: '#8a5a44', beard: 'goatee', beardColor: '#141210', age: 0.3, browTilt: 0.18,
+  },
+  thug_armed: {
+    skin: '#6e4632', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'crop',
+    brow: '#0e0c0a', eye: '#22180f', lips: '#523022', lipsLight: '#6e4434', beard: 'stubble', beardColor: '#0e0c0a', age: 0.35, browTilt: 0.22,
+  },
+  boxer: {
+    skin: '#b07a56', hair: '#1a1410', hairLight: '#352a20', hairDark: '#0c0906', style: 'crop',
+    brow: '#1a1410', eye: '#2a1e16', lips: '#7a4a38', lipsLight: '#9a624e', beard: 'stubble', beardColor: '#1a1410', age: 0.4, browTilt: 0.2,
+  },
   // the kid on the bike: round-faced, a red cap worn as the crown
   kid: {
     skin: '#8a5a3a', hair: '#c8322a', hairLight: '#e0524a', hairDark: '#8a1a14', style: 'beanie',
