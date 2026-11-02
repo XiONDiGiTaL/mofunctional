@@ -99,12 +99,20 @@ const SETS = {
   ],
   personal: [
     { act: 'chat', label: 'Yeah — what’s up?' },
+    { act: 'plans', label: 'You around tonight? Let’s do something.' },
+    { act: 'vent', label: 'Can I vent for a sec? It’s a lot.' },
     { act: 'joke', label: 'Say something stupid.' },
+    { act: 'chain', label: 'Forward a chain letter. (Bad luck if they don’t.)' },
+    { act: 'borrow', label: 'Any chance you could spot me $20?' },
     { act: 'busy', label: 'Working. Call you later.' },
   ],
   romantic: [
     { act: 'sweet', label: 'Thinking about you.' },
+    { act: 'flirt', label: 'Send her a pickup line you saw on a cereal box.' },
+    { act: 'miss', label: 'I miss you. Is that weird? It’s been four hours.' },
+    { act: 'dayof', label: 'Tell me one good thing about your day.' },
     { act: 'date', label: 'Let me take you out.' },
+    { act: 'goodnight', label: 'Goodnight. Text me when you get home. Even if you are home.' },
     { act: 'busy', label: 'Not tonight — but soon.' },
   ],
   auction: [
@@ -299,6 +307,8 @@ export function sendReply(g, message, index) {
   return opt.label;
 }
 
+const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+
 function followUp(g, from, subject, body) {
   pushMessage(g, { from, subject, body });
 }
@@ -380,13 +390,56 @@ function applyAct(g, message, opt) {
         habib: '“You are welcome here any time, my friend. Bring nothing. Eat something.”',
         addison: '“I am glad you wrote. Come Sunday. There is a seat with your shape in it.”',
       };
-      followUp(g, message.from, 're', lines[id.kind] || '“ha. ok. later.”');
+      followUp(g, message.from, 're', lines[id.kind] || pickOne([
+        '“nothing much. staring at the ceiling. it stared back. we are even now”',
+        '“just got off. my feet are filing a complaint. u?”',
+        '“omg perfect timing i have GOSSIP. the guy on 3 got a parrot. it already knows a swear”',
+        '“watching a movie on channel 11 with the commercials. i know how every insurance ad ends”',
+        '“u ever think about how the bodega cat has a better life than us? ok bye”',
+      ]));
+      return;
+    }
+    case 'plans': {
+      g.advance(5);
+      const yes = Math.random() < 0.5;
+      bump(s, 'morale', yes ? 6 : -1);
+      followUp(g, message.from, 're', yes
+        ? pickOne(['“yes. please. get me out of this apartment. meet at the corner at 8”', '“ok but i only have $6 so we are doing something free and calling it a vibe”', '“bet. bring snacks. not the sad snacks”'])
+        : pickOne(['“cant tonight, my cousin is moving a couch and i am the couch guy”', '“rain check. like an actual rain check, it is raining in my bathroom”', '“tomorrow?? tonight i have plans (sleeping at 8pm like a winner)”']));
+      return;
+    }
+    case 'vent':
+      g.advance(25);
+      bump(s, 'stress', -8);
+      bump(s, 'morale', 3);
+      followUp(g, message.from, 're', pickOne(['“damn. ok. i read all of it. that is a lot. u are not crazy. the world is crazy. eat something”', '“sending u a hug through the phone. it is a 1999 phone so it might arrive tuesday”', '“i got u. for real. call me if it gets worse. call me if it gets better too, i like news”']));
+      return;
+    case 'chain':
+      g.advance(3);
+      bump(s, 'morale', 2);
+      followUp(g, message.from, 'FWD: FWD: FWD:', pickOne(['“why would u send me this. now i have to send it to 10 people or a ghost gets me”', '“i forwarded it to my mom. she called me crying. thanks”', '“the last guy who broke this chain lost his MetroCard. it was me. i was that guy”']));
+      return;
+    case 'borrow': {
+      g.advance(4);
+      const week = Math.floor(dayOf(s.clock.m) / 7);
+      const kind = id.kind;
+      const lends = kind === 'kev' || kind === 'miguel' || kind === 'habib' ? 0.55 : 0.2;
+      s.flags.borrowWeek = s.flags.borrowWeek || {};
+      if (s.flags.borrowWeek[kind] !== week && Math.random() < lends) {
+        s.flags.borrowWeek[kind] = week;
+        g.earnMoney?.(20, `borrowed from ${name}`);
+        followUp(g, message.from, 're', pickOne(['“slid a twenty under ur door. u owe me nothing. u owe me everything. both”', '“ok. $20. this is a loan, which means i will forget and then bring it up at your funeral”', '“left it with Miguel. dont spend it on scratch-offs. ok spend $2 on scratch-offs”']));
+        g.toast(`${name} came through: $20.`, 'good');
+      } else {
+        bump(s, 'morale', -2);
+        followUp(g, message.from, 're', pickOne(['“bro i have $3 and a MetroCard with a mystery balance”', '“if i had $20 do u think i would be texting u at this hour”', '“i can give u $20 worth of advice: dont borrow $20”']));
+      }
       return;
     }
     case 'joke':
       g.advance(5);
       bump(s, 'morale', 7);
-      followUp(g, message.from, 'lol', '“That was terrible. I am going to think about it all day.”');
+      followUp(g, message.from, 'lol', pickOne(['“That was terrible. I am going to think about it all day.”', '“i laughed out loud on the bus and a lady moved seats. thanks”', '“blocking u. unblocking u. that was funny. blocking u again”', '“why are u like this (affectionate)”']));
       return;
     case 'busy':
       g.advance(3);
@@ -431,6 +484,26 @@ function applyAct(g, message, opt) {
         logLine(g, `${name} liked that.`, 'good');
       }
       return;
+    case 'flirt':
+    case 'miss':
+    case 'dayof':
+    case 'goodnight': {
+      if (!partnerId || !romance.partnerState(s, partnerId).met) return;
+      const st = romance.partnerState(s, partnerId);
+      const lands = Math.random() < 0.3 + st.affection / 200;
+      st.affection = clamp(st.affection + (lands ? 3 : opt.act === 'flirt' ? -1 : 1));
+      st.lastTalkDay = dayOf(s.clock.m);
+      g.advance(opt.act === 'dayof' ? 15 : 4);
+      bump(s, 'morale', lands ? 6 : 1);
+      const LINES = {
+        flirt: [['“are you a parking ticket? because you have fine written all over you” ... ok that was so bad it worked”', '“i hate that i smiled at that. i hate it. say another one”'], ['“was that from a cereal box. be honest”', '“screenshotting this for the group chat. not in a good way”']],
+        miss: [['“it has been four hours and i also noticed. that is our secret”', '“not weird. a little weird. good weird”'], ['“it has been four hours”', '“drink some water”']],
+        dayof: [['“a man on the train gave his seat to a pigeon. the pigeon took it. that was my good thing. and this. this is the other one”', '“the deli guy remembered my order. and you asked. two things”'], ['“nothing yet. it is still happening”', '“ask me tomorrow”']],
+        goodnight: [['“home. safe. thinking about u a normal amount. goodnight mo”', '“goodnight. dont stay up reading ur bills”'], ['“night”', '“zzz (that is me saying goodnight)”']],
+      }[opt.act];
+      followUp(g, message.from, 're', pickLine(partnerId, LINES[lands ? 0 : 1]));
+      return;
+    }
     case 'date':
       bump(s, 'morale', 3);
       g.toast('Open the dating app to plan the date properly.', 'info');
