@@ -27,7 +27,7 @@ import { bump, addItem, logLine } from '../core/state.js';
 import * as fights from '../systems/fights.js';
 import * as wardrobe from '../systems/wardrobe.js';
 import { FightMeter } from '../ui/fight.js';
-import { buildCourt, COURT, housesState } from './houses.js';
+import { buildCourt, COURT, housesState, WOMEN, womanMenu } from './houses.js';
 
 const meter = (g) => (g.world.fightMeter ||= new FightMeter(document.getElementById('ui') || document.body, g));
 
@@ -780,6 +780,23 @@ export function buildProjects(g) {
     { id: 'pj_east', label: 'Into the East Tower', sub: 'six floors · stairs only', x: 10, z: -7.6, radius: 1.5, action: (gg) => { const h = housesState(gg.state); h.tower = 'east'; h.floor = 0; gg.goTo('pjtower', 'projects'); } },
     { id: 'pj_post', label: 'Post up on the bench', sub: 'an hour · high risk, high reward', x: -4, z: -2.0, radius: 1.5, seat: { x: -4, z: -2.95, rot: 0 }, action: (gg) => postUp(gg) },
   ];
+  // after dark one of the women from upstairs is out front of her tower, smoking, which is how
+  // most men find out the towers have them at all; the tower doors say whose light is on
+  const pm = minuteOfDay(g.state.clock.m);
+  if (pm >= 17 * 60 || pm < 5 * 60) {
+    const ids = Object.keys(WOMEN);
+    const id = ids[dayOf(g.state.clock.m) % ids.length];
+    const w = WOMEN[id];
+    const tx = w.tower === 'east' ? 10 : -12;
+    npcs.push({ kind: w.kind, x: tx + 1.7, z: -6.4, rot: Math.PI * 0.85, still: true, act: 'smoke', talk: `pj_woman_${id}` });
+    interactables.push({ id: `pj_woman_${id}`, label: `Talk to ${w.name}`, sub: `smoking out front · lives in ${w.door}`, x: tx + 1.7, z: -6.0, radius: 1.3, action: (gg) => womanMenu(gg, id) });
+    for (const it of interactables) {
+      const tower = it.id === 'pj_north' ? 'north' : it.id === 'pj_east' ? 'east' : null;
+      if (!tower) continue;
+      const doors = Object.values(WOMEN).filter((x) => x.tower === tower).map((x) => x.door);
+      if (doors.length) it.sub = `six floors · a light on in ${doors.join(' and ')}`;
+    }
+  }
   let trouble = 30 + Math.random() * 30;
   const tick = (gg, dt, world) => {
     hoops.update(dt);

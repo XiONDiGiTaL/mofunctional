@@ -517,7 +517,18 @@ export function buildTower(g) {
     // the mailboxes, half of them pried open
     for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) group.add(box(0.06, 0.2, 0.26, retroMaterial(((r + c) % 4 === 0) ? 'pt_mailopen' : 'pt_mail', { color: ((r + c) % 4 === 0) ? 0x3a3a3a : 0x8a8e92 }), [-W / 2 + 0.1, 1.0 + r * 0.24, 1.6 + c * 0.28]));
     interactables.push({ id: 'pt_exit', label: 'Out to the courtyard', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('projects', 'pjtower') });
-    npcs.push({ kind: 'tenant_f', x: 1.2, z: 5.6, y: 0, rot: -Math.PI / 2, still: true, pose: 'sit' });
+    npcs.push({ kind: 'tenant_f', x: 1.2, z: 5.6, y: 0, rot: -Math.PI / 2, still: true, pose: 'sit', talk: 'pt_lady' });
+    // the mailboxes are the building's directory, and the lady in the lawn chair is its index
+    const mine = Object.values(WOMEN).filter((w) => w.tower === h.tower);
+    const NOTES = { crystal: '"C." · ring twice · after 5', desiree: 'DESIREE · no solicitors (ironic)', bunny: 'BUNNY ♥ · cash only · knock soft' };
+    interactables.push({ id: 'pt_mail', label: 'Read the mailboxes', sub: 'the names, the ones that have names', x: -W / 2 + 0.6, z: 2.3, radius: 1.0, action: (gg) => gg.openModal({
+      kicker: `KESTREL HOUSES · ${h.tower.toUpperCase()} TOWER`, title: 'The Mailboxes',
+      body: `Half of them are pried open. The rest have names in marker, tape, and one in nail polish.\n\n${mine.map((w) => `${w.door} · ${NOTES[Object.keys(WOMEN).find((k) => WOMEN[k] === w)] || w.name}`).join('\n') || 'Nothing you want. A lot of SMITH. One "NOT HOME".'}\n\n${mine.length ? 'The stairs are at the back. The elevator is a rumour.' : 'Whoever you are looking for, they live in the other tower.'}`,
+      choices: [{ label: 'Close the little door.', effect: () => {} }],
+    }) });
+    interactables.push({ id: 'pt_lady', label: 'The lady in the lawn chair', sub: 'she knows everybody in the building', x: 1.2, z: 4.7, radius: 1.1, action: (gg) => gg.toast(mine.length
+      ? `"You looking for the girls? Don't look at me like that, everybody is." She points up with her fan. "${mine.map((w) => `${w.name}, ${w.door}`).join('. ')}. After five. Wipe your feet."`
+      : '"The girls? Other tower, baby. East is Bunny, North is the other two. Go on. Do not tell my pastor I told you."', 'info') });
     group.add(box(0.5, 0.45, 0.5, retroMaterial('pt_lawnchair', { color: 0x3a8a6a }), [1.2, 0.22, 5.6]));
     npcs.push({ kind: 'thug', x: -0.6, z: -1.0, rot: 0.4, still: true, act: 'lean' });
     npcs.push({ kind: 'drifter', x: 0.4, z: 2.4, rot: Math.PI, still: true, act: 'dice' });
