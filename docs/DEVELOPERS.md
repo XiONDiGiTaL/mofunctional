@@ -148,17 +148,22 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         endings, dealer (Rolo's orders), soundtrack (music director),
                         rent (early pay + history), romance (partners, dates, gifts,
                         household), clinic (treatment + recovery), sms (sender
-                        identity and replies), scheduler (weights, cooldowns)
+                        identity and replies), scheduler (weights, cooldowns), calls
+                        (contacts, the keypad and its easter eggs), delivery (Miguel's
+                        and Habib's courier), feedtalk (FeedLove comments, strangers,
+                        arguments), wardrobe (outfits, Jay's mail orders)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,
                         handoff (Rolo on the street + Mo's smile), animations
-                        (substance use, collapse, dancing)
+                        (substance use, collapse, dancing), patrol (the 911 cop), courier
+                        (the delivery at 1120's door)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits)
 src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
                         art), shopmenu, fridge, map, threads, modal, menu, themes,
-                        debug (the hidden menu)
+                        debug (the hidden menu), arcade (the three cabinets at Dee's),
+                        pinups (the mosaic pictures for LonelyFans and DialUpDelights)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
 scripts/test-systems.mjs  headless system checks (npm test)
 scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)

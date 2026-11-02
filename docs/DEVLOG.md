@@ -10,6 +10,45 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### The phone grows a dial tone, cops with a job, an arcade, a catalog, pictures
+
+- **The freeze.** A punch at the bodega cat threw inside the guard pose every frame and the loop
+  never booked its next frame. `throwPunch` handles the cat on its own (a toast, morale down),
+  `brawlPose` skips rigs without arms, and `main.loop` books `requestAnimationFrame` first and
+  wraps the world update in try/catch, so one bad frame can no longer stop the game.
+- **One home screen.** Every app is on a single grid (`APP_SHELVES` is one shelf), with Txtr,
+  Phone, Shale Pay and GrubHope in the dock. Company senders that are not people get a badge of
+  their own initials (`SERVICES`, `serviceFor`) instead of Mo's face.
+- **Phone.** `systems/calls.js`: CONTACTS and KEYPAD. Mom, Nia (asks her over), Kev (a joint on a
+  park bench, with the drags, then home high), Dale, Rae ("I'll get right on that"), the women
+  Mo has met, Rolo and Dex (who do not do phones), the clinic and relief office (appointments),
+  Jay's order line, 911, and keypad numbers worth dialling (411, 311, 867-5309, a prayer line, a
+  psychic, the operator).
+- **Delivery.** `systems/delivery.js` + `world/courier.js`: one order at a time from Miguel's or
+  Habib's, a courier at 1120's door who texts on arrival and leaves after an hour, or a bag on the
+  stoop if paid ahead, with a chance it walks off.
+- **Cops.** `world/patrol.js`: a 911 call puts an officer on a two-minute beat. He breaks up
+  muggings and fights, pats down the Houses' dealers, trades shots with the armed one, and comes
+  for Mo if he sees him going through a body's pockets. Knocked-out and sleeping NPCs can be
+  searched; a sleeper may wake up swinging.
+- **Arcade.** `ui/arcade.js`: Eviction Snake, Pac-Mo: Debt Eater and Roach Invaders on three
+  cabinets in Dee's, a quarter a play, keyboard or a touch pad, high scores in `s.arcade.best`.
+- **Jay's catalog.** A dollar at the newsstand sets `flags.jaysCatalog`; Jay's order line appears
+  in Contacts, and `wardrobe.mailOrder` puts the outfit in the closet at 10:00 the next day
+  (`tickMailOrders`), with a note from Jay.
+- **Pictures.** `ui/pinups.js` draws a woman in a pose (selfie, hips, peace, behind the head, a
+  kiss, a cat held up) in a room, face in frame, with a pixel mosaic over the chest and lap.
+  Buying from LonelyFans now texts the picture (`pushMessage` takes `pic`); the thread shows it,
+  a tap opens it full screen, and her thread has its own replies. DialUpDelights draws six such
+  thumbnails a page, one with the cat, under banner ads.
+- **FeedLove.** Selfies and lip-sync videos (a frozen frame with a play button) post to Mo's
+  profile. Every post has comments (`systems/feedtalk.js`: seeded strangers with a temper, a bio
+  and a face); tapping a face opens their profile, and ARGUE starts three rounds of replies.
+- **Txtr.** Friends get plans, venting, chain letters and a chance at twenty dollars; girlfriends
+  get pickup lines, "I miss you", her day and goodnight, each with answers that vary.
+- **The towers.** After five one of the women smokes outside her tower, the tower doors say whose
+  light is on, the lobby mailboxes list them, and the lady in the lawn chair points the way.
+
 ### Seats, rooms you walk into, the Houses opened up, a guide, and touch
 
 - **Seats.** An area lists `seats` ({ x, z, rot, y, label }) and gets a "Sit down" prompt in front

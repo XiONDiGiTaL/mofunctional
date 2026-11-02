@@ -172,7 +172,8 @@ A ride is $1.50, and the car has its own entertainment.
 
 Whatever you buy at Mr. Jay's waits in the **closet** in Unit 3B, where Mo can change into it:
 flannel and boots, a jersey and fresh white sneakers, a sweatsuit, an army jacket. His face and
-hair stay his own.
+hair stay his own. Short on time? A dollar at the newsstand buys Jay's catalog, and the order
+line in Contacts has the outfit folded in the closet by ten the next morning.
 
 ### People on the street
 
@@ -197,7 +198,8 @@ Press `TAB`. Everything Mo does with money, people or plans goes through here.
 
 | App | What it does for you |
 |---|---|
-| **Txtr** | Your texts. People answer in their own voice, and threads stay in one place. |
+| **Txtr** | Your texts. People answer in their own voice, threads stay in one place, and pictures open full screen. |
+| **Phone** | Contacts and a keypad. Call Mom, ask Nia over, talk Kev into the park, book the clinic, order delivery, or dial 911 and get a cop on the block for two minutes. Some numbers are worth guessing. |
 | **Shale Pay** | Your bank: balance, bills, history and AutoPay. |
 | **LinkedOut** | Your shift, your strikes, and odd jobs for cash today. |
 | **Pocket Lint** | Everything you carry, sortable by kind, value or name, with what it would sell for. |
@@ -205,13 +207,16 @@ Press `TAB`. Everything Mo does with money, people or plans goes through here.
 | **BidBay** | Sell your things to strangers on the internet, slowly, for real money. |
 | **iDread** | The week ahead, your pinned goals and sleep. |
 | **Landlordly** | A thermostat dial that counts down to rent. Very calming. |
-| **FeedLove** | Post, follow, like, and find someone. Its LoveLine tab tells you who is waiting on you. |
+| **FeedLove** | Post, take selfies, lip-sync to the hits, read the comments, tap a stranger's face to see who they are, and argue with them if you must. Its LoveLine tab tells you who is waiting on you. |
 | **NextStoop** | The neighbourhood gossip board. Surprisingly good at telling you where people are. |
 | **HailMary** | A car service. Ask for a ride up the block and the driver will tell you to walk. |
 | **TradeHarder** | Stocks from 1999 and real estate on Kestrel Street. |
 | **Amazin'** | Order things, they arrive tomorrow. |
 | **Blessed+** | The Fellowship's livestream. Give any day of the week: a gift pays your tithe first, then counts toward your standing with Addison. |
 | **Tweaks** | Skins, scale, notifications, sound and saves. |
+
+Every app sits on one home screen, no scrolling. LonelyFans pictures arrive as texts, mosaic
+where it counts, and one of the women will only pose with her cat.
 
 There are seven colour skins (Functional, Amber, Ice, VHS, Primo, Bodega and Graphite), and the
 same apps run on the laptop in Unit 3B, alongside a 1999 video site, an anonymous message board
@@ -310,13 +315,16 @@ anyway and his pockets are yours. The gun stays where it fell. Mo has his reason
 
 The towers are open, too: six floors of stairs (the elevator is a rumour), neighbours behind
 every door, and on a few floors a woman leaning on her door frame after dark, smoking, with
-prices she says like a menu. Pay, and the screen goes dark for an hour; you come to at the foot
+prices she says like a menu. To find them, read the lobby mailboxes, ask the lady in the lawn
+chair, or look for the one smoking outside her tower after five. Pay, and the screen goes dark for an hour; you come to at the foot
 of her bed with her line about the dresser. Nothing is shown, and once in a while something is
 caught, with nobody to text about it. The half-court in the courtyard is fenced on four sides
 now, with a gate on the west end, a real hoop and four regulars running two-on-two. Ask for
 next if your knees are up to it.
 
-Some nights are better spent at home with the door locked and a bowl of instant ramen.
+Some nights are better spent at home with the door locked and a bowl of instant ramen. Or at
+Dee's Wash & Fold, where a quarter buys a round of Eviction Snake, Pac-Mo: Debt Eater or Roach
+Invaders on the cabinets by the dryers.
 
 ---
 

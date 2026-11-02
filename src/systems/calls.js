@@ -336,7 +336,7 @@ const NUMBERS = {
   '18004653': (g) => { screen(g, 'Golden Prayer Line', '"You have reached the Golden Fellowship Prayer Line. Every prayer is heard. Gold-tier prayers are heard first. Stay on the line to upgrade."', [{ label: 'Stay on the line.', sub: '$3 · a prayer, upgraded', disabled: g.state.money < 3, effect: () => { g.spendMoney(3, 'Golden Prayer Line'); bump(g.state, 'stress', -3); g.toast('A recording of Addison prays for you, by name, mispronounced, for exactly forty seconds.', 'info'); } }, hangUp]); },
   '7770777': (g) => screen(g, 'Madame Oksana', '"Madame Oksana sees all. Madame Oksana sees you are calling from Brooklyn. It is $2.99 a minute. Madame Oksana also sees that you will pay it."', [{ label: 'Hear your future.', sub: '$3', disabled: g.state.money < 3, effect: () => { g.spendMoney(3, 'Madame Oksana'); g.toast(pick(['"A door will open. Do not walk through it. Or do. Madame Oksana is not your mother."', '"I see money. I see it leaving. I see it leaving faster."', '"A woman with a cat. Be kind to the cat. The woman, we will see."']), 'info'); } }, hangUp]),
   '5550120': (g) => screen(g, 'Mo', 'You call your own number. It is busy. It is always busy. That is the most accurate thing your phone has ever told you.', [hangUp]),
-  '0': (g) => screen(g, 'Operator', '"Operator." A long, judging silence. "Sir, it is 2026, you could have just looked it up."', [hangUp]),
+  '0': (g) => screen(g, 'Operator', '"Operator." A long, judging silence. "Sir, it is 1999, there is a phone book chained to every booth on Ashby."', [hangUp]),
 };
 
 /** Dial whatever was typed on the keypad. */
