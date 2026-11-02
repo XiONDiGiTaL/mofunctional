@@ -24,6 +24,7 @@ import { InputSystem } from './core/input.js';
 import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
 import { tickDelivery } from './systems/delivery.js';
+import { tickMailOrders } from './systems/wardrobe.js';
 import { toggleMap, mapTitle } from './ui/map.js';
 import { showOptions } from './ui/options.js';
 import { setLang, savedLang, getLang } from './i18n/i18n.js';
@@ -191,6 +192,7 @@ class Game {
       try {
         tickDealer(this);
         tickDelivery(this);
+        tickMailOrders(this);
         this.world.update(dt, this);
       } catch (e) {
         // one bad frame must never stop the loop: the next frame is only scheduled at the end of

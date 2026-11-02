@@ -16,6 +16,7 @@ import { partnerState, openDateMenu } from './romance.js';
 import { shiftInfo, callOut, quitJob, applyForJob } from './jobs.js';
 import { billInfo } from './economy.js';
 import * as delivery from './delivery.js';
+import { mailOrder, wardrobeState, CATALOG_SHIPPING } from './wardrobe.js';
 
 const mins = (g, n) => g.advance(n);
 
@@ -37,6 +38,7 @@ export function contacts(s) {
     { id: 'dex', name: 'Dex', kind: 'dex', sub: 'the alley' },
     { id: 'miguel', name: "Miguel's Bodega", kind: 'miguel', sub: 'delivery · BEC · loosies' },
     { id: 'habib', name: "Habib's Corner", kind: 'habib', sub: 'delivery · chicken over rice' },
+    ...(s.flags.jaysCatalog ? [{ id: 'jays', name: "Mr. Jay's Order Line", service: "MR. JAY'S", sub: 'catalog · next-morning delivery' }] : []),
     { id: 'clinic', name: 'Kestrel Clinic', service: 'KESTREL CLINIC', sub: 'appointments' },
     { id: 'relief', name: 'Civic Relief Program', service: 'CIVIC RELIEF PROGRAM', sub: 'book a recertification slot' },
     { id: 'fellowship', name: 'The Golden Fellowship', service: 'THE GOLDEN FELLOWSHIP', sub: 'Stewardship Office' },
@@ -161,6 +163,28 @@ const CALLS = {
   dex(g) {
     mins(g, 1);
     screen(g, 'Dex', 'He picks up and does not say hello. "I don\'t do phones. I\'m out at night. You know the spot." Click.', [hangUp]);
+  },
+
+  jays(g) {
+    const s = g.state;
+    mins(g, 3);
+    const w = wardrobeState(s);
+    const pending = new Set((w.orders || []).map((o) => o.id));
+    const rows = (CONFIG.outfits || []).filter((o) => o.price > 0 && !w.owned.includes(o.id));
+    screen(g, "Mr. Jay's", `"Jay's order line, this is Jay, I am also the order line." A pen clicks. "Page number and size. Shipping is ${money(CATALOG_SHIPPING)}, it comes tomorrow by ten, it goes in your closet. Your super has a key. Everybody's super has a key."`, [
+      ...rows.map((o) => ({
+        label: pending.has(o.id) ? `${o.name} (on its way)` : `Order the ${o.name}.`,
+        sub: pending.has(o.id) ? 'arrives tomorrow 10:00' : `${money(o.price + CATALOG_SHIPPING)} with shipping${o.note ? ' · ' + o.note : ''}`,
+        disabled: pending.has(o.id) || s.money < o.price + CATALOG_SHIPPING,
+        effect: () => {
+          const r = mailOrder(g, o.id);
+          if (r.ok) g.toast(`"The ${o.name}. Good choice, I would wear it, I am wearing it." Tomorrow at ten, in the closet.`, 'good');
+          else if (r.reason === 'short') g.toast(`"That is ${money(r.price)}. Call me back when it is ${money(r.price)}."`, 'bad');
+        },
+      })),
+      ...(rows.length ? [] : [{ label: 'You already own everything in the book.', sub: 'Jay is moved', disabled: true, effect: () => {} }]),
+      hangUp,
+    ]);
   },
 
   miguel(g) { deliveryCall(g, 'bodega'); },

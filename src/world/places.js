@@ -720,6 +720,12 @@ function newsstand(g) {
         if (win) g.earnMoney(win, 'scratch-off');
         g.toast(win ? `$${win}! The man in the box says "huh."` : 'Nothing. Silver dust on your thumb. Same as always.', win ? 'good' : 'info');
       } },
+      { label: s.flags.jaysCatalog ? "Leaf through Jay's catalog again." : "Buy Mr. Jay's clothing catalog.", sub: s.flags.jaysCatalog ? 'you own one · call it in from Phone' : `${money(1)} · phone orders, delivered to your closet`, disabled: !s.flags.jaysCatalog && s.money < 1, effect: () => {
+        if (s.flags.jaysCatalog) { g.toast("Page 6 is the red flannel. Page 7 is a man in the red flannel looking at a horse. Order line in the back: dial Jay's from Contacts.", 'info'); return; }
+        if (!g.spendMoney(1, "Jay's catalog")) return;
+        s.flags.jaysCatalog = true;
+        g.toast("Mr. Jay's Fall Catalog, glossy, smells of perfume strips. The order line is in Contacts now. Jay ships next morning, for a fee, like everybody.", 'good');
+      } },
       { label: 'Just look at the headlines.', sub: '', effect: () => {} },
     ],
   });
