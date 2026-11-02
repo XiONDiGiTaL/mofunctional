@@ -115,21 +115,29 @@ export const INTRO_TEXT = [
   `Nobody is coming to fix this. That is not a tragedy; that is a schedule. You are quite good with schedules.`,
 ];
 
-export const HELP_TEXT = `MO: FUNCTIONAL
+export const HELP_TEXT = `KEYBOARD
+WASD / arrows: walk (W is always into the screen)
+Q / E or drag the mouse: turn the camera · V: reset it
+F / Space / Enter: interact, confirm · X: the next thing in reach
+Z: throw a punch
+TAB: phone (time stops) · M: map · T: fold the Today panel
+1 / 2 / 3: game speed · C: CRT filter · R: 4:3 frame
+ESC: pause, or close what is open
+Every key but TAB and ESC can be changed in ESC → Options.
 
-WASD / arrows — move
-E — interact (prompt appears at the bottom)
-TAB — phone (pauses time)
-1 / 2 / 3 — game speed
-F — toggle 4:3
-C — toggle CRT filter
-ESC — pause menu
+CONTROLLER
+Left stick: walk · right stick or bumpers: camera
+A: interact · X: next · B: phone · START: pause · Y: fast time · L3: punch
+
+TOUCH
+Left thumbstick: walk · drag anywhere else: turn the camera · tap the floor: walk there
+F: interact · X: next · fist: punch · the small buttons: phone, map, pause
 
 THE LOOP
 Time only moves when you do. Almost every action costs minutes.
-Your shift is 09:00–17:00, Monday–Friday. Miss it and you collect strikes.
+Your shift is 09:00–17:00, Monday to Friday. Miss it and you collect strikes.
 Rent is due every 7 days. Power every 14. Phone every 7.
-Sell things on BidBay. Eat before you are desperate. Sleep before energy hits zero.
+Sit on any bench or chair to rest a little. Walk off to stand up.
 
 BLISS / STATIC / MUD / DRIP are fictional substances that exist only in this game.
 They raise risk. Risk at 100 is an ending, and not the flattering kind.

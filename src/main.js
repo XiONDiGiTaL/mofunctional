@@ -31,6 +31,8 @@ import { migrate } from './systems/migrate.js';
 import * as romance from './systems/romance.js';
 import * as clinic from './systems/clinic.js';
 import { installDebugMenu } from './ui/debug.js';
+import { installTouch } from './ui/touch.js';
+import { showGuide } from './ui/guide.js';
 
 class Bus {
   constructor() { this.map = new Map(); }
@@ -85,6 +87,7 @@ class Game {
     this.deferred = [];
     // ~ and the password: a testing tool, hidden in plain sight
     installDebugMenu(this);
+    installTouch(this);
     // the language is the player's, not the save's: it is remembered across runs
     setLang(savedLang());
 
@@ -115,7 +118,7 @@ class Game {
   get overlayOpen() { return this.overlays.size > 0; }
   setOverlay(name, on) { if (on) this.overlays.add(name); else this.overlays.delete(name); }
   /** Anything on screen that the world must not talk over: a menu, the phone, a dialog, pause, debug. */
-  get uiBusy() { return this.mode !== 'play' || this.paused || this.debugOpen || this.phoneOpen || this.modalOpen; }
+  get uiBusy() { return this.mode !== 'play' || this.paused || this.debugOpen || this.phoneOpen || this.modalOpen || this.guideOpen; }
 
   /**
    * Background code (the world, the dealer) calls this before opening anything. While the player
@@ -228,6 +231,12 @@ class Game {
     this.lastT = performance.now();
     this.toast('Open your phone with TAB. That is where your life is kept.', 'info');
     this.bus.emit('run-start');
+    // the first week's guide, once per run: work, the board, the phone, pockets, food, favors
+    if (!this.state.flags.guided) {
+      this.state.flags.guided = true;
+      this.paused = true;
+      showGuide(this, { pages: [0, 1, 2, 3, 4, 5], kicker: 'YOUR FIRST WEEK', onClose: () => { this.paused = false; this.lastT = performance.now(); } });
+    }
   }
 
   applyState(data, fromMenu = false) {

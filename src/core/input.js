@@ -262,6 +262,9 @@ export class InputSystem {
       this.edge('L3', 'punch');
     }
 
+    // the on-screen thumbstick (ui/touch.js), when there is one
+    if (this.touchMove && (this.touchMove.x || this.touchMove.y)) { mx += this.touchMove.x; my += this.touchMove.y; }
+
     // normalise the move vector so diagonals are not faster
     const len = Math.hypot(mx, my);
     if (len > 1) { mx /= len; my /= len; }

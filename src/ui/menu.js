@@ -3,7 +3,8 @@ import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { LANGUAGES, getLang } from '../i18n/i18n.js';
 import { money, dayOf, el, esc } from '../core/util.js';
 import { loadGame, allSlots, slotInfo, slotLine } from '../core/save.js';
-import { INTRO_TEXT, HELP_TEXT } from '../systems/dialogue.js';
+import { INTRO_TEXT } from '../systems/dialogue.js';
+import { showGuide } from './guide.js';
 import { ENDINGS } from '../systems/endings.js';
 import { THEMES, SCALES } from './themes.js';
 
@@ -189,16 +190,7 @@ export class Menu {
   }
 
   showHelp() {
-    const overlay = el(`<div class="screen">
-      <div class="panel" style="width:min(620px,94vw);max-height:88vh;overflow:auto">
-        <div class="modal__kicker">HOW TO PLAY</div>
-        <h2 class="modal__title">Keeping It Together</h2>
-        <pre style="white-space:pre-wrap;font-size:12px;line-height:1.65;color:#bcd4c1;margin:0 0 14px">${esc(HELP_TEXT)}</pre>
-        <button class="btn" data-close>BACK</button>
-      </div>
-    </div>`);
-    overlay.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) overlay.remove(); });
-    this.pushOverlay(overlay);
+    showGuide(this.g);
   }
 
   showSettings() {
@@ -312,7 +304,7 @@ export class Menu {
         ${INTRO_TEXT.map((p) => `<p>${esc(p)}</p>`).join('')}
         <div class="hr"></div>
         <div class="tiny mono-dim" style="line-height:1.7">
-          WASD MOVE · E INTERACT · TAB PHONE · 1/2/3 SPEED · ESC PAUSE<br>
+          WASD MOVE · F INTERACT · TAB PHONE · 1/2/3 SPEED · ESC PAUSE<br>
           Every action costs time. Time is the only resource that does not care how you feel.
         </div>
         <button class="btn btn--primary" data-begin style="margin-top:14px">BEGIN MONDAY →</button>
