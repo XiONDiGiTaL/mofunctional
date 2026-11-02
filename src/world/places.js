@@ -18,6 +18,7 @@ import { tex } from '../render/textures.js';
 import { signTex } from '../render/signs.js';
 import { CONFIG } from '../core/config.js';
 import { money, pick, dayOf, minuteOfDay, randInt } from '../core/util.js';
+import { TRACKS } from '../systems/soundtrack.js';
 import { bump, addItem, removeItem, countItem, inventoryList, logLine } from '../core/state.js';
 import * as romance from '../systems/romance.js';
 import { partnerTarget } from './schedules.js';
@@ -631,7 +632,8 @@ export function buildAvenue(g) {
     { kind: 'w14', x: 6, z: -0.6, walker: [-15, 15] },
     { kind: 'passer_m2', x: 0, z: -2.6, walker: [-15, 15] },
     { kind: pick(['w0', 'w3', 'w8', 'w12', 'w19']), x: -2, z: -1.0, walker: [-15, 15] },
-    { kind: 'passer_m', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true, sax: true },
+    // the sax player: an older Jamaican man, big, slow, locks under a tam, shades on day and night
+    { kind: 'rasta', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true, sax: true },
     { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
     { kind: 'cop', x: -13.9, z: -5.0, rot: 0.3, still: true, act: 'talk' },
     { kind: 'cop2', x: -11.0, z: -5.2, rot: -0.4, still: true },
@@ -648,11 +650,7 @@ export function buildAvenue(g) {
       unavailable: (gg) => { const m = minuteOfDay(gg.state.clock.m); return m < 10 * 60 || m > 20 * 60 ? 'closed · grate down till 10:00' : null; },
       action: (gg) => gg.goTo('pawn', 'avenue') },
     { id: 'av_news', label: 'Buy a paper from the man in the box', sub: `papers · scratch-offs · ${money(0.5)}`, x: 3.0, z: -2.95, radius: 1.7, action: (gg) => newsstand(gg) },
-    { id: 'av_sax', label: 'The sax player', sub: 'plays one song very well', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'ASHBY AVE.', title: 'The Sax Player', body: 'He plays the same song every day and every day it is better than it needs to be. His case has four dollars and a subway token in it.', choices: [
-      { label: 'Drop a dollar in the case.', sub: '$1 · +morale', disabled: s.money < 1, effect: () => { gg.spendMoney(1, 'sax player'); bump(s, 'morale', 5); bump(s, 'stress', -3); gg.toast('He nods without stopping. That is the deal.', 'good'); } },
-      { label: 'Stand and listen for a song.', sub: '10 min', effect: () => { gg.advance(10); bump(s, 'morale', 3); bump(s, 'stress', -4); } },
-      { label: 'Keep walking.', sub: '', effect: () => {} },
-    ] }) },
+    { id: 'av_sax', label: 'The sax player', sub: 'he takes requests · a dollar in the case', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => saxMenu(gg) },
     { id: 'av_bus', label: 'The bus stop', sub: 'B44 back to Kestrel', x: 12.5, z: 0.0, radius: 1.5, action: (gg) => busMenu(gg, 'avenue') },
     { id: 'av_subway', label: 'Down to the Ashby Ave station', sub: 'east end of the avenue · Kestrel St, Park Slope', x: 14.35, z: -0.4, radius: 1.1, action: (gg) => gg.goTo('subway', 'avenue') },
   ];
@@ -727,6 +725,36 @@ function newsstand(g) {
 }
 
 /** Sell a valuable for a fraction of what BidBay would get, but right now. */
+/**
+ * The sax player is the avenue's jukebox: stand and listen and he plays the next tune in his
+ * book, which is the game's own soundtrack, round and round. Ashby holds that song while he plays.
+ */
+const SAX_BOOK = ['ashby', 'city', 'park', 'habib', 'restaurant', 'bodega', 'church', 'laundromat', 'apartment', 'clinic', 'lost', 'menu'];
+function saxMenu(g) {
+  const s = g.state;
+  if (!s.sax) s.sax = { next: 0 };
+  const id = SAX_BOOK[s.sax.next % SAX_BOOK.length];
+  const title = TRACKS[id]?.title || 'something old';
+  g.openModal({
+    kicker: 'ASHBY AVE.', title: 'The Sax Player',
+    body: `An old man with locks piled under a red, gold and green tam, shades on at any hour, rocking on his heels like the pavement is a boat. His case has four dollars and a subway token in it. "Every tune in the book, bredren. In order. No skipping."
+
+Next in the book: "${title}".`,
+    choices: [
+      { label: 'Stand and listen for a song.', sub: `10 min · "${title}" · +morale -stress`, effect: () => {
+        s.sax.next += 1;
+        g.soundtrack?.cue?.(id, 75, 'avenue');
+        g.advance(10);
+        bump(s, 'morale', 3);
+        bump(s, 'stress', -4);
+        g.toast(pick([`He closes his eyes and plays "${title}" like it is the last song anybody will ever need.`, `"${title}." Two people stop walking. One of them is you.`, `He nods you in and goes into "${title}". The bus goes by and he plays over it, and wins.`]), 'good');
+      } },
+      { label: 'Drop a dollar in the case.', sub: '$1 · +morale', disabled: s.money < 1, effect: () => { g.spendMoney(1, 'sax player'); bump(s, 'morale', 5); bump(s, 'stress', -3); g.toast('He nods without stopping. "Bless up." That is the deal.', 'good'); } },
+      { label: 'Keep walking.', sub: '', effect: () => {} },
+    ],
+  });
+}
+
 function pawnMenu(g) {
   const s = g.state;
   const goods = inventoryList(s).filter((it) => CONFIG.items[it.id]?.kind === 'valuable' || CONFIG.items[it.id]?.kind === 'gift');

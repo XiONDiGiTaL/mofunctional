@@ -89,9 +89,10 @@ export class Soundtrack {
   }
 
   /** Hold a track for `seconds` of real time regardless of place (a shift, a counter). */
-  cue(id, seconds = 30) {
+  cue(id, seconds = 30, area = null) {
     if (!TRACKS[id]) return;
     this.cueId = id;
+    this.cueArea = area; // a cue for one place (the sax on Ashby) holds there, not just on the street
     this.cueUntil = performance.now() + seconds * 1000;
     this.timer = 0;
   }
@@ -108,7 +109,7 @@ export class Soundtrack {
     if (g.mode === 'ending') return FALLBACK_ID;
     const s = g.state;
     const area = g.world?.areaId;
-    if (this.cueId && performance.now() < this.cueUntil && (area === 'street' || !area)) return this.usable(this.cueId);
+    if (this.cueId && performance.now() < this.cueUntil && (area === 'street' || !area || area === this.cueArea)) return this.usable(this.cueId);
     this.cueId = null;
 
     // the street: the store's music spills out of its door; hysteresis so the edge never flaps

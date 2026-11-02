@@ -605,20 +605,29 @@ export function addSaxophone(rig) {
 
 /** Both arms up on the instrument: left hand on the upper keys, right around the lower body. */
 function poseSax(rig, t) {
+  // a slow beat (about 84 bpm): he rocks forward on the phrase and leans back on the long notes,
+  // knees giving on the downbeat, the horn coming up with him, fingers walking the keys
+  const beat = t * 1.4 * Math.PI;
+  const phrase = Math.sin(t * 0.55);                // the long lean back on a held note
+  const rock = Math.sin(beat) * 0.06;
+  const dip = Math.max(0, Math.sin(beat)) * 0.045;
   const breath = Math.sin(t * 1.7) * 0.022;
-  const pump = Math.sin(t * 5.3);
+  const keys = Math.sin(t * 9.5) * Math.sin(t * 2.3);
   const L = SAX_ARMS.L;
   const Rr = SAX_ARMS.R;
-  rig.armL.pivot.rotation.set(L.px + breath, 0, L.pz);
-  rig.armL.elbow.rotation.set(L.ex + pump * 0.05, 0, L.ez);
-  rig.armR.pivot.rotation.set(Rr.px + breath, 0, Rr.pz);
-  rig.armR.elbow.rotation.set(Rr.ex + pump * 0.085, 0, Rr.ez);
-  rig.torso.rotation.y = Math.sin(t * 1.1) * 0.055;
-  rig.torso.rotation.z = breath * 0.5;
-  rig.head.rotation.x = 0.1 + breath * 0.8;
-  rig.head.rotation.y = Math.sin(t * 0.5) * 0.09;
-  rig.head.rotation.z = Math.sin(t * 0.8) * 0.035;
-  if (rig.saxProp) rig.saxProp.rotation.z = 0.185 + pump * 0.014;
+  const lift = Math.max(0, phrase) * 0.14;
+  rig.armL.pivot.rotation.set(L.px + breath - lift, 0, L.pz);
+  rig.armL.elbow.rotation.set(L.ex + keys * 0.06, 0, L.ez);
+  rig.armR.pivot.rotation.set(Rr.px + breath - lift, 0, Rr.pz);
+  rig.armR.elbow.rotation.set(Rr.ex + keys * 0.09, 0, Rr.ez);
+  rig.torso.rotation.x = rock - Math.max(0, phrase) * 0.16;
+  rig.torso.rotation.y = Math.sin(t * 0.7) * 0.12;
+  rig.torso.rotation.z = Math.sin(beat * 0.5) * 0.05;
+  rig.head.rotation.x = 0.06 + breath * 0.8 - Math.max(0, phrase) * 0.12;
+  rig.head.rotation.z = Math.sin(beat * 0.5) * 0.06;
+  if (rig.hips) rig.hips.position.y = rig.hipY - dip;
+  if (rig.legL) { rig.legL.knee.rotation.x = 0.08 + dip * 4; rig.legR.knee.rotation.x = 0.08 + dip * 4; rig.legL.pivot.rotation.x = -dip * 2; rig.legR.pivot.rotation.x = -dip * 2; }
+  if (rig.saxProp) rig.saxProp.rotation.x = -0.295 - Math.max(0, phrase) * 0.12;
 }
 
 /**
