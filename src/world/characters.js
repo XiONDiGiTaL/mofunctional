@@ -491,6 +491,24 @@ const CAST = {
   boxer: { height: 1.86, build: 1.22, shirt: 0x8a6448, pants: 0x1a2a4a, tank: true },
   // the kid who flies down the sidewalk on a red bike
   kid: { height: 1.32, build: 0.84, shirt: 0xe0c84a, pants: 0x2a4a8a },
+  // the token booth clerk: transit navy, a badge, a long day
+  transit: { height: 1.64, build: 1.08, shirt: 0x26355a, pants: 0x1e2230, longSleeves: true },
+  // the sax player: big, older, slow; a gold-green shirt and a tam full of locks
+  rasta: { height: 1.74, build: 1.32, shirt: 0x2e6a3a, pants: 0x3a3632 },
+  // Ashby Pawn & Gold: the shirt is a texture, worn open over a white vest, grey sweats, sandals
+  pawnbroker: { height: 1.72, build: 1.42, shirtMap: 'hawaiian', pants: 0x7a8494, shoes: 0xd8a888 },
+  // the half-court: tanks and long shorts
+  baller1: { height: 1.88, build: 1.02, shirt: 0xe8e4dc, pants: 0x1a2a6a, tank: true },
+  baller2: { height: 1.8, build: 0.98, shirt: 0xc8281e, pants: 0x1a1a1e, tank: true },
+  baller3: { height: 1.84, build: 1.08, shirt: 0x141416, pants: 0x5a5a60, tank: true },
+  baller4: { height: 1.78, build: 1.0, shirt: 0x2a6aa8, pants: 0xe8e4dc, tank: true },
+  // the women upstairs in the Houses
+  wg1: { height: 1.68, build: 0.98, shirt: 0xc8286a, pants: 0x141416, tank: true },
+  wg2: { height: 1.66, build: 1.0, shirt: 0x1a1a1e, pants: 0x6a2a8a, tank: true },
+  wg3: { height: 1.7, build: 1.06, shirt: 0xe8c41e, pants: 0x24252b, tank: true },
+  // the recertification window and the clothing store floor
+  caseworker: { height: 1.66, build: 1.04, shirt: 0xb8a8c8, pants: 0x2a2c34, longSleeves: true },
+  shopclerk: { height: 1.8, build: 1.0, shirt: 0x141416, pants: 0x3a3a40 },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
 };
@@ -717,13 +735,15 @@ export function createNPC(kind = 'kev') {
   const known = !!CAST[kind];
   const spec = CAST[kind] || CAST.kev;
   const skinTone = tone(parseInt(faceSpec(known ? kind : 'kev').skin.slice(1), 16));
-  const shirt = retroMaterial(`npcShirt${kind}`, { color: spec.shirt ?? 0x555a52, ambient: 0.6 });
+  const shirt = spec.shirtMap
+    ? retroMaterial(`npcShirt${kind}`, { color: 0xffffff, map: tex(spec.shirtMap), ambient: 0.7 })
+    : retroMaterial(`npcShirt${kind}`, { color: spec.shirt ?? 0x555a52, ambient: 0.6 });
   const rig = buildBody({
     ...spec,
     kind: known ? kind : 'kev',
     shirtMat: shirt,
     pantsMat: retroMaterial(`npcPants${kind}`, { color: spec.pants ?? 0x2c3038, ambient: 0.6 }),
-    shoeMat: retroMaterial(`npcShoe${kind}`, { color: 0x2a2622 }),
+    shoeMat: retroMaterial(`npcShoe${kind}`, { color: spec.shoes ?? 0x2a2622 }),
     armMat: spec.longSleeves ? shirt : skinTone,
     // a tank top has no sleeves: the shoulder caps are skin
     sleeveMat: spec.tank ? skinTone : shirt,
@@ -752,6 +772,40 @@ export function createNPC(kind = 'kev') {
     gun.position.set(0.1 * k, -0.02 * k, 0.15 * k);
     gun.rotation.x = 0.2;
     rig.torso.add(gun);
+  }
+  if (kind === 'rasta') {
+    // the tam: a knitted crown that sits high and bulges at the back with the locks inside it,
+    // and a few locks out the back past the shoulders
+    const knit = retroMaterial('rastaKnit', { color: 0xffffff, map: tex('rastaKnit'), ambient: 0.75 });
+    const tam = new THREE.Mesh(new THREE.SphereGeometry(0.15 * k, 10, 8), knit);
+    tam.scale.set(1.12, 0.82, 1.32);
+    tam.position.set(0, 0.2 * k, -0.04 * k);
+    rig.head.add(tam);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.128 * k, 0.13 * k, 0.05 * k, 12), knit);
+    band.position.set(0, 0.14 * k, -0.005 * k);
+    rig.head.add(band);
+    const lock = retroMaterial('rastaLock', { color: 0x2a1e14 });
+    for (let i = 0; i < 6; i++) {
+      const a = (i - 2.5) * 0.18;
+      rig.head.add(box(0.03 * k, 0.26 * k, 0.03 * k, lock, [Math.sin(a) * 0.1 * k, -0.02 * k, -0.11 * k - Math.abs(a) * 0.02 * k], [0.15, 0, a * 0.6]));
+    }
+  }
+  if (kind === 'pawnbroker') {
+    // a white vest showing down the middle of the open shirt, and a lot of gold
+    const vest = retroMaterial('pawnVest', { color: 0xeeeae2, ambient: 0.75 });
+    rig.torso.add(box(0.12 * k, 0.42 * k, 0.02 * k, vest, [0, 0.2 * k, 0.142 * k]));
+    const gold = retroMaterial('pawnGold', { color: 0xe0b23a, ambient: 1, emissive: 0.15 });
+    for (const [r, y] of [[0.1, 0.39], [0.12, 0.35]]) {
+      const chain = new THREE.Mesh(new THREE.TorusGeometry(r * k, 0.012 * k, 4, 14, Math.PI), gold);
+      chain.rotation.set(Math.PI / 2 + 0.25, 0, Math.PI);
+      chain.position.set(0, y * k, 0.06 * k);
+      rig.torso.add(chain);
+    }
+  }
+  if (kind === 'transit') {
+    // a brass badge on the chest and the authority's patch on the shoulder
+    rig.torso.add(box(0.05 * k, 0.06 * k, 0.012 * k, retroMaterial('transitBadge', { color: 0xd8b04a, emissive: 0.2 }), [0.07 * k, 0.32 * k, 0.14 * k]));
+    rig.torso.add(box(0.06 * k, 0.06 * k, 0.012 * k, retroMaterial('transitPatch', { color: 0x2a6ab8 }), [-0.07 * k, 0.32 * k, 0.14 * k]));
   }
   if (kind === 'miguel' || kind === 'habib' || kind === 'clerk') {
     // shop apron, hanging from the chest

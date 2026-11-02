@@ -115,6 +115,65 @@ export const textures = {
     stains(c, w, h, '#2f2a21', 18);
   }),
 
+  // the pawnbroker's shirt: teal, pink palms, worn open over a vest
+  hawaiian: () => make('hawaiian', 32, 32, (c, w, h) => {
+    c.fillStyle = '#3cc6c0'; c.fillRect(0, 0, w, h);
+    const palm = (x, y) => {
+      c.fillStyle = '#d65aa8';
+      c.fillRect(x, y, 1, 7);
+      for (const [dx, dy] of [[-3, -1], [-2, -2], [1, -2], [2, -1], [-4, 0], [3, 0]]) c.fillRect(x + dx, y + dy, 2, 1);
+    };
+    palm(6, 5); palm(21, 3); palm(13, 18); palm(27, 20); palm(4, 25);
+  }),
+  // a knitted tam in the three colours, band over band
+  rastaKnit: () => make('rastaKnit', 16, 32, (c, w, h) => {
+    const bands = ['#1e7a32', '#e8c41e', '#c8281e', '#141414'];
+    for (let y = 0; y < h; y++) {
+      c.fillStyle = bands[Math.floor(y / 4) % 4];
+      c.fillRect(0, y, w, 1);
+      if (y % 2) { c.fillStyle = 'rgba(0,0,0,.18)'; for (let x = y % 4; x < w; x += 4) c.fillRect(x, y, 1, 1); }
+    }
+  }),
+  // a rack seen side-on: shirts on hangers, a run of colours with shadow between them
+  clothes: () => make('clothes', 64, 32, (c, w, h) => {
+    const cols = ['#2a3a5a', '#e2e0d8', '#8a2a2a', '#3a5a3a', '#1a1a1e', '#c8a24a', '#5a6a8a', '#7a7a7e', '#4a3a6a', '#d86a2a'];
+    for (let x = 0; x < w; x += 4) {
+      c.fillStyle = cols[(x / 4 + Math.floor(rnd() * 3)) % cols.length];
+      c.fillRect(x, 3, 3, h - 6 - Math.floor(rnd() * 8));
+      c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x + 3, 3, 1, h - 6);
+      c.fillStyle = '#b8b8b0'; c.fillRect(x + 1, 0, 1, 3);
+    }
+  }),
+  // a wall of sneakers on little shelves
+  sneakers: () => make('sneakers', 32, 64, (c, w, h) => {
+    c.fillStyle = '#5a3a24'; c.fillRect(0, 0, w, h);
+    const cols = ['#f2f2ee', '#c8281e', '#1a1a1e', '#2a5aa8', '#e8a82a', '#3a8a4a', '#ececec'];
+    for (let y = 2; y < h; y += 8) {
+      c.fillStyle = '#3a2618'; c.fillRect(0, y + 5, w, 1);
+      for (let x = 1; x < w; x += 8) {
+        c.fillStyle = cols[Math.floor(rnd() * cols.length)];
+        c.fillRect(x, y + 2, 6, 3); c.fillRect(x + 4, y + 1, 2, 1);
+        c.fillStyle = '#ffffff'; c.fillRect(x, y + 4, 6, 1);
+      }
+    }
+  }),
+  // a supermarket shelf face: rows of boxes, cans and bags in bodega colours
+  groceries: () => make('groceries', 64, 32, (c, w, h) => {
+    c.fillStyle = '#2a2622'; c.fillRect(0, 0, w, h);
+    const cols = ['#c8281e', '#e8c41e', '#2a5aa8', '#f2f2ee', '#3a8a4a', '#d86a2a', '#7a4a2a', '#e86aa8'];
+    for (let row = 0; row < 4; row++) {
+      const y = row * 8;
+      c.fillStyle = '#9a9a92'; c.fillRect(0, y + 7, w, 1);
+      for (let x = 0; x < w;) {
+        const bw = 2 + Math.floor(rnd() * 4);
+        const bh = 3 + Math.floor(rnd() * 4);
+        c.fillStyle = cols[Math.floor(rnd() * cols.length)];
+        c.fillRect(x, y + 7 - bh, bw, bh);
+        c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x, y + 7 - bh, bw, 1);
+        x += bw + 1;
+      }
+    }
+  }),
   wood: () => make('wood', 64, 64, (c, w, h) => {
     c.fillStyle = '#6d5334'; c.fillRect(0, 0, w, h);
     for (let x = 0; x < w; x += 16) {

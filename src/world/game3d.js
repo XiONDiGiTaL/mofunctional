@@ -203,6 +203,8 @@ export class World {
     this.camera.lookAt(this.camTarget);
 
     this.interactables = this.area.interactables.map((it) => ({ ...it, vec: new THREE.Vector2(it.x, it.z) }));
+    this.seated = null;
+    this.addSeats(this.area.seats || []);
     // a prompt belongs to the room that drew it: the station's "wait for the train" followed him
     // into the Basement and the projects because nothing cleared it on the way out
     this.prompt = null;
@@ -226,7 +228,7 @@ export class World {
         this.npcRigs.push(rig);
       }
       const row = id === 'street' && !npc.debug && !npc.still ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
-      rig.root.position.set(row && !row.away ? row.x : npc.x, 0, row && !row.away ? row.z : npc.z);
+      rig.root.position.set(row && !row.away ? row.x : npc.x, npc.y || 0, row && !row.away ? row.z : npc.z);
       if (npc.scale) rig.root.scale.setScalar(npc.scale); // the kids
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
@@ -1285,8 +1287,50 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     g.audio.sfx('ui');
     const target = this.promptTarget;
     this.mo.root.rotation.y = Math.atan2(target.x - this.mo.root.position.x, target.z - this.mo.root.position.z);
+    if (target.seat && this.seated?.seat !== target.seat) this.sit(target.seat);
     const res = target.action(g);
     return res !== false;
+  }
+
+  /* ------------------------------ chairs and benches ------------------------------ */
+
+  /**
+   * Every bench and chair an area lists in `seats` ({ x, z, rot, y, label, sub, action }) gets a
+   * prompt in front of it. Taking it puts him on the seat, really seated, until he moves: any step
+   * or tap stands him back up where he came from. `x, z` is where he sits, `rot` the way he faces.
+   * An area's own sit actions (the park bench, the waiting chairs) can carry `seat` too.
+   */
+  addSeats(seats) {
+    seats.forEach((seat, i) => {
+      const fx = seat.x + Math.sin(seat.rot || 0) * 0.72;
+      const fz = seat.z + Math.cos(seat.rot || 0) * 0.72;
+      this.interactables.push({
+        id: `seat_${i}`, label: seat.label || 'Sit down', sub: seat.sub || 'stand up by walking off', x: fx, z: fz,
+        radius: seat.radius || 0.95, seatPrompt: true, vec: new THREE.Vector2(fx, fz),
+        action: (gg) => { this.sit(seat); seat.action?.(gg); },
+      });
+    });
+  }
+
+  sit(seat) {
+    const p = this.mo.root.position;
+    this.seated = { seat, back: { x: p.x, z: p.z }, t: 0 };
+    this.haltMo();
+    p.set(seat.x, (seat.y ?? 0.46) - 0.46, seat.z);
+    this.mo.root.rotation.y = seat.rot || 0;
+    for (const it of this.interactables) if (it.seatPrompt) it.hidden = true;
+    this.prompt = 'redraw'; // not null: null is also "nothing to show", and the old prompt would stay up
+  }
+
+  standUp() {
+    if (!this.seated) return;
+    const { back } = this.seated;
+    this.seated = null;
+    const p = this.mo.root.position;
+    p.set(back.x, 0, back.z);
+    this.mo.hips.position.y = this.mo.hipY;
+    for (const it of this.interactables) if (it.seatPrompt) it.hidden = false;
+    this.prompt = 'redraw';
   }
 
   startRagdoll(ms = 2200) {
@@ -1413,15 +1457,31 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // Movement is camera-relative, so W is always into the screen. A tap on the floor feeds the
     // same model as a target, and both run through one eased velocity — that is what stops the
     // start/stop snap that made the walk feel janky.
-    if (canMove && g.input?.take?.('punch')) this.throwPunch(g);
+    if (this.seated) {
+      const pushing = Math.hypot(g.input?.move?.x || 0, g.input?.move?.y || 0) > 0.3 || (g.input?.clicks?.length > 0);
+      if (canMove && pushing) {
+        this.standUp();
+        if (g.input?.clicks) g.input.clicks.length = 0;
+      } else {
+        // a sit is a small rest: the stress comes down and a little energy comes back
+        this.seated.t += canMove ? dt : 0;
+        if (this.seated.t > 5) {
+          this.seated.t = 0;
+          bump(s, 'stress', -1);
+          bump(s, 'energy', 0.4);
+        }
+      }
+    }
+    if (canMove && !this.seated && g.input?.take?.('punch')) this.throwPunch(g);
 
-    const mx = canMove ? (g.input?.move?.x || 0) : 0;
-    const my = canMove ? (g.input?.move?.y || 0) : 0;
+    const free = canMove && !this.seated;
+    const mx = free ? (g.input?.move?.x || 0) : 0;
+    const my = free ? (g.input?.move?.y || 0) : 0;
     const len = Math.hypot(mx, my);
     const keyed = len > 0.08;
     if (keyed) this.moveTarget = null;
 
-    if (canMove && g.input?.clicks?.length) {
+    if (free && g.input?.clicks?.length) {
       const click = g.input.clicks.shift();
       const spot = this.groundAt(click.x, click.y);
       if (spot) this.setMoveTarget(spot);
@@ -1493,8 +1553,11 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const b = this.area.bounds;
       const nx = clamp(beforeX + vx * dt, b.minX, b.maxX);
       const nz = clamp(beforeZ + vz * dt, b.minZ, b.maxZ);
-      if (!this.blocked(nx, beforeZ)) this.mo.root.position.x = nx;
-      if (!this.blocked(this.mo.root.position.x, nz)) this.mo.root.position.z = nz;
+      // somebody who wakes up (or is put down) overlapping the furniture is free to walk out of
+      // it: with both axes blocked he could not move at all, and the run was stuck on the floor
+      const stuck = this.blocked(beforeX, beforeZ);
+      if (stuck || !this.blocked(nx, beforeZ)) this.mo.root.position.x = nx;
+      if (stuck || !this.blocked(this.mo.root.position.x, nz)) this.mo.root.position.z = nz;
       // What actually happened, not what was asked for. A wall (or the room's edge) takes the
       // blocked component out of the velocity, so he slides along it instead of building up
       // speed into it, and the walk cycle and footsteps follow the real motion: pressing
@@ -1549,6 +1612,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // animation
     animateMo(this.mo, dt, {
       walking: this.walking,
+      sitting: !!this.seated,
       high: s.high.level,
       withdrawal: s.stats.withdrawal,
       speed: 1,
@@ -1817,6 +1881,27 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.haltMo();
     this.crossing = { x, fromZ: this.mo.root.position.z, toZ, onDone, honked: false };
     return true;
+  }
+
+  /**
+   * After a wake-up: whatever had hold of him before he went down lets go, he is upright, and
+   * nothing left over from the fall can keep him from walking.
+   */
+  freeMo() {
+    this.eating?.stop();
+    this.handoff?.stop();
+    this.substance?.stop();
+    this.dance?.stop();
+    this.affection?.stop();
+    this.collapse?.reset();
+    this.crossing = null;
+    this.seated = null;
+    if (this.game?.state?.flags) this.game.state.flags.consuming = false;
+    const mo = this.mo;
+    mo.root.rotation.set(0, mo.root.rotation.y, 0);
+    mo.root.position.y = 0;
+    mo.hips.position.y = mo.hipY;
+    this.haltMo();
   }
 
   haltMo() {

@@ -331,15 +331,31 @@ export function buildSubway(g) {
     group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.8, 8), retroMaterial('ug_can', { color: 0x2a3a2e })).translateX(x).translateY(0.4).translateZ(PZ0 + 0.4));
     solids.push(solid(x, PZ0 + 0.4, 0.5, 0.5, 0.8));
   }
-  group.add(box(1.6, 2.3, 1.2, retroMaterial('ug_booth', { color: 0x6a5a3a }), [-21, 1.15, PZ0 + 0.7]));
-  group.add(box(1.0, 0.6, 0.02, M.glass, [-21, 1.5, PZ0 + 1.31]));
+  // the booth is a room, not a block: three walls, a roof, a counter, a window, and a clerk
+  {
+    const bm = retroMaterial('ug_booth', { color: 0x6a5a3a });
+    const bx = -21, bz = PZ0 + 0.7;
+    group.add(box(1.6, 2.3, 0.1, bm, [bx, 1.15, bz - 0.55]));
+    for (const sx of [-1, 1]) group.add(box(0.1, 2.3, 1.2, bm, [bx + sx * 0.75, 1.15, bz]));
+    group.add(box(1.6, 0.12, 1.2, bm, [bx, 2.3, bz]));
+    group.add(box(1.6, 0.95, 0.1, bm, [bx, 0.47, bz + 0.55]));
+    group.add(box(1.5, 0.05, 0.36, retroMaterial('ug_counter', { color: 0x8a8278 }), [bx, 0.97, bz + 0.62]));
+    // plexiglass you can actually see her through
+    group.add(box(1.4, 1.05, 0.03, { name: 'ug_plexi', color: 0xb8d0d8, opacity: 0.22, transparent: true, unlit: true }, [bx, 1.55, bz + 0.57]));
+    group.add(box(0.36, 0.05, 0.04, retroMaterial('ug_slot', { color: 0x1a1a1a }), [bx, 1.02, bz + 0.6]));
+    group.add(box(0.4, 0.62, 0.4, M.steel, [bx, 0.31, bz - 0.1])); // a tall booth stool
+    group.add(box(1.5, 0.06, 0.03, retroMaterial('ug_boothlight', { color: 0xfff2c4, emissive: 1, unlit: true }), [bx, 2.2, bz + 0.45]));
+  }
   group.add(plane(1.2, 0.26, { name: 'ug_tokens', map: signTex('subTokens', [{ text: 'TOKENS · METROCARD', color: '#ffd24a', size: 7 }], { w: 96, h: 18, bg: '#141414', border: '#ffd24a' }), unlit: true, emissive: 1 }, [-21, 2.1, PZ0 + 1.32]));
   solids.push(solid(-21, PZ0 + 0.7, 1.7, 1.3));
   // the stairs up at both ends: steps rising into a lit gap in the ceiling
   for (const [sx, label] of [[-1, 'KESTREL ST ↑'], [1, 'ASHBY AV ↑']]) {
     const x0 = sx * (L / 2 - 2.4);
     for (let i = 0; i < 12; i++) group.add(box(0.3, 0.3 * (i + 1), 2.2, M.conc, [x0 + sx * i * 0.18, 0.15 * (i + 1), -2.0]));
-    group.add(box(0.06, 1.0, 2.2, M.rail, [x0 - sx * 0.2, 1.1, -0.85]));
+    // a handrail beside the flight: posts and a sloped bar, not a panel standing in the way
+    const rx = x0 - sx * 0.2;
+    for (const dz of [-1.9, -0.95, 0]) group.add(box(0.05, 0.95, 0.05, M.rail, [rx, 0.48, dz - 0.05]));
+    group.add(box(0.06, 0.06, 2.0, M.rail, [rx, 0.95, -0.98]));
     group.add(plane(1.8, 0.4, { name: `ug_up${sx}`, map: signTex(`subUp${sx}`, [{ text: label, color: '#ffffff', size: 9 }], { w: 96, h: 20, bg: '#141414', border: '#ffffff' }), unlit: true, emissive: 1 }, [x0 - sx * 0.6, 2.6, -0.9]));
   }
   // the maintenance door: the way down to the Tunnel, for people who know
@@ -366,7 +382,10 @@ export function buildSubway(g) {
   });
 
   const npcs = [
-    { kind: 'homeless', x: -15, z: PZ0 + 0.5, rot: 0, still: true, pose: 'sleep' },
+    // asleep along the bench, not under it: lying the length of the seat at seat height
+    { kind: 'homeless', x: -15.1, z: PZ0 + 0.45, y: 0.42, rot: Math.PI / 2, still: true, pose: 'sleep' },
+    // the token booth clerk, on her stool behind the glass
+    { kind: 'transit', x: -21, z: PZ0 + 0.6, y: 0.17, rot: 0, still: true, pose: 'sit' },
     { kind: 'drifter', x: 22.5, z: -2.9, rot: 0, still: true, pose: 'sit' },
     { kind: 'junkie', x: 11.5, z: -3.1, rot: 0, still: true, act: 'lean' },
     { kind: 'passer_m', x: -6, z: 0.8, rot: Math.PI, still: true },
@@ -388,7 +407,7 @@ export function buildSubway(g) {
     { id: 'ug_pit', label: 'The door marked AUTHORIZED PERSONNEL', sub: 'there is music under it at night', x: 0, z: PZ0 + 0.9, radius: 1.2,
       unavailable: (gg) => (pitOpen(gg) ? null : 'locked · somebody says "come back after ten"'),
       action: (gg) => gg.goTo('fightclub', 'subway') },
-    { id: 'ug_booth', label: 'The token booth', sub: 'a woman behind two inches of plexiglass', x: -21, z: PZ0 + 1.9, radius: 1.3, action: (gg) => gg.openModal({
+    { id: 'ug_booth', label: 'The token booth', sub: 'a woman behind two inches of plexiglass', x: -21, z: PZ0 + 1.85, radius: 1.3, action: (gg) => gg.openModal({
       kicker: 'TOKEN BOOTH', title: 'Behind the Glass',
       body: '"Card or token. Exact change or a line behind you." She has seen everything this station has ever done and she is still here, which says something about one of you.',
       choices: [{ label: 'Ask where the trains go.', sub: '', effect: () => gg.toast('"Park Slope. Downtown. The Houses. Same train, same token. The express does not stop, so do not stand there waving at it."', 'info') }, { label: 'Never mind.', effect: () => {} }],
@@ -430,6 +449,7 @@ export function buildSubway(g) {
   };
   return {
     group,
+    seats: [-3, 9, 18].flatMap((x) => [-0.5, 0.5].map((dx) => ({ x: x + dx, z: PZ0 + 0.55, rot: 0, label: 'Sit on the bench', sub: 'wait for the train' }))),
     title: 'Kestrel St · Ashby Av Station',
     trains: { local, express },
     bounds: { minX: -L / 2 + 1.6, maxX: L / 2 - 1.6, minZ: PZ0 + 0.3, maxZ: PZ1 - 0.25 },
@@ -751,7 +771,7 @@ export function buildProjects(g) {
   const interactables = [
     { id: 'pj_train', label: 'Take the K train', sub: `out of here · ${money(SUB().fare)}`, x: 14, z: -2.9, radius: 1.8, action: (gg) => boardMenu(gg, 'projects') },
     { id: 'pj_bench', label: 'The man on the bench', sub: 'he sells what Dex sells, and it is not cut', x: 4, z: -1.6, radius: 1.5, action: (gg) => benchDealer(gg) },
-    { id: 'pj_post', label: 'Post up on the bench', sub: 'an hour · high risk, high reward', x: -4, z: -2.0, radius: 1.5, action: (gg) => postUp(gg) },
+    { id: 'pj_post', label: 'Post up on the bench', sub: 'an hour · high risk, high reward', x: -4, z: -2.0, radius: 1.5, seat: { x: -4, z: -2.95, rot: 0 }, action: (gg) => postUp(gg) },
   ];
   let trouble = 30 + Math.random() * 30;
   const tick = (gg, dt, world) => {
@@ -769,6 +789,7 @@ export function buildProjects(g) {
   };
   return {
     group, title: 'Kestrel Houses',
+    seats: [{ x: -4, z: 2.45, rot: Math.PI, label: 'Sit on the bench' }, { x: 4, z: 2.45, rot: Math.PI, label: 'Sit on the bench' }],
     bounds: { minX: -16, maxX: 18, minZ: -8, maxZ: 7.6 },
     camBounds: { minX: -18, maxX: 20, minZ: -8.5, maxZ: 9 },
     solids,

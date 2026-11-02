@@ -337,6 +337,62 @@ export const FACE_SPECS = {
     skin: '#8a5a3a', hair: '#c8322a', hairLight: '#e0524a', hairDark: '#8a1a14', style: 'beanie',
     brow: '#1a120c', eye: '#2a1e16', lips: '#6a3e30', lipsLight: '#8a5644', age: 0, jaw: 0.9,
   },
+  // the token booth: transit navy, hair pinned up, has seen everything
+  transit: {
+    skin: '#8a5a3e', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'bun',
+    brow: '#1a120c', eye: '#2a1e16', lips: '#7a4038', lipsLight: '#9a5a4c', age: 0.6, fem: true, jaw: 0.95, browTilt: 0.1,
+  },
+  // the sax player: older, heavyset, Jamaican, locks tucked under a tam, shades on day and night
+  rasta: {
+    skin: '#5e3a26', hair: '#2a1e14', hairLight: '#4a3a28', hairDark: '#140e08', style: 'dread',
+    brow: '#2a1e14', eye: '#22180f', lips: '#4e2e22', lipsLight: '#6a4232',
+    beard: 'full', beardColor: '#6e665a', age: 0.8, shades: true, jaw: 1.1,
+  },
+  // Sal, Ashby Pawn & Gold: bald on top, black at the sides, a moustache with opinions
+  pawnbroker: {
+    skin: '#c89272', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'receding',
+    brow: '#141010', eye: '#3a2a1e', lips: '#8a5444', lipsLight: '#a86a58',
+    beard: 'mustache', beardColor: '#141010', age: 0.6, jaw: 1.14, browTilt: 0.22,
+  },
+  // the half-court regulars at the Houses
+  baller1: {
+    skin: '#5a3a28', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'crop',
+    brow: '#0e0c0a', eye: '#22180f', lips: '#4e2e22', lipsLight: '#6a4232', age: 0.2,
+  },
+  baller2: {
+    skin: '#9a6a48', hair: '#141210', hairLight: '#2a2622', hairDark: '#080706', style: 'braids',
+    brow: '#141210', eye: '#2a1e16', lips: '#6a4232', lipsLight: '#8a5a44', age: 0.15,
+  },
+  baller3: {
+    skin: '#7a4e34', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'durag',
+    brow: '#0e0c0a', eye: '#22180f', lips: '#5a3426', lipsLight: '#7a4a36', beard: 'goatee', beardColor: '#0e0c0a', age: 0.3,
+  },
+  baller4: {
+    skin: '#c09070', hair: '#1a1410', hairLight: '#352a20', hairDark: '#0c0906', style: 'short',
+    brow: '#1a1410', eye: '#3a2a1c', lips: '#8a5a48', lipsLight: '#a87262', age: 0.2,
+  },
+  // the women upstairs in the Houses (adults, all of them)
+  wg1: {
+    skin: '#8a5a3e', hair: '#1a0e0a', hairLight: '#3a2418', hairDark: '#0a0604', style: 'long',
+    brow: '#1a0e0a', eye: '#2a1a10', lips: '#a8303e', lipsLight: '#c8505e', age: 0.3, fem: true, jaw: 0.9,
+  },
+  wg2: {
+    skin: '#c8987a', hair: '#e0c070', hairLight: '#f4dc98', hairDark: '#a8883e', style: 'shoulder',
+    brow: '#6a4a2a', eye: '#3a4a5a', lips: '#c8405a', lipsLight: '#e0607a', age: 0.35, fem: true, jaw: 0.9,
+  },
+  wg3: {
+    skin: '#5e3a26', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'curls',
+    brow: '#141010', eye: '#22180f', lips: '#7a2a3a', lipsLight: '#9a4a5a', age: 0.4, fem: true, jaw: 0.92,
+  },
+  // the recertification office and the clothing store
+  caseworker: {
+    skin: '#b07a5a', hair: '#3a2418', hairLight: '#5a3a28', hairDark: '#1e120c', style: 'bob',
+    brow: '#2a1a10', eye: '#3a2618', lips: '#9a5a4a', lipsLight: '#b87a6a', age: 0.5, fem: true, glasses: true, jaw: 0.94,
+  },
+  shopclerk: {
+    skin: '#6e4632', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'short',
+    brow: '#0e0c0a', eye: '#22180f', lips: '#523022', lipsLight: '#6e4434', beard: 'stubble', beardColor: '#0e0c0a', age: 0.25,
+  },
   // messages from a number nobody saved: no features to read, on purpose
   unknown: {
     skin: '#6a6f6c', hair: '#2a2e2c', hairLight: '#3e4340', hairDark: '#171a18', style: 'beanie',
@@ -527,6 +583,15 @@ export function paintFrontal(S, portrait = false) {
     x.strokeStyle = K.deep; x.lineWidth = 1; x.globalAlpha = 0.4;
     for (let i = 0; i < 3; i++) { x.beginPath(); x.moveTo(cx - 20, ty(0.67 + i * 0.04)); x.lineTo(cx, ty(0.675 + i * 0.04)); x.lineTo(cx + 20, ty(0.67 + i * 0.04)); x.stroke(); }
     x.globalAlpha = 1;
+  }
+  if (S.shades) {
+    // dark round lenses on a thin gold wire
+    x.fillStyle = '#0c0c0e';
+    both((sd) => { x.beginPath(); x.ellipse(cx + sd * eyeDX, eyeY, 10, 7, 0, 0, Math.PI * 2); x.fill(); });
+    x.strokeStyle = '#b8902a'; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(cx - 8, eyeY - 2); x.lineTo(cx + 8, eyeY - 2); x.stroke();
+    x.fillStyle = 'rgba(255,255,255,.22)';
+    both((sd) => x.fillRect(cx + sd * eyeDX - 6, eyeY - 4, 3, 2));
   }
   if (S.glasses) {
     x.strokeStyle = '#151311'; x.lineWidth = 1.8;

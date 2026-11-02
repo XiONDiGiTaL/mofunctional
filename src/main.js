@@ -481,12 +481,14 @@ class Game {
         s.flags.recovering = false;
         s.flags.collapse = false;
         this.goTo(report.where, null);
+        this.world.freeMo?.();
         this.fadeIn();
         this.openModal({
           kicker: `D${dayOf(s.clock.m)} · ${hhmm(s.clock.m)}`,
           title: report.title,
           body: `${report.body}\n\nEnergy ${Math.round(s.stats.energy)} · stress ${Math.round(s.stats.stress)} · risk ${Math.round(s.stats.risk)}.`,
-          choices: [{ label: 'Get up.', effect: () => {} }],
+          // getting up lets go of anything the fall left holding him
+          choices: [{ label: 'Get up.', effect: () => this.world.freeMo?.() }],
         });
         this.toast('You were out for hours. The clock kept going.', 'bad');
       });

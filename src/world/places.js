@@ -805,7 +805,7 @@ export function buildRestaurant(g) {
   group.add(box(1.1, 2.3, 0.14, retroMaterial('lu_door', { color: 0x5a2a1a }), [0, 1.15, D / 2 - 0.1]));
 
   const interactables = [
-    { id: 'lu_table', label: 'Sit down and order', sub: 'pasta · chicken parm · espresso', x: 0, z: 0.6, radius: 1.4, action: (gg) => luciasMenu(gg) },
+    { id: 'lu_table', label: 'Sit down and order', sub: 'pasta · chicken parm · espresso', x: 0, z: 0.6, radius: 1.4, seat: { x: 0, z: -0.6, rot: Math.PI }, action: (gg) => luciasMenu(gg) },
     { id: 'lu_waiter', label: 'Talk to the waiter', sub: 'Sal (not that Sal)', x: 1.4, z: -2.6, radius: 1.2, action: (gg) => gg.openModal({ kicker: "LUCIA'S", title: 'Sal', body: '"Forty-one years. Sinatra ate here. He had the veal. He was rude to me and I have told everybody, every day, since." He refills your water without looking.', choices: [{ label: 'Tip him a dollar for the story.', sub: '$1', disabled: gg.state.money < 1, effect: () => { gg.spendMoney(1, 'tip'); bump(gg.state, 'morale', 3); } }, { label: 'Thank him.', effect: () => {} }] }) },
     { id: 'lu_exit', label: 'Back out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.8, radius: 1.0, action: (gg) => gg.goTo('avenue', 'restaurant') },
   ];
@@ -883,7 +883,7 @@ export function buildPrecinct(g) {
   const interactables = [
     { id: 'pct_sgt', label: 'The desk sergeant', sub: 'he is busy (he is not busy)', x: -3.2, z: 2.9, radius: 1.4, action: (gg) => sergeant(gg) },
     { id: 'pct_visit', label: 'The visiting booths', sub: 'phones, glass, fifteen minutes', x: -1.0, z: -1.5, radius: 1.5, action: (gg) => gg.openModal({ kicker: '84TH PRECINCT', title: 'Visiting', body: 'A woman with her hand flat on the glass is telling a man in orange that the baby said "dada." He says "for real?" three times. Nobody else in the room is talking.', choices: [{ label: 'Give them the room.', effect: () => { bump(gg.state, 'morale', -2); } }] }) },
-    { id: 'pct_bench', label: 'Sit on the bench', sub: 'everybody waits here', x: 3.6, z: 4.0, radius: 1.2, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -2); gg.toast('Twenty minutes on the bench. A man next to you is "just waiting for his cousin." He has been waiting since Tuesday.', 'info'); } },
+    { id: 'pct_bench', label: 'Sit on the bench', sub: 'everybody waits here', x: 3.6, z: 4.0, radius: 1.2, seat: { x: 3.6, z: 4.0, rot: Math.PI }, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -2); gg.toast('Twenty minutes on the bench. A man next to you is "just waiting for his cousin." He has been waiting since Tuesday.', 'info'); } },
     { id: 'pct_exit', label: 'Out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('avenue', 'precinct') },
   ];
   return {
@@ -1033,12 +1033,13 @@ export function buildLaundromat(g) {
     { id: 'lm_vend', label: 'Vending machines', sub: 'soda · water · tall boys · chips', x: 3.4, z: 2.7, radius: 1.3, action: (gg) => vending(gg) },
     { id: 'lm_wash', label: 'Do a load of laundry', sub: `${money(CONFIG.laundromat.washCost)} · ${CONFIG.laundromat.washMinutes} min · +hygiene`, x: -3.6, z: -1.0, radius: 1.3, action: (gg) => doLaundry(gg) },
     { id: 'lm_check', label: 'Check the machines for change', sub: 'once a day · people leave things', x: 3.6, z: -1.0, radius: 1.3, action: (gg) => washers(gg) },
-    { id: 'lm_tv', label: 'Sit and watch the TV', sub: '20 min', x: -1.3, z: 2.4, radius: 1.2, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -4); bump(gg.state, 'morale', 2); gg.toast('A game show. A woman wins a jet ski. She lives in Queens. Everybody in the laundromat claps a little, including you.', 'info'); } },
+    { id: 'lm_tv', label: 'Sit and watch the TV', sub: '20 min', x: -1.3, z: 2.4, radius: 1.2, seat: { x: -1.6, z: 2.6, y: 0.45, rot: -1.32 }, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -4); bump(gg.state, 'morale', 2); gg.toast('A game show. A woman wins a jet ski. She lives in Queens. Everybody in the laundromat claps a little, including you.', 'info'); } },
     ...(owner ? [{ id: 'lm_back', label: 'The back room', sub: 'yours · the books, the computer', x: 2.4, z: -3.2, radius: 1.1, action: (gg) => gg.goTo('laundry_back', 'laundromat') }] : []),
     { id: 'lm_exit', label: 'Out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('avenue', 'laundromat') },
   ];
   return {
     group,
+    seats: [{ x: -0.9, z: 2.6, y: 0.45, rot: -1.32, label: 'Sit in a plastic chair' }],
     bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -D / 2 + 0.3, maxZ: D / 2 - 0.3 },
     solids: [solid(-4.45, -0.5, 0.9, 6.0, 1.0), solid(4.45, -0.5, 0.9, 6.0, 2.0), solid(0, -0.4, 3.4, 1.0, 0.9), solid(0, -3.4, 2.4, 0.7, 1.1), solid(3.4, 3.4, 2.0, 0.8, 2.0)],
     spawn: { x: 0, z: D / 2 - 1.5, rot: Math.PI },

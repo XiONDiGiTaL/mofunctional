@@ -180,6 +180,7 @@ export function buildApartment(g) {
 
   return {
     group,
+    seats: [{ x: 1.4, z: 0.55, rot: Math.PI, label: 'Sit at the desk' }],
     bounds: { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 },
     solids: [
       solid(-2.4, -2.4, 1.3, 2.1, 0.6), solid(2.7, -3.5, 0.9, 0.85, 1.8), solid(1.1, -3.6, 2.5, 0.8, 0.9),
@@ -690,7 +691,7 @@ export function buildStreet(g) {
     { id: 'homelessMan', label: 'Talk to Gus', sub: 'the man on the cardboard', x: -9.6, z: 0.4, action: (gg) => talk(gg, 'homeless') },
     { id: 'board', label: 'Read the job board', sub: 'odd jobs · cash today', x: 5.0, z: -5.4, action: (gg) => oddJobMenu(gg) },
     { id: 'dumpster', label: 'Look in the dumpster', sub: 'no judgement (some judgement)', x: -4.2, z: -4.4, action: (gg) => dumpster(gg) },
-    { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, action: (gg) => benchMenu(gg) },
+    { id: 'bench', label: 'The bench', sub: 'sit · or sleep, if it comes to that', x: -7.5, z: 0.4, seat: { x: -7.5, z: 0.25, rot: 0 }, action: (gg) => benchMenu(gg) },
     { id: 'eastgate', label: 'Cross the street · park east gate', sub: 'past the lot', x: 28.4, z: 0.9, radius: 1.7, action: (gg) => { if (!gg.world?.playCross?.(28.4, 7.6, () => gg.goTo('park', 'eastgate'))) gg.goTo('park', 'eastgate'); } },
     { id: 'lotdice', label: 'The dice game by the wall', sub: 'late · $5 a roll · nobody asks your name', x: 29.9, z: -3.6, radius: 1.5, action: (gg) => lotDice(gg) },
     // the near-curb parked cars: try the doors (at night)
@@ -700,7 +701,7 @@ export function buildStreet(g) {
     { id: 'alleypee', label: 'The man in the alley', sub: 'facing the wall', x: -5.0, z: -5.2, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'THE ALLEY · LATE', title: 'No', body: 'This isn\'t my business.\n\nNothing in the alley after midnight is anybody\'s business.', choices: [{ label: 'Keep walking.', effect: () => {} }] }) },
     { id: 'payphone', label: 'The payphone', sub: 'coin return · the gap behind the box', x: 12.9, z: -5.3, radius: 1.2, action: (gg) => payphone(gg) },
     { id: 'subwayDown', label: 'Down into the station', sub: 'west end of the block · under the sidewalk', x: -11.05, z: -0.4, radius: 1.3, action: (gg) => gg.goTo('subway', 'street') },
-    { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 4.6, z: 0.35, radius: 1.5, action: (gg) => busMenu(gg, 'street') },
+    { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 4.6, z: 0.35, radius: 1.5, seat: { x: 4.6, z: -0.15, rot: 0 }, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
     { id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: 3.6, z: -4.4, action: (gg) => talk(gg, 'dale') },
@@ -713,6 +714,7 @@ export function buildStreet(g) {
 
   return {
     group,
+    seats: [{ x: 18.0, z: 0.15, rot: 0, label: 'Sit on the bench', sub: "outside Habib's" }],
     // the road is walkable now (traffic is solid and stops for him); the far sidewalk is the edge
     bounds: { ...STREET.bounds, maxZ: 10.8 },
     // Mo walks the sidewalk, but the camera may hang out over the road (and a little past the
@@ -1297,6 +1299,7 @@ export function buildChurch(g) {
 
   return {
     group,
+    seats: [0, 1, 2, 3, 4].flatMap((r) => [-1, 1].map((side) => ({ x: side * 1.95, z: -2.4 + r * 1.8, rot: Math.PI, label: 'Sit in the pew', sub: 'the gold is easier to look at sitting down' }))),
     bounds: { minX: -5, maxX: 5, minZ: -6.6, maxZ: 7.2 },
     solids: [
       solid(-2.6, -2.4, 2.2, 0.7, 1.0), solid(2.6, -2.4, 2.2, 0.7, 1.0), solid(-2.6, 1.2, 2.2, 0.7, 1.0),
@@ -1598,8 +1601,8 @@ export function buildPark(g) {
   ];
 
   const interactables = [
-    { id: 'parkbench1', label: 'Sit on the bench', sub: 'watch the park happen', x: -4.4, z: 1.8, radius: 1.5, action: (gg) => parkSit(gg) },
-    { id: 'parkbench2', label: 'Sit on the bench', sub: 'the other one', x: 4.4, z: 3.0, radius: 1.5, action: (gg) => parkSit(gg) },
+    { id: 'parkbench1', label: 'Sit on the bench', sub: 'watch the park happen', x: -4.4, z: 1.8, radius: 1.5, seat: { x: -4.4, z: 1.8, rot: 0.2 }, action: (gg) => parkSit(gg) },
+    { id: 'parkbench2', label: 'Sit on the bench', sub: 'the other one', x: 4.4, z: 3.0, radius: 1.5, seat: { x: 4.4, z: 3.0, rot: -0.3 }, action: (gg) => parkSit(gg) },
     { id: 'hoops', label: 'Shoot around on the half-court', sub: '45 min · the rim is bent', x: 5.2, z: -4.6, radius: 2.0, action: (gg) => parkHoops(gg) },
     { id: 'chess', label: 'Play chess at the table', sub: 'the knight is a bottle cap', x: -2.4, z: -0.6, radius: 1.5, action: (gg) => parkChess(gg) },
     { id: 'boombox', label: 'The boombox on the crate', sub: 'somebody left a tape in it', x: 1.9, z: 1.1, radius: 1.5, action: (gg) => parkMusic(gg) },
@@ -1610,6 +1613,7 @@ export function buildPark(g) {
 
   return {
     group,
+    seats: [{ x: -1.6, z: -2.6, rot: Math.PI * 0.05, label: 'Sit on the bench', sub: 'the one by the path' }],
     bounds: { minX: -8.2, maxX: 8.2, minZ: -8.0, maxZ: 8.2 },
     solids: [
       solid(-6.8, -3.2, 1.0, 1.0), solid(6.6, -1.6, 1.0, 1.0), solid(-6.2, 5.4, 1.0, 1.0),
@@ -1677,7 +1681,7 @@ export function buildClinic(g) {
   const interactables = [
     { id: 'nurse', label: `Speak to ${clinic.nurseName}`, sub: 'treatment · costs money or a bill', x: -1.6, z: -1.2, action: (gg) => clinicMenu(gg) },
     { id: 'clinicreception', label: 'Reception', sub: 'check in · ask what it costs', x: -2.4, z: 0.2, action: (gg) => clinicReception(gg) },
-    { id: 'clinicchair', label: 'Sit in a waiting chair', sub: '20 min · calm down', x: 0.3, z: 1.0, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -6); bump(gg.state, 'morale', 1); gg.toast('The chair is plastic and the clock is loud. It helps anyway.', 'info'); } },
+    { id: 'clinicchair', label: 'Sit in a waiting chair', sub: '20 min · calm down', x: 0.3, z: 1.0, seat: { x: 0.3, z: 1.0, rot: Math.PI }, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -6); bump(gg.state, 'morale', 1); gg.toast('The chair is plastic and the clock is loud. It helps anyway.', 'info'); } },
     { id: 'clinicexit', label: 'Back out to Kestrel St.', sub: '', x: 0, z: 3.1, radius: 1.1, action: (gg) => gg.goTo('street', 'clinic') },
   ];
 
