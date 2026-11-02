@@ -20,6 +20,7 @@ import * as romance from '../systems/romance.js';
 import * as clinic from '../systems/clinic.js';
 import * as scheduler from '../systems/scheduler.js';
 import * as events from '../systems/events.js';
+import * as rides from '../systems/rides.js';
 import { useSubstance } from '../systems/needs.js';
 import { STRANGERS } from '../core/strangers.js';
 
@@ -145,11 +146,21 @@ export function installDebugMenu(g) {
 
       /* ---- money ---- */
       case 'money': {
-        const amount = CONFIG.debug.moneyPerClick;
+        // the buttons carry their own amount; anything without one keeps the configured click
+        const asked = Number(arg);
+        const amount = Number.isFinite(asked) && asked > 0 ? asked : CONFIG.debug.moneyPerClick;
         g.earnMoney(amount, 'Debug');
         g.toast(`Debug: +${money(amount)} (${money(s.money)}).`, 'good');
         break;
       }
+      case 'setmoney':
+        s.money = Math.max(0, Math.round((Number(arg) || 0) * 100) / 100);
+        g.toast(`Debug: balance set to ${money(s.money)}.`, 'good');
+        break;
+      case 'broke':
+        s.money = 0;
+        g.toast('Debug: balance zeroed.', 'bad');
+        break;
 
       /* ---- time ---- */
       case 'hour': {
@@ -200,6 +211,53 @@ export function installDebugMenu(g) {
       case 'cooldowns':
         scheduler.clearCooldowns(g);
         g.toast('Debug: event cooldowns cleared.', 'good');
+        break;
+
+      /* ---- testing cheats ---- */
+      case 'nodrain':
+        // needs.js reads this before it applies any rate; the clock, events and rides keep running
+        g.debugNoDrain = !g.debugNoDrain;
+        g.toast(g.debugNoDrain ? 'Debug: needs frozen. The clock still runs.' : 'Debug: needs running again.', 'info');
+        break;
+      case 'fastclock':
+        g.setSpeed((s.settings.speed || 1) >= 3 ? 1 : 3);
+        g.toast(`Debug: clock at ${s.settings.speed}x.`, 'info');
+        break;
+      case 'ride': {
+        // the real call, then the arrival pulled forward to this minute: no waiting out the ETA
+        if (!rides.callRide(g)) break;
+        rides.rideState(s).arriveAt = s.clock.m;
+        rides.tickRide(g);
+        g.toast('Debug: the car is at the curb.', 'good');
+        break;
+      }
+      case 'rehire':
+        Object.assign(s.job, { employed: true, fired: false, quit: false, strikes: 0, warned: false, calledOut: false });
+        g.toast('Debug: back on the Quik-Stop schedule.', 'good');
+        break;
+      case 'housed':
+        s.life.housing = 'housed';
+        s.flags.evictionNotice = false;
+        s.flags.powerCut = false;
+        rent.debugSetRent(g, { paidAhead: 0 });
+        g.toast('Debug: housed again, this rent cycle settled.', 'good');
+        break;
+      case 'debtfree':
+        s.life.debt = { hospital: 0, rent: 0 };
+        g.toast('Debug: debts cleared.', 'good');
+        break;
+      case 'tutorial':
+        Object.assign(s.flags, { tutorial: 4, guided: true, intro: true });
+        g.toast('Debug: intro and tutorial marked done.', 'info');
+        break;
+      case 'allitems': {
+        const ids = ['bliss', 'static', 'mud', 'drip'];
+        const given = ids.filter((id) => addItem(s, id, 3)).length;
+        g.toast(`Debug: ${given} substances x3.`, given ? 'good' : 'bad');
+        break;
+      }
+      case 'save1':
+        g.saveSlot(1);
         break;
 
       /* ---- relationships ---- */
@@ -351,8 +409,9 @@ export function installDebugMenu(g) {
         <section>
           <h4>Money</h4>
           <div class="debug__row"><span>Balance</span><b>${money(s.money)}</b></div>
-          <div class="debug__row"><button data-dact="money">+${money(CONFIG.debug.moneyPerClick)}</button><button data-dact="rentpaid">Mark rent paid</button></div>
-          <div class="debug__row"><button data-dact="rent">Pay rent early</button><span class="debug__note">owed ${money(rentInfo.owed)} · due D${rentInfo.nextDueDay}</span></div>
+          <div class="debug__row"><button data-dact="money" data-arg="1000">+$1,000</button><button data-dact="money" data-arg="10000">+$10,000</button><button data-dact="money" data-arg="100000">+$100,000</button><button data-dact="broke">Set $0</button></div>
+          <div class="debug__row"><span>Set cash</span><input class="debug__num" type="number" min="0" step="100" value="5000" data-dact-input="setmoney" /><button data-dact="setmoney" data-arg="5000" data-input-source="setmoney">Set</button><button data-dact="debtfree">Clear debt</button></div>
+          <div class="debug__row"><button data-dact="rentpaid">Mark rent paid</button><button data-dact="rent">Pay rent early</button><span class="debug__note">owed ${money(rentInfo.owed)} · due D${rentInfo.nextDueDay}</span></div>
 
           <h4>Time</h4>
           <div class="debug__row"><span>Clock</span><b>D${dayOf(now)} · ${hhmm(now)}</b></div>
@@ -370,6 +429,21 @@ export function installDebugMenu(g) {
           <h4>Relationships</h4>
           ${partnerRows}
           <div class="debug__row"><button data-dact="romreset">Reset all relationship state</button></div>
+
+          <h4>Cheats</h4>
+          <div class="debug__row">
+            <button data-dact="nodrain" class="${g.debugNoDrain ? 'on' : ''}">Needs frozen · ${g.debugNoDrain ? 'ON' : 'OFF'}</button>
+            <button data-dact="fastclock">Clock ${(s.settings.speed || 1) >= 3 ? '3x &rarr; 1x' : '1x &rarr; 3x'}</button>
+            <button data-dact="ride">Car now</button>
+          </div>
+          <div class="debug__row">
+            <button data-dact="rehire">Rehire</button>
+            <button data-dact="housed">Restore housing</button>
+            <button data-dact="tutorial">Skip tutorial</button>
+            <button data-dact="allitems">All substances &times;3</button>
+            <button data-dact="save1">Save slot 1</button>
+          </div>
+          <div class="debug__note">Needs frozen is memory only and clears on reload. The clock buttons are the same 1x/3x the speed keys use.</div>
 
           <h4>Testing</h4>
           <div class="debug__row"><button data-dact="clinicrecover">Clinic recovery</button><button data-dact="clinicrecover">Test clinic</button><button data-dact="phone">Phone</button><button data-dact="summary">Daily report</button></div>

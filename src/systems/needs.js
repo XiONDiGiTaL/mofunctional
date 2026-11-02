@@ -76,6 +76,9 @@ export function simulate(g, minutes, ctx = {}) {
 
 function applyRates(g, hours, ctx) {
   const s = g.state;
+  // the debug panel's freeze: hold the body still while a system is being tested. Time, events,
+  // rides and bills all keep moving; only the need/high/withdrawal rates are held
+  if (g.debugNoDrain) return;
   const st = s.stats;
   const working = !!ctx.working;
   const sleeping = !!ctx.sleeping;
