@@ -16,6 +16,7 @@ import { CONFIG } from '../core/config.js';
 import { dayOf, minuteOfDay, hhmm, money } from '../core/util.js';
 import { billInfo } from '../systems/economy.js';
 import { shiftInfo, oddJobsAvailable } from '../systems/jobs.js';
+import { tr } from '../i18n/i18n.js';
 import { serviceWindow } from '../systems/fellowship.js';
 import * as clinic from '../systems/clinic.js';
 import * as dealer from '../systems/dealer.js';
@@ -76,7 +77,7 @@ export function todayItems(g) {
 
   // the board
   const jobs = oddJobsAvailable(g);
-  if (jobs.length) out.push({ id: 'odd', icon: '☰', text: `${jobs.length} odd job${jobs.length === 1 ? '' : 's'} on the board · today only`, sub: jobs.map((j) => `${j.name.split(' —')[0]} $${j.pay}`).join(' · '), level: 'info', act: { map: 'board' } });
+  if (jobs.length) out.push({ id: 'odd', icon: '☰', text: `${jobs.length} odd job${jobs.length === 1 ? '' : 's'} on the board · today only`, sub: jobs.map((j) => `${tr(j.name).split(' —')[0]} $${j.pay}`).join(' · '), level: 'info', act: { map: 'board' } });
 
   // his own
   for (const goal of goals(s)) if (!goal.done) out.push({ id: `goal_${goal.id}`, icon: '★', text: goal.text, sub: 'your goal', level: 'goal', act: { phone: 'calendar' } });

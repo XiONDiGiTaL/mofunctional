@@ -10,7 +10,8 @@
     "serve": "npx --yes serve -l 8080 .",
     "check": "node scripts/check-syntax.mjs && node scripts/stamp.mjs --check",
     "stamp": "node scripts/stamp.mjs",
-    "test": "node scripts/test-systems.mjs && node scripts/test-district.mjs"
+    "test": "node scripts/test-systems.mjs && node scripts/test-district.mjs && node scripts/test-i18n.mjs",
+    "i18n": "node scripts/i18n-catalog.mjs"
   },
   "keywords": [
     "game",

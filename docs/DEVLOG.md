@@ -10,6 +10,20 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Español and Deutsch
+
+- A language setting: English (default), Spanish and German, from the title screen's Settings,
+  ESC → Options and the phone's Tweaks. Saved in `localStorage` (`mof.lang`) and applied before
+  the title screen draws.
+- `src/i18n/i18n.js` translates the DOM as it changes (text nodes plus placeholder, title and
+  aria-label), with exact lines first and `{0}` patterns for template literals. The canvas world,
+  street signs included, is untouched. Catalogs are lazy-loaded the first time a non-English
+  language is picked.
+- About 4,300 English lines are catalogued, and 92% of them are translated in each language.
+  What is left is proper names, app names and code the scanner picked up.
+- `scripts/i18n-catalog.mjs`, `i18n-merge.mjs`, `i18n-scan.mjs`; `npm run i18n`;
+  `scripts/test-i18n.mjs` (13 checks) runs with `npm test`.
+
 ### The underground restored, and the block stops interrupting
 
 - The station, Park Slope, Downtown, Kestrel Houses and the Tunnel are `world/underground.js`

@@ -331,6 +331,15 @@ Movement is camera-relative: `W` always walks into the screen. Click the floor a
 Every key except `TAB` and `ESC` can be remapped from **ESC → Options**, which also has music and
 sound effect volume, camera distance and height, and the full controller reference.
 
+### Language
+
+MO: FUNCTIONAL speaks **English** (the default), **Español** and **Deutsch**. Pick one from
+**Settings** on the title screen, from **ESC → Options**, or from **Tweaks** on the phone; the
+change is instant and the game remembers it. Menus, the HUD, the phone, texts, dialogue and
+every message switch language. The world itself stays put: street signs, shop fronts and
+posters on Kestrel Street read the way they always have, and so do the names of people, places
+and apps.
+
 <img src="assets/img/guide/options.jpg" alt="The Options panel: music and effects volume, camera sliders, and the remappable controls table" width="100%">
 
 ---

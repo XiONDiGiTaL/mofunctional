@@ -4,6 +4,7 @@
  * a gamepad. Rebinding is click-then-press; a key another action held swaps over to it.
  */
 import { BINDINGS, FIXED_KEYS, keysFor, keyName, rebind, resetBindings } from '../core/input.js';
+import { LANGUAGES, getLang } from '../i18n/i18n.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -23,6 +24,10 @@ export function showOptions(g) {
     wrap.innerHTML = `
       <div class="options__panel" role="dialog" aria-label="Options">
         <header class="options__head"><b>OPTIONS</b><span>the clock is stopped</span><button class="shopmenu__x" data-close aria-label="Close">×</button></header>
+        <section>
+          <h3>Language</h3>
+          <div class="row lang-row">${LANGUAGES.map((l) => `<button class="btn btn--sm ${getLang() === l.id ? 'btn--primary' : ''}" data-lang="${l.id}" data-i18n-skip>${l.native}${l.id === 'en' ? ' (default)' : ''}</button>`).join('')}</div>
+        </section>
         <section>
           <h3>Sound</h3>
           <label>Music <em>${pct(s.volume, 0.7)}%</em><input type="range" min="0" max="100" value="${pct(s.volume, 0.7)}" data-opt="music"></label>
@@ -67,6 +72,8 @@ export function showOptions(g) {
   });
   wrap.addEventListener('click', (e) => {
     if (e.target.closest('[data-close]') || e.target === wrap) { closeOptions(g); return; }
+    const lb = e.target.closest('[data-lang]');
+    if (lb) { g.setLanguage(lb.dataset.lang).then(draw); return; }
     const b = e.target.closest('[data-bind]');
     if (b) { waiting = waiting === b.dataset.bind ? null : b.dataset.bind; draw(); return; }
     const opt = e.target.closest('button[data-opt]')?.dataset.opt;

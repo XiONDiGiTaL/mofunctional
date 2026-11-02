@@ -25,6 +25,7 @@ import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
 import { toggleMap, mapTitle } from './ui/map.js';
 import { showOptions } from './ui/options.js';
+import { setLang, savedLang, getLang } from './i18n/i18n.js';
 import * as life from './systems/life.js';
 import { migrate } from './systems/migrate.js';
 import * as romance from './systems/romance.js';
@@ -84,6 +85,8 @@ class Game {
     this.deferred = [];
     // ~ and the password: a testing tool, hidden in plain sight
     installDebugMenu(this);
+    // the language is the player's, not the save's: it is remembered across runs
+    setLang(savedLang());
 
     this.world.showMenu();
     this.menu.show();
@@ -720,6 +723,13 @@ class Game {
   }
 
   /** Follow-camera rig, set from the phone's System app. Values are multipliers on the arm. */
+  /** Switch the interface language (English, Spanish, German). */
+  async setLanguage(id) {
+    await setLang(id);
+    this.state.settings.lang = getLang();
+    this.audio?.sfx?.('ui');
+  }
+
   setCamera(key, value) {
     const s = this.state.settings;
     // reset: default distance and height, and the camera swung back round behind Mo

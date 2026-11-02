@@ -1,5 +1,6 @@
 /** Main menu (audio-reactive), settings, saves, intro and ending screens. */
 import { CONFIG, DAY_NAMES } from '../core/config.js';
+import { LANGUAGES, getLang } from '../i18n/i18n.js';
 import { money, dayOf, el, esc } from '../core/util.js';
 import { loadGame, allSlots, slotInfo, slotLine } from '../core/save.js';
 import { INTRO_TEXT, HELP_TEXT } from '../systems/dialogue.js';
@@ -232,6 +233,9 @@ export class Menu {
             <span><b>${t.label}</b><em>${t.note}</em></span>
           </button>`).join('')}
         </div>
+        <div class="app__h">Language</div>
+        <div class="row lang-row">${LANGUAGES.map((l) => `<button class="btn btn--sm ${getLang() === l.id ? 'btn--primary' : ''}" data-lang="${l.id}" data-i18n-skip>${l.native}${l.id === 'en' ? ' (default)' : ''}</button>`).join('')}</div>
+        <div class="hr"></div>
         <div class="app__h">Interface scale</div>
         <div class="row">
           ${SCALES.map((sc) => `<button class="btn btn--sm ${Math.abs((s.settings.scale ?? 1) - sc.value) < 0.01 ? 'btn--primary' : ''}" data-set="scale" data-arg="${sc.value}">${sc.label}</button>`).join('')}
@@ -244,6 +248,8 @@ export class Menu {
     overlay.addEventListener('click', (e) => {
       const closeBtn = e.target.closest('[data-close]');
       if (closeBtn) { overlay.remove(); return; }
+      const langBtn = e.target.closest('[data-lang]');
+      if (langBtn) { this.g.setLanguage(langBtn.dataset.lang).then(() => { overlay.remove(); this.showSettings(); }); return; }
       const btn = e.target.closest('[data-set]');
       if (!btn) return;
       const key = btn.dataset.set;

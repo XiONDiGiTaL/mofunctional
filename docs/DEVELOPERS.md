@@ -36,6 +36,37 @@ or a second call finds a finished order and does nothing. The thread ignores tap
 "typing". Orders are saved with the run: reload mid-order and he is still on his way (or
 standing there); leave him waiting three game hours and the order expires, uncharged.
 
+## Languages
+
+English is the source. Nothing in the code is written against translation keys: lines are
+authored in English as usual, and `src/i18n/i18n.js` translates the interface as it reaches the
+screen. A `MutationObserver` on `document.body` swaps each text node (and the `placeholder`,
+`title` and `aria-label` attributes) for its translation and remembers the English, so switching
+back is instant. The 3D world is a canvas, so signs and posters never change.
+
+- `src/i18n/catalog.js` is every English line the game can show, generated from the source.
+  Template literals become patterns: `` `Rent ${amt} due ${when}` `` is filed as
+  `Rent {0} due {1}`, matched with a regex, and the captured values are translated too.
+- `src/i18n/es.js` and `de.js` map a short FNV-1a hash of each English line to its translation.
+  Missing lines simply stay in English.
+- An element with `data-i18n-skip` (the language buttons, for instance) is left alone.
+
+Workflow after adding or changing text:
+
+```bash
+npm run i18n                              # rebuild the catalog, print coverage
+node scripts/i18n-catalog.mjs --todo es   # write i18n-todo-es.tsv: key<TAB>English, untranslated
+node scripts/i18n-merge.mjs es done.tsv   # merge key<TAB>translation lines into src/i18n/es.js
+npm run stamp
+```
+
+The merge refuses a translation whose `{0}` holes differ from the English. Single lowercase
+words in markup look like code to the scanner, so they go in the `EXTRA` list in
+`scripts/i18n-catalog.mjs`. Keep app, place and substance names as they are, and keep texts in
+lowercase slang. Translate the descriptor around a name rather than the name itself. If you
+build a sentence out of pieces in JavaScript, run each piece through `tr()` first. The Today
+panel's job names are an example of this.
+
 ## Soundtrack
 
 Seven tracks in `/Music`, each written for a place, played through one crossfading director
@@ -134,7 +165,9 @@ npm test         # headless checks for the systems (no dependencies)
 `npm test` runs `scripts/test-systems.mjs` in plain Node against a small game stub: rent
 arithmetic, early payment and the double-payment guards, partner rent shares, date costs and
 outcomes, the Afterglow clock, gifts, household restocking, event cooldowns and the daily cap,
-SMS identities and replies, and clinic treatment and billing. Everything that needs eyes, the
+SMS identities and replies, and clinic treatment and billing. It then runs
+`scripts/test-district.mjs` (fights, clothes, the line) and `scripts/test-i18n.mjs` (catalogs
+keep their placeholders, lines and patterns translate, switching languages works). Everything that needs eyes, the
 animations, the world, the interfaces, is still checked by playing the build; the latest pass
 covered soundtrack switching, the dealer flow (text, app, meet, edge cases, save and reload),
 entering and leaving every building, and the map against world positions.

@@ -23,6 +23,7 @@ import { postImage } from './feedart.js';
 import { installSites, siteActions, stoopPostBody } from './sites.js';
 import { goals, addGoal, confirmSleep } from './today.js';
 import * as notify from './notify.js';
+import { LANGUAGES, getLang } from '../i18n/i18n.js';
 import * as relations from '../systems/relations.js';
 import { slotLine, slotInfo as autoInfo } from '../core/save.js';
 import * as sms from '../systems/sms.js';
@@ -1027,6 +1028,8 @@ export class Phone {
         <button class="btn btn--sm ${s.settings.crt ? 'on btn--primary' : ''}" data-act="togglecrt">CRT: ${s.settings.crt ? 'ON' : 'OFF'}</button>
         <button class="btn btn--sm ${s.settings.ratio43 ? 'btn--primary' : ''}" data-act="toggle43">4:3: ${s.settings.ratio43 ? 'ON' : 'OFF'}</button>
       </div>
+      <div class="app__h">Language</div>
+      <div class="row lang-row">${LANGUAGES.map((l) => `<button class="btn btn--sm ${getLang() === l.id ? 'btn--primary' : ''}" data-act="setlang" data-arg="${l.id}" data-i18n-skip>${l.native}${l.id === 'en' ? ' (default)' : ''}</button>`).join('')}</div>
       <div class="app__h">Theme</div>
       <div class="theme-grid">
         ${THEMES.map((t) => `<button class="theme-swatch ${s.settings.theme === t.id ? 'on' : ''}" data-act="theme" data-arg="${t.id}">
@@ -1462,6 +1465,7 @@ export class Phone {
       fansbuy(arg) { fans.buySelfie(g, arg); },
       fanscheeks(arg) { fans.buyCheeks(g, arg); },
       theme(arg) { g.setTheme?.(arg); },
+      setlang(arg) { g.setLanguage?.(arg).then(() => this.render?.()); },
       scale(arg, num) { g.setScale?.(num); },
       camdist(arg, num, elem) { g.setCamera?.('dist', elem ? elem.value : 100); },
       camheight(arg, num, elem) { g.setCamera?.('height', elem ? elem.value : 100); },
