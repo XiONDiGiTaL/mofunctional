@@ -48,6 +48,45 @@ export function applyDebugPrefs(g) {
   if (typeof prefs.noDrain === 'boolean') g.debugNoDrain = prefs.noDrain;
 }
 
+/* ------------------------------------------------------------------ the state dump */
+
+/** The last `n` of a list, or an empty list if it is not one. */
+const tail = (arr, n) => (Array.isArray(arr) ? arr.slice(-n) : []);
+
+/**
+ * The state as a dump carries it.
+ *
+ * A dump is a bug report, not an archive: it needs where the run is now and what just happened,
+ * not 150 messages and three days of ledger. Every system block goes in whole — nothing is rebuilt
+ * by allowlist, so a system added later still reports itself — and only the bulk lists are cut to
+ * their tails, with message bodies dropped (they are prose, and the bodies are what make a dump
+ * long). What the trim leaves out comes back as the game's own default on load, not as undefined.
+ */
+export function trimState(s) {
+  return {
+    ...s,
+    log: tail(s.log, 8),
+    ledger: tail(s.ledger, 6),
+    seenEvents: tail(s.seenEvents, 5),
+    messages: tail(s.messages, 2).map((m) => ({ id: m.id, from: m.from, subject: m.subject, day: m.day, read: m.read })),
+    life: { ...s.life, history: tail(s.life?.history, 3), turning: tail(s.life?.turning, 3) },
+    dealer: { ...s.dealer, log: tail(s.dealer?.log, 3), orders: tail(s.dealer?.orders, 3) },
+  };
+}
+
+/**
+ * A pasted dump back into a state, or null if it is not one. Accepts the whole dump with its
+ * header, or a bare state: all it insists on is a clock, because a run without one is not a run.
+ */
+export function parseDump(text) {
+  let obj;
+  try { obj = JSON.parse(String(text || '').trim()); } catch { return null; }
+  if (!obj || typeof obj !== 'object') return null;
+  const st = obj.state && typeof obj.state === 'object' ? obj.state : obj.clock ? obj : null;
+  if (!st || !st.clock || !Number.isFinite(Number(st.clock.m))) return null;
+  return st;
+}
+
 const STATS = [
   ['energy', 'Energy'], ['hunger', 'Food'], ['hygiene', 'Hygiene'],
   ['stress', 'Stress'], ['morale', 'Morale'], ['addiction', 'Dependence'],
@@ -73,6 +112,8 @@ export function installDebugMenu(g) {
   let panel = null;
   let prompt = null;
   let dumpText = '';
+  let pasteOpen = false;
+  let pasteText = '';
 
   const close = () => {
     if (panel) { panel.remove(); panel = null; }
@@ -295,6 +336,16 @@ export function installDebugMenu(g) {
       case 'dumpclear':
         dumpText = '';
         break;
+      case 'dumppaste':
+        pasteOpen = !pasteOpen;
+        break;
+      case 'dumpcancel':
+        pasteOpen = false;
+        pasteText = '';
+        break;
+      case 'dumpload':
+        loadDump();
+        break;
 
       /* ---- relationships ---- */
       case 'aff': {
@@ -390,13 +441,34 @@ export function installDebugMenu(g) {
     g.hud?.update?.();
   }
 
-  /** The whole run as text, for pasting into a bug report. Not a save: a picture of one. */
+  /** Replace this run with a pasted one. The run being replaced goes to the autosave first. */
+  function loadDump() {
+    const st = parseDump(pasteText);
+    if (!st) { g.toast('Debug: not a state dump — paste the whole JSON, or a bare state.', 'bad'); return; }
+    // whatever is running now lands in the autosave slot, so "continue" can bring it back if the
+    // pasted run was not the one that was meant
+    try { g.autosave?.(); } catch { /* storage blocked: nothing to fall back on */ }
+    try {
+      // the same load path a slot uses, minus its "Loaded" toast: this one says what it did below
+      g.applyState?.(st);
+    } catch (err) {
+      console.warn('[debug] dump load failed', err);
+      g.toast('Debug: that dump would not load — this run was left as it was.', 'bad');
+      return;
+    }
+    pasteOpen = false;
+    pasteText = '';
+    g.toast(`Debug: run restored — day ${dayOf(g.state.clock.m)} · ${money(g.state.money)}.`, 'good');
+  }
+
+  /** The run as text, for pasting into a bug report — and back into the panel. */
   function doDump() {
     const s = g.state;
     dumpText = JSON.stringify({
       dump: 'mo:functional state',
       version: CONFIG.meta.version,
       at: new Date().toISOString(),
+      trimmed: { messages: 2, log: 8, ledger: 6, seenEvents: 5, lifeHistory: 3 },
       runtime: {
         mode: g.mode,
         paused: !!g.paused,
@@ -406,7 +478,7 @@ export function installDebugMenu(g) {
         slot: g.lastSlot ?? null,
         overlays: [...(g.overlays || [])],
       },
-      state: s,
+      state: trimState(s),
     }, null, 2);
     copyDump();
   }
@@ -415,7 +487,7 @@ export function installDebugMenu(g) {
     if (!dumpText) return;
     try {
       await navigator.clipboard.writeText(dumpText);
-      g.toast(`Debug: state copied (${dumpText.length} chars).`, 'good');
+      g.toast(`Debug: state copied (${dumpText.length} chars) — Load dump takes it back.`, 'good');
     } catch {
       // a browser that refuses the write, or the page on plain http: the text is, either way,
       // sitting in the panel below, selected, so ctrl+c still gets it out
@@ -513,8 +585,14 @@ export function installDebugMenu(g) {
             <button data-dact="allitems">All substances &times;3</button>
             <button data-dact="save1">Save slot 1</button>
             <button data-dact="dump">State dump</button>
+            <button data-dact="dumppaste">Load dump</button>
           </div>
-          <div class="debug__note">Needs frozen is remembered until you switch it off, reloads included — it is kept outside the saves, not in them. The clock buttons are the same 1x/3x the speed keys use.</div>
+          <div class="debug__note">Needs frozen is remembered until you switch it off, reloads included — it is kept outside the saves, not in them. The clock buttons are the same 1x/3x the speed keys use. A dump carries the systems and the last few lines of history, not the whole run; paste one into Load dump to reproduce it.</div>
+          ${pasteOpen ? `<div class="debug__dump">
+            <div class="debug__row"><span>Load dump</span><small>replaces this run · it goes to the autosave first</small>
+              <button data-dact="dumpload">Load</button><button data-dact="dumpcancel">Cancel</button></div>
+            <textarea spellcheck="false" rows="6" autocomplete="off" data-dact-input="paste" placeholder="paste a state dump…">${esc(pasteText)}</textarea>
+          </div>` : ''}
           ${dumpText ? `<div class="debug__dump">
             <div class="debug__row"><span>State dump</span><small>${dumpText.length} chars</small>
               <button data-dact="dumpcopy">Copy again</button><button data-dact="dumpclear">Hide</button></div>
@@ -537,6 +615,12 @@ export function installDebugMenu(g) {
     }
     for (const input of body.querySelectorAll('[data-dact-input]')) {
       input.addEventListener('keydown', (e) => e.stopPropagation()); // typing a number is not a hotkey
+      // the paste box holds its text in the closure, so a re-render (an action, a clock tick) does
+      // not wipe what is being pasted; the number fields hand their value to the button beside them
+      if (input.dataset.dactInput === 'paste') {
+        input.addEventListener('input', () => { pasteText = input.value; });
+        continue;
+      }
       input.addEventListener('input', () => {
         const btn = body.querySelector(`[data-input-source="${input.dataset.dactInput}"]`);
         if (btn) btn.dataset.arg = input.value;
