@@ -115,6 +115,30 @@ export const textures = {
     stains(c, w, h, '#2f2a21', 18);
   }),
 
+  // chain-link: wire diamonds on nothing, cut out by the alpha test so you see through the holes
+  chainlink: () => make('chainlink', 16, 16, (c, w, h) => {
+    c.clearRect(0, 0, w, h);
+    c.fillStyle = '#b8bcc0';
+    for (let i = 0; i < 16; i++) {
+      c.fillRect(i, i, 1, 1); c.fillRect((i + 8) % 16, i, 1, 1);
+      c.fillRect(15 - i, i, 1, 1); c.fillRect((23 - i) % 16, i, 1, 1);
+    }
+  }, { flat: true }),
+  // the half-court: faded asphalt, white lines, a key that used to be red
+  court: () => make('court', 64, 64, (c, w, h) => {
+    c.fillStyle = '#4a4c4e'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 380; i++) { const v = 60 + Math.floor(rnd() * 30); c.fillStyle = `rgb(${v},${v + 2},${v + 4})`; c.fillRect(Math.floor(rnd() * w), Math.floor(rnd() * h), 1, 1); }
+    c.fillStyle = '#7a3a34'; c.fillRect(46, 24, 18, 16);
+    c.strokeStyle = '#d8d8d0'; c.lineWidth = 1;
+    c.strokeRect(1.5, 1.5, w - 3, h - 3);
+    c.strokeRect(46.5, 24.5, 17, 15);
+    c.beginPath(); c.arc(46.5, 32, 6, Math.PI / 2, Math.PI * 1.5); c.stroke();
+    c.beginPath(); c.arc(60, 32, 25, Math.PI * 0.62, Math.PI * 1.38); c.stroke();
+    c.beginPath(); c.moveTo(1.5, 1.5); c.lineTo(1.5, h - 1.5); c.stroke();
+    c.beginPath(); c.arc(1.5, 32, 7, -Math.PI / 2, Math.PI / 2); c.stroke();
+    // a crack across the paint
+    c.strokeStyle = '#2a2a2a'; c.beginPath(); c.moveTo(10, 50); c.lineTo(18, 44); c.lineTo(22, 47); c.lineTo(31, 38); c.stroke();
+  }, { flat: true }),
   // the pawnbroker's shirt: teal, pink palms, worn open over a vest
   hawaiian: () => make('hawaiian', 32, 32, (c, w, h) => {
     c.fillStyle = '#3cc6c0'; c.fillRect(0, 0, w, h);

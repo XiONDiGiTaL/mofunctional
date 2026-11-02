@@ -6,6 +6,7 @@ import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, bui
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
 import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub } from './underground.js';
+import { buildTower, buildHerRoom } from './houses.js';
 import * as brawl from '../systems/brawl.js';
 import { worn } from '../systems/wardrobe.js';
 import { bump } from '../core/state.js';
@@ -35,6 +36,7 @@ const BUILDERS = {
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
+  pjtower: buildTower, pjroom: buildHerRoom,
 };
 
 export class World {
@@ -2103,6 +2105,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!this.area?.solids) return false;
     for (const b of this.area.solids) {
       if ((b.h ?? 2.4) < 1.5) continue; // below the eye: the camera looks over it
+      if (b.seeThrough) continue; // chain-link: the camera looks through it
       // a lamp post or a sign pole: the arm passing behind one for a frame is less jarring than
       // the arm snapping short and easing back out every time he walks past it
       if (Math.max(b.w, b.d) <= 0.5) continue;

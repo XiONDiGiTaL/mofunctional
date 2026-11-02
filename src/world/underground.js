@@ -27,6 +27,7 @@ import { bump, addItem, logLine } from '../core/state.js';
 import * as fights from '../systems/fights.js';
 import * as wardrobe from '../systems/wardrobe.js';
 import { FightMeter } from '../ui/fight.js';
+import { buildCourt, COURT, housesState } from './houses.js';
 
 const meter = (g) => (g.world.fightMeter ||= new FightMeter(document.getElementById('ui') || document.body, g));
 
@@ -745,10 +746,8 @@ export function buildProjects(g) {
     group.add(b);
     solids.push(solid(x, z, 2.4, 0.6, 0.9));
   }
-  const fence = retroMaterial('pj_fence', { color: 0x8a8e92, opacity: 0.55, transparent: true });
-  for (const [x, z, w, d] of [[12, 2, 0.05, 8], [16, -2, 8, 0.05], [16, 6, 8, 0.05]]) group.add(box(w || 0.05, 2.4, d || 0.05, fence, [x, 1.2, z]));
-  group.add(box(0.12, 3.2, 0.12, M.steel, [19, 1.6, 2]));
-  group.add(box(1.2, 0.8, 0.06, M.silver, [18.6, 3.0, 2]));
+  // the half-court: chain-link all round with the gate on the west side, a real hoop, and a game
+  const hoops = buildCourt(group, solids);
   for (const x of [-8, 0, 8]) { group.add(box(0.14, 4.4, 0.14, M.steel, [x, 2.2, 6])); group.add(box(0.5, 0.1, 0.3, M.lit, [x, 4.4, 5.8])); }
   // graffiti on the low wall, a burnt mattress, a shopping cart
   group.add(box(14, 1.2, 0.3, M.conc, [0, 0.6, 8.6]));
@@ -771,10 +770,14 @@ export function buildProjects(g) {
   const interactables = [
     { id: 'pj_train', label: 'Take the K train', sub: `out of here · ${money(SUB().fare)}`, x: 14, z: -2.9, radius: 1.8, action: (gg) => boardMenu(gg, 'projects') },
     { id: 'pj_bench', label: 'The man on the bench', sub: 'he sells what Dex sells, and it is not cut', x: 4, z: -1.6, radius: 1.5, action: (gg) => benchDealer(gg) },
+    { id: 'pj_court', label: 'The half-court', sub: 'two-on-two · winners stay on', x: COURT.x0 - 0.9, z: COURT.gateZ, radius: 1.4, action: (gg) => courtMenu(gg) },
+    { id: 'pj_north', label: 'Into the North Tower', sub: 'six floors · stairs only', x: -12, z: -7.6, radius: 1.5, action: (gg) => { const h = housesState(gg.state); h.tower = 'north'; h.floor = 0; gg.goTo('pjtower', 'projects'); } },
+    { id: 'pj_east', label: 'Into the East Tower', sub: 'six floors · stairs only', x: 10, z: -7.6, radius: 1.5, action: (gg) => { const h = housesState(gg.state); h.tower = 'east'; h.floor = 0; gg.goTo('pjtower', 'projects'); } },
     { id: 'pj_post', label: 'Post up on the bench', sub: 'an hour · high risk, high reward', x: -4, z: -2.0, radius: 1.5, seat: { x: -4, z: -2.95, rot: 0 }, action: (gg) => postUp(gg) },
   ];
   let trouble = 30 + Math.random() * 30;
   const tick = (gg, dt, world) => {
+    hoops.update(dt);
     trouble -= dt;
     if (trouble > 0 || gg.uiBusy) return;
     trouble = 50 + Math.random() * 40;
@@ -793,10 +796,36 @@ export function buildProjects(g) {
     bounds: { minX: -16, maxX: 18, minZ: -8, maxZ: 7.6 },
     camBounds: { minX: -18, maxX: 20, minZ: -8.5, maxZ: 9 },
     solids,
-    spawn: { x: 14, z: -2.4, rot: Math.PI }, spawnFor: () => ({ x: 14, z: -2.4, rot: Math.PI }),
+    spawn: { x: 14, z: -2.4, rot: Math.PI },
+    spawnFor: (from) => (from === 'pjtower' ? (housesState(g.state).tower === 'east' ? { x: 10, z: -6.9, rot: 0 } : { x: -12, z: -6.9, rot: 0 }) : { x: 14, z: -2.4, rot: Math.PI }),
     npcs, interactables, tick, ambient: 'street',
     enterToast: 'Kestrel Houses. Everybody here already knows you are not from here.',
   };
+}
+
+/** The half-court: watch, or ask for next and get run off it. */
+function courtMenu(g) {
+  const s = g.state;
+  const m = minuteOfDay(s.clock.m);
+  g.openModal({
+    kicker: 'KESTREL HOUSES · THE HALF-COURT',
+    title: 'Winners Stay On',
+    body: 'Two-on-two, one basket, no refs, and a rim that has been bent since the Clinton administration. The man in the white tank calls his own fouls and wins every argument about them.',
+    choices: [
+      { label: 'Watch a few possessions.', sub: '15 min · +morale · -stress', effect: () => { g.advance(15); bump(s, 'morale', 3); bump(s, 'stress', -4); g.toast(pick(['A crossover so mean the defender apologises to the fence.', 'Somebody banks one in off the backboard and calls it. Nobody believes him.', 'The ball goes over the fence. A kid on the other side throws it back without being asked.']), 'info'); } },
+      { label: 'Ask for next.', sub: s.stats.energy < 25 ? 'too tired' : '45 min · -energy · +morale · $5 a game', disabled: s.stats.energy < 25 || s.money < 5 || m < 7 * 60,
+        effect: () => {
+          g.spendMoney(5, 'pickup game');
+          g.advance(45);
+          bump(s, 'energy', -14);
+          bump(s, 'stress', -8);
+          const won = Math.random() < 0.35;
+          if (won) { g.earnMoney(10, 'won at the half-court'); bump(s, 'morale', 10); g.toast('You hit two in a row from the elbow and the court goes quiet. Winners stay on. You have to leave anyway, your knees have voted.', 'good'); }
+          else { bump(s, 'morale', 3); g.toast('Seven to two. They were nice about it, which is worse. "Come back when you have legs."', 'info'); }
+        } },
+      { label: 'Keep walking.', sub: '', effect: () => {} },
+    ],
+  });
 }
 
 /** Uncut, the strong stuff, cheaper than Dex because the bench does not pay rent. */
