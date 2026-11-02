@@ -87,6 +87,88 @@ export function parseDump(text) {
   return st;
 }
 
+/* ------------------------------------------------------------------ what changed */
+
+/**
+ * Every primitive in the state as a dotted path, and every list as its length. Deep enough for the
+ * shape the game has (bills.rent.paidAhead, life.turning, dealer.log) and shallow enough that a
+ * diff of two of them is a handful of lines instead of a second dump.
+ */
+function flattenState(obj, prefix = '', out = {}, depth = 0) {
+  for (const [k, v] of Object.entries(obj || {})) {
+    const path = prefix ? `${prefix}.${k}` : k;
+    if (Array.isArray(v)) out[path] = v.length;
+    else if (v && typeof v === 'object') { if (depth < 2) flattenState(v, path, out, depth + 1); }
+    else if (v !== undefined) out[path] = v;
+  }
+  return out;
+}
+
+// what a reader checks first, in the order they check it
+const DIFF_FIRST = ['clock.m', 'money', 'savedWhere', 'life.housing', 'job.id'];
+
+function pathRank(path) {
+  const i = DIFF_FIRST.indexOf(path);
+  if (i >= 0) return i;
+  if (path.startsWith('stats.')) return 10;
+  if (path.startsWith('life.')) return 20;
+  if (path.startsWith('flags.')) return 30;
+  if (path.startsWith('counters.')) return 40;
+  return 25;
+}
+
+function shortValue(v) {
+  if (v === null) return 'null';
+  if (typeof v === 'string') return `"${v.length > 32 ? `${v.slice(0, 32)}…` : v}"`;
+  return String(v);
+}
+
+/** Two clock readings as the distance a player would say out loud. */
+function clockDelta(from, to) {
+  const mins = Math.round(Number(to) - Number(from));
+  if (!Number.isFinite(mins) || !mins) return 'no change';
+  const abs = Math.abs(mins);
+  const parts = [abs >= 60 ? `${Math.floor(abs / 60)}h` : '', abs % 60 ? `${abs % 60}m` : ''].filter(Boolean);
+  return `${mins > 0 ? '+' : '−'}${parts.join(' ')}`;
+}
+
+/**
+ * What moved between two states, as short lines — the last stretch of a run, not a diff of every
+ * field. Sorted so the things a bug report is about (the clock, the money, where he is, what the
+ * needs did) come first, and capped so a report stays readable: a run that has changed in eighty
+ * places has changed in eighty places whether or not all eighty are listed.
+ */
+export function diffStates(prev, cur, limit = 12) {
+  if (!prev || !cur) return [];
+  const a = flattenState(prev);
+  const b = flattenState(cur);
+  const rows = [];
+  for (const path of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const had = path in a;
+    const has = path in b;
+    if (had && !has) { rows.push({ path, line: `${path}: gone` }); continue; }
+    if (!had && has) { rows.push({ path, line: `${path}: new` }); continue; }
+    if (a[path] === b[path]) continue;
+    if (path === 'clock.m') rows.push({ path, line: `clock: ${clockDelta(a[path], b[path])}` });
+    else if (path === 'money') rows.push({ path, line: `money: ${money(a[path])} → ${money(b[path])}` });
+    else rows.push({ path, line: `${path}: ${shortValue(a[path])} → ${shortValue(b[path])}` });
+  }
+  rows.sort((x, y) => pathRank(x.path) - pathRank(y.path) || x.path.localeCompare(y.path));
+  const lines = rows.map((r) => r.line);
+  if (lines.length > limit) lines.splice(limit, lines.length - limit, `… ${rows.length - limit} more changed`);
+  return lines;
+}
+
+/** How long ago a kept dump was written, in the terms a report uses. */
+function ago(iso) {
+  const ms = Date.now() - Date.parse(iso);
+  if (!Number.isFinite(ms)) return 'unknown when';
+  const min = Math.round(ms / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  return `${Math.floor(min / 60)}h ${min % 60}m ago`;
+}
+
 const STATS = [
   ['energy', 'Energy'], ['hunger', 'Food'], ['hygiene', 'Hygiene'],
   ['stress', 'Stress'], ['morale', 'Morale'], ['addiction', 'Dependence'],
@@ -114,6 +196,7 @@ export function installDebugMenu(g) {
   let dumpText = '';
   let pasteOpen = false;
   let pasteText = '';
+  let kept = null;               // the dump storage holds: the run as of the last minute of play
 
   const close = () => {
     if (panel) { panel.remove(); panel = null; }
@@ -135,6 +218,7 @@ export function installDebugMenu(g) {
       <div class="debug__body"></div>
     </div>`;
     ui.appendChild(panel);
+    kept = readKept() || kept;   // another tab may have kept a newer one since this panel opened
     g.debugOpen = true;
     render();
     panel.addEventListener('click', onClick);
@@ -336,6 +420,16 @@ export function installDebugMenu(g) {
       case 'dumpclear':
         dumpText = '';
         break;
+      case 'dumpkept':
+        if (!kept) { g.toast('Debug: no kept dump yet — one is written every minute of play.', 'bad'); break; }
+        dumpText = JSON.stringify(kept, null, 2);
+        copyDump();
+        break;
+      case 'dumpforget':
+        try { localStorage.removeItem(CONFIG.debug.dumpKey); } catch { /* nothing kept to forget */ }
+        kept = null;
+        g.toast('Debug: kept dump forgotten.', 'info');
+        break;
       case 'dumppaste':
         pasteOpen = !pasteOpen;
         break;
@@ -461,14 +555,20 @@ export function installDebugMenu(g) {
     g.toast(`Debug: run restored — day ${dayOf(g.state.clock.m)} · ${money(g.state.money)}.`, 'good');
   }
 
-  /** The run as text, for pasting into a bug report — and back into the panel. */
-  function doDump() {
+  function readKept() {
+    try { return JSON.parse(localStorage.getItem(CONFIG.debug.dumpKey) || 'null'); } catch { return null; }
+  }
+
+  /** A dump of this moment, plus the short diff against `prev` — the state of the last kept dump. */
+  function buildDump(prev) {
     const s = g.state;
-    dumpText = JSON.stringify({
+    const st = trimState(s);
+    return {
       dump: 'mo:functional state',
       version: CONFIG.meta.version,
       at: new Date().toISOString(),
       trimmed: { messages: 2, log: 8, ledger: 6, seenEvents: 5, lifeHistory: 3 },
+      changes: diffStates(prev, st),
       runtime: {
         mode: g.mode,
         paused: !!g.paused,
@@ -478,8 +578,33 @@ export function installDebugMenu(g) {
         slot: g.lastSlot ?? null,
         overlays: [...(g.overlays || [])],
       },
-      state: trimState(s),
-    }, null, 2);
+      state: st,
+    };
+  }
+
+  /**
+   * Write the kept dump: this run, now, with what moved since the one before it. One goes out a
+   * minute of play, so a crash or a stuck bug leaves the minute it happened in storage even though
+   * the panel was never opened — and the diff in the dump says what that minute did.
+   */
+  function keepDump() {
+    if (g.mode !== 'play' || !g.state?.clock) return null;
+    if (typeof document !== 'undefined' && document.hidden) return null; // a background tab is not playing
+    const dump = buildDump(kept?.state || null);
+    try {
+      localStorage.setItem(CONFIG.debug.dumpKey, JSON.stringify(dump));
+      kept = dump;
+    } catch { /* full or blocked storage: the panel still makes dumps on demand */ }
+    return dump;
+  }
+
+  // a debug nicety must never break a frame: whatever goes wrong in here stays in here
+  kept = readKept();
+  setInterval(() => { try { keepDump(); } catch { /* ignore */ } }, CONFIG.debug.keepDumpMs);
+
+  /** The run as text, for pasting into a bug report — and back into the panel. */
+  function doDump() {
+    dumpText = JSON.stringify(buildDump(kept?.state || null), null, 2);
     copyDump();
   }
 
@@ -587,7 +712,11 @@ export function installDebugMenu(g) {
             <button data-dact="dump">State dump</button>
             <button data-dact="dumppaste">Load dump</button>
           </div>
-          <div class="debug__note">Needs frozen is remembered until you switch it off, reloads included — it is kept outside the saves, not in them. The clock buttons are the same 1x/3x the speed keys use. A dump carries the systems and the last few lines of history, not the whole run; paste one into Load dump to reproduce it.</div>
+          <div class="debug__note">Needs frozen is remembered until you switch it off, reloads included — it is kept outside the saves, not in them. The clock buttons are the same 1x/3x the speed keys use. A dump carries the systems and the last few lines of history, not the whole run; paste one into Load dump to reproduce it. The game also keeps its own dump every minute of play, with a short list of what changed since the one before — a crash can be reported without the panel ever having been open.</div>
+          <div class="debug__row">
+            <span>Kept dump</span><small>${kept?.state?.clock ? `day ${dayOf(kept.state.clock.m)} · ${ago(kept.at)}` : 'none yet — one is kept every minute of play'}</small>
+            ${kept?.state?.clock ? '<button data-dact="dumpkept">Copy kept</button><button data-dact="dumpforget">Forget</button>' : ''}
+          </div>
           ${pasteOpen ? `<div class="debug__dump">
             <div class="debug__row"><span>Load dump</span><small>replaces this run · it goes to the autosave first</small>
               <button data-dact="dumpload">Load</button><button data-dact="dumpcancel">Cancel</button></div>

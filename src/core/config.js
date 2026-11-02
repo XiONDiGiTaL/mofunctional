@@ -696,6 +696,9 @@ export const CONFIG = {
     moneyPerClick: 1000,
     // where the panel's remembered toggles live: beside the saves, never inside one
     storeKey: 'mofunctional.debug.v1',
+    // and the dump the game keeps for itself, so a crash can be reported without the panel
+    dumpKey: 'mofunctional.dump.v1',
+    keepDumpMs: 60000,            // a kept dump a minute of play
   },
 
   render: {
