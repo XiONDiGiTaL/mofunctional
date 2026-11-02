@@ -936,7 +936,7 @@ export function animateNPC(rig, dt, opts = {}) {
   const t = rig.t;
   if (rig.type === 'cat') {
     rig.tail.rotation.y = Math.sin(t * 2.2) * 0.5;
-    rig.root.position.y = Math.abs(Math.sin(t * 0.7)) * 0.01;
+    rig.root.position.y = (rig.baseY || 0) + Math.abs(Math.sin(t * 0.7)) * 0.01;
     return;
   }
   if (sleeping) {

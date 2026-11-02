@@ -127,6 +127,15 @@ export function buildApartment(g) {
   group.add(box(0.24, 0.06, 0.24, M.lamp, [0, 2.62, 0.6]));
   group.add(box(0.03, 0.1, 0.03, M.dark, [0, 2.7, 0.6]));
 
+  // the bathroom door in the east wall, and the closet: a plywood wardrobe against the west wall
+  group.add(box(0.1, 2.1, 0.9, M.door, [W / 2 - 0.08, 1.05, 1.0]));
+  group.add(box(0.06, 0.06, 0.06, M.goldDoor, [W / 2 - 0.14, 1.05, 0.65]));
+  group.add(plane(0.5, 0.16, { name: 'apbathsign', map: signTex('apBath', [{ text: 'BATHROOM', color: '#e8e2d0', size: 7 }], { w: 48, h: 12, bg: '#3a3028', border: '#8a7a5a' }), emissive: 0.3 }, [W / 2 - 0.14, 1.9, 1.0], [0, -Math.PI / 2, 0]));
+  const wardrobe = retroMaterial('apwardrobe', { map: tex('wood'), color: 0x8a6a4a });
+  group.add(box(0.55, 2.0, 1.3, wardrobe, [-W / 2 + 0.36, 1.0, 0.2]));
+  group.add(box(0.02, 1.9, 0.02, M.dark, [-W / 2 + 0.64, 1.0, 0.2]));
+  for (const dz of [-0.12, 0.12]) group.add(box(0.03, 0.14, 0.03, M.metal, [-W / 2 + 0.65, 1.1, 0.2 + dz]));
+
   // trash + bag
   group.add(box(0.45, 0.6, 0.45, M.dark, [2.9, 0.3, 2.6]));
   group.add(box(0.5, 0.35, 0.4, retroMaterial('bag', { color: 0x2a2a26 }), [-3.0, 0.18, 2.4]));
@@ -135,10 +144,11 @@ export function buildApartment(g) {
     { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
     { id: 'fridge', label: 'Open the fridge', sub: 'eat · store food for later', x: 2.7, z: -2.9, action: (gg) => showFridge(gg) },
     { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
+    { id: 'bathroom', label: 'Into the bathroom', sub: 'the toilet tank · the shower that does not work', x: 2.9, z: 1.0, radius: 0.9, action: (gg) => gg.goTo('bathroom', 'apartment') },
     { id: 'tv', label: 'Turn on the TV', sub: 'waste time productively', x: -2.6, z: 1.0, action: (gg) => tvMenu(gg) },
     { id: 'laptop', label: 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
     { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -3.0, z: 2.4, action: (gg) => stashMenu(gg) },
-    { id: 'closet', label: 'Open the closet', sub: 'what he owns · what he wears', x: -3.4, z: 1.0, action: (gg) => closetMenu(gg) },
+    { id: 'closet', label: 'Open the closet', sub: 'what he owns · what he wears', x: -2.6, z: 0.2, radius: 0.9, action: (gg) => closetMenu(gg) },
     { id: 'door', label: 'Leave the apartment', sub: 'go outside', x: 0, z: 3.9, action: (gg) => gg.goTo('street', 'apartment') },
   ];
   if (g.state.flags.cat) {
@@ -185,9 +195,10 @@ export function buildApartment(g) {
     solids: [
       solid(-2.4, -2.4, 1.3, 2.1, 0.6), solid(2.7, -3.5, 0.9, 0.85, 1.8), solid(1.1, -3.6, 2.5, 0.8, 0.9),
       solid(-0.8, -3.6, 1.0, 0.8, 0.9), solid(1.4, -0.2, 1.2, 0.9, 0.9), solid(-2.6, 1.6, 0.9, 0.7, 1.15),
-      solid(2.9, 2.6, 0.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5, 0.35),
+      solid(2.9, 2.6, 0.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5, 0.35), solid(-W / 2 + 0.36, 0.2, 0.6, 1.35, 2.0),
     ],
     spawn: { x: 0, z: 1.15, rot: Math.PI },
+    spawnFor: (from) => (from === 'bathroom' ? { x: 2.7, z: 1.0, rot: -Math.PI / 2 } : null),
     npcs,
     interactables,
     ambient: 'apartment',
@@ -1383,7 +1394,26 @@ export function buildBodega(g) {
   group.add(box(0.96, 0.06, 3.06, M.tile, [2.5, 1.03, 0.2]));
   group.add(box(0.8, 0.7, 1.2, retroMaterial('grill', { color: 0x3a3a36 }), [3.55, 0.35, -2.0]));
   group.add(box(0.7, 0.05, 1.0, retroMaterial('grilltop', { color: 0x1a1a18 }), [3.55, 0.72, -2.0]));
-  group.add(box(0.5, 0.3, 0.4, retroMaterial('lottery', { color: 0x223a5a, emissive: 0.12 }), [2.5, 1.22, 1.3]));
+  // the lottery terminal at the end of the counter: a squat blue machine with a screen, the
+  // scratch-off roll in its plastic case beside it, and the cat on top, asleep, as always
+  group.add(box(0.62, 0.42, 0.5, retroMaterial('lottery', { color: 0x223a5a, emissive: 0.12 }), [2.5, 1.27, 1.3]));
+  group.add(box(0.04, 0.24, 0.36, retroMaterial('lotteryscreen', { color: 0x6ad8ff, emissive: 0.9, unlit: true }), [2.18, 1.32, 1.3]));
+  group.add(box(0.3, 0.36, 0.5, retroMaterial('scratchcase', { color: 0xc8e0e8, opacity: 0.5, transparent: true }), [2.5, 1.24, 0.75]));
+  for (let i = 0; i < 4; i++) group.add(box(0.26, 0.06, 0.1, retroMaterial(`scratch${i}`, { color: [0xe8c41e, 0xc8281e, 0x3a8a4a, 0xe86aa8][i] }), [2.5, 1.12 + i * 0.07, 0.62 + i * 0.08]));
+  group.add(plane(1.0, 0.36, { name: 'lottosign', map: signTex('bodLotto', [{ text: 'LOTTO', color: '#ff3a6a', size: 12 }], { w: 64, h: 20, bg: '#1a0a14', border: '#ff3a6a' }), emissive: 1, unlit: true }, [2.5, 2.35, 1.3], [0, -Math.PI / 2, 0]));
+  // two aisles down the middle, stocked both sides, and the bread rack by the door
+  const shelfFace = retroMaterial('bodaisle', { map: tex('groceries'), color: 0xffffff, ambient: 0.8 });
+  const steel = retroMaterial('bodaislesteel', { color: 0x8a8e92 });
+  for (const ax of [-1.75, 0.15]) {
+    group.add(box(0.7, 1.55, 3.4, steel, [ax, 0.78, -0.85]));
+    for (const sx of [-1, 1]) group.add(plane(3.3, 1.4, shelfFace, [ax + sx * 0.355, 0.82, -0.85], [0, sx * Math.PI / 2, 0]));
+    group.add(box(0.72, 0.5, 0.04, retroMaterial('bodaislecap', { map: tex('groceries'), color: 0xffffff }), [ax, 1.0, 0.87]));
+  }
+  group.add(plane(2.0, 0.4, { name: 'bodaislesign', map: signTex('bodAisles', [{ text: 'BREAD · CEREAL · CANS · SOAP', color: '#f2f2e8', size: 7 }], { w: 128, h: 20, bg: '#2a4a8a', border: '#f2f2e8' }), emissive: 0.6, unlit: true }, [-0.8, 2.5, -0.85], [0, Math.PI / 2, 0]));
+  const rack = retroMaterial('bodbreadrack', { color: 0x7a7e84 });
+  group.add(box(1.0, 1.4, 0.45, rack, [-2.9, 0.7, 2.7]));
+  for (let r = 0; r < 3; r++) for (let i = 0; i < 4; i++) group.add(box(0.2, 0.12, 0.36, retroMaterial(`bodloaf${(r + i) % 3}`, { color: [0xc8964a, 0xe8d2a0, 0x8a5a2a][(r + i) % 3] }), [-3.25 + i * 0.23, 0.42 + r * 0.42, 2.7]));
+  group.add(plane(0.9, 0.24, { name: 'bodbreadsign', map: signTex('bodBread', [{ text: 'FRESH BREAD · DAILY', color: '#3a2a1a', size: 6 }], { w: 64, h: 16, bg: '#f2e2b8', border: '#3a2a1a' }), emissive: 0.3 }, [-2.9, 1.55, 2.47], [0, Math.PI, 0]));
   group.add(box(0.36, 0.22, 0.3, retroMaterial('register', { color: 0x2a2a28 }), [2.5, 1.17, -0.6]));
   // fluorescent strips
   for (const x of [-2, 2]) group.add(box(1.8, 0.06, 0.2, M.lamp, [x, 2.9, 0]));
@@ -1399,6 +1429,9 @@ export function buildBodega(g) {
     { id: 'bodcounter', label: 'Order from Miguel', sub: 'BEC · chopped cheese · loosies', x: 1.75, z: 0.2, action: (gg) => miguelCounter(gg) },
     { id: 'bodcooler', label: 'Open the cooler', sub: 'cold things', x: 1.9, z: -2.9, action: (gg) => openShop(gg, 'bodega') },
     { id: 'bodshelf', label: 'Browse the shelves', sub: 'shelf food', x: -2.5, z: -0.6, action: (gg) => openShop(gg, 'bodega') },
+    { id: 'bodaisle', label: 'Walk the aisle', sub: 'bread · cereal · cans · soap', x: -0.8, z: -0.4, radius: 0.9, action: (gg) => openShop(gg, 'bodega') },
+    { id: 'bodbread', label: 'The bread rack', sub: 'a loaf, a roll, a decision', x: -2.4, z: 2.0, radius: 0.9, action: (gg) => openShop(gg, 'bodega') },
+    { id: 'bodlotto', label: 'Play the lotto', sub: 'scratch-offs · the cat is asleep on the machine', x: 1.75, z: 1.3, radius: 0.8, action: (gg) => bodegaLotto(gg) },
     { id: 'bodexit', label: 'Back out to Kestrel St.', sub: '', x: 0.6, z: 3.2, radius: 1.05, action: (gg) => gg.goTo('street', 'bodega') },
   ];
 
@@ -1408,16 +1441,45 @@ export function buildBodega(g) {
     solids: [
       solid(-3.1, -0.6, 0.7, 5.6), solid(1.9, -3.6, 2.6, 0.7),
       solid(2.5, 0.2, 1.0, 3.1, 1.25), solid(3.55, -2.0, 0.8, 1.3, 0.75),
+      solid(-1.75, -0.85, 0.75, 3.45, 1.55), solid(0.15, -0.85, 0.75, 3.45, 1.55), solid(-2.9, 2.7, 1.05, 0.5, 1.4),
     ],
     // just inside the door, facing the shop, a step outside the exit's prompt
     spawn: { x: 0.6, z: 1.6, rot: Math.PI },
     npcs: [
       { kind: 'miguel', x: 3.15, z: 0.2, rot: -Math.PI / 2, talk: 'miguel' },
-      { kind: 'cat', x: -1.6, z: 1.2, rot: 0.4 },
+      // on the lottery machine, where the README says he is
+      { kind: 'cat', x: 2.5, z: 1.3, y: 1.48, rot: -Math.PI / 2 },
     ],
     interactables,
     ambient: 'street',
   };
+}
+
+/** Miguel's lottery terminal: a scratch-off from the roll, or the numbers for tonight. */
+function bodegaLotto(g) {
+  const s = g.state;
+  g.openModal({
+    kicker: 'KESTREL BODEGA · LOTTO',
+    title: 'Feeling Lucky',
+    body: 'The cat is asleep across the top of the machine with one paw over the screen. Miguel tears your ticket off the roll without moving him. "He is good luck. He has never once been good luck."',
+    choices: [
+      { label: 'A scratch-off.', sub: `${money(2)} · probably not`, disabled: s.money < 2, effect: () => {
+        if (!g.spendMoney(2, 'scratch-off')) return;
+        const r = Math.random();
+        const win = r < 0.01 ? 500 : r < 0.05 ? 20 : r < 0.2 ? 2 : 0;
+        if (win) g.earnMoney(win, 'scratch-off');
+        g.toast(win ? `$${win}! Miguel says "huh" and looks at the cat with new respect.` : 'Nothing. Silver dust on your thumb. The cat does not wake up.', win ? 'good' : 'info');
+      } },
+      { label: "Tonight's numbers.", sub: `${money(1)} · drawn at 23:00`, disabled: s.money < 1, effect: () => {
+        if (!g.spendMoney(1, 'lotto')) return;
+        const hit = Math.random() < 0.004;
+        if (hit) { g.earnMoney(150, 'lotto · four of six'); g.toast('Four of six. A hundred and fifty dollars. Miguel tapes your ticket to the register "for the luck" and pays you out of his pocket.', 'good'); }
+        else g.toast('You pick your mother\'s birthday and the last four of your old phone number. The machine prints it like a promise it does not mean.', 'info');
+      } },
+      { label: 'Scratch the cat instead.', sub: 'free · +morale', effect: () => { bump(s, 'morale', 3); g.toast('He opens one eye, decides you are acceptable, and goes back to sleep on the jackpot.', 'good'); } },
+      { label: 'Walk away from the machine.', sub: '', effect: () => {} },
+    ],
+  });
 }
 
 /* ------------------------------ HABIB'S ------------------------------ */
@@ -2040,6 +2102,9 @@ export function buildQuikStop(g) {
   group.add(box(0.12, 2.2, 1.0, M.door, [-4.38, 1.1, -2.5]));
   group.add(plane(1.0, 0.26, { name: 'qsstaff', map: signTex('signQsStaff', [{ text: 'EMPLOYEES ONLY', color: '#ffffff', size: 10 }], { w: 80, h: 18, bg: '#8a1e22' }), emissive: 0.8, unlit: true }, [-4.3, 2.5, -2.5], [0, Math.PI / 2, 0]));
   group.add(box(0.08, 0.36, 0.26, retroMaterial('qsclock', { color: 0x3a3f42, emissive: 0.1 }), [-4.38, 1.4, -1.6]));
+  // the public restroom, back right: a red door and the sign that means it is unlocked today
+  group.add(box(0.12, 2.2, 0.9, retroMaterial('qsrestroom', { color: 0x8a1e22 }), [4.38, 1.1, -2.5]));
+  group.add(plane(0.9, 0.26, { name: 'qsrr', map: signTex('signQsRR', [{ text: 'RESTROOM', color: '#ffffff', size: 10 }], { w: 80, h: 18, bg: '#2a4a8a' }), emissive: 0.8, unlit: true }, [4.3, 2.45, -2.5], [0, -Math.PI / 2, 0]));
 
   const mod = minuteOfDay(g.state.clock.m);
   const dayShift = mod >= 8 * 60 && mod < 17 * 60;
@@ -2058,6 +2123,7 @@ export function buildQuikStop(g) {
     { id: 'qscoffee', label: 'Pour a coffee', sub: `${money(shopPrice('quikstop', 'coffee'))} · +energy · drink it here`, x: 3.0, z: 0.6, action: (gg) => quikCoffee(gg) },
     { id: 'qsstaff', label: 'Staff door · time clock', sub: 'clock in, call out, talk to Dale', x: -3.3, z: -2.4, action: (gg) => storeMenu(gg, { staff: true }) },
     ...(dayShift ? [{ id: 'dale', label: 'Talk to Dale', sub: 'boss · tired', x: -3.6, z: -2.0, action: (gg) => talk(gg, 'dale') }] : []),
+    { id: 'qsrestroom', label: 'The restroom', sub: 'two stalls · one working tap', x: 3.8, z: -2.5, radius: 0.85, action: (gg) => gg.goTo('restroom', 'quikstop') },
     { id: 'qsexit', label: 'Back out to Kestrel St.', sub: '', x: 1.2, z: 3.2, radius: 1.05, action: (gg) => gg.goTo('street', 'quikstop') },
   ];
 
@@ -2071,6 +2137,7 @@ export function buildQuikStop(g) {
       solid(3.95, 0.6, 0.7, 1.6, 1.0),
     ],
     spawn: { x: 1.2, z: 1.7, rot: Math.PI },
+    spawnFor: (from) => (from === 'restroom' ? { x: 3.6, z: -2.5, rot: -Math.PI / 2 } : null),
     npcs,
     interactables,
     ambient: 'street',

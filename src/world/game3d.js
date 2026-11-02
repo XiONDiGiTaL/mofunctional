@@ -5,8 +5,10 @@ import { createMo, createAddison, createNPC, createCat, animateMo, animateAddiso
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
-import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub } from './underground.js';
+import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub, clothingMenu } from './underground.js';
 import { buildTower, buildHerRoom } from './houses.js';
+import { buildBathroom, buildRestroom } from './rooms.js';
+import { buildPawnShop, buildJays, buildReliefOffice } from './storefronts.js';
 import * as brawl from '../systems/brawl.js';
 import { worn } from '../systems/wardrobe.js';
 import { bump } from '../core/state.js';
@@ -36,7 +38,8 @@ const BUILDERS = {
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
-  pjtower: buildTower, pjroom: buildHerRoom,
+  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom,
+  pawn: buildPawnShop, jays: (g) => buildJays(g, clothingMenu), relief: buildReliefOffice,
 };
 
 export class World {
@@ -106,6 +109,7 @@ export class World {
   }
 
   clearArea() {
+    this.cutHidden = null;
     this.clearEncounter?.();
     // a chase does not follow him through a door: the old rig used to keep walking at his new
     // coordinates and could arrest him in a room the cop was never in
@@ -231,6 +235,7 @@ export class World {
       }
       const row = id === 'street' && !npc.debug && !npc.still ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
       rig.root.position.set(row && !row.away ? row.x : npc.x, npc.y || 0, row && !row.away ? row.z : npc.z);
+      rig.baseY = npc.y || 0; // on a bench, a bed, a lottery machine
       if (npc.scale) rig.root.scale.setScalar(npc.scale); // the kids
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
@@ -1509,6 +1514,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // which turned W into whatever direction the last frame happened to point, and could leave
     // him walking off one way with no stable way back. The arm's yaw is what the view is
     // pointing along anyway, and it only moves when the player (or a swing) moves it.
+    // a held direction keeps the basis it started with while the view turns round (below)
+    if (this.basisLock && (!keyed || Math.abs(mx - this.basisLock.mx) > 0.35 || Math.abs(my - this.basisLock.my) > 0.35)) this.basisLock = null;
     const basis = this.armBasis();
     const fwdX = basis.fx;
     const fwdZ = basis.fz;
@@ -1585,6 +1592,26 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
           g.audio?.sfx?.('step');
         }
       }
+    }
+
+    // Indoors, walking at the camera: the exit is usually behind the lens, the arm is pressed to
+    // that wall, and the door never comes into view. After half a second of it the view turns
+    // round to look where he is going. The held direction keeps the basis it started with until
+    // the player lets go or changes it, so the turn does not bend his path into a circle.
+    const b0 = this.area?.bounds;
+    const inRoom = b0 && !this.area?.traffic && (b0.maxX - b0.minX) * (b0.maxZ - b0.minZ) < 140;
+    if (inRoom && keyed && this.walking && !orbit) {
+      const off = Math.abs(angleDelta(this.camYaw, this.mo.root.rotation.y));
+      this.backT = off > 2.2 ? (this.backT || 0) + dt : 0;
+      if (this.backT > 0.45 && this.camTurn == null) {
+        this.camTurn = this.mo.root.rotation.y;
+        this.basisLock = { yaw: this.camYaw + (this.camSwing || 0), mx, my };
+      }
+    } else this.backT = 0;
+    if (this.camTurn != null) {
+      const d = angleDelta(this.camYaw, this.camTurn);
+      this.camYaw += d * (1 - Math.exp(-4 * dt));
+      if (Math.abs(d) < 0.04 || orbit) this.camTurn = null;
     }
 
     // the tap marker: a small ring on the floor that turns and fades as he arrives
@@ -1786,7 +1813,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const armYaw = this.camYaw + this.camSwing;
     const backX = -Math.sin(armYaw);
     const backZ = -Math.cos(armYaw);
-    const b = this.area.camBounds || this.area.bounds;
+    const b = this.camLimits();
     // in fast, out slow: a wall shortening the arm is urgent, opening back up is not, and easing
     // both ways at one rate made the camera pump in and out as he clipped past a corner
     const boomRate = room < this.camBoom ? 10 : 3.5;
@@ -1921,6 +1948,53 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   /** The arm length a place wants: the street's long lens, or most of a room's short side. */
+  /** A small room (no traffic, under 140 m²) is shot cutaway: see `camLimits` and `cutaway`. */
+  isRoom() {
+    const b = this.area?.bounds;
+    return !!b && !this.area.traffic && !this.area.camBounds && (b.maxX - b.minX) * (b.maxZ - b.minZ) < 140;
+  }
+
+  /**
+   * Where the eye may go. In a small room the arm used to stop at the wall behind him, and every
+   * doorway turned into a shot straight down onto his head. A room now lets the eye out past its
+   * own walls, a metre and a half, and `cutaway` hides whatever wall is then between it and him.
+   */
+  camLimits() {
+    const b = this.area.camBounds || this.area.bounds;
+    if (!this.isRoom()) return b;
+    const m = 1.5;
+    return { minX: b.minX - m, maxX: b.maxX + m, minZ: b.minZ - m, maxZ: b.maxZ + m };
+  }
+
+  /** Hide the walls (and anything else that big) standing between the lens and Mo this frame. */
+  cutaway() {
+    const was = this.cutHidden || new Set();
+    const now = new Set();
+    if (this.mode === 'play' && this.areaGroup && this.isRoom()) {
+      const head = this.cutHead || (this.cutHead = new THREE.Vector3());
+      head.set(this.mo.root.position.x, 1.15, this.mo.root.position.z);
+      const dir = (this.cutDir || (this.cutDir = new THREE.Vector3())).subVectors(head, this.camera.position);
+      const dist = dir.length();
+      if (dist > 0.5) {
+        dir.normalize();
+        const ray = this.cutRay || (this.cutRay = new THREE.Raycaster());
+        ray.set(this.camera.position, dir);
+        ray.far = dist - 0.3;
+        const size = this.cutSize || (this.cutSize = new THREE.Vector3());
+        for (const hit of ray.intersectObject(this.areaGroup, true)) {
+          const o = hit.object;
+          if (!o.isMesh) continue;
+          if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+          o.geometry.boundingBox.getSize(size);
+          if (Math.max(size.x, size.y, size.z) >= 1.4) now.add(o);
+        }
+      }
+    }
+    for (const o of was) if (!now.has(o)) o.visible = true;
+    for (const o of now) o.visible = false;
+    this.cutHidden = now;
+  }
+
   roomBoom(interior) {
     return armLength(interior, this.area?.bounds);
   }
@@ -1928,7 +2002,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   /** Longest arm, in metres, that fits along `yaw` without leaving the room or hitting something. */
   armRoom(yaw, boomMax, clearance) {
     if (!this.area) return boomMax;
-    const b = this.area.camBounds || this.area.bounds;
+    const b = this.camLimits();
     const bx = -Math.sin(yaw);
     const bz = -Math.cos(yaw);
     // March out from Mo and stop at the first thing in the way, like a ray. Searching inward from
@@ -1948,7 +2022,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
   /** Screen-relative axes in world space from the camera arm's yaw: stable at any boom length. */
   armBasis() {
-    const yaw = (this.camYaw || 0) + (this.camSwing || 0);
+    const yaw = this.basisLock ? this.basisLock.yaw : (this.camYaw || 0) + (this.camSwing || 0);
     const c = Math.cos(yaw);
     const sn = Math.sin(yaw);
     return { rx: -c, rz: sn, fx: sn, fz: c };
@@ -2123,6 +2197,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   render() {
+    this.cutaway();
     this.renderer.render(this.scene, this.camera);
   }
 }

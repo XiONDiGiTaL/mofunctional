@@ -646,6 +646,7 @@ export function buildDowntown(g) {
   ], { sidewalkTex: 'sidewalk' });
   door(-11, "MR. JAY'S", 'URBAN WEAR · SNEAKERS · HATS · WE GOT YOUR SIZE', 0x2a2a30, '#ffd23a', '#1a1a1e');
   group.add(box(2.8, 1.8, 0.06, retroMaterial('dt_jaywin', { color: 0xfff0c8, emissive: 0.55, unlit: true }), [-8.6, 1.4, -6.33]));
+  door(-3.5, 'CIVIC RELIEF PROGRAM', 'FOOD CREDIT · RECERTIFICATION · TAKE A NUMBER', 0x4a5a6a, '#ffffff', '#2a3a5a');
   door(4.0, 'READY HANDS', 'DAY LABOR · SIGN IN BY 10 · CASH SAME DAY', 0x3a4a5a, '#9ad0ff', '#14202a');
   // a hot dog cart under a striped umbrella
   group.add(box(1.4, 0.9, 0.7, M.silver, [10, 0.6, -2.0]));
@@ -664,7 +665,10 @@ export function buildDowntown(g) {
     homeTrain(0.4, -2.4),
     { id: 'dt_jays', label: "Mr. Jay's", sub: 'clothes, sneakers, hats', x: -11, z: -5.2, radius: 1.5,
       unavailable: (gg) => { const m = minuteOfDay(gg.state.clock.m); return m < 10 * 60 || m > 21 * 60 ? 'closed · opens 10:00' : null; },
-      action: (gg) => clothingMenu(gg) },
+      action: (gg) => gg.goTo('jays', 'downtown') },
+    { id: 'dt_relief', label: 'Civic Relief Program', sub: 'food credit · recertify in person · take a number', x: -3.5, z: -5.2, radius: 1.5,
+      unavailable: (gg) => { const m = minuteOfDay(gg.state.clock.m); return m < 8 * 60 || m > 17 * 60 ? 'closed · 08:00 to 17:00' : null; },
+      action: (gg) => gg.goTo('relief', 'downtown') },
     { id: 'dt_labor', label: 'Ready Hands day labor', sub: 'sign in, get sent somewhere, get paid', x: 4.0, z: -5.2, radius: 1.5,
       action: (gg) => gg.openModal({
         kicker: 'DOWNTOWN · READY HANDS', title: 'Day Labor',
@@ -685,14 +689,15 @@ export function buildDowntown(g) {
   return {
     group, title: 'Fulton St · Downtown',
     bounds: farBounds, camBounds: farCam, traffic: farTraffic, solids,
-    spawn: { x: 0.8, z: -2.4, rot: Math.PI / 2 }, spawnFor: () => ({ x: 0.8, z: -2.4, rot: Math.PI / 2 }),
+    spawn: { x: 0.8, z: -2.4, rot: Math.PI / 2 },
+    spawnFor: (from) => (from === 'jays' ? { x: -11, z: -4.4, rot: Math.PI } : from === 'relief' ? { x: -3.5, z: -4.4, rot: Math.PI } : { x: 0.8, z: -2.4, rot: Math.PI / 2 }),
     npcs, interactables, ambient: 'street',
     enterToast: 'Downtown. Every store is playing a different song at the same volume, and all of them are winning.',
   };
 }
 
 /** Mr. Jay's: whole outfits off the rack; what he buys waits in the closet at home. */
-function clothingMenu(g) {
+export function clothingMenu(g) {
   const s = g.state;
   const w = wardrobe.wardrobeState(s);
   const forSale = (CONFIG.outfits || []).filter((o) => o.price > 0);
