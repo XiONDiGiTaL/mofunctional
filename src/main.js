@@ -31,7 +31,7 @@ import * as life from './systems/life.js';
 import { migrate } from './systems/migrate.js';
 import * as romance from './systems/romance.js';
 import * as clinic from './systems/clinic.js';
-import { installDebugMenu } from './ui/debug.js';
+import { installDebugMenu, applyDebugPrefs } from './ui/debug.js';
 import { installTouch } from './ui/touch.js';
 import { showGuide } from './ui/guide.js';
 
@@ -216,6 +216,8 @@ class Game {
   startNew() {
     this.state = createState();
     this.state.flags.recovering = false;
+    // the panel's own settings are not part of the run: they follow the tester, not the slot
+    applyDebugPrefs(this);
     this.world.collapse?.reset?.();
     this.fadeIn();
     this.applyPresentation();
@@ -268,6 +270,7 @@ class Game {
       high: { ...fresh.high, ...(data.high || {}) },
     };
     this.state = merged;
+    applyDebugPrefs(this);
     this.applyPresentation();
     this.mode = 'play';
     this.paused = false;

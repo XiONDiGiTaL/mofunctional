@@ -694,6 +694,8 @@ export const CONFIG = {
   debug: {
     password: 'Moses',
     moneyPerClick: 1000,
+    // where the panel's remembered toggles live: beside the saves, never inside one
+    storeKey: 'mofunctional.debug.v1',
   },
 
   render: {

@@ -711,6 +711,23 @@
 .debug__row select { max-width: 190px; }
 .debug__num { width: 64px; font: inherit; background: #0d140c; color: #d8f0c8; border: 1px solid #3a5a2a; padding: 2px 4px; }
 .debug__note { color: #7f9470; font-size: 10.5px; line-height: 1.5; }
+/* the state dump: a plain selectable block, so it is copyable even when the clipboard API says no */
+.debug__dump { margin-top: 6px; }
+.debug__dump textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  background: #0b1109;
+  border: 1px solid #2f4026;
+  color: #a9c39a;
+  font: inherit;
+  font-size: 10.5px;
+  line-height: 1.4;
+  padding: 5px 6px;
+  white-space: pre;
+  overflow: auto;
+}
+.debug__dump textarea:focus { border-color: #9bbc0f; outline: none; }
 @media (max-width: 700px) {
   .debug { padding: 1vh 1vw; }
   .debug__grid { grid-template-columns: 1fr; }

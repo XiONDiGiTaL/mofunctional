@@ -24,6 +24,30 @@ import * as rides from '../systems/rides.js';
 import { useSubstance } from '../systems/needs.js';
 import { STRANGERS } from '../core/strangers.js';
 
+/* ------------------------------------------------------------------ prefs */
+
+/**
+ * The freeze cheat is a testing preference, not part of the run, so it does not ride in a save
+ * slot: it sits in one key of its own beside the slots and comes back on the next boot. That way
+ * a long test keeps its settings across a reload without putting "needs frozen" into a save the
+ * player might later load to actually play. Clicking it off writes `noDrain: false` straight back.
+ */
+const PREFS_KEY = CONFIG.debug.storeKey;
+
+function readPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}; } catch { return {}; }
+}
+
+function writePrefs(g) {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ noDrain: !!g.debugNoDrain })); } catch { /* private window: memory only */ }
+}
+
+/** Put the remembered testing toggles back on `g`. Called at boot and again after a save loads. */
+export function applyDebugPrefs(g) {
+  const prefs = readPrefs();
+  if (typeof prefs.noDrain === 'boolean') g.debugNoDrain = prefs.noDrain;
+}
+
 const STATS = [
   ['energy', 'Energy'], ['hunger', 'Food'], ['hygiene', 'Hygiene'],
   ['stress', 'Stress'], ['morale', 'Morale'], ['addiction', 'Dependence'],
@@ -44,9 +68,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 export function installDebugMenu(g) {
   if (g.__debugInstalled) return;
   g.__debugInstalled = true;
+  applyDebugPrefs(g);
   const ui = document.getElementById('ui') || document.body;
   let panel = null;
   let prompt = null;
+  let dumpText = '';
 
   const close = () => {
     if (panel) { panel.remove(); panel = null; }
@@ -217,6 +243,7 @@ export function installDebugMenu(g) {
       case 'nodrain':
         // needs.js reads this before it applies any rate; the clock, events and rides keep running
         g.debugNoDrain = !g.debugNoDrain;
+        writePrefs(g);
         g.toast(g.debugNoDrain ? 'Debug: needs frozen. The clock still runs.' : 'Debug: needs running again.', 'info');
         break;
       case 'fastclock':
@@ -258,6 +285,15 @@ export function installDebugMenu(g) {
       }
       case 'save1':
         g.saveSlot(1);
+        break;
+      case 'dump':
+        doDump();
+        break;
+      case 'dumpcopy':
+        copyDump();
+        break;
+      case 'dumpclear':
+        dumpText = '';
         break;
 
       /* ---- relationships ---- */
@@ -354,6 +390,40 @@ export function installDebugMenu(g) {
     g.hud?.update?.();
   }
 
+  /** The whole run as text, for pasting into a bug report. Not a save: a picture of one. */
+  function doDump() {
+    const s = g.state;
+    dumpText = JSON.stringify({
+      dump: 'mo:functional state',
+      version: CONFIG.meta.version,
+      at: new Date().toISOString(),
+      runtime: {
+        mode: g.mode,
+        paused: !!g.paused,
+        speed: s.settings?.speed ?? 1,
+        place: s.savedWhere || null,
+        needsFrozen: !!g.debugNoDrain,
+        slot: g.lastSlot ?? null,
+        overlays: [...(g.overlays || [])],
+      },
+      state: s,
+    }, null, 2);
+    copyDump();
+  }
+
+  async function copyDump() {
+    if (!dumpText) return;
+    try {
+      await navigator.clipboard.writeText(dumpText);
+      g.toast(`Debug: state copied (${dumpText.length} chars).`, 'good');
+    } catch {
+      // a browser that refuses the write, or the page on plain http: the text is, either way,
+      // sitting in the panel below, selected, so ctrl+c still gets it out
+      g.toast('Debug: clipboard blocked — the dump is selected below, ctrl+c.', 'bad');
+      setTimeout(() => panel?.querySelector('.debug__dump textarea')?.select(), 0);
+    }
+  }
+
   function onClick(e) {
     const btn = e.target.closest('[data-dact]');
     if (!btn) return;
@@ -442,8 +512,14 @@ export function installDebugMenu(g) {
             <button data-dact="tutorial">Skip tutorial</button>
             <button data-dact="allitems">All substances &times;3</button>
             <button data-dact="save1">Save slot 1</button>
+            <button data-dact="dump">State dump</button>
           </div>
-          <div class="debug__note">Needs frozen is memory only and clears on reload. The clock buttons are the same 1x/3x the speed keys use.</div>
+          <div class="debug__note">Needs frozen is remembered until you switch it off, reloads included — it is kept outside the saves, not in them. The clock buttons are the same 1x/3x the speed keys use.</div>
+          ${dumpText ? `<div class="debug__dump">
+            <div class="debug__row"><span>State dump</span><small>${dumpText.length} chars</small>
+              <button data-dact="dumpcopy">Copy again</button><button data-dact="dumpclear">Hide</button></div>
+            <textarea readonly spellcheck="false" rows="6">${esc(dumpText)}</textarea>
+          </div>` : ''}
 
           <h4>Testing</h4>
           <div class="debug__row"><button data-dact="clinicrecover">Clinic recovery</button><button data-dact="clinicrecover">Test clinic</button><button data-dact="phone">Phone</button><button data-dact="summary">Daily report</button></div>
