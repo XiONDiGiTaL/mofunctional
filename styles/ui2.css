@@ -1056,3 +1056,36 @@ button.relrow:hover { color: #ffd24a; }
   .touch .hud__prompt { bottom: calc(150px + env(safe-area-inset-bottom)); }
   .touch .feed { display: none; }
 }
+
+/* ------------------------------------------------------------------ the home screen on one page */
+.mohome { gap: 10px; }
+.mohome__time { font-size: 38px; }
+.mohome__widgets .widget { min-height: 58px; padding: 8px 10px; border-radius: 18px; }
+.mohome .notifs .notif small { display: none; }
+.mohome .notifs .notif { padding: 5px 9px; }
+.mohome__grid--all { grid-template-columns: repeat(5, 1fr); gap: 11px 2px; margin-top: 0; }
+.mohome__grid--all .appicon__tile { width: 44px; height: 44px; border-radius: 13px; }
+.mohome__grid--all .appicon__tile svg { width: 24px; height: 24px; }
+.mohome__grid--all .appicon__name { font-size: 8.5px; max-width: 58px; overflow: hidden; text-overflow: ellipsis; }
+.mohome__grid--all .appicon__bid { font-size: 15px; }
+.svcavatar__initials { font: 800 11px/1 var(--ui); color: #fff; letter-spacing: .02em; }
+
+/* ------------------------------------------------------------------ Phone: contacts and keypad */
+.contacts { display: flex; flex-direction: column; gap: 6px; padding: 6px 2px 14px; }
+.contact { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,.06); border: 0; color: #fff; text-align: left; cursor: pointer; }
+.contact:hover { background: rgba(255,255,255,.12); }
+.contact__face { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; display: grid; place-items: center; }
+.contact__face.svcavatar { width: 36px; height: 36px; }
+.contact__face--plain { background: #3a4a42; font: 700 14px var(--ui); }
+.contact__who { flex: 1; display: flex; flex-direction: column; }
+.contact__who b { font: 600 13px var(--ui); }
+.contact__who small { font: 10px var(--ui); color: rgba(255,255,255,.6); }
+.contact__call { color: #5bf27c; font-size: 16px; }
+.dialer { padding: 10px 6px; }
+.dialer__num { text-align: center; font: 600 24px var(--display); letter-spacing: .08em; min-height: 34px; margin-bottom: 10px; }
+.dialer__pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; justify-items: center; }
+.dialer__key { width: 58px; height: 58px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font: 600 22px var(--ui); cursor: pointer; }
+.dialer__key:active { background: rgba(255,255,255,.3); }
+.dialer__row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.dialer__call { width: 92px; height: 44px; border-radius: 22px; border: 0; background: #2fc45a; color: #fff; font: 700 13px var(--ui); letter-spacing: .1em; cursor: pointer; }
+.dialer__call:disabled { opacity: .4; }

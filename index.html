@@ -6,7 +6,7 @@
 <title>MO: FUNCTIONAL</title>
 <meta name="description" content="MO: FUNCTIONAL — a 90s-era dark comedy life-management simulation. Keep the job. Keep the apartment. Keep it together." />
 <link rel="stylesheet" href="styles/main.css?v=09ebc8e307" />
-<link rel="stylesheet" href="styles/ui2.css?v=df9ddcb5cc" />
+<link rel="stylesheet" href="styles/ui2.css?v=9dc02363a0" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23090c0a'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='18' fill='%23ffd24a' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
@@ -27,7 +27,7 @@
   {
    "imports": {
     "./src/core/audio.js": "./src/core/audio.js?v=bafabaa11d",
-    "./src/core/config.js": "./src/core/config.js?v=fe4d01872f",
+    "./src/core/config.js": "./src/core/config.js?v=8a0b62431b",
     "./src/core/input.js": "./src/core/input.js?v=1ec4cab928",
     "./src/core/save.js": "./src/core/save.js?v=64b9780924",
     "./src/core/state.js": "./src/core/state.js?v=8b70449e56",
@@ -37,7 +37,7 @@
     "./src/i18n/de.js": "./src/i18n/de.js?v=6f4353133c",
     "./src/i18n/es.js": "./src/i18n/es.js?v=4dd3654361",
     "./src/i18n/i18n.js": "./src/i18n/i18n.js?v=172085e238",
-    "./src/main.js": "./src/main.js?v=844a2ee3b1",
+    "./src/main.js": "./src/main.js?v=2735887415",
     "./src/render/faces.js": "./src/render/faces.js?v=b4609bf38f",
     "./src/render/heads.js": "./src/render/heads.js?v=ffbec71d43",
     "./src/render/mo_face_data.js": "./src/render/mo_face_data.js?v=883ca2e806",
@@ -48,10 +48,12 @@
     "./src/render/textures.js": "./src/render/textures.js?v=b84ed45684",
     "./src/systems/block.js": "./src/systems/block.js?v=ae8fbf9012",
     "./src/systems/brawl.js": "./src/systems/brawl.js?v=48e39fa810",
+    "./src/systems/calls.js": "./src/systems/calls.js?v=5e2e9cd182",
     "./src/systems/casino.js": "./src/systems/casino.js?v=c90c11dfd4",
     "./src/systems/clinic.js": "./src/systems/clinic.js?v=b607ebebd3",
     "./src/systems/dating.js": "./src/systems/dating.js?v=b54e8ead13",
     "./src/systems/dealer.js": "./src/systems/dealer.js?v=30edfb81f2",
+    "./src/systems/delivery.js": "./src/systems/delivery.js?v=8c997e6989",
     "./src/systems/dialogue.js": "./src/systems/dialogue.js?v=57e93d2d6b",
     "./src/systems/economy.js": "./src/systems/economy.js?v=5e89cc7971",
     "./src/systems/endings.js": "./src/systems/endings.js?v=ab68e785aa",
@@ -78,7 +80,7 @@
     "./src/systems/soundtrack.js": "./src/systems/soundtrack.js?v=ae6c04dd7c",
     "./src/systems/street.js": "./src/systems/street.js?v=7f35e4ed44",
     "./src/systems/wardrobe.js": "./src/systems/wardrobe.js?v=7196543ac1",
-    "./src/ui/apps.js": "./src/ui/apps.js?v=3b32542aa2",
+    "./src/ui/apps.js": "./src/ui/apps.js?v=ceb7ef0e0b",
     "./src/ui/debug.js": "./src/ui/debug.js?v=28de0767a4",
     "./src/ui/feed.js": "./src/ui/feed.js?v=9527d0e795",
     "./src/ui/feedart.js": "./src/ui/feedart.js?v=a86f6589bd",
@@ -94,7 +96,7 @@
     "./src/ui/nav.js": "./src/ui/nav.js?v=7df4cb5da1",
     "./src/ui/notify.js": "./src/ui/notify.js?v=664fdbd807",
     "./src/ui/options.js": "./src/ui/options.js?v=b42a542213",
-    "./src/ui/phone.js": "./src/ui/phone.js?v=18bd460ce5",
+    "./src/ui/phone.js": "./src/ui/phone.js?v=2bb4cf472a",
     "./src/ui/shopmenu.js": "./src/ui/shopmenu.js?v=4fd9d8a5cb",
     "./src/ui/sites.js": "./src/ui/sites.js?v=7b108f108e",
     "./src/ui/themes.js": "./src/ui/themes.js?v=5774ba711e",
@@ -106,10 +108,11 @@
     "./src/world/areas.js": "./src/world/areas.js?v=1930aeaee9",
     "./src/world/cameraLimits.js": "./src/world/cameraLimits.js?v=5782992667",
     "./src/world/characters.js": "./src/world/characters.js?v=c4502dba4e",
+    "./src/world/courier.js": "./src/world/courier.js?v=1784fc6f54",
     "./src/world/district.js": "./src/world/district.js?v=4d25c157f0",
     "./src/world/eating.js": "./src/world/eating.js?v=65c466eb12",
     "./src/world/encounters.js": "./src/world/encounters.js?v=7da01be8b8",
-    "./src/world/game3d.js": "./src/world/game3d.js?v=ca82fbec14",
+    "./src/world/game3d.js": "./src/world/game3d.js?v=9f404d1a68",
     "./src/world/handoff.js": "./src/world/handoff.js?v=a0a796d73e",
     "./src/world/hours.js": "./src/world/hours.js?v=cbb4faf1b4",
     "./src/world/houses.js": "./src/world/houses.js?v=b778f38b11",
@@ -120,7 +123,7 @@
     "./src/world/rooms.js": "./src/world/rooms.js?v=cf6948ec67",
     "./src/world/schedules.js": "./src/world/schedules.js?v=94039c6db5",
     "./src/world/shops.js": "./src/world/shops.js?v=b5d9e27bea",
-    "./src/world/storefronts.js": "./src/world/storefronts.js?v=a27e224d23",
+    "./src/world/storefronts.js": "./src/world/storefronts.js?v=d515785142",
     "./src/world/streetlife.js": "./src/world/streetlife.js?v=6d06ebdf36",
     "./src/world/title.js": "./src/world/title.js?v=a8af59031f",
     "./src/world/traffic.js": "./src/world/traffic.js?v=44d38e4ec9",
@@ -132,6 +135,6 @@
   </script>
   <!-- stamp:end -->
   <script src="assets/assets.js?v=2c1650952f"></script>
-  <script type="module" src="src/main.js?v=844a2ee3b1"></script>
+  <script type="module" src="src/main.js?v=2735887415"></script>
 </body>
 </html>

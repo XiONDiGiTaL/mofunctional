@@ -28,6 +28,7 @@ import * as relations from '../systems/relations.js';
 import { slotLine, slotInfo as autoInfo } from '../core/save.js';
 import * as sms from '../systems/sms.js';
 import * as fans from '../systems/fans.js';
+import * as calls from '../systems/calls.js';
 
 /** One thread per contact: "RAE", "RAE VELL" and "RAE VELL (LANDLORD)" are the same person. */
 const threadKeyOf = (m) => String(sms.identityFor(m.from).name || m.from || '').toUpperCase();
@@ -266,8 +267,7 @@ export class Phone {
         </div>
       </div>
       ${this.notifyCenter()}
-      <div class="mohome__tabs">${APP_SHELVES.map((sh) => `<button class="mohome__tab${sh.id === this.homeTab ? ' is-on' : ''}" data-act="hometab" data-arg="${sh.id}">${sh.name}</button>`).join('')}</div>
-      <div class="mohome__grid">${(APP_SHELVES.find((x) => x.id === this.homeTab) || APP_SHELVES[0]).apps.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
+      <div class="mohome__grid mohome__grid--all">${APP_SHELVES[0].apps.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
       <div class="mohome__signal">${s.flags.phoneLate ? 'Shale Mobile · signal degraded (bill overdue)' : 'Shale Mobile · weak but honest'}</div>
       <div class="mohome__dock">${DOCK.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0, label: false })).join('')}</div>
     </div>`;
@@ -293,6 +293,39 @@ export class Phone {
     if (rent.owedCycles > 0) return `Rent overdue`;
     if (rent.daysLeft <= 3) return `Rent in ${rent.daysLeft}d`;
     return 'Nothing today';
+  }
+
+  /* ------------------------------ PHONE: contacts and the keypad ------------------------------ */
+
+  callView() {
+    const s = this.g.state;
+    const tab = this.callTab || 'contacts';
+    const tabBtn = (id, label) => `<button class="feedtab${tab === id ? ' is-on' : ''}" data-act="calltab" data-arg="${id}">${label}</button>`;
+    let body;
+    if (tab === 'keypad') {
+      const n = this.dialed || '';
+      const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
+      body = `<div class="dialer">
+        <div class="dialer__num">${n ? T(n) : '<span class="mono-dim">enter a number</span>'}</div>
+        <div class="dialer__pad">${keys.map((k) => `<button class="dialer__key" data-act="dialkey" data-arg="${k}">${k}</button>`).join('')}</div>
+        <div class="dialer__row">
+          <button class="btn btn--sm" data-act="dialback">⌫</button>
+          <button class="dialer__call" data-act="dialcall" ${n ? '' : 'disabled'}>CALL</button>
+          <button class="btn btn--sm" data-act="dialclear">CLEAR</button>
+        </div>
+        <div class="tiny mono-dim" style="text-align:center;margin-top:8px">Some numbers pick up. Some numbers should not.</div>
+      </div>`;
+    } else {
+      body = `<div class="contacts">${calls.contacts(s).map((c) => `
+        <button class="contact" data-act="dial" data-arg="${c.id}">
+          ${c.service ? serviceAvatar(c.service, 'contact__face') || `<span class="contact__face contact__face--plain">${T(c.name.slice(0, 1))}</span>` : `<img class="contact__face" src="${portraitURL(c.kind, 'content')}" alt="" />`}
+          <span class="contact__who"><b>${T(c.name)}</b><small>${T(c.sub)}</small></span>
+          <span class="contact__call">☎</span>
+        </button>`).join('')}</div>`;
+    }
+    return `${this.header('Phone', tab === 'keypad' ? 'KEYPAD' : 'CONTACTS')}
+      <div class="feedtabs">${tabBtn('contacts', 'CONTACTS')}${tabBtn('keypad', 'KEYPAD')}</div>
+      ${body}</div>`;
   }
 
   /* ------------------------------ BANK ------------------------------ */
@@ -1304,6 +1337,12 @@ export class Phone {
     return {
       ...siteActions(g, s),
       go(arg) { this.app = arg; this.msgId = null; },
+      calltab(arg) { this.callTab = arg; },
+      dial(arg) { this.close(); calls.call(g, arg); },
+      dialkey(arg) { this.dialed = ((this.dialed || '') + arg).slice(0, 14); g.audio?.sfx?.('ui'); },
+      dialback() { this.dialed = (this.dialed || '').slice(0, -1); },
+      dialclear() { this.dialed = ''; },
+      dialcall() { const n = this.dialed; this.dialed = ''; this.close(); calls.dialNumber(g, n); },
       pay(arg) { g.payBill(arg); },
       work() { if (g.world?.areaId !== 'street') { g.toast('You have to be at the store to clock in.', 'info'); return; } const ok = workShift(g); if (ok) this.close(); },
       callout() { const ok = callOut(g); if (ok) this.close(); },
@@ -1548,6 +1587,7 @@ export class Phone {
       pantry: this.pantryView,
       messages: this.messagesView,
       inventory: this.inventoryView,
+      call: this.callView,
       bills: this.homeBillsView,
       calendar: this.calendarView,
       social: this.socialView,

@@ -8,6 +8,7 @@ import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundrom
 import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub, clothingMenu } from './underground.js';
 import { buildTower, buildHerRoom } from './houses.js';
 import { buildBathroom, buildRestroom } from './rooms.js';
+import { Courier } from './courier.js';
 import { buildPawnShop, buildJays, buildReliefOffice } from './storefronts.js';
 import * as brawl from '../systems/brawl.js';
 import { worn } from '../systems/wardrobe.js';
@@ -110,6 +111,8 @@ export class World {
 
   clearArea() {
     this.cutHidden = null;
+    this.courier?.remove();
+    if (this.hang) { this.hang.rig.root.parent?.remove(this.hang.rig.root); this.hang = null; }
     this.clearEncounter?.();
     // a chase does not follow him through a door: the old rig used to keep walking at his new
     // coordinates and could arrest him in a room the cop was never in
@@ -775,6 +778,18 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       g.toast('You swing at the air. The air takes it personally and does nothing.', 'info');
       return;
     }
+    // a cat (Chairman, the bodega's) has no arms to put up and no fight to give: it bolts, and it
+    // remembers. A cat used to go through the human path, whose guard pose reached for limbs a
+    // cat does not have and threw every frame, which stopped the game dead.
+    if (rig.type === 'cat') {
+      this.punchT = 0;
+      bump(g.state, 'morale', -8);
+      bump(g.state, 'stress', 4);
+      g.audio?.sfx?.('deny');
+      g.toast(pick(['The cat is gone before your hand gets there, and it gives you a look from under the fridge that will be with you for a while.', 'A hiss, a blur, and the cat is on top of the tallest thing in the room, judging you. Correctly.', 'You miss. The cat does not. Three red lines across your wrist and a lesson.']), 'bad');
+      rig.scaredT = 4;
+      return;
+    }
     const def = rig.npcDef || (rig === this.thug ? { kind: 'thug', tough: true, label: 'the man' } : { kind: 'civilian' });
     // health is per body: two different civilians used to share one pool, so the second one
     // dropped to the first one's leftovers and went down in a single punch
@@ -902,6 +917,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
   /** Hands up, then their swing, then hands up again. */
   brawlPose(rig, dt) {
+    if (!rig.armL) return; // cats and other limbless rigs have no pose to take
     if (rig.swingDelay > 0) {
       rig.swingDelay = Math.max(0, rig.swingDelay - dt);
       if (rig.swingDelay === 0) rig.swingT = 0.34;
@@ -1655,6 +1671,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.dance?.update(dt);
     this.dealerWalker?.sync(g);
     this.dealerWalker?.update(dt);
+    if (!this.courier) this.courier = new Courier(this);
+    this.courier.sync(g);
+    this.updateHang(dt, g);
     this.rideCar?.sync(g);
     this.rideCar?.update(dt, g);
     this.updateEncounter(dt, g);
@@ -1948,6 +1967,44 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   /** The arm length a place wants: the street's long lens, or most of a room's short side. */
+  /**
+   * Kev and Mo on a park bench passing a joint: both seated, Mo takes his drags, Kev holds his
+   * between turns, and after a while `done` takes over (the fade, the hours, the walk home).
+   */
+  kevHang(g, done) {
+    if (this.areaId !== 'park') { done?.(); return; }
+    const seat = { x: -4.4, z: 1.8, rot: 0.2 };
+    this.sit(seat);
+    const rig = createNPC('kev');
+    rig.root.position.set(seat.x + Math.cos(0.2) * 0.75, 0, seat.z - Math.sin(0.2) * 0.75);
+    rig.root.rotation.y = 0.2;
+    rig.npcDef = { kind: 'kev', act: 'smoke' };
+    this.root.add(rig.root);
+    // the park's own Kev, at the chess table, is this Kev: one of him at a time
+    for (const r of this.npcRigs) if (r.npcDef?.kind === 'kev') r.root.visible = false;
+    this.hang = { rig, t: 0, drags: 0, done };
+  }
+
+  updateHang(dt, g) {
+    const h = this.hang;
+    if (!h) return;
+    h.t += dt;
+    animateNPC(h.rig, dt, { sitting: true });
+    if (h.drags % 2 === 1) applyAct(h.rig, dt, this.streetLife);
+    // Mo's turn, then Kev's, three times round
+    if (!this.eating?.active && h.t > 1 + h.drags * 4.5 && h.drags < 6) {
+      if (h.drags % 2 === 0) this.playEat('loosies', (n) => g.audio?.sfx?.(n));
+      h.drags += 1;
+    }
+    if (h.drags >= 6 && !this.eating?.active && h.t > 28) {
+      const done = h.done;
+      h.rig.root.parent?.remove(h.rig.root);
+      this.hang = null;
+      this.standUp();
+      done?.();
+    }
+  }
+
   /** A small room (no traffic, under 140 m²) is shot cutaway: see `camLimits` and `cutaway`. */
   isRoom() {
     const b = this.area?.bounds;

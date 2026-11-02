@@ -10,6 +10,10 @@ export const APPS = {
     name: 'Txtr', tag: 'read receipts are a cry for help', a: '#5bf27c', b: '#13a83d',
     icon: svg('<path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 20 17H10l-4.5 3.5V17H4A1.5 1.5 0 0 1 2.5 15.5V7A1.5 1.5 0 0 1 4 5.5z"/><path d="M7 10.5h.01M12 10.5h.01M17 10.5h.01" stroke-width="2.6"/>'),
   },
+  call: {
+    name: 'Phone', tag: 'contacts · keypad · somebody might pick up', a: '#5bf27c', b: '#0e8a3a',
+    icon: svg('<path d="M6.5 3.5h3l1.5 4.5-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z"/>'),
+  },
   bank: {
     name: 'Shale Pay', tag: 'your money, briefly', a: '#2bd2c4', b: '#0d3550',
     icon: svg('<rect x="2.5" y="5.5" width="19" height="13" rx="2.2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/>'),
@@ -131,18 +135,49 @@ const SERVICES = {
     a: '#8fd0e0', b: '#26424e',
     icon: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 7.5v9M7.5 12h9"/>'),
   },
+  'KINGS COUNTY BILLING': {
+    a: '#e8e2d0', b: '#5a5446',
+    icon: svg('<path d="M6 2.5h9l4 4v15H6z"/><path d="M15 2.5v4h4"/><path d="M9 11h7M9 14.5h7M9 18h4"/>'),
+  },
+  'HARDLUCK BET': {
+    a: '#ff5a6a', b: '#5a0a1a',
+    icon: svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 8.5h.01M15.5 15.5h.01M12 12h.01M15.5 8.5h.01M8.5 15.5h.01" stroke-width="2.6"/>'),
+  },
+  'STEWARDSHIP OFFICE': 'fellowship',
+  'KESTREL DISPATCH': {
+    a: '#d8d0b8', b: '#3a3428',
+    icon: svg('<rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M7 8.5h10M7 12h10M7 15.5h6"/>'),
+  },
+  'TRADEHARDER': 'invest',
+  'NEXTSTOOP': 'block',
+  'LINKEDOUT': 'jobs',
+  'QUIK-STOP #14': {
+    a: '#4ac86a', b: '#1a5a2a',
+    icon: svg('<path d="M4 9.5 5.5 4.5h13L20 9.5"/><path d="M5 9.5v10h14v-10"/><path d="M10 19.5v-5h4v5"/>'),
+  },
   'KINGS COUNTY HOSPITAL': {
     a: '#c8d8e8', b: '#2d4258',
     icon: svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 7.5v9M7.5 12h9"/>'),
   },
 };
 
+// people who happen to text in capitals keep their faces
+const PEOPLE_CAPS = new Set(['MO', 'MOM', 'NIA', 'DALE', 'KEV', 'DEX', 'ROLO', 'RAE', 'GUS', 'HABIB', 'MIGUEL', 'ADDISON', 'ADDISON OCTAVIUS', 'RAE VELL', 'SQUEAK', 'STEPHANIE', 'MELANIE', 'DIANA', 'UNKNOWN']);
 const norm = (name = '') => String(name).toUpperCase().replace(/\(.*?\)/g, '').trim();
 
 /** The brand for a sender, or null when it is a person. */
 export function serviceFor(name) {
-  const hit = SERVICES[norm(name)];
-  if (!hit) return null;
+  const key = norm(name);
+  // a company signs its texts in capitals; one with no brand of its own gets a plain badge
+  // with its initials, not the face of whoever the name table falls back to (which was Mo)
+  const hit = SERVICES[key] || SERVICES[key.split(/ [·—-] /)[0]];
+  if (!hit) {
+    if (/^[A-Z0-9 #&'.·—-]{4,}$/.test(key) && /[A-Z]{3}/.test(key) && !PEOPLE_CAPS.has(key)) {
+      const initials = key.replace(/[^A-Z0-9 ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('');
+      return { id: 'service', a: '#9aa4b0', b: '#2e3640', icon: `<span class="svcavatar__initials">${initials}</span>` };
+    }
+    return null;
+  }
   if (typeof hit === 'string') return { id: hit, ...APPS[hit] };
   return { id: 'service', ...hit };
 }
@@ -160,19 +195,26 @@ export function serviceAvatar(name, cls = '') {
  * scroll of twenty-odd icons stops being a phone and starts being a spreadsheet. Each shelf is a
  * tab; every app is on exactly one shelf; the dock stays where it is.
  */
-export const APP_SHELVES = [
+export const APP_SHELVES_OLD = [
   { id: 'street', name: 'The Street', apps: ['messages', 'ride', 'jobs', 'block', 'social', 'rolo'] },
   { id: 'money', name: 'Money', apps: ['bank', 'bills', 'bidbay', 'shop', 'invest', 'casino'] },
   { id: 'life', name: 'Life', apps: ['pantry', 'inventory', 'calendar', 'clinic', 'fellowship'] },
   { id: 'late', name: 'After Dark', apps: ['fans'] },
 ];
 
-/** Every app on the shelves, in shelf order (kept for anything that wants a flat list). */
+/**
+ * The whole home screen on one page: every app in a five-wide grid, in the order people reach
+ * for them. The shelves had become tabs, and the tabs hid half the phone behind a scroll.
+ */
+export const APP_SHELVES = [
+  { id: 'all', name: 'Apps', apps: ['call', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'] },
+];
+/** Every app on the home screen, in order (kept for anything that wants a flat list). */
 export const HOME_GRID = APP_SHELVES.flatMap((s) => s.apps);
 
 // Rolo's text thread lives inside Txtr, so it wears Txtr's brand
 APPS.dealer = { ...APPS.messages };
-export const DOCK = ['messages', 'bank', 'pantry', 'system'];
+export const DOCK = ['messages', 'call', 'bank', 'pantry'];
 
 /** An app icon tile. `day` feeds iDread's live date; `badge` is the red notification count. */
 export function appIcon(id, { day = 1, weekday = 'MON', badge = 0, label = true } = {}) {

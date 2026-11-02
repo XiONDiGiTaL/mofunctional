@@ -486,6 +486,9 @@ export const CONFIG = {
     chaseLine: 60,        // down more than this today and every loss stings harder
   },
 
+  // delivery from Miguel's and Habib's, by phone (systems/delivery.js)
+  delivery: { fee: 3, minutes: 25, waitMinutes: 60, theftPerHour: 0.08 },
+
   // Nia: how much she has to like him before she asks to come over, and what her food does
   sister: {
     visitBond: 3,

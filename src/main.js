@@ -23,6 +23,7 @@ import { ENDINGS } from './systems/endings.js';
 import { InputSystem } from './core/input.js';
 import { Soundtrack } from './systems/soundtrack.js';
 import { tickDealer, completeOrder, cancelOrder, activeOrder } from './systems/dealer.js';
+import { tickDelivery } from './systems/delivery.js';
 import { toggleMap, mapTitle } from './ui/map.js';
 import { showOptions } from './ui/options.js';
 import { setLang, savedLang, getLang } from './i18n/i18n.js';
@@ -167,6 +168,8 @@ class Game {
   /* ------------------------------ main loop ------------------------------ */
 
   loop(t) {
+    // the next frame is booked first, so nothing that goes wrong in this one can stop the game
+    requestAnimationFrame(this.loop);
     const dt = Math.min(0.05, Math.max(0, (t - this.lastT) / 1000));
     this.lastT = t;
 
@@ -187,7 +190,12 @@ class Game {
       this.inBackground = true;
       try {
         tickDealer(this);
+        tickDelivery(this);
         this.world.update(dt, this);
+      } catch (e) {
+        // one bad frame must never stop the loop: the next frame is only scheduled at the end of
+        // this one, so an exception here used to freeze the game for good, menus and all
+        console.error('[MO: FUNCTIONAL] frame error', e);
       } finally { this.inBackground = false; }
       // one held-back event per frame, and only once nothing is on screen
       if (this.deferred.length && !this.uiBusy) this.deferred.shift()();
@@ -201,7 +209,6 @@ class Game {
 
     this.soundtrack.update(dt);
     this.world.render();
-    requestAnimationFrame(this.loop);
   }
 
   /* ------------------------------ state / flow ------------------------------ */

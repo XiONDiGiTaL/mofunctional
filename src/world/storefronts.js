@@ -359,8 +359,10 @@ export function buildReliefOffice(g) {
     group.add(box(0.45, 0.45, 0.45, retroMaterial('rf_stool', { color: 0x2a2a2a }), [x, 0.22, -4.6]));
   }
 
-  const lines = new Lines(group, windows);
   const s = g.state;
+  // booked by phone: window 3 is waiting for you, and the line is somebody else's problem today
+  if (s.flags?.reliefAppt === dayOf(s.clock.m)) windows[2].start = 0;
+  const lines = new Lines(group, windows);
   const interactables = [
     {
       id: 'rf_window3', label: 'Window 3 · recertify', sub: 'ID and lease · originals', x: 3.6, z: -2.75, radius: 0.9,
