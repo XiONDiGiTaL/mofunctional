@@ -1108,3 +1108,19 @@ button.relrow:hover { color: #ffd24a; }
 .dialer__row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
 .dialer__call { width: 92px; height: 44px; border-radius: 22px; border: 0; background: #2fc45a; color: #fff; font: 700 13px var(--ui); letter-spacing: .1em; cursor: pointer; }
 .dialer__call:disabled { opacity: .4; }
+
+/* ------------------------------------------------------------------ the arcade (ui/arcade.js) */
+.arcade { z-index: 70; }
+.arcade__cab { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 18px 14px; border-radius: 18px;
+  background: linear-gradient(180deg, #23123a, #0e0818); box-shadow: 0 20px 60px rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,255,255,.08); }
+.arcade__marquee { font: 800 18px/1 var(--display, monospace); letter-spacing: .14em; color: #ffd23a; text-shadow: 0 0 12px rgba(255,210,58,.7); }
+.arcade__screen { width: min(448px, 86vw); aspect-ratio: 224 / 256; height: auto; image-rendering: pixelated; border-radius: 10px; border: 6px solid #05060a; box-shadow: 0 0 30px rgba(80,160,255,.25); }
+.arcade__pad { display: none; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 44px); gap: 6px; }
+.arcade__pad button { border-radius: 10px; border: 0; background: rgba(255,255,255,.14); color: #fff; font: 700 16px var(--ui); touch-action: none; }
+.arcade__pad [data-k="ArrowUp"] { grid-column: 2; grid-row: 1; }
+.arcade__pad [data-k="ArrowLeft"] { grid-column: 1; grid-row: 2; }
+.arcade__pad [data-k="Space"] { grid-column: 2; grid-row: 2; background: #c8281e; }
+.arcade__pad [data-k="ArrowRight"] { grid-column: 3; grid-row: 2; }
+.arcade__pad [data-k="ArrowDown"] { grid-column: 2; grid-row: 3; }
+.touch .arcade__pad { display: grid; }
+.arcade__help { font: 10px var(--ui); letter-spacing: .14em; color: rgba(255,255,255,.5); }
