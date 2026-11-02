@@ -766,7 +766,7 @@ export function buildProjects(g) {
     { kind: 'benchman', x: 4, z: -2.5, rot: Math.PI, still: true, act: 'talk' },
     { kind: 'thug', x: -4, z: -2.6, rot: Math.PI, still: true },
     { kind: armedHere ? 'thug_armed' : 'thug', x: 7, z: 0.5, rot: -Math.PI / 2, still: true, act: 'smoke' },
-    { kind: 'thug_armed', x: -10, z: 4, rot: Math.PI / 2, still: true },
+    ...(g.state.flags?.pjDealerDown === dayOf(g.state.clock.m) ? [] : [{ kind: 'thug_armed', x: -10, z: 4, rot: Math.PI / 2, still: true }]),
     { kind: 'junkie', x: -14.5, z: 4.6, rot: 0.3, still: true, pose: 'sit' },
     { kind: 'tenant_f', x: -2, z: 5, walker: [-15, 10] },
     { kind: 'drifter', x: 2, z: 4.6, rot: 0, still: true, act: 'dice' },
