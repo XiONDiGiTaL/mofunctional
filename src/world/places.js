@@ -652,7 +652,7 @@ export function buildAvenue(g) {
       { label: 'Keep walking.', sub: '', effect: () => {} },
     ] }) },
     { id: 'av_bus', label: 'The bus stop', sub: 'B44 back to Kestrel', x: 12.5, z: 0.0, radius: 1.5, action: (gg) => busMenu(gg, 'avenue') },
-    { id: 'av_subway', label: 'Down to the Ashby Ave station', sub: 'east end of the avenue · Kestrel St, Park Slope', x: 14.4, z: 0.7, radius: 1.7, action: (gg) => gg.goTo('subway', 'avenue') },
+    { id: 'av_subway', label: 'Down to the Ashby Ave station', sub: 'east end of the avenue · Kestrel St, Park Slope', x: 14.35, z: -0.4, radius: 1.1, action: (gg) => gg.goTo('subway', 'avenue') },
   ];
   let timer = 10;
   const tick = (gg, dt) => {
@@ -680,15 +680,15 @@ export function buildAvenue(g) {
     ]), 'info');
   };
   // the way down to the trains, east end of the avenue, clear of the bus stop
-  group.add(buildStationEntrance(14.4, 0.6, { name: 'ASHBY AV', painted: true }));
+  group.add(buildStationEntrance(15.3, -0.4, { name: 'ASHBY AV', painted: true, rot: -Math.PI / 2 }));
   return {
     group,
     bounds: { minX: -15.5, maxX: 15.5, minZ: -5.6, maxZ: 1.3 },
     camBounds: { minX: -17, maxX: 17, minZ: -5.6, maxZ: 9 },
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
-    solids: [solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3)],
+    solids: [solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3), solid(16.95, -0.4, 3.9, 3.0, 1.1)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'subway' ? { x: 12.7, z: 1.0, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
+    spawnFor: (from) => (from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.1, z: -0.4, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
     interactables,
     tick,

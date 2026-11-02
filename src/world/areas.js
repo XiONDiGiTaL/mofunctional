@@ -275,7 +275,8 @@ export function buildStreet(g) {
   // has to go down into something, and a floor drawn over it hid every step
   const SW = { map: tex('sidewalk') };
   const slab = (w, d, cx, cz) => plane(w, d, { ...SW, name: 'streetsw', repeat: [Math.max(1, w * 0.3), Math.max(1, d * 0.31)] }, [cx, 0, cz], [-Math.PI / 2, 0, 0]);
-  const HOLE = { x0: -15.25, x1: -12.35, z0: -2.5, z1: 1.2 };
+  // the stair runs along the curb, the way they do in New York: mouth to the east, down to the west
+  const HOLE = { x0: -15.25, x1: -11.5, z0: -1.85, z1: 1.05 };
   group.add(slab(L, HOLE.z0 - (-9.4), 0, (-9.4 + HOLE.z0) / 2));          // behind the hole
   group.add(slab(L, 6.6 - HOLE.z1, 0, (HOLE.z1 + 6.6) / 2));              // in front of it
   group.add(slab(HOLE.x0 - (-23), HOLE.z1 - HOLE.z0, (-23 + HOLE.x0) / 2, (HOLE.z0 + HOLE.z1) / 2));
@@ -284,7 +285,7 @@ export function buildStreet(g) {
   // curb
   group.add(box(L, 0.18, 0.4, M.concrete, [0, 0.09, 1.3]));
   // the way down to the trains, west end of the sidewalk
-  group.add(buildStationEntrance(-13.8, 0.7, { name: 'KESTREL ST' }));
+  group.add(buildStationEntrance(-12.0, -0.4, { name: 'KESTREL ST', rot: Math.PI / 2 }));
 
   // building facades along the back
   const facade = (x, w, h, tint) => {
@@ -698,7 +699,7 @@ export function buildStreet(g) {
     { id: 'parkGateFar', label: 'Into Kestrel Park', sub: 'through the gate', x: 9.35, z: 10.2, radius: 1.6, action: (gg) => gg.goTo('park', 'street') },
     { id: 'alleypee', label: 'The man in the alley', sub: 'facing the wall', x: -5.0, z: -5.2, radius: 1.3, action: (gg) => gg.openModal({ kicker: 'THE ALLEY · LATE', title: 'No', body: 'This isn\'t my business.\n\nNothing in the alley after midnight is anybody\'s business.', choices: [{ label: 'Keep walking.', effect: () => {} }] }) },
     { id: 'payphone', label: 'The payphone', sub: 'coin return · the gap behind the box', x: 12.9, z: -5.3, radius: 1.2, action: (gg) => payphone(gg) },
-    { id: 'subwayDown', label: 'Down into the station', sub: 'west end of the block · under the sidewalk', x: -13.8, z: 0.7, radius: 1.7, action: (gg) => gg.goTo('subway', 'street') },
+    { id: 'subwayDown', label: 'Down into the station', sub: 'west end of the block · under the sidewalk', x: -11.05, z: -0.4, radius: 1.3, action: (gg) => gg.goTo('subway', 'street') },
     { id: 'busstop', label: 'The bus stop', sub: 'B44 · Ashby Avenue, the park', x: 4.6, z: 0.35, radius: 1.5, action: (gg) => busMenu(gg, 'street') },
     { id: 'walkupDoor', label: 'Enter 1104 Kestrel St.', sub: 'the walk-up · five floors, no elevator', x: building('walkup').door, z: STREET.doorZ, radius: 1.6, action: (gg) => { gg.state.walkup = { ...(gg.state.walkup || {}), floor: 0 }; gg.goTo('walkup', 'street'); } },
     { id: 'rae', label: 'Talk to Rae', sub: 'landlord · human', x: -11.8, z: -3.6, action: (gg) => talk(gg, 'rae') },
@@ -726,10 +727,11 @@ export function buildStreet(g) {
       solid(-5.0, 0.9, 0.5, 0.5, 0.65),
       solid(-6.2, -4.7, 0.9, 0.9), solid(8.8, -4.7, 0.9, 0.9), solid(17.6, -4.7, 0.9, 0.9),
       solid(7.2, -4.9, 0.5, 0.5, 0.9), solid(-6.6, -4.9, 0.5, 0.5, 0.9), solid(4.2, 1.1, 0.3, 0.3),
+      solid(-13.65, -0.4, 3.9, 3.0, 1.1), // the station stair: railings on three sides, in only at the mouth
     ],
     spawn: streetSpawn('apartment'),
     // out of whichever door he came through, a step clear of its prompt
-    spawnFor: (from) => (from === 'subway' ? { x: -11.9, z: 0.8, rot: Math.PI / 2 } : streetSpawn(from)),
+    spawnFor: (from) => (from === 'subway' ? { x: -10.8, z: -0.4, rot: Math.PI / 2 } : streetSpawn(from)),
     npcs,
     interactables,
     ambient: 'street',

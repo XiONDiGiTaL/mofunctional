@@ -1202,10 +1202,10 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const b = this.area.bounds;
     const fromX = mo.x - b.minX > b.maxX - mo.x ? Math.max(b.minX + 1, mo.x - 11) : Math.min(b.maxX - 1, mo.x + 11);
     const rig = createNPC(kind);
-    rig.root.position.set(fromX, 0, -1.6);
+    rig.root.position.set(fromX, 0, -2.6); // inside the station railing's line, not through it
     this.root.add(rig.root);
     const it = {
-      id: `encounter_${id}`, label, sub, x: fromX, z: -1.6, radius: 1.7,
+      id: `encounter_${id}`, label, sub, x: fromX, z: -2.6, radius: 1.7,
       action: () => { this.encounter.talked = true; it.hidden = true; talk(); },
     };
     this.interactables.push(it);
@@ -1224,7 +1224,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (e.phase === 'approach' || e.phase === 'wait') {
       // a step short of him, on his side of the sidewalk
       const tx = mo.x + Math.sign(p.x - mo.x || 1) * 1.3;
-      const tz = Math.max(-4, Math.min(0.6, mo.z));
+      let tz = Math.max(-4, Math.min(0.6, mo.z));
+      if (this.blocked(tx, tz)) tz = -2.6; // he is by the stair: stand on the building side of it
       const dx = tx - p.x, dz = tz - p.z;
       const d = Math.hypot(dx, dz);
       if (d > 0.25 && Math.hypot(mo.x - p.x, mo.z - p.z) < 18) {
