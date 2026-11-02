@@ -21,6 +21,7 @@ import * as health from '../systems/health.js';
 import * as rides from '../systems/rides.js';
 import { STRANGER_BY_ID } from '../core/strangers.js';
 import { itemIcon } from './icons.js';
+import { pinupURL, randomLook, POSES } from './pinups.js';
 
 const T = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -222,13 +223,24 @@ const VIEWS = {
   xxxView() {
     const s = this.g.state;
     const r = rng(dayOf(s.clock.m) * 313 + (this.xxxPage || 0));
-    const tiles = Array.from({ length: 6 }, () => {
-      const cells = Array.from({ length: 36 }, () => `<i style="background:hsl(${18 + r() * 20},${30 + r() * 30}%,${30 + r() * 40}%)"></i>`).join('');
-      return `<div class="xxx__tile"><div class="xxx__mosaic">${cells}</div><span class="tiny">${pick(['BRANDI_NYC', 'xXCandyXx', 'MissMidtown', 'LuvBug99', 'StatenIslandSweetie', 'Velvet_4U'])}</span></div>`;
+    const NAMES = ['BRANDI_NYC', 'xXCandyXx', 'MissMidtown', 'LuvBug99', 'StatenIslandSweetie', 'Velvet_4U', 'CatLady_Kim', 'Ms.Canarsie', 'JerseyGurl2000', 'TaxSeasonTina', 'BodegaBeauty', 'Y2Kitten'];
+    const BLURBS = ['webcam: OFF (it is always off)', 'turn-ons: men with credit', 'from your area code (718)', 'loading... 3% ... 3% ... 2%', 'Mr. Buttons manages her career', 'rated ★★★☆☆ by a guy named Phil', 'she is NOT your cousin (we checked)', '"i also do taxes"'];
+    const page = this.xxxPage || 0;
+    const tiles = Array.from({ length: 6 }, (_, k) => {
+      const seed = dayOf(s.clock.m) * 97 + page * 13 + k * 7 + 1;
+      // one of every page is holding the cat, because the cat is the site's biggest star
+      const pose = k === (page % 6) ? 'cat' : POSES[Math.floor(r() * POSES.length)];
+      return `<div class="xxx__tile"><img class="xxx__pic" src="${pinupURL(randomLook(seed), pose, seed)}" alt="" />
+        <b class="tiny">${pick(NAMES)}</b><span class="tiny mono-dim">${pick(BLURBS)}</span></div>`;
     }).join('');
+    const ADS = ['HOT SINGLES IN YOUR AREA CODE (718) WANT TO MEET YOU (THEY OWE YOU MONEY)', 'CONGRATULATIONS! YOU ARE THE 1,000,000th VISITOR! (EVERYONE IS)', 'CLICK HERE TO REMOVE VIRUS (ADDS VIRUS)', 'ENLARGE YOUR... CREDIT LIMIT. ASK SHALE BANK HOW', 'MEET RICH WIDOWS IN QUEENS. THEY ARE NOT RICH. THEY ARE TIRED'];
     return `${this.header('DialUpDelights', '18+ · loading 4%')}
-      <div class="card xxx__warn">You are entering an ADULT site. You are an adult. The site is not sure it is.</div>
+      <div class="xxx__banner">✦ DialUpDelights ✦<span>The Information Superhighway's Rest Stop · est. 1996</span></div>
+      <div class="card xxx__warn">You are entering an ADULT site. You are an adult. The site is not sure it is. All naughty bits are pixelated by order of the Kings County Decency Board (one guy).</div>
+      <div class="xxx__ad">${pick(ADS)}</div>
       <div class="xxx__grid">${tiles}</div>
+      <div class="xxx__ad xxx__ad--blink">${pick(ADS)}</div>
+      <div class="tiny mono-dim">Visitors today: <span class="mono">00041337</span> · best viewed in Netscrape 4.0 at 800x600</div>
       <button class="btn btn--primary" data-act="xxxbrowse">LOAD MORE (28.8k MODEM · 6 MIN)</button>
       <div class="tiny mono-dim">Every image is a mosaic. Every image takes four minutes to load. This is 1999.</div>
       ${this.footer()}`;

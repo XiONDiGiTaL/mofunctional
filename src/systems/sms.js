@@ -11,7 +11,7 @@
  * Everything here is headless: it returns data and small effects, never markup.
  */
 import { CONFIG } from '../core/config.js';
-import { money, dayOf, clamp } from '../core/util.js';
+import { money, dayOf, clamp, pick } from '../core/util.js';
 import { bump, pushMessage, logLine } from '../core/state.js';
 import { billInfo, payBill, setAutopay } from './economy.js';
 import * as rent from './rent.js';
@@ -66,6 +66,7 @@ const BUSINESS = {
   'DEE': { category: 'personal', kind: 'tenant_f', name: "Dee (Wash & Fold)" },
 };
 
+const FANS_BY_NAME = { 'VELVET KADE': 'velvet', 'CHERRY DELACROIX': 'cherry', 'MONA REYES': 'mona', 'JADE OKAFOR': 'jade' };
 const norm = (name = '') => String(name).toUpperCase().replace(/\(.*?\)/g, '').trim();
 
 /** The identity behind a sender string: category, face kind, service brand, display name. */
@@ -78,6 +79,9 @@ export function identityFor(from) {
   // the FeedLove women who gave Mo their number: their own face, their own thread
   const w = STRANGERS.find((x) => x.name.toUpperCase() === n);
   if (w) return { from: key, category: 'personal', kind: w.id, name: w.name };
+  // a LonelyFans woman: her thread, her face, a chip set of its own
+  const m = FANS_BY_NAME[n];
+  if (m) return { from: key, category: 'fans', model: m, name: key };
   // a raw phone number, or a name nobody saved
   return { from: key, category: 'unknown', kind: 'unknown', name: key || 'Unknown number' };
 }
@@ -144,6 +148,13 @@ const SETS = {
     { act: 'who', label: 'Who is this?' },
     { act: 'wrong', label: 'Wrong number.' },
     { act: 'block', label: 'Do not text this again.' },
+  ],
+  fans: [
+    { act: 'fans_wow', label: 'You are out of my league and my budget.' },
+    { act: 'fans_cat', label: 'Is that a cat? Can I see more of the cat?' },
+    { act: 'fans_meet', label: 'Can we get coffee? Real coffee. In person.' },
+    { act: 'fans_poem', label: 'Send her a poem you wrote at 3am.' },
+    { act: 'fans_broke', label: 'That was my light bill money, and I regret nothing.' },
   ],
   // she ended it badly. These are the only two chips a heartbroken man actually has.
   heartbroken: [
@@ -322,6 +333,29 @@ function applyAct(g, message, opt) {
       return;
     case 'accuse':
       health.accuse(g);
+      return;
+    /* ---- the LonelyFans women: she always answers, and the answer always costs something ---- */
+    case 'fans_wow':
+      bump(s, 'morale', 1);
+      followUp(g, message.from, 're', pick(['league: correct. budget: correct. thank u for being a realist', 'aw. upgrade ur budget and we will talk about the league', 'u are so sweet. that is not a discount code']));
+      return;
+    case 'fans_cat':
+      bump(s, 'morale', 3);
+      bump(s, 'stress', -2);
+      followUp(g, message.from, 're', pick(['mr. buttons does not do custom content', 'the cat is $40 and the cat has a manager (me)', 'u are the first man to ask about the cat. i dont know how to feel']));
+      return;
+    case 'fans_meet':
+      bump(s, 'morale', -2);
+      followUp(g, message.from, 're', pick(['lol', 'coffee is $300 and we do not drink the coffee', 'babe i live in this app']));
+      return;
+    case 'fans_poem':
+      g.advance(15);
+      bump(s, 'stress', -3);
+      followUp(g, message.from, 're', pick(['did u rhyme "rent" with "spent"', 'i read it out loud to my roommate. she cried. from laughing. but also a little bit not', 'this is the nicest thing anyone has sent me that was not money. send money']));
+      return;
+    case 'fans_broke':
+      bump(s, 'stress', 2);
+      followUp(g, message.from, 're', pick(['the lights are overrated. i look better in the dark anyway', 'MUNICIPAL POWER would like a word', 'romantic. stupid. romantic.']));
       return;
     case 'nia_yes':
       sister.answerVisit(g, true);

@@ -68,6 +68,16 @@ export const MODELS = [
 
 export const modelById = (id) => MODELS.find((m) => m.id === id) || null;
 
+/** What she types under the picture, by pose. */
+const CAPTIONS = {
+  selfie: ['for u. dont show ur friends. u dont have friends, thats why i like u', 'new phone who dis (its me. the phone is new)', 'took 40 of these. this is the one. the other 39 are for someone richer'],
+  hips: ['rate me 1-10 and if u say anything under 11 i keep the money', 'this is my "landlord is at the door" pose', 'standing like this burns 3 calories. u owe me 3 calories'],
+  peace: ['peace and love and $12', 'peace sign bc i am at peace with ur credit card', 'v for very expensive'],
+  behind: ['hands behind my head bc i have nothing to hide (except everything, see mosaic)', 'stretching. it is a whole lifestyle', 'my arms are tired from counting ur money'],
+  cat: ['mr. buttons says hi. mr. buttons is the only one who gets to see everything', 'meet my manager', 'the cat is censoring me. the cat is a prude. take it up with the cat'],
+  kiss: ['mwah. that will be $12', 'blowing u a kiss. it is non refundable', 'this kiss has been to 4 other phones tonight but it meant it with u'],
+};
+
 export function fansState(s) {
   if (!s.fans) s.fans = {};
   const f = s.fans;
@@ -185,19 +195,12 @@ export function buySelfie(g, modelId) {
   bump(s, 'stress', S.stress);
   bump(s, 'morale', S.morale);
   g.advance(S.minutes);
-  const line = pick(m.selfies);
   logLine(g, `Bought a picture from ${m.handle} (${money(m.price)}). Stress down, morale down.`, 'info');
-  g.openModal({
-    kicker: `LONELYFANS · ${m.handle}`,
-    title: m.name,
-    body: `${line}\n\n${
-      blocksForDignity(s)
-        ? 'It lands wrong. The room is very quiet afterwards, and the radiator is doing that thing again.'
-        : 'You look at it for a while. The room is quiet in a way that has nothing to do with the city.'
-    }\n\nStress ${Math.round(s.stats.stress)} · morale ${Math.round(s.stats.morale)} · ${money(m.price)} spent.`,
-    choices: [{ label: 'Put the phone down.', effect: () => {} }],
-  });
-  return { ok: true, price: m.price, stress: S.stress, morale: S.morale };
+  // she sends it as a text: the picture is in the thread, to open again whenever he likes
+  const POSES = m.id === 'cherry' ? ['selfie', 'hips', 'kiss', 'behind', 'peace'] : ['selfie', 'hips', 'peace', 'behind', 'cat', 'kiss'];
+  const pose = POSES[(r.bought + Math.floor(Math.random() * POSES.length)) % POSES.length];
+  pushMessage(g, { from: m.name, subject: 'pic', body: pick(m.captions?.[pose] ? [m.captions[pose]] : CAPTIONS[pose]), pic: { model: m.id, pose, seed: Math.floor(Math.random() * 1e9) } });
+  return { ok: true, price: m.price, stress: S.stress, morale: S.morale, texted: m.name };
 }
 
 /** Would she? Some of them, some nights, for a number with three digits in it. */

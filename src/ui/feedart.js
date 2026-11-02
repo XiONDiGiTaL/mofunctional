@@ -118,3 +118,22 @@ export function postImage(post, authorKind) {
 }
 
 export const SCENE_IDS = Object.keys(SCENES);
+
+/** Backdrops for Mo's own pictures: his bathroom, his room, the stoop, the block at night. */
+const MO_SCENES = {
+  bath: () => '<rect width="160" height="100" fill="#bcd4d8"/>' + Array.from({ length: 50 }, (_, i) => `<rect x="${(i % 10) * 16 + (Math.floor(i / 10) % 2) * 8}" y="${Math.floor(i / 10) * 16}" width="15" height="15" fill="#c8e0e4"/>`).join('') + '<rect x="10" y="6" width="140" height="70" fill="none" stroke="#e8e8e8" stroke-width="3"/><path d="M20 10l30 30M100 8l40 50" stroke="#fff" stroke-width="1" opacity=".6"/>',
+  room: () => '<rect width="160" height="100" fill="#8a7a6a"/><rect x="100" y="10" width="44" height="34" fill="#6a8ab0" stroke="#e8e0d0" stroke-width="3"/><rect x="0" y="78" width="160" height="22" fill="#5a4a3a"/><rect x="12" y="20" width="24" height="30" fill="#c8a85a" opacity=".6"/>',
+  stoop: (r) => skylineRow(r, 70, 40, '#3a3a44', 0.1).replace(/^/, '<rect width="160" height="100" fill="#8ab0d0"/>') + '<rect x="0" y="70" width="160" height="30" fill="#6a6a70"/>',
+  night: (r) => SCENES.night(r),
+};
+
+/** One of Mo's own posts: him, in front of somewhere, and a play button if it is a lip sync. */
+export function moPostImage(p) {
+  const r = rng(p.seed || 1);
+  const bg = svgURL((MO_SCENES[p.scene] || MO_SCENES.room)(r));
+  const tilt = ((p.seed % 9) - 4) * 1.5;
+  return `<div class="fpost__img fpost__img--mo${p.snap === 'video' ? ' fpost__img--video' : ''}" style="background-image:url('${bg}')">
+    <img src="${portraitURL('mo', p.mood || 'content')}" alt="" style="transform:rotate(${tilt}deg)" />
+    ${p.snap === 'video' ? `<span class="fpost__play">▶</span><span class="fpost__dur">0:${String(12 + (p.seed % 40)).padStart(2, '0')}</span>` : ''}
+  </div>`;
+}

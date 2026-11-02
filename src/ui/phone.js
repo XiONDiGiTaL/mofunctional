@@ -29,6 +29,9 @@ import { slotLine, slotInfo as autoInfo } from '../core/save.js';
 import * as sms from '../systems/sms.js';
 import * as fans from '../systems/fans.js';
 import * as calls from '../systems/calls.js';
+import { picURL, modelPicURL } from './pinups.js';
+import * as feedtalk from '../systems/feedtalk.js';
+import { moPostImage } from './feedart.js';
 
 /** One thread per contact: "RAE", "RAE VELL" and "RAE VELL (LANDLORD)" are the same person. */
 const threadKeyOf = (m) => String(sms.identityFor(m.from).name || m.from || '').toUpperCase();
@@ -516,6 +519,18 @@ export class Phone {
 
   messagesView() {
     const s = this.g.state;
+    // a picture, opened full screen out of its thread
+    if (this.picMsg) {
+      const m = s.messages.find((x) => x.id === this.picMsg);
+      if (m?.pic) {
+        return `${this.header(m.from, 'PHOTO')}
+          <div class="picview"><img src="${picURL(m.pic)}" alt="" /></div>
+          <div class="tiny mono-dim picview__cap">${T(m.body)}</div>
+          <button class="btn btn--ghost" data-act="picback">◀ BACK</button>
+          ${this.footer()}`;
+      }
+      this.picMsg = null;
+    }
     if (this.msgId) {
       // one conversation per person: every text from them, oldest first, with Mo's replies in place
       const key = this.msgId;
@@ -529,7 +544,8 @@ export class Phone {
         m.read = true;
         const sep = m.day !== day ? `<div class="chat__day">DAY ${m.day}</div>` : '';
         day = m.day;
-        return sep + `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${T(m.body)}</div></div>`
+        const pic = m.pic ? `<button class="chat__pic" data-act="viewpic" data-arg="${m.id}"><img src="${picURL(m.pic)}" alt="" /></button>` : '';
+        return sep + `<div class="chat__row">${face}<div class="chat__bubble chat__bubble--in">${pic}${T(m.body)}</div></div>`
           + (m.replies || []).map((r) => r.failed
             ? `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out chat__bubble--failed">${T(r.text)}</div>${mo}</div>`
             : `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(r.text)}</div>${mo}</div>`).join('');
@@ -743,6 +759,8 @@ export class Phone {
 
   /** A sender's avatar: a company's app icon, or a person's face. */
   senderFace(from) {
+    const who = sms.identityFor(from);
+    if (who.model) return `<span class="chat__face chat__face--pic"><img src="${modelPicURL(who.model, 'hips', 7)}" alt="" /></span>`;
     return serviceAvatar(from, 'chat__face') || `<img class="chat__face" src="${portraitURL(kindForName(from), 'content')}" alt="" />`;
   }
 
@@ -897,6 +915,8 @@ export class Phone {
     if (tab === 'hearts') return `${this.header('FeedLove', 'HEARTS')}${tabs}${this.heartsView()}${this.footer()}`;
     if (tab === 'love') return `${this.header('FeedLove', 'LOVELINE')}${tabs}${this.loveBody()}${this.footer()}`;
     if (tab === 'people') return `${this.header('FeedLove', `${so.followers} FOLLOWERS`)}${tabs}${this.peopleView()}${this.footer()}`;
+    if (this.feedArg) return `${this.header('FeedLove', 'COMMENTS')}${this.argueView()}${this.footer()}`;
+    if (this.feedProfile) return `${this.header('FeedLove', 'PROFILE')}${this.strangerView(this.feedProfile)}${this.footer()}`;
     const face = (id) => {
       const a = social.ACCOUNTS[id];
       return a.kind ? `<img class="fpost__face" src="${portraitURL(a.kind, 'content')}" alt="" />` : `<span class="fpost__face fpost__face--brand" style="--c:${a.color}">${a.initial}</span>`;
@@ -904,11 +924,22 @@ export class Phone {
     const tl = social.timeline(s).slice(0, 30);
     const today = dayOf(s.clock.m);
     const when = (p) => (p.day === today ? hhmm(p.minute) : p.day === today - 1 ? 'yesterday' : `${today - p.day}d ago`);
-    const mine = posts.slice(-5).reverse().map((p) => `
+    const comments = (key, list) => {
+      if (!list?.length) return '';
+      const open = this.openComments === key;
+      return `<button class="fpost__more" data-act="comments" data-arg="${key}">${open ? 'hide comments' : `view ${list.length} comment${list.length === 1 ? '' : 's'}`}</button>
+        ${open ? `<div class="fcomments">${list.map((c) => `<div class="fcomment">
+          <button class="fcomment__face" data-act="stranger" data-arg="${c.handle}"><img src="${portraitURL(feedtalk.stranger(c.handle).kind, 'content')}" alt="" /></button>
+          <div class="grow"><b>@${c.handle}</b> ${T(c.text)}</div>
+          <button class="fcomment__argue" data-act="argue" data-arg="${c.handle}">ARGUE</button></div>`).join('')}</div>` : ''}`;
+    };
+    const mine = posts.slice(-6).map((p, i, a) => [p, posts.length - a.length + i]).reverse().map(([p, idx]) => `
       <div class="fpost fpost--mine">
         <div class="fpost__head"><img class="fpost__face" src="${portraitURL('mo', 'content')}" alt="" /><b>@mofunctional</b><span>D${p.day}</span></div>
         <div class="fpost__text">${T(p.text)}</div>
-        <div class="fpost__meta"><span class="post__heart">♥</span> ${p.likes} · ${p.replies} replies${p.likedBy?.length ? ` · liked by ${T(p.likedBy.map((id) => social.ACCOUNTS[id]?.name || id).join(', '))}` : ''}</div>
+        ${p.snap ? moPostImage(p) : ''}
+        <div class="fpost__meta"><span class="post__heart">♥</span> ${p.likes} · ${(p.comments || []).length || p.replies} replies${p.likedBy?.length ? ` · liked by ${T(p.likedBy.map((id) => social.ACCOUNTS[id]?.name || id).join(', '))}` : ''}</div>
+        ${comments(`mo${idx}`, p.comments)}
       </div>`).join('');
     return `${this.header('FeedLove', `${so.followers} FOLLOWERS`)}${tabs}
       <div class="profile profile--feed">
@@ -924,7 +955,11 @@ export class Phone {
         <input id="feedtext" type="text" maxlength="140" placeholder="what's on your mind, Mo?" autocomplete="off" spellcheck="false" />
         <button class="btn btn--primary btn--sm" data-act="posttyped">POST</button>
       </div>
-      <button class="btn btn--sm" data-act="post">POST SOMETHING (10 MIN)</button>
+      <div class="row fpost__tools">
+        <button class="btn btn--sm" data-act="post">POST (10 MIN)</button>
+        <button class="btn btn--sm" data-act="moselfie">📷 SELFIE</button>
+        <button class="btn btn--sm" data-act="molipsync">♪ LIP SYNC</button>
+      </div>
       ${mine ? `<div class="app__h">Your posts</div>${mine}` : ''}
       <div class="app__h">Your feed</div>
       ${tl.length ? tl.map((p) => {
@@ -935,9 +970,40 @@ export class Phone {
           <div class="fpost__text">${T(p.text)}</div>
           ${postImage(p, a.kind)}
           <div class="fpost__meta"><button class="fpost__like ${liked ? 'on' : ''}" data-act="likepost" data-arg="${p.id}">♥ ${p.likes + (liked ? 1 : 0)}</button></div>
+          ${comments(p.id, feedtalk.commentsFor(p.id, 1 + (p.seed % 4)))}
         </div>`;
       }).join('') : '<div class="empty">You follow nobody who posts. Go to PEOPLE.</div>'}
       ${this.footer()}`;
+  }
+
+  /** A stranger's profile, out of a comment section. */
+  strangerView(handle) {
+    const p = feedtalk.stranger(handle);
+    const tease = feedtalk.commentsFor(`${handle}-wall`, 3, p.temper);
+    return `<div class="profile profile--feed">
+        <span class="profile__ring"><img src="${portraitURL(p.kind, 'content')}" alt="" /></span>
+        <div class="profile__stats"><span><b>${p.posts}</b>posts</span><span><b>${p.followers}</b>followers</span><span><b>${p.temper === 'troll' ? 9 : 212}</b>following</span></div>
+      </div>
+      <div class="tiny"><b>@${handle}</b> · ${T(p.bio)}</div>
+      <div class="app__h">Recent</div>
+      ${tease.map((c) => `<div class="fpost"><div class="fpost__text">${T(c.text)}</div></div>`).join('')}
+      <button class="btn btn--sm btn--primary" data-act="argue" data-arg="${handle}">START AN ARGUMENT</button>
+      <button class="btn btn--ghost" data-act="feedclose">◀ BACK TO FEED</button>`;
+  }
+
+  /** An argument in the comments: three rounds, then the internet decides. */
+  argueView() {
+    const a = this.feedArg;
+    const p = feedtalk.stranger(a.handle);
+    const log = a.log.map((l) => l.who === 'mo'
+      ? `<div class="chat__row chat__row--out"><div class="chat__bubble chat__bubble--out">${T(l.text)}</div></div>`
+      : `<div class="chat__row"><img class="chat__face" src="${portraitURL(p.kind, 'content')}" alt="" /><div class="chat__bubble chat__bubble--in">${T(l.text)}</div></div>`).join('');
+    return `<div class="tiny mono-dim">You vs. <b>@${a.handle}</b> · round ${Math.min(a.round + 1, 3)} of 3</div>
+      <div class="chat">${log || `<div class="tiny mono-dim">${T('The comment sits there. You could let it go. You will not let it go.')}</div>`}</div>
+      ${a.done
+        ? `<div class="card">${T(a.verdict)}</div><button class="btn btn--primary" data-act="feedclose">CLOSE THE APP AND STARE AT THE CEILING</button>`
+        : `<div class="chat__quick">${feedtalk.RETORTS.map((t) => `<button class="chat__chip" data-act="retort" data-arg="${t.id}">${T(t.label)}</button>`).join('')}</div>
+           <button class="btn btn--ghost" data-act="feedclose">Let it go (you won't)</button>`}`;
   }
 
   /** FeedLove PEOPLE: who he follows, who follows him, and who he could follow. */
@@ -1371,7 +1437,9 @@ export class Phone {
       // applied there: a landlord text can settle the rent, a BidBay text can reprice listings,
       // and Mo never offers to "talk about this later" to an automated auction notice
       reply(arg, num) { sms.sendReply(g, s.messages.find((x) => x.id === arg), num); },
-      msgback() { this.msgId = null; },
+      msgback() { this.msgId = null; this.picMsg = null; },
+      viewpic(arg) { this.picMsg = arg; },
+      picback() { this.picMsg = null; },
       // Rolo: the thread and the app both go through systems/dealer.js and nothing else
       dealersay(arg) { dealer.smsSend(g, arg); },
       wappick(arg) { this.wapProduct = arg; this.wapQty = this.wapQty || 1; },
@@ -1501,7 +1569,14 @@ export class Phone {
         g.toast(f.autopay ? 'LonelyFans: AutoPay on. It renews with Shale Pay and you never think about it again.' : 'LonelyFans: AutoPay off. You will still be charged daily, you will just have to watch.', 'info');
       },
       fansunsub() { fans.unsubscribe(g); },
-      fansbuy(arg) { fans.buySelfie(g, arg); },
+      fansbuy(arg) {
+        const r = fans.buySelfie(g, arg);
+        if (!r?.ok) return;
+        // straight to her thread, where the picture just landed
+        this.app = 'messages';
+        this.msgId = String(r.texted).toUpperCase();
+        g.toast(`${r.texted} sent you a picture.`, 'info');
+      },
       fanscheeks(arg) { fans.buyCheeks(g, arg); },
       theme(arg) { g.setTheme?.(arg); },
       setlang(arg) { g.setLanguage?.(arg).then(() => this.render?.()); },
@@ -1519,7 +1594,37 @@ export class Phone {
       quitmenu() { this.close(); g.quitToMenu(); },
       clinic() { clinic.checkIn(g); },
       clincheck() { clinic.checkIn(g); },
-      feedtab(arg) { this.feedTab = arg; this.heartNote = ''; },
+      feedtab(arg) { this.feedTab = arg; this.heartNote = ''; this.feedProfile = null; this.feedArg = null; },
+      comments(arg) { this.openComments = this.openComments === arg ? null : arg; },
+      stranger(arg) { this.feedProfile = arg; this.feedArg = null; },
+      argue(arg) { this.feedArg = feedtalk.startArgument(arg); this.feedProfile = null; },
+      retort(arg) { feedtalk.retort(g, this.feedArg, arg); },
+      feedclose() { this.feedArg = null; this.feedProfile = null; },
+      moselfie() { this.actions.mosnap.call(this, 'selfie'); },
+      molipsync() { this.actions.mosnap.call(this, 'video'); },
+      mosnap(kind) {
+        const SONGS = ['"Waterfalls" (but about the ceiling leak)', '"No Scrubs" (he is the scrub)', '"Gangsta\'s Paradise" (the landlord edit)', '"I Will Survive" (pending)', '"Hit Em Up" (at the bodega line)', '"Wannabe" (sincerely)', '"Livin\' La Vida Loca" (on $14)'];
+        const SELFIE = ['mirror selfie. the mirror is cracked. so am i', 'good hair day. bad everything else day', 'new fit who dis', 'dont ask about the background', 'the lighting in here is free so i use it'];
+        g.advance(kind === 'video' ? 25 : 8);
+        s.feedPosts = s.feedPosts || [];
+        const song = pick(SONGS);
+        const p = {
+          text: kind === 'video' ? `lip sync: ${song}` : pick(SELFIE), snap: kind, song,
+          scene: pick(kind === 'video' ? ['room', 'stoop', 'night', 'bath'] : ['bath', 'room', 'stoop', 'night']),
+          mood: this.g.hud?.mood?.id || 'content', seed: Math.floor(Math.random() * 1e9),
+          likes: Math.floor(Math.random() * (kind === 'video' ? 30 : 12)) + s.social.followers, day: dayOf(s.clock.m),
+          comments: feedtalk.rollMoComments(kind),
+        };
+        p.replies = p.comments.length;
+        p.likedBy = social.likesForMoPost(g);
+        p.likes += p.likedBy.length;
+        s.feedPosts.push(p);
+        if (s.feedPosts.length > 24) s.feedPosts.shift();
+        bump(s, 'morale', CONFIG.social.postMorale + (kind === 'video' ? 2 : 1));
+        s.social.followers += Math.floor(Math.random() * (kind === 'video' ? 4 : 2));
+        g.toast(kind === 'video' ? `Posted: you, mouthing ${song} in one take. Fourteen takes.` : 'Posted. You took nine and posted the first one.', 'good');
+        this.openComments = `mo${s.feedPosts.length - 1}`;
+      },
       hookup(arg) { this.close(); dating.hookupMenu(g, arg); },
       blocktab(arg) { this.blockTab = arg; },
       invsort(arg) { s.settings.invSort = arg; },
