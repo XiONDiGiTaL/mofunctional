@@ -63,14 +63,17 @@ const tail = (arr, n) => (Array.isArray(arr) ? arr.slice(-n) : []);
  * long). What the trim leaves out comes back as the game's own default on load, not as undefined.
  */
 export function trimState(s) {
+  // a dump is a snapshot, not a window on the run: without the copy, every nested block would stay
+  // a live reference and a diff of two dumps would compare the state with itself
+  const c = JSON.parse(JSON.stringify(s || {}));
   return {
-    ...s,
-    log: tail(s.log, 8),
-    ledger: tail(s.ledger, 6),
-    seenEvents: tail(s.seenEvents, 5),
-    messages: tail(s.messages, 2).map((m) => ({ id: m.id, from: m.from, subject: m.subject, day: m.day, read: m.read })),
-    life: { ...s.life, history: tail(s.life?.history, 3), turning: tail(s.life?.turning, 3) },
-    dealer: { ...s.dealer, log: tail(s.dealer?.log, 3), orders: tail(s.dealer?.orders, 3) },
+    ...c,
+    log: tail(c.log, 8),
+    ledger: tail(c.ledger, 6),
+    seenEvents: tail(c.seenEvents, 5),
+    messages: tail(c.messages, 2).map((m) => ({ id: m.id, from: m.from, subject: m.subject, day: m.day, read: m.read })),
+    life: { ...c.life, history: tail(c.life?.history, 3), turning: tail(c.life?.turning, 3) },
+    dealer: { ...c.dealer, log: tail(c.dealer?.log, 3), orders: tail(c.dealer?.orders, 3) },
   };
 }
 
@@ -159,6 +162,17 @@ export function diffStates(prev, cur, limit = 12) {
   return lines;
 }
 
+/**
+ * The first frames of a stack: where it broke, not every frame, and not the message — the record
+ * already carries that. Handles V8's `at fn (f.js:1:2)` and the `fn@f.js:1:2` form other engines
+ * use; a stack with no recognisable frame is kept as it came rather than emptied.
+ */
+const stackLines = (stack) => {
+  const lines = String(stack || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const frames = lines.filter((l) => /^at\s|^[^@]*@/.test(l));
+  return (frames.length ? frames : lines).slice(0, 4).map((l) => l.slice(0, 160));
+};
+
 /** How long ago a kept dump was written, in the terms a report uses. */
 function ago(iso) {
   const ms = Date.now() - Date.parse(iso);
@@ -197,6 +211,7 @@ export function installDebugMenu(g) {
   let pasteOpen = false;
   let pasteText = '';
   let kept = null;               // the dump storage holds: the run as of the last minute of play
+  let lastError = null;          // the last uncaught error, which the next dump names
 
   const close = () => {
     if (panel) { panel.remove(); panel = null; }
@@ -425,6 +440,15 @@ export function installDebugMenu(g) {
         dumpText = JSON.stringify(kept, null, 2);
         copyDump();
         break;
+      case 'errclear':
+        lastError = null;
+        // drop the carried-over copy as well, or it comes back on the next read of storage
+        if (kept?.error) {
+          kept = { ...kept, error: null };
+          try { localStorage.setItem(CONFIG.debug.dumpKey, JSON.stringify(kept)); } catch { /* nothing kept */ }
+        }
+        g.toast('Debug: last error cleared.', 'info');
+        break;
       case 'dumpforget':
         try { localStorage.removeItem(CONFIG.debug.dumpKey); } catch { /* nothing kept to forget */ }
         kept = null;
@@ -569,6 +593,8 @@ export function installDebugMenu(g) {
       at: new Date().toISOString(),
       trimmed: { messages: 2, log: 8, ledger: 6, seenEvents: 5, lifeHistory: 3 },
       changes: diffStates(prev, st),
+      // a report that names the exception names the bug: it rides with the run, not beside it
+      error: recentError(),
       runtime: {
         mode: g.mode,
         paused: !!g.paused,
@@ -587,15 +613,91 @@ export function installDebugMenu(g) {
    * minute of play, so a crash or a stuck bug leaves the minute it happened in storage even though
    * the panel was never opened — and the diff in the dump says what that minute did.
    */
-  function keepDump() {
-    if (g.mode !== 'play' || !g.state?.clock) return null;
-    if (typeof document !== 'undefined' && document.hidden) return null; // a background tab is not playing
+  function keepDump(opts = {}) {
+    if (!g.state?.clock) return null;
+    // an error is kept wherever it happens; a routine one only while the game is actually playing
+    if (!opts.force && g.mode !== 'play') return null;
+    if (!opts.force && typeof document !== 'undefined' && document.hidden) return null; // a background tab is not playing
     const dump = buildDump(kept?.state || null);
     try {
       localStorage.setItem(CONFIG.debug.dumpKey, JSON.stringify(dump));
       kept = dump;
     } catch { /* full or blocked storage: the panel still makes dumps on demand */ }
     return dump;
+  }
+
+  /* ---- the last exception ---- */
+
+  /** The error a report should name: the one just caught, or a recent one a reload did not lose. */
+  function recentError() {
+    if (lastError) return lastError;
+    const carried = kept?.error;
+    if (carried?.at && Date.now() - Date.parse(carried.at) < 15 * 60000) return carried;
+    return null;
+  }
+
+  /**
+   * Keep an uncaught error with the run it happened in.
+   *
+   * The handler never calls preventDefault, so the error still reaches the console and the browser's
+   * own reporting; this only makes sure a dump exists that names it. Nothing in here may throw — a
+   * handler that throws loses the error it was called for — and a crash looping every frame bumps a
+   * count instead of rewriting storage each time.
+   */
+  function noteError(kind, err) {
+    const now = Date.now();
+    const message = String(err?.message || 'unknown error').slice(0, 300);
+    const where = err?.where ? String(err.where).slice(0, 200) : null;
+    if (lastError && lastError.message === message && lastError.where === where && now - Date.parse(lastError.at) < 10000) {
+      lastError.count += 1;
+      lastError.at = new Date(now).toISOString();
+      return;
+    }
+    const s = g.state;
+    lastError = {
+      at: new Date(now).toISOString(),
+      kind,
+      message,
+      where,
+      count: 1,
+      // where in the run it happened, so a report can be lined up against the day
+      day: s?.clock ? dayOf(s.clock.m) : null,
+      clock: s?.clock ? hhmm(minuteOfDay(s.clock.m)) : null,
+      stack: stackLines(err?.stack),
+    };
+    keepDump({ force: true });
+    if (panel) render();
+  }
+
+  window.addEventListener('error', (e) => {
+    try {
+      noteError('error', { message: e.message, where: [e.filename, e.lineno, e.colno].filter(Boolean).join(':'), stack: e.error?.stack });
+    } catch { /* an error handler that throws is worse than the error */ }
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    try {
+      const r = e.reason;
+      noteError('rejection', { message: r?.message || String(r), stack: r?.stack });
+    } catch { /* ignore */ }
+  });
+
+  /** The last exception as a row and a line: the first thing to read, above the run itself. */
+  function errorRows() {
+    const e = recentError();
+    if (!e) return '';
+    return `<div class="debug__row"><span>Last error</span><small>${e.kind === 'rejection' ? 'unhandled rejection' : 'uncaught'}${e.count > 1 ? ` ×${e.count}` : ''} · day ${e.day ?? '?'} ${e.clock ?? ''} · ${ago(e.at)}</small><button data-dact="errclear">Clear</button></div>
+      <div class="debug__note debug__note--err">${esc(e.message)}${e.where ? ` · ${esc(e.where)}` : ''}</div>`;
+  }
+
+  /** What moved between the last two kept dumps, as lines: the part of a report that is the story. */
+  function changesBlock() {
+    const lines = Array.isArray(kept?.changes) ? kept.changes : null;
+    if (!lines) return '';
+    if (!lines.length) return '<div class="debug__note">Nothing changed between the last two kept dumps.</div>';
+    return `<div class="debug__dump">
+      <div class="debug__row"><span>Since the last dump</span><small>${kept.state?.clock ? `day ${dayOf(kept.state.clock.m)} · ${ago(kept.at)}` : ''}</small></div>
+      <ol class="debug__changes">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>
+    </div>`;
   }
 
   // a debug nicety must never break a frame: whatever goes wrong in here stays in here
@@ -717,6 +819,8 @@ export function installDebugMenu(g) {
             <span>Kept dump</span><small>${kept?.state?.clock ? `day ${dayOf(kept.state.clock.m)} · ${ago(kept.at)}` : 'none yet — one is kept every minute of play'}</small>
             ${kept?.state?.clock ? '<button data-dact="dumpkept">Copy kept</button><button data-dact="dumpforget">Forget</button>' : ''}
           </div>
+          ${errorRows()}
+          ${changesBlock()}
           ${pasteOpen ? `<div class="debug__dump">
             <div class="debug__row"><span>Load dump</span><small>replaces this run · it goes to the autosave first</small>
               <button data-dact="dumpload">Load</button><button data-dact="dumpcancel">Cancel</button></div>

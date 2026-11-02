@@ -728,6 +728,23 @@
   overflow: auto;
 }
 .debug__dump textarea:focus { border-color: #9bbc0f; outline: none; }
+/* the last exception is the first thing to read in a report, so it gets a colour of its own */
+.debug__note--err { color: #d8a15c; }
+/* the diff since the last kept dump: a short list, not another block to scroll through */
+.debug__changes {
+  margin: 0;
+  padding: 4px 8px 5px 22px;
+  max-height: 150px;
+  overflow: auto;
+  background: #0b1109;
+  border: 1px solid #2f4026;
+  color: #a9c39a;
+  font: inherit;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+.debug__changes li { white-space: pre-wrap; }
+.debug__changes li::marker { color: #5f7550; }
 @media (max-width: 700px) {
   .debug { padding: 1vh 1vw; }
   .debug__grid { grid-template-columns: 1fr; }
