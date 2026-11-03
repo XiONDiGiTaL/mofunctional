@@ -163,7 +163,8 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         handoff (Rolo on the street + Mo's smile), animations
                         (substance use, collapse, dancing), patrol (the 911 cop), courier
                         (the delivery at 1120's door)
-                        hall (1120's third-floor hallway)
+                        hall (1120: lobby and three floors, the elevator), roof (both
+                        walkable roofs)
                         assailant (somebody running at Mo: a driver, a Guardian Angle)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits)

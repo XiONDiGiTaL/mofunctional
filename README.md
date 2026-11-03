@@ -343,6 +343,12 @@ Shifts can be played instead of skipped: four things happen at the counter, from
 to a kid walking out with a honey bun, and how you handle them counts for a little, never for
 everything.
 
+1120 Kestrel has a lobby now, with Rae in 1A, and three floors: Stephanie on the first, Kev on
+the second, Mo and his neighbours on the third. The stairs take a few minutes, the elevator takes
+one. The last flight goes up to the roof, where the door alarm has never worked, the city goes
+all the way round, and a few minutes at the edge buys back some quiet. The walk-up at 1104 has a
+roof too, alarm notice and all.
+
 Unit 3B can get better. Fix the shower, buy a mattress, put a hot plate on the counter, drag a
 couch in from the curb, and with the Home Decorator's Guide from the newsstand, go further. The
 flat shows it. Your door opens onto the third-floor hall now, where the neighbours live and where

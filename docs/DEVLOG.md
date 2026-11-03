@@ -10,6 +10,20 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### 1120 Kestrel, top to bottom
+
+- **The building.** `world/hall.js` is four floors now, by `s.b1120.floor`: a lobby (front door,
+  tile, sconces, a chandelier, mailboxes, and 1A, Rae's, the only lobby unit), the 1st floor
+  (Stephanie in 1B; her door is `places.stephanieDoor`, moved from 1104 5C), the 2nd (Kev in 2A,
+  `calls.kevDoor`), and the 3rd (3B and the tenant storyline). Stairs cost a couple of minutes a
+  flight; the elevator goes anywhere in one (`toFloor`). The street door opens on the lobby, the
+  apartment door on the 3rd floor.
+- **Roofs.** `world/roof.js` builds a walkable roof for 1120 (the door alarm broken, a taped
+  "BROKEN · R.V." notice) and for 1104 (EMERGENCY EXIT · ALARM WILL SOUND), with a skyline of
+  neighbouring roofs and water towers. Smoke a loosie, use what is in your pockets, sit in the
+  lawn chair, or stand at the edge for clarity (stress down, morale up, once a day in full).
+  Areas may set `fogNear`/`fogFar`; the roof is shot with the street's long lens.
+
 ### Seats that fit, ways to start, a shift to play, a home to fix, a block with weather, and the people in it
 
 - **Sitting.** `world.seatTop(x, z)` casts down at a seat and returns the real top of whatever is
