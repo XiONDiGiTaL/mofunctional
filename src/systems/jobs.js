@@ -38,7 +38,7 @@ export function shiftInfo(g) {
   };
 }
 
-export function workShift(g) {
+export function workShift(g, play = null) {
   const s = g.state;
   const info = shiftInfo(g);
   if (!s.job.employed) { g.toast('You do not work there. Not anymore.', 'bad'); return false; }
@@ -66,6 +66,15 @@ export function workShift(g) {
   if (s.high.level > 30 && Math.random() < 0.45) { s.job.warnings = (s.job.warnings || 0) + 1; notes.push('Dale looked at your eyes for a long second and wrote something down.'); }
   if (st.hygiene < 20) { s.job.warnings = (s.job.warnings || 0) + 1; notes.push('A customer said something about the smell. Dale said something about the customer, and then something to you.'); }
   if (st.stress > 85 && Math.random() < 0.35) { s.job.warnings = (s.job.warnings || 0) + 1; notes.push('You snapped at a man over a lottery ticket. He asked for the manager. You are standing next to the manager.'); }
+  // a played shift: the score moves the pay a little, a good one is a clean shift and a tip from
+  // Dale, a rough one is at most one warning (never a strike on its own)
+  let tip = 0;
+  if (play?.played) {
+    const sc = Math.max(-4, Math.min(5, play.score || 0));
+    perf *= 1 + sc * 0.03;
+    if (sc >= 3) { tip = 8; if (s.npc) s.npc.dale = Math.min(10, (s.npc.dale || 0) + 1); }
+    if (sc <= -2) s.job.warnings = (s.job.warnings || 0) + 1;
+  }
   if (!notes.length) {
     s.job.cleanShifts = (s.job.cleanShifts || 0) + 1;
     if (s.job.cleanShifts % 2 === 0 && s.npc) s.npc.dale = Math.min(10, (s.npc.dale || 0) + 1);
@@ -80,7 +89,7 @@ export function workShift(g) {
   // a pledged member tithes from every paycheck, automatically
   const tithe = s.fellowship?.pledged ? gross * 0.3 : 0;
   const net = Math.max(0, gross - J.transportCost - tithe);
-  earn(g, net, `Shift — ${s.job.employer}`);
+  earn(g, net + tip, `Shift — ${s.job.employer}`);
   if (tithe > 0) logLine(g, `The Fellowship took ${money(tithe)} of the shift.`, 'info');
   for (const n of notes) g.toast(n, 'bad');
   if (s.job.strikes >= J.maxStrikes) fireJob(g);

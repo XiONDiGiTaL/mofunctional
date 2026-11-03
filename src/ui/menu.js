@@ -1,4 +1,5 @@
 /** Main menu (audio-reactive), settings, saves, intro and ending screens. */
+import { MODES, applyMode } from '../systems/modes.js';
 import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { LANGUAGES, getLang } from '../i18n/i18n.js';
 import { money, dayOf, el, esc } from '../core/util.js';
@@ -307,11 +308,24 @@ export class Menu {
           WASD MOVE · F INTERACT · TAB PHONE · 1/2/3 SPEED · ESC PAUSE<br>
           Every action costs time. Time is the only resource that does not care how you feel.
         </div>
+        <div class="hr"></div>
+        <div class="modal__kicker">HOW DOES THE WEEK START?</div>
+        <div class="modes">${MODES.map((m, i) => `<button class="modes__it ${i === 0 ? 'on' : ''}" data-mode="${m.id}"><b>${esc(m.name)}</b><span>${esc(m.note)}</span></button>`).join('')}</div>
         <button class="btn btn--primary" data-begin style="margin-top:14px">BEGIN MONDAY →</button>
       </div>
     </div>`);
+    let mode = 'default';
+    overlay.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-mode]');
+      if (!b) return;
+      mode = b.dataset.mode;
+      overlay.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('on', x === b));
+      this.g.audio?.sfx?.('ui');
+    });
     overlay.querySelector('[data-begin]').addEventListener('click', () => {
       overlay.remove();
+      applyMode(this.g, mode);
+      this.g.hud?.update?.();
       this.g.beginRun();
     });
     this.pushOverlay(overlay);

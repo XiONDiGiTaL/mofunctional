@@ -1,4 +1,5 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import { playShift } from '../systems/shiftplay.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
@@ -776,10 +777,14 @@ function storeMenu(g, { staff = false } = {}) {
   const choices = [];
   if (s.job.employed) {
     choices.push({
-      label: info.canClockIn ? `Clock in and work (${Math.round(info.minutesLeft / 60 * 10) / 10}h).` : 'Clock in — not available right now.',
+      label: info.canClockIn ? `Clock in and work normally (${Math.round(info.minutesLeft / 60 * 10) / 10}h).` : 'Clock in — not available right now.',
       sub: info.canClockIn ? `+${money((info.minutesLeft / 60) * s.job.wage - CONFIG.job.transportCost)}` : (info.worked ? 'shift already worked today' : info.today ? 'shift window closed' : 'not a shift day'),
       disabled: !info.canClockIn,
       effect: () => workShift(g),
+    });
+    if (info.canClockIn) choices.unshift({
+      label: 'Clock in and play the shift.', sub: 'four things happen at the counter · how you handle them counts',
+      effect: () => setTimeout(() => playShift(g), 60),
     });
     choices.push({ label: 'Call out of your shift.', sub: '+1 strike · no pay', disabled: !info.today || info.worked, effect: () => callOut(g) });
     choices.push({ label: 'Quit. Hand over the vest.', sub: 'no job, less stress', effect: () => { quitJob(g); } });

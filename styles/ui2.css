@@ -1192,3 +1192,10 @@ button.relrow:hover { color: #ffd24a; }
 .snapview__cap { text-align: center; margin: 6px 0; }
 .camflash { position: fixed; inset: 0; background: #fff; z-index: 9999; pointer-events: none; animation: camflash .38s ease-out forwards; }
 @keyframes camflash { from { opacity: .95; } to { opacity: 0; } }
+
+/* ------------------------------------------------------------------ game modes on the intro */
+.modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; margin: 8px 0 0; max-height: 34vh; overflow: auto; }
+.modes__it { text-align: left; border: 1px solid rgba(160,220,170,.25); border-radius: 8px; background: rgba(10,20,14,.6); color: #cfe6d2; padding: 7px 9px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+.modes__it b { font-size: 12px; color: #f0ffe8; }
+.modes__it span { font-size: 10px; line-height: 1.4; color: #9fb8a4; }
+.modes__it.on { border-color: #ffd23a; box-shadow: 0 0 0 1px #ffd23a inset; background: rgba(40,34,10,.7); }
