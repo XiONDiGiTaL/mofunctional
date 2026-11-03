@@ -10,6 +10,7 @@
  *
  * Everything here is headless: it returns data and small effects, never markup.
  */
+import * as arcs from './arcs.js';
 import * as owes from './owes.js';
 import { CONFIG } from '../core/config.js';
 import { money, dayOf, clamp, pick } from '../core/util.js';
@@ -65,6 +66,9 @@ const BUSINESS = {
   LONELYFANS: { category: 'service', service: 'LONELYFANS', name: 'LonelyFans' },
   "AMAZIN'": { category: 'service', service: "AMAZIN'", name: "Amazin'" },
   'HECTOR': { category: 'personal', kind: 'tenant_m', name: 'Hector (super, 1104)' },
+  'LOU': { category: 'personal', kind: 'tenant_m', name: 'Lou' },
+  'GLORIA (4B)': { category: 'personal', kind: 'tenant_f', name: 'Gloria (4B)' },
+  'ASHBY SOUND': { category: 'personal', kind: 'hall_f', name: 'Renée (Ashby Sound)' },
   'DEE': { category: 'personal', kind: 'tenant_f', name: "Dee (Wash & Fold)" },
 };
 
@@ -228,7 +232,7 @@ export function replyOptions(message, s) {
   if (message?.choices?.length) {
     // a choice may be a saved id (a happening's preparation, the inspector) instead of a function,
     // so it still works after the game is saved and loaded again
-    return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect || (c.prep ? (gg) => happen.prepare(gg, c.prep) : c.inspect ? (gg) => happen.inspectionResult(gg, c.inspect) : undefined) }));
+    return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect || (c.arc ? (gg) => arcs.choose(gg, c.arc, c.opt) : c.prep ? (gg) => happen.prepare(gg, c.prep) : c.inspect ? (gg) => happen.inspectionResult(gg, c.inspect) : undefined) }));
   }
   const id = identityFor(message?.from);
   // the woman who gave him the clap: he knows, now, and he can say so

@@ -238,5 +238,12 @@ export function marqueeLine(s) {
 
 /** Shops close for a blackout; the block party has Kestrel Street. */
 export function installHappenings(g) {
-  setClosedOverride((area) => (g.state && isActive(g.state, 'blackout') && ['bodega', 'habibs', 'laundromat', 'restaurant', 'pawn', 'jays'].includes(area) ? 'Closed · blackout, no power' : null));
+  setClosedOverride((area, m) => {
+    const s = g.state;
+    if (!s) return null;
+    if (isActive(s, 'blackout') && ['bodega', 'habibs', 'laundromat', 'restaurant', 'pawn', 'jays'].includes(area)) return 'Closed · blackout, no power';
+    // Habib closes at midnight now, if that is how his week went (systems/arcs.js)
+    if (area === 'habibs' && s.flags?.habibShortHours && minuteOfDay(m) < 11 * 60) return 'Closed · opens 11:00 (closes at midnight now)';
+    return null;
+  });
 }

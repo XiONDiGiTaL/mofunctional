@@ -1627,7 +1627,11 @@ export function buildHabibs(g) {
   group.add(box(0.6, 0.2, 0.06, retroMaterial('exitsign', { color: 0xff3a2a, emissive: 1.2, unlit: true }), [-1.2, 2.66, 3.6]));
 
   const interactables = [
-    { id: 'habcounter', label: 'Order from Habib', sub: 'chicken over rice · falafel', x: -0.4, z: -0.05, action: (gg) => habibCounter(gg) },
+    { id: 'habcounter', label: 'Order from Habib', sub: g.state.flags.habibFree ? 'your next plate is on the house' : 'chicken over rice · falafel', x: -0.4, z: -0.05, action: (gg) => {
+      // the free plate he promised when the week went right (systems/arcs.js)
+      if (gg.state.flags.habibFree) { gg.state.flags.habibFree = false; addItem(gg.state, 'chicken_rice', 1); gg.toast('"No. Put your money away. I said I would not discuss it." A chicken over rice, extra white sauce, in your hands.', 'good'); return; }
+      habibCounter(gg);
+    } },
     { id: 'habcase', label: 'Look in the hot case', sub: 'it is all still warm', x: -1.6, z: -0.05, radius: 1.2, action: (gg) => openShop(gg, 'habibs') },
     { id: 'habshelf', label: 'Browse the shelves', sub: 'no pork, never', x: 2.4, z: -1.6, action: (gg) => openShop(gg, 'habibs') },
     { id: 'habexit', label: 'Back out to Kestrel St.', sub: '', x: -1.2, z: 2.95, radius: 1.05, action: (gg) => gg.goTo('street', 'habibs') },
