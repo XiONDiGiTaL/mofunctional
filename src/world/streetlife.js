@@ -61,6 +61,17 @@ export function applyAct(rig, dt, life) {
   if (!act) return;
   rig.actT = (rig.actT || Math.random() * 10) + dt;
   const t = rig.actT;
+  if (act === 'fix') {
+    // at a mirror: both hands up to the hair and the cap, then smoothing the front down
+    const cyc = t % 5;
+    const up = cyc < 3 ? 1 : 0;
+    rig.armL.pivot.rotation.x = up ? -2.5 + Math.sin(t * 4) * 0.15 : -0.5;
+    rig.armR.pivot.rotation.x = up ? -2.4 + Math.sin(t * 4 + 1) * 0.15 : -0.6 + Math.sin(t * 3) * 0.2;
+    rig.armL.elbow.rotation.x = up ? -1.6 : -0.6;
+    rig.armR.elbow.rotation.x = up ? -1.7 : -0.5;
+    rig.head.rotation.z = Math.sin(t * 0.8) * 0.1;
+    return;
+  }
   if (act === 'eat') {
     // standing at the stall with a slice or a plate, a bite every few seconds
     if (!rig.eatProp) {

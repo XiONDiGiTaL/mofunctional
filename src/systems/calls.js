@@ -8,6 +8,7 @@
  * schedule, the women asked out, Kev talked into a joint in the park. The keypad also takes any
  * number, and a few of them are worth dialling.
  */
+import { homeArea } from './home.js';
 import * as recovery from './recovery.js';
 import * as owes from './owes.js';
 import { CONFIG } from '../core/config.js';
@@ -284,7 +285,7 @@ export function hangWithKev(g) {
         s.high.level = Math.max(s.high.level, 22);
         s.high.until = Math.max(s.high.until || 0, s.clock.m + 90);
         logLine(g, 'Two hours in the park with Kev.', 'good');
-        g.goTo('apartment', null);
+        g.goTo(homeArea(s), null);
         g.fadeIn();
         g.toast('You remember the bench, the joint, and Kev explaining the freezer theory with diagrams in the air. You do not remember the walk home. You are home, though.', 'good');
       }, 700);

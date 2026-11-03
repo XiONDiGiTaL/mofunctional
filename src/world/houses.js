@@ -419,7 +419,7 @@ function afterDark(g, id, price, minutes, fx) {
   const h = housesState(s);
   h.visits[id] = dayOf(s.clock.m);
   h.room = { id, price };
-  g.fadeOut(() => {
+  g.sceneCut({ caption: `${w.door}. The door closes.`, run: () => {
     g.advance(minutes);
     for (const [k, v] of Object.entries(fx)) bump(s, k, v);
     bump(s, 'risk', 3);
@@ -431,8 +431,7 @@ function afterDark(g, id, price, minutes, fx) {
     }
     logLine(g, `${money(price)} on the dresser in ${w.door}.`, 'info');
     g.goTo('pjroom', 'pjtower');
-    g.fadeIn();
-  }, 600);
+  } });
 }
 
 const LEAVE_LINES = [

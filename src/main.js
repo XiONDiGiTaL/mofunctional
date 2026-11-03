@@ -2,6 +2,7 @@
  * MO: FUNCTIONAL — entry point and game orchestrator.
  * Boots the 3D world, the HUD, the phone, saves, and the main loop.
  */
+import { homeArea } from './systems/home.js';
 import { startMarquee } from './ui/marquee.js';
 import { installHappenings } from './systems/happenings.js';
 import { shouldPop } from './ui/notify.js';
@@ -235,7 +236,7 @@ class Game {
     this.menu.hide();
     this.hud.feed?.clear();
     this.hud.show(true);
-    this.world.loadArea('apartment', this);
+    this.world.loadArea(homeArea(this.state), this);
     this.state.flags.tutorial = 0;
     this.hud.update();
     this.menu.showIntro();
@@ -286,7 +287,7 @@ class Game {
     this.menu.hide();
     this.hud.feed?.clear();
     this.hud.show(true);
-    this.world.loadArea('apartment', this);
+    this.world.loadArea(homeArea(this.state), this);
     this.hud.update();
     this.audio.sfx('confirm');
     if (fromMenu) this.toast(`Loaded. Day ${dayOf(this.state.clock.m)}. ${money(this.state.money)}.`, 'good');
@@ -463,6 +464,25 @@ class Game {
   fadeIn() {
     if (!this.fadeEl) return;
     this.fadeEl.classList.remove('on');
+  }
+
+  /**
+   * The cut every intimate scene takes: the screen goes to black, a line of text sits in the dark
+   * for a beat, `run` moves the clock and the place while nobody can see, and the picture comes
+   * back where he ended up. Nothing explicit is ever on screen.
+   */
+  sceneCut({ caption = 'Later.', hold = 1700, run } = {}) {
+    if (!this.fadeEl) { run?.(); return; }
+    this.fadeEl.textContent = caption;
+    this.fadeEl.classList.add('fadeout--cap', 'on');
+    setTimeout(() => {
+      run?.();
+      this.fadeEl.classList.add('on');
+      setTimeout(() => {
+        this.fadeEl.classList.remove('on');
+        setTimeout(() => { this.fadeEl.textContent = ''; this.fadeEl.classList.remove('fadeout--cap'); }, 450);
+      }, hold);
+    }, 650);
   }
 
   /**

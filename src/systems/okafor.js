@@ -96,16 +96,17 @@ function gerba(g) {
   const o = okaforState(s);
   o.gerbaDay = dayOf(s.clock.m);
   o.like += 0.5;
-  g.advance(20);
-  bump(s, 'energy', 30);
-  bump(s, 'morale', 10);
-  bump(s, 'stress', -12);
-  logLine(g, 'Gerba in the supply room.', 'good');
-  g.toast(pick([
-    'The supply room, the door locked, the radio on to cover it. Twenty minutes later you walk out front with a lollipop like a kid who was brave for his shot.',
-    '"Shh." The supply room. She is very good at her job, all of them. You leave feeling like you slept ten hours.',
-    'She hangs the CLEANING sign on the supply room door. You come out fixed up, and she comes out with a clipboard, calling the next name.',
-  ]), 'good');
+  const run = () => {
+    g.advance(20);
+    bump(s, 'energy', 30);
+    bump(s, 'morale', 10);
+    bump(s, 'stress', -12);
+    logLine(g, 'Gerba in the supply room.', 'good');
+    s.flags.clinicBackScene = 'gerba';
+    g.goTo('clinicback', 'clinic');
+  };
+  if (g.sceneCut) g.sceneCut({ caption: 'The supply room. The radio up loud.', run });
+  else run();
 }
 
 function proposition(g) {
@@ -124,9 +125,9 @@ function proposition(g) {
         bump(s, 'morale', 14);
         bump(s, 'energy', -8);
         logLine(g, 'An hour in the clinic supply room with Nurse Okafor.', 'good');
-        s.flags.clinicBackScene = true;
-        const go = () => { g.goTo('clinicback', 'clinic'); g.fadeIn?.(); };
-        if (g.fadeOut) g.fadeOut(go, 600); else go();
+        s.flags.clinicBackScene = 'cheeks';
+        const go = () => g.goTo('clinicback', 'clinic');
+        if (g.sceneCut) g.sceneCut({ caption: 'The supply room. The inventory is Tuesday.', run: go }); else go();
       } },
       { label: 'Another time.', effect: () => g.toast('"Another time," she agrees, and puts the glasses back on. "My offer does not expire. Neither does yours."', 'info') },
     ],
@@ -135,8 +136,16 @@ function proposition(g) {
 
 /** Mo comes round on the cot in the back; she is at the mirror. Called when the room loads. */
 export function backroomWake(g) {
-  if (!g.state.flags.clinicBackScene) return;
+  const kind = g.state.flags.clinicBackScene;
+  if (!kind) return;
   g.state.flags.clinicBackScene = false;
+  if (kind === 'gerba') {
+    g.toast(pick([
+      'The supply room. She is at the little mirror tugging the uniform straight and re-pinning the cap. "Lollipop on the way out," she says. "You were very brave."',
+      'She checks her lipstick in the mirror, smooths the skirt down, and hangs the CLEANING sign back on the hook. "Out front. Walk normal. Normal, Mo."',
+    ]), 'good');
+    return;
+  }
   g.toast(pick([
     'You come round on the cot under a shelf of gauze. She is at the little mirror by the sink, pinning the cap back on, fixing her lipstick with one finger. "Out front in two minutes," she says without turning round. "Walk like you had a flu shot."',
     'The cot, the hum of the supply fridge, a box of tongue depressors on its side. She is at the mirror putting herself back in order, humming. "You did not see me," she says. "I did not see you. Out you go."',

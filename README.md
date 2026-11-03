@@ -377,6 +377,27 @@ After dark, **fiends** turn up on the block, in the park and on the platform, sw
 well. They vanish at the first sight of a uniform or a red beret. By day the ones with nowhere to
 go are asleep in the Houses stairwells, and they will not buy, but they do have pockets.
 
+### Other people's apartments
+
+Buy a lockpick set (Amazin', or the man in the long coat, who has another side to that coat) and
+every door in 1120, 1104 and the Houses that is not yours or a friend's gets a second prompt. Set
+three pins in the green and you are in: a one-bedroom styled by whoever lives there (the bachelor,
+the grandmother, the painter, the gamer, the plant person, the neat freak). Usually nobody is home.
+Sometimes somebody is asleep, somebody tells you to get out, somebody is already on the phone to
+911, somebody fights, or somebody just tells you to take your shoes off. Nine places to search,
+some cash, the odd thing worth pawning, and a lot of things nobody would steal. In 1104 there is
+one apartment with a man on the floor who is not going to wake up. Do the right thing and it can
+be cleaned out, and if the building is yours, let again.
+
+### The brownstone
+
+A brownstone on 7th Avenue in Park Slope is for sale in the Properties app. Once it is yours, the
+stoop is your door: a white parlour floor with a long linen sofa, a bathroom in subway tile, a real
+bed upstairs, and a fenced yard with a green bistro table. Move in and mornings start there (and
+you can give up Unit 3B for good). The house has its own catalogue (string lights, a grill, a fire
+pit, a hammock, a record player, real art, a hot tub), and the yard is for having people over: a
+girlfriend, Nia, or Kev.
+
 ### Kestrel Houses at night
 
 The man on the bench sells the strong stuff, posting up on a bench can turn into lookout work,

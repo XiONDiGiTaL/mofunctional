@@ -37,7 +37,7 @@ export function billInfo(g, key) {
   }
   const st = s.bills[key] || (s.bills[key] = { paidCycle: -1, missed: 0, lastPaid: 0, remindedDay: 0 });
   // evicted: there is no lease, so no rent falls due (the arrears moved to debt at the door)
-  if (key === 'rent' && s.life?.housing === 'evicted') {
+  if (key === 'rent' && (s.life?.housing === 'evicted' || s.home?.leaseGiven)) {
     return { key, name: def.name, base: def.amount, reached: st.paidCycle, paidCycle: st.paidCycle, owedCycles: 0, owed: 0, dueDay: 0, nextDueDay: 0, daysLeft: 99, overdue: false, noLease: true };
   }
   const day = dayOf(s.clock.m);

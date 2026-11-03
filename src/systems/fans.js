@@ -16,6 +16,7 @@
  *
  * Headless; state in `state.fans`, created lazily.
  */
+import { homeArea } from './home.js';
 import { CONFIG } from '../core/config.js';
 import { dayOf, money, pick, clamp } from '../core/util.js';
 import { bump, logLine, pushMessage, spend } from '../core/state.js';
@@ -244,15 +245,19 @@ export function buyCheeks(g, modelId) {
   bump(s, 'stress', K.stress);
   bump(s, 'morale', K.morale);
   bump(s, 'energy', K.energy);
+  const story = () => {
   g.advance(K.minutes);
-  g.fadeIn?.();
+  if (g.world && g.world.areaId !== homeArea(s)) g.goTo(homeArea(s));
   logLine(g, `Paid ${m.name} ${money(off.price)}. It was a transaction, and it felt like one.`, 'bad');
   g.openModal({
     kicker: `LONELYFANS · ${m.handle}`,
     title: 'The Door Closed',
     body: `A hotel on Ashby with a buzzer that does not work. She is taller in person and less interested in person. The door closes.\n\nLater, the walk home, the money gone, and the specific silence of having paid for company and received exactly that.\n\n$${off.price.toFixed(2)}. Nothing explicit happened, and nothing has to.`,
-    choices: [{ label: 'Walk home.', effect: () => {} }],
+    choices: [{ label: 'Go to bed.', effect: () => {} }],
   });
+  };
+  if (g.sceneCut) g.sceneCut({ caption: 'A hotel on Ashby. A buzzer that does not work.', run: story });
+  else story();
   return { ok: true, price: off.price };
 }
 

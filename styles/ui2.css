@@ -1233,3 +1233,6 @@ button.relrow:hover { color: #ffd24a; }
 .fpost__img img, .chat__pic img, .picview img, .xxx__pic, .chat__face--pic img { image-rendering: pixelated; }
 .fpost__img--mo3d { position: relative; }
 .fpost__img--mo3d img { width: 100%; display: block; }
+
+/* the scene cut's line in the dark (main.js sceneCut) */
+.fadeout--cap { display: grid; place-items: center; color: #e8e0c8; font: italic 600 18px var(--ui); letter-spacing: .14em; }

@@ -18,6 +18,7 @@
  *   - Every money/stock/gift effect is stamped with the in-game day, so reloading a save cannot
  *     pay twice, restock twice, or deliver the same present again.
  */
+import { homeArea } from './home.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, chance, pick, money, dayOf, minuteOfDay, hhmm, uid } from '../core/util.js';
 import { bump, logLine, pushMessage, addItem, countItem, earn, spend, hasItem, removeItem } from '../core/state.js';
@@ -829,17 +830,18 @@ export function cheeks(g, id) {
     const minutes = Math.max(5 * 60, nextMorning - now);
     g.advance(minutes, { sleeping: true, noCollapse: true });
     startAfterglow(g);
-    if (g.world && g.world.areaId !== 'apartment') g.goTo('apartment');
-    g.fadeIn?.();
+    // at her place he wakes up at her place; anywhere else, at home
+    const atHers = g.world?.areaId === 'herplace';
+    if (g.world && !atHers && g.world.areaId !== homeArea(s)) g.goTo(homeArea(s));
     g.openModal({
-      kicker: 'UNIT 3B · MORNING',
+      kicker: atHers ? `${p.name.toUpperCase()}'S · MORNING` : 'UNIT 3B · MORNING',
       title: 'Afterglow',
       body: `${p.cheekLine}\n\nThe door closed. The city kept going. Somewhere a car alarm gave up.\n\nYou wake up at ${hhmm(s.clock.m)} with the specific smugness of a man whose radiator is still broken but who is, for the next ${CONFIG.romance.afterglowHours} hours, doing fine.`,
       choices: [{ label: 'Enjoy it.', effect: () => { bump(s, 'morale', 6); } }],
     });
     logLine(g, `A night with ${p.name}. Afterglow for ${CONFIG.romance.afterglowHours}h.`, 'good');
   };
-  if (g.fadeOut) g.fadeOut(finish, 420);
+  if (g.sceneCut) g.sceneCut({ caption: 'The door closes.', run: finish });
   else finish();
   return true;
 }

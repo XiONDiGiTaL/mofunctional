@@ -10,6 +10,33 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Scene cuts, NPCs that run like people, break-ins, and the brownstone
+
+- **`Game.sceneCut({ caption, hold, run })`** (main.js): fade to black, a held caption, `run` moves
+  time and place in the dark, fade back. Used by every intimate scene: a girlfriend staying (wakes
+  at her place if that is where he was, else `homeArea`), dating-app nights, the Houses, LonelyFans
+  in person, Okafor's gerba (now a cut to `clinicback` like the hookers' rooms, with her at the
+  mirror on act `fix`) and the supply room.
+- **Fleeing** (`startFlee` / the flee step): off the seat (`baseY` 0, pose cleared), guard and swing
+  cancelled, a 2D target (the street's end, or indoors the area's entrance), sidesteps around
+  solids, stays inside bounds; the main loop animates fleeing rigs at a run and skips their
+  patrol. Stuck for a second: `cowerT` (arms over the head) and a shout for help.
+- **Break-ins** (`world/flat.js`): `lockpicks` (Amazin' as kind `tool`, or the watch seller);
+  `addLockPicks` puts "Pick the lock on 2C" beside eligible doors in `hall`, `walkup` and
+  `pjtower` (not 3B, 1B, 2A, Melanie's 3C or the Houses women); `pickLock` is the Fight meter with
+  three pins. The flat follows the one-bedroom plan, styled by a hash of `unit key` (six styles);
+  `occupant()` rolls per unit per day (empty, sleep, leave, cops, fight, chill); residents who
+  call set `heat`, which brings a cop chase in the hall on the way out (`spawnId === 'flat'`
+  returns him to the door). Nine searchable spots, once each per day. `1104_4D` holds a dead
+  fiend (`npcDef.dead`, not a sleeper): pockets, 911 (`bodyGone`), then `cleanOut` ($120, 3 h),
+  which lets the unit if Mo owns 1104.
+- **The brownstone** (`world/brownstone.js`, `market.PROPERTIES.brownstone`, $185,000): bought in
+  the Properties app; the Park Slope stoop at x 11.5 (a FOR SALE sign until then). Parlour, bath,
+  bed upstairs, kitchen, fridge (`showFridge`), the yard; `BS_UPGRADES` catalogue; guests
+  (`brownstone.guest`) for the day. `home.residence` and `homeArea(s)` decide where he lands
+  (dating, LonelyFans, girlfriends, Kev's hang, waking up rough, new game and load);
+  `home.leaseGiven` ends rent on 3B (`billInfo` treats it as no lease) and 3B's door.
+
 ### Street mouths, stall hours, and the 84th in uniform
 
 - **`world/vistas.js`** `streetMouth(group, { x, dir, look, title, sub })`: past the walkable edge,

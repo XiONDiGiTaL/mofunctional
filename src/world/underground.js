@@ -584,6 +584,7 @@ export function buildParkSlope(g) {
     group.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.1, 0), retroMaterial('ps_leaf', { color: 0x4a7a3a })).translateX(x).translateY(3.0).translateZ(0.2));
     group.add(box(1.0, 0.3, 1.0, retroMaterial('ps_guard', { color: 0x1a1a1a }), [x, 0.15, 0.2]));
   }
+  if (!g.state.market?.properties?.brownstone) group.add(plane(0.9, 0.6, { name: 'ps_forsale', map: signTex('psForSale', [{ text: 'FOR SALE', color: '#c81e1e', size: 10 }, { text: 'SLOPE REALTY', color: '#1a1a1a', size: 6 }], { w: 64, h: 40, bg: '#f2f2ec', border: '#c81e1e' }), emissive: 0.4, unlit: true }, [12.4, 1.3, -4.5]));
   door(4.0, 'GROUNDS FOR HOPE', 'COFFEE · PASTRY · OAT MILK SURCHARGE', 0x2a4a3a, '#f2e6c8', '#2a3a2e');
   group.add(box(2.8, 1.6, 0.06, retroMaterial('ps_cafewin', { color: 0xffe0a8, emissive: 0.5, unlit: true }), [6.2, 1.4, -6.33]));
   // the dog-walker board on a lamp post
@@ -606,6 +607,9 @@ export function buildParkSlope(g) {
           { label: 'Leave.', effect: () => {} },
         ],
       }) },
+    // the brownstone on the right: for sale until Mo buys it in the Properties app
+    { id: 'ps_brownstone', label: g.state.market?.properties?.brownstone ? 'Your brownstone' : 'The brownstone for sale', sub: g.state.market?.properties?.brownstone ? 'the stoop · your door' : 'SLOPE REALTY · $185,000 · the Properties app', x: 11.5, z: -4.6, radius: 1.3,
+      action: (gg) => (gg.state.market?.properties?.brownstone ? gg.goTo('brownstone', 'parkslope') : gg.openModal({ kicker: '7TH AVENUE · FOR SALE', title: 'The Brownstone', body: 'A sign on the railing: FOR SALE, SLOPE REALTY, a phone number nobody under sixty has ever called. Through the parlour window: white walls, wood floors, a yard out the back.\n\n$185,000. You can buy it in the Properties app on your phone, if you have it.', choices: [{ label: 'Look a little longer.', effect: () => {} }] })) },
     // Diana's: the brownstone on the corner, top floor (world/herplace.js)
     { id: 'ps_diana', label: "Diana's building", sub: 'the brownstone on the corner · top floor', x: -11, z: -4.6, radius: 1.3, action: (gg) => herplace.knock(gg, 'diana') },
     { id: 'ps_dogs', label: 'The dog-walker board', sub: 'tear-off tabs · cash for walks', x: -5, z: 0.4, radius: 1.3,
@@ -629,7 +633,7 @@ export function buildParkSlope(g) {
   return {
     group, title: '7th Avenue · Park Slope',
     bounds: farBounds, camBounds: farCam, traffic: farTraffic, solids,
-    spawn: { x: 0.8, z: -2.6, rot: Math.PI / 2 }, spawnFor: (from) => (from === 'herplace' ? { x: -11, z: -4.2, rot: 0 } : { x: 0.8, z: -2.6, rot: Math.PI / 2 }),
+    spawn: { x: 0.8, z: -2.6, rot: Math.PI / 2 }, spawnFor: (from) => (from === 'herplace' ? { x: -11, z: -4.2, rot: 0 } : from === 'brownstone' ? { x: 11.5, z: -4.0, rot: 0 } : { x: 0.8, z: -2.6, rot: Math.PI / 2 }),
     npcs, interactables, ambient: 'street',
     enterToast: 'Park Slope. Brownstones, strollers that cost more than your rent, and a lot of people being very calm.',
   };

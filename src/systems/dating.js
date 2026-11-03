@@ -15,6 +15,7 @@
  * Headless: deterministic per day (a stranger's profile does not change if you reopen the app),
  * capped hearts per day, state in `state.dating`, created lazily.
  */
+import { homeArea } from './home.js';
 import { CONFIG } from '../core/config.js';
 import { dayOf, minuteOfDay, hhmm } from '../core/util.js';
 import { bump, logLine, pushMessage } from '../core/state.js';
@@ -228,8 +229,7 @@ export function hookup(g, id, where = 'hers') {
     let souvenir = false;
     if (Math.random() < CONFIG.health.clapChance * (w.risky ? 2 : 1)) souvenir = health.infect(g, w.id);
     void souvenir;
-    if (g.world && g.world.areaId !== 'apartment') g.goTo('apartment');
-    g.fadeIn?.();
+    if (g.world && g.world.areaId !== homeArea(s)) g.goTo(homeArea(s));
     const story = where === 'his'
       ? `She looks around Unit 3B like it is a museum of a man. She says the radiator is "a lot." The door closes.\n\nShe is gone before the radiator wakes up, and she has taken one of your good socks, which is a choice.`
       : `${pickLine(H.nightLines)}\n\nThe door closed. Later: the long train home, the car empty except for a man asleep on his own shoulder. ${w.name} did not ask you to stay and you did not ask to.`;
@@ -242,7 +242,7 @@ export function hookup(g, id, where = 'hers') {
     });
     logLine(g, `A night with ${w.name}. Not a date.`, caught ? 'bad' : 'good');
   };
-  if (g.fadeOut) g.fadeOut(finish, 420);
+  if (g.sceneCut) g.sceneCut({ caption: where === 'his' ? 'Unit 3B. Later.' : 'Her place. Later.', run: finish });
   else finish();
   return { ok: true, result: 'night' };
 }

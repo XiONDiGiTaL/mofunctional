@@ -18,7 +18,10 @@ import { Assailants } from './assailant.js';
 import { Duel } from './duel.js';
 import { buildHerPlace } from './herplace.js';
 import { buildRow } from './row.js';
-import { dressWalker, carryPose, crowdTick, errand } from './crowd.js';
+import { buildFlat, pickLock, flatsState } from './flat.js';
+import { buildBrownstone } from './brownstone.js';
+import { WOMEN, housesState } from './houses.js';
+import { dressWalker, carryPose, crowdTick, errand, bark } from './crowd.js';
 import { Incidents } from './incidents.js';
 import * as rae from '../systems/rae.js';
 import { ROAD } from './plan.js';
@@ -55,7 +58,7 @@ const BUILDERS = {
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
-  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom, clinicback: buildClinicBack, row: buildRow, herplace: (g) => buildHerPlace(g, { partnerMenu }),
+  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom, clinicback: buildClinicBack, row: buildRow, flat: buildFlat, brownstone: buildBrownstone, herplace: (g) => buildHerPlace(g, { partnerMenu }),
   pawn: buildPawnShop, jays: (g) => buildJays(g, clothingMenu), relief: buildReliefOffice,
 };
 
@@ -229,7 +232,8 @@ export class World {
     this.addison.root.visible = false;
 
     // an area can say where each of its doors lets out; otherwise there is one spawn
-    const spawn = (spawnId && this.area.spawnFor?.(spawnId)) || this.area.spawn;
+    // out of somebody's apartment: back at the door he picked
+    const spawn = (spawnId === 'flat' && g.state.breakin?.backArea === id && g.state.breakin.back) || (spawnId && this.area.spawnFor?.(spawnId)) || this.area.spawn;
     this.mo.root.visible = true;
     this.mo.root.position.set(spawn.x, 0, spawn.z);
     this.mo.root.rotation.set(0, spawn.rot, 0);
@@ -255,6 +259,7 @@ export class World {
     addFiends(g, id, this.area);
     this.fiendScatter = false;
     this.interactables = this.area.interactables.map((it) => ({ ...it, vec: new THREE.Vector2(it.x, it.z) }));
+    this.addLockPicks(g, id);
     this.seated = null;
     this.addSeats(this.area.seats || []);
     // a prompt belongs to the room that drew it: the station's "wait for the train" followed him
@@ -297,6 +302,11 @@ export class World {
     }
     // everybody walking past has something in their hands (world/crowd.js)
     for (const rig of this.npcRigs) if (rig.npcDef?.walker) dressWalker(rig, rig.npcDef);
+    // out of a flat somebody called the police about: one is already in the hall
+    if (spawnId === 'flat' && g.state.breakin) {
+      const fl = flatsState(g.state)[g.state.breakin.key];
+      if (fl?.heat) { fl.heat = false; setTimeout(() => { g.toast('Footsteps on the stairs, a radio, "SIR. STOP RIGHT THERE." Somebody did call.', 'bad'); this.startChase(g, 'cop'); }, 1400); }
+    }
     // the walls keep their paint; the street keeps its own business (world/incidents.js)
     if (!this.incidents) this.incidents = new Incidents(this);
     this.incidents.onLoad(g, id);
@@ -350,7 +360,7 @@ export class World {
     }
     // anybody asleep where Mo can reach them has pockets, and might not stay asleep
     for (const rig of this.npcRigs) {
-      if (rig.npcDef?.pose !== 'sleep' || rig.type === 'cat' || rig.npcDef?.partner) continue;
+      if (rig.npcDef?.pose !== 'sleep' || rig.type === 'cat' || rig.npcDef?.partner || rig.npcDef?.dead) continue;
       const it = { id: `sleeper_${rig.npcId || this.interactables.length}`, label: 'Go through his pockets', sub: 'he is asleep · probably', x: rig.root.position.x, z: rig.root.position.z, radius: 1.2, action: (gg) => this.sleeperLoot(gg, rig, it) };
       rig.sleepIt = it;
       this.interactables.push(it);
@@ -1154,14 +1164,53 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (rig.talkIt) rig.talkIt.hidden = false;
   }
 
+  /**
+   * Lockpicks in his pocket: every door he could open gets a second prompt beside it. Not his own,
+   * not anybody he is seeing, not Kev's.
+   */
+  addLockPicks(g, id) {
+    const s = g.state;
+    if (!(s.inventory || []).some((i) => i.id === 'lockpicks' && i.qty > 0)) return;
+    const women = Object.values(WOMEN).map((w) => w.door);
+    const rules = {
+      hall: [/^h3_(\d[A-Z])$/, '1120', ['3B', '1B', '2A'], '1120 KESTREL', 'hall'],
+      walkup: [/^wu_door_(\d[A-Z])$/, '1104', ['3C'], '1104 KESTREL', 'hall'],
+      pjtower: [/^pt_door_(\d[A-Z])$/, 'houses', women, 'KESTREL HOUSES', 'hallway'],
+    };
+    const r = rules[id];
+    if (!r) return;
+    for (const it of [...this.interactables]) {
+      const m = it.id.match(r[0]);
+      if (!m || r[2].includes(m[1])) continue;
+      const unit = m[1];
+      const key = id === 'pjtower' ? `houses_${housesState(s).tower}_${unit}` : `${r[1]}_${unit}`;
+      const z = it.z + 0.55;
+      this.interactables.push({
+        id: `pick_${unit}`, label: `Pick the lock on ${unit}`, sub: 'lockpicks · quiet · very illegal', x: it.x, z, radius: 0.55, vec: new THREE.Vector2(it.x, z),
+        action: (gg) => pickLock(gg, { key, unit, bldg: r[3], bldgName: r[4], backArea: id, back: { x: it.x * 0.6, z, rot: it.x > 0 ? Math.PI / 2 : -Math.PI / 2 } }),
+      });
+    }
+  }
+
   /** Send somebody running: not away from him, but to the end of the street. */
   startFlee(rig) {
     const b = this.area?.bounds;
     const p = rig.root.position;
+    // nobody runs sitting down, or with their hands up: off the seat, guard dropped
+    rig.guardT = 0; rig.swingDelay = 0; rig.swingT = 0;
+    rig.pose = null; rig.baseY = 0; p.y = 0;
+    if (rig.npcDef) { rig.npcDef.pose = null; rig.npcDef.still = rig.npcDef.still && !rig.npcDef.walker; }
+    rig.root.rotation.set(0, rig.root.rotation.y, 0);
     const away = p.x - this.mo.root.position.x;
-    const edge = b ? (away >= 0 ? b.maxX - 0.7 : b.minX + 0.7) : p.x + Math.sign(away || 1) * 9;
-    rig.flee = 7;
-    rig.fleeX = edge;
+    if (this.isRoom() && this.area.spawn) {
+      // indoors there is one way out: the door he came in by
+      rig.fleeX = this.area.spawn.x; rig.fleeZ = this.area.spawn.z;
+    } else {
+      rig.fleeX = b ? (away >= 0 ? b.maxX - 0.7 : b.minX + 0.7) : p.x + Math.sign(away || 1) * 9;
+      rig.fleeZ = b ? clamp(p.z, b.minZ + 0.5, b.maxZ - 0.5) : p.z;
+    }
+    rig.flee = 9;
+    rig.fleeStuck = 0;
     rig.gone = false;
     // the prompt list reads `hidden`; `visible` left a talk prompt standing where she used to be
     if (rig.talkIt) rig.talkIt.hidden = true;
@@ -1223,13 +1272,36 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (!(rig.flee > 0)) continue;
       rig.flee -= dt;
       const b = this.area?.bounds;
-      const tx = rig.fleeX ?? rig.root.position.x;
-      const dx = tx - rig.root.position.x;
-      const step = Math.min(Math.abs(dx), 3.1 * dt) * Math.sign(dx || 1);
-      rig.root.position.x += step;
-      if (b) rig.root.position.z = clamp(rig.root.position.z, b.minZ + 0.5, b.maxZ - 0.5);
-      rig.root.rotation.y = Math.atan2(Math.sign(dx || 1), 0);
-      if (Math.abs(dx) < 0.25) { rig.gone = true; rig.flee = 0; rig.root.visible = false; }
+      const p = rig.root.position;
+      const dx = (rig.fleeX ?? p.x) - p.x;
+      const dz = (rig.fleeZ ?? p.z) - p.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 0.3) { rig.gone = true; rig.flee = 0; rig.root.visible = false; continue; }
+      const sp = Math.min(d, 3.1 * dt);
+      const inB = (x, z) => !b || (x > b.minX + 0.3 && x < b.maxX - 0.3 && z > b.minZ + 0.3 && z < b.maxZ - 0.3);
+      let nx = p.x + (dx / d) * sp;
+      let nz = p.z + (dz / d) * sp;
+      // something in the way: step round it, one side or the other
+      if (this.blocked(nx, nz) || !inB(nx, nz)) {
+        const px = -dz / d, pz = dx / d;
+        let moved = false;
+        for (const sg of [1, -1]) {
+          const ax = p.x + px * sg * sp, az = p.z + pz * sg * sp;
+          if (!this.blocked(ax, az) && inB(ax, az)) { nx = ax; nz = az; moved = true; break; }
+        }
+        if (!moved) { nx = p.x; nz = p.z; }
+      }
+      const prog = Math.hypot(nx - p.x, nz - p.z);
+      rig.fleeStuck = prog < sp * 0.3 ? (rig.fleeStuck || 0) + dt : 0;
+      if (prog > 0.001) rig.root.rotation.y = Math.atan2(nx - p.x, nz - p.z);
+      p.x = nx; p.z = nz;
+      // cornered: cover up and shout for somebody
+      if (rig.fleeStuck > 1.0) {
+        rig.flee = 0;
+        rig.cowerT = 5;
+        rig.root.rotation.y = Math.atan2(this.mo.root.position.x - p.x, this.mo.root.position.z - p.z);
+        bark(rig, pick(['HELP! SOMEBODY HELP ME!', 'Leave me alone!', 'Somebody call the police!', 'Please! Please!']), 2.6);
+      }
     }
     const rig = this.chaseRig;
     if (!rig) return;
@@ -1987,6 +2059,10 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (rig.type === 'cat') { if (rig.fly || (rig.koUntil || 0) > this.realT) this.updateCatKO(rig, dt); else animateNPC(rig, dt); continue; }
       if (rig.down) { this.npcDown(rig, dt); continue; }
       if (rig.patrol) continue; // driven by Patrol, below
+      // running: the flee step moves them, this works their legs at a run
+      if (rig.flee > 0) { animateNPC(rig, dt * 1.5, { walking: true }); continue; }
+      // cornered: arms up over the head until the moment passes
+      if (rig.cowerT > 0) { rig.cowerT -= dt; animateNPC(rig, dt, {}); guardPose(rig, this.time || 0); rig.head.rotation.x = 0.4; continue; }
       // somebody an incident brought: it moves them; this only works their legs
       if (rig.scripted) { animateNPC(rig, dt * (rig.runK || 1), { walking: !!rig.walking }); continue; }
       this.patrolNPC(rig, dt, g);

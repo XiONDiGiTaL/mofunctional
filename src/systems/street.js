@@ -83,6 +83,11 @@ function watchGuy(g) {
         if (chance(0.35)) { addItem(s, 'watch', 1); g.toast('The back says SWISS MADE in a font that has never been to Switzerland. Still, it ticks.', 'good'); }
         else { bump(s, 'morale', -4); g.toast('It stops before you reach the corner. He is already gone.', 'bad'); }
       } },
+      { label: '“You got anything else in there?”', sub: '$30 · he opens the other side of the coat', disabled: s.money < 30, effect: () => {
+        g.spendMoney(30, 'Watch guy, the other side of the coat');
+        addItem(s, 'lockpicks', 1);
+        g.toast('The other side of the coat is all tools. He hands you a little leather roll of picks and says, "For your own front door. Which you lost the key to. Right?"', 'info');
+      } },
       { label: '“I’m good.”', sub: '', effect: () => {} },
     ],
   });

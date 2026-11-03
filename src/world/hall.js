@@ -162,7 +162,7 @@ export function buildHall(g, { partnerMenu, stephanieDoor, raeTalk, kevDoor } = 
     group.add(plane(1.1, 0.8, { name: 'h3_cork', color: 0xa8784a }, [W / 2 - 0.14, 1.5, -0.4], [0, -Math.PI / 2, 0]));
     for (let i = 0; i < 2 + Object.keys(t.complaints).length; i++) group.add(plane(0.22, 0.28, { name: `h3_paper${i}`, color: i === 0 ? 0xf2f0e4 : 0xe8e0b0 }, [W / 2 - 0.15, 1.45 + (i % 2) * 0.22, -0.8 + i * 0.22], [0, -Math.PI / 2, (i % 3 - 1) * 0.1]));
     doorAt(-1, 1.6, '3A', (gg) => tenants.knock(gg, '3A'), t.complaints['3A'] ? 'Mrs. Pryce · on the list' : 'Mrs. Pryce');
-    doorAt(-1, 3.8, '3B', (gg) => gg.goTo('apartment', 'hall'), 'your door · the lock sticks', 'Unit 3B · home');
+    doorAt(-1, 3.8, '3B', (gg) => (gg.state.home?.leaseGiven ? gg.toast('A new name on the door: R. OKONKWO. The lock still sticks, you can hear it from here. Not your problem any more.', 'info') : gg.goTo('apartment', 'hall')), s.home?.leaseGiven ? 'not yours any more' : 'your door · the lock sticks', s.home?.leaseGiven ? 'Unit 3B' : 'Unit 3B · home');
     doorAt(1, 1.6, '3C', (gg) => tenants.knock(gg, '3C'), t.complaints['3C'] ? 'the Delgados · on the list' : 'the Delgados');
     doorAt(1, 3.8, '3D', (gg) => tenants.knock(gg, '3D'), t.complaints['3D'] ? 'Marcus · on the list' : 'Marcus');
     interactables.push(

@@ -130,7 +130,7 @@ const VIEWS = {
         const own = m.properties[p.id];
         if (!own) {
           return `<div class="card inv__prop"><b>${T(p.name)}</b><div class="tiny">${T(p.blurb)}</div>
-            <div class="tiny mono-dim">${p.units ? `${p.units} units × ${money(p.rent)}/wk` : `${money(p.flat)}/wk flat`} · upkeep ${money(p.upkeep)}/wk</div>
+            <div class="tiny mono-dim">${p.units ? `${p.units} units × ${money(p.rent)}/wk` : p.home ? 'a place to live · a yard' : `${money(p.flat)}/wk flat`} · upkeep ${money(p.upkeep)}/wk</div>
             <button class="btn btn--primary btn--sm" data-act="invprop" data-arg="${p.id}" ${s.money >= p.price ? '' : 'disabled'}>BUY · ${money(p.price)}</button></div>`;
         }
         const rows = own.units.map((u, i) => `<div class="listitem"><div class="grow"><div class="name">${T(u.name)}</div><div class="meta">${{ paying: 'paying', behind: `behind ${u.behind} wk`, vacant: 'vacant', offer: 'wants to pay in product', product: 'paying in product' }[u.status]}</div></div>

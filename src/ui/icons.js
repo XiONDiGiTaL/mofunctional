@@ -161,6 +161,7 @@ const ART = {
     + `<path d="M30 40l7-10 10 3 3 10-9 6z" fill="#e6d79c"/><path d="M37 30l10 3-4 4-8-2z" fill="#f8efc8"/>`
     + `<path d="M42 47l6-5 7 3-1 6-8 1z" fill="#ead9a0"/><path d="M24 26l5-5 6 3-2 5-6 1z" fill="#f2e6b4"/>`
     + `<g fill="#fffbe8" stroke="none" fill-opacity=".8"><circle cx="18" cy="49" r="1.2"/><circle cx="34" cy="51" r="1"/><circle cx="52" cy="40" r="1"/><circle cx="27" cy="33" r=".9"/><circle cx="46" cy="52" r=".8"/></g>`, 24),
+  lockpicks: svg(`<rect x="12" y="22" width="40" height="22" rx="4" fill="#2a2a2e"/><path d="M18 30h30M18 36h26" stroke="#c8ccd0" stroke-width="2.4"/><path d="M48 30l4-4M44 36l3 3" stroke="#c8ccd0" stroke-width="2"/>`),
   epipen: svg(`<rect x="14" y="27" width="38" height="11" rx="5" fill="#f2c21a"/><rect x="14" y="27" width="10" height="11" rx="3" fill="#2a6ad8"/><rect x="44" y="28.5" width="8" height="8" rx="2" fill="#e8501a"/><rect x="27" y="29.5" width="14" height="6" fill="#fff6e0" stroke="none"/>` + txt(34, 34.5, 5, '#c81e1e', 'EPI')),
   baking_soda: svg(box({ x: 18, y: 16, w: 26, h: 34, d: 8, c: '#f0a020', top: '#ffc04a', side: '#b8761a' })
     + `<rect x="21" y="24" width="20" height="14" fill="#fff6e0" stroke="none"/>` + txt(31, 33, 7, '#c03a1a', 'SODA')

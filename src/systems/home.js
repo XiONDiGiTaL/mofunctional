@@ -42,6 +42,8 @@ export function homeState(s) {
   return h;
 }
 export const has = (s, id) => homeState(s).owned.includes(id);
+/** Where he wakes up and walks home to: the brownstone once he lives there, else Unit 3B. */
+export const homeArea = (s) => (s.home?.residence === 'brownstone' && s.market?.properties?.brownstone ? 'brownstone' : 'apartment');
 export const comfort = (s) => homeState(s).owned.reduce((n, id) => n + (upgradeById(id)?.comfort || 0), 0);
 
 /** What is on the list right now: everything practical, and the decor once he has the guide. */

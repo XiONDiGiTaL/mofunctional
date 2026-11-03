@@ -174,7 +174,7 @@ export function buildClinicBack(g) {
     solids: [solid(-1.25, 0.55, 0.8, 1.95, 0.55), solid(W / 2 - 0.3, 0.2, 0.5, 0.45, 0.9), solid(W / 2 - 0.4, -D / 2 + 0.4, 0.6, 0.6, 1.4)],
     spawn: { x: -0.6, z: 0.4, rot: Math.PI / 2 },
     spawnFor: () => ({ x: -0.6, z: 0.4, rot: Math.PI / 2 }),
-    npcs: [{ kind: 'nurse', x: W / 2 - 0.55, z: 0.25, rot: Math.PI / 2, still: true, act: 'phone' }],
+    npcs: [{ kind: 'nurse', x: W / 2 - 0.55, z: 0.25, rot: -Math.PI / 2, still: true, act: 'fix' }],
     interactables,
     ambient: 'clinic',
     tick: (gg) => okafor.backroomWake(gg),

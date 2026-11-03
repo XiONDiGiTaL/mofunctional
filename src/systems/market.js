@@ -115,6 +115,8 @@ export function portfolioValue(s) {
 export const PROPERTIES = {
   walkup: { id: 'walkup', name: '1104 Kestrel St.', blurb: 'five-floor walk-up, eight units, one Squeak', price: 100000, units: 8, rent: 165, upkeep: 220 },
   lot: { id: 'lot', name: 'The lot past the clinic', blurb: 'chain-link, a Buick, a weekend flea market', price: 30000, units: 0, rent: 0, flat: 260, upkeep: 30 },
+  // a home, not an investment: world/brownstone.js
+  brownstone: { id: 'brownstone', name: 'The brownstone on 7th Ave, Park Slope', blurb: 'a parlour floor, a bathroom in subway tile, stairs to a real bedroom, and a yard', price: 185000, units: 0, rent: 0, flat: 0, upkeep: 160, home: true },
   laundromat: { id: 'laundromat', name: "Dee's Wash & Fold", blurb: 'twenty machines, two vending machines, Dee, and a back room', price: 60000, units: 0, rent: 0, flat: 780, upkeep: 190 },
 };
 
@@ -136,6 +138,7 @@ export function buyProperty(g, id) {
   };
   bump(s, 'morale', 25);
   logLine(g, `Bought ${p.name}.`, 'good');
+  if (id === 'brownstone') pushMessage(g, { from: 'SLOPE REALTY', subject: 'Congratulations', body: 'The keys to the brownstone on 7th Avenue are under the mat, which we are told is not how keys work in Park Slope. Welcome to the neighbourhood. The neighbour on the left has already called about your fence.' });
   if (id === 'walkup') {
     pushMessage(g, { from: 'HECTOR (SUPER, 1104)', subject: '', body: '"So you\'re the new owner. Okay. The boiler is older than both of us and Squeak in 4A pays in \'other ways\' sometimes. Welcome to the family, boss."' });
   }

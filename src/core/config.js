@@ -183,6 +183,7 @@ export const CONFIG = {
     drip_x:  { id: 'drip_x',  name: 'Drip (pure)',            kind: 'substance', price: 12, value: 4 },
     rox:     { id: 'rox',     name: 'ROX',                    kind: 'substance', price: 40, value: 15 },
     // off Nurse Okafor, now and then, if somebody knocks her out (please do not): everything back at once
+    lockpicks: { id: 'lockpicks', name: 'Lockpick Set', kind: 'tool', price: 24, value: 8 },
     epipen:  { id: 'epipen',  name: 'EpiPen', kind: 'medicine', price: 0, value: 40 },
     baking_soda: { id: 'baking_soda', name: 'Box of Baking Soda', kind: 'supply', price: 2.0, value: 0.3 },
     tv:      { id: 'tv',      name: '22" CRT Television', kind: 'valuable', value: 95,  weight: 5 },

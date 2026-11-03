@@ -16,6 +16,7 @@
  * change in that index. Rock bottom is a state with its own texts and options; climbing out of it
  * is a run of milestones. Neither is quick.
  */
+import { homeArea } from './home.js';
 import { CONFIG } from '../core/config.js';
 import { bump, logLine, pushMessage, spend, clock } from '../core/state.js';
 import { billInfo } from './economy.js';
@@ -101,7 +102,7 @@ export function hospitalize(g, cause = 'overdose') {
   l.debt.hospital = (l.debt.hospital || 0) + bill;
   l.counselor = true;
   l.inHospital = false;
-  if (g.world?.areaId !== 'street' && g.world?.areaId !== 'apartment') g.goTo?.(isHoused(s) ? 'apartment' : 'street');
+  if (g.world?.areaId !== 'street' && g.world?.areaId !== 'apartment') g.goTo?.(isHoused(s) ? homeArea(s) : 'street');
   else if (isHoused(s)) g.goTo?.('apartment');
   g.openModal?.({
     kicker: od ? 'KINGS COUNTY HOSPITAL · ER' : 'KINGS COUNTY HOSPITAL',
