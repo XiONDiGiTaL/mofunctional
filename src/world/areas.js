@@ -1,4 +1,5 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import * as music from '../systems/music.js';
 import { playShift } from '../systems/shiftplay.js';
 import * as home from '../systems/home.js';
 import * as happen from '../systems/happenings.js';
@@ -197,6 +198,7 @@ export function buildApartment(g) {
 
   const interactables = [
     { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
+    { id: 'music', label: 'The notebook and the mic', sub: 'write · record · burn CDs', x: -0.6, z: -1.0, radius: 0.8, action: (gg) => music.musicMenu(gg) },
     { id: 'fixup', label: 'Fix up the place', sub: home.homeState(hs).leak ? 'there is a leak · repairs · upgrades' : 'repairs · upgrades', x: 0.6, z: 3.3, radius: 0.9, action: (gg) => home.fixUpMenu(gg) },
     ...(home.has(hs, 'hotplate') ? [{ id: 'cook', label: 'Cook a batch on the hot plate', sub: `${money(6)} · 45 min · three meals`, x: -0.8, z: -2.9, radius: 0.9, action: (gg) => home.cookBatch(gg) }] : []),
     ...(home.homeState(hs).leak ? [{ id: 'leak', label: 'The leak', sub: 'a pot under a drip', x: 1.6, z: -2.5, radius: 0.9, action: (gg) => home.leakMenu(gg) }] : []),

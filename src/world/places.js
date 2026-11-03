@@ -12,6 +12,7 @@
  *   Lucia's       — a red-sauce restaurant with tablecloths: a meal you sit down for, and the
  *                   best date on the list (romance.js activity `lucias`).
  */
+import * as music from '../systems/music.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
@@ -648,6 +649,8 @@ export function buildAvenue(g) {
   ];
   const s = g.state;
   const interactables = [
+    ...(music.musicState(g.state).cds ? [{ id: 'av_cds', label: 'Sell demo CDs by the bus stop', sub: '1 h · $3 each', x: 1.5, z: -0.8, radius: 1.2, action: (gg) => music.sellCDs(gg) }] : []),
+    ...(music.musicState(g.state).offer ? [{ id: 'av_studio', label: 'Ashby Sound', sub: music.studioNow(g.state) ? 'your studio time · now' : 'by appointment', x: 8.6, z: -5.2, radius: 1.2, action: (gg) => music.studio(gg) }] : []),
     { id: 'av_lucias', label: "Enter Lucia's", sub: 'tablecloths · red sauce · a waiter in a vest', x: -4.5, z: -5.2, radius: 1.5, unavailable: (gg) => closedReason('restaurant', gg.state.clock.m), action: (gg) => gg.goTo('restaurant', 'avenue') },
     { id: 'av_precinct', label: 'Enter the 84th Precinct', sub: 'the desk sergeant has seen everything', x: -12.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('precinct', 'avenue') },
     { id: 'av_laundry', label: "Enter Dee's Wash & Fold", sub: 'laundry · vending machines · a TV', x: 5.0, z: -5.2, radius: 1.4, unavailable: (gg) => closedReason('laundromat', gg.state.clock.m), action: (gg) => gg.goTo('laundromat', 'avenue') },
@@ -853,6 +856,7 @@ export function buildRestaurant(g) {
 
   const interactables = [
     { id: 'lu_table', label: 'Sit down and order', sub: 'pasta · chicken parm · espresso', x: 0, z: 0.6, radius: 1.4, seat: { x: 0, z: -0.6, rot: Math.PI }, action: (gg) => luciasMenu(gg) },
+    { id: 'lu_openmic', label: 'Open mic', sub: music.openMicNow(g.state) ? 'tonight · the sign-up sheet is on the piano' : 'Thursdays, 20:00', x: -2.6, z: -2.4, radius: 1.2, action: (gg) => music.openMic(gg) },
     { id: 'lu_waiter', label: 'Talk to the waiter', sub: 'Sal (not that Sal)', x: 1.4, z: -2.6, radius: 1.2, action: (gg) => gg.openModal({ kicker: "LUCIA'S", title: 'Sal', body: '"Forty-one years. Sinatra ate here. He had the veal. He was rude to me and I have told everybody, every day, since." He refills your water without looking.', choices: [{ label: 'Tip him a dollar for the story.', sub: '$1', disabled: gg.state.money < 1, effect: () => { gg.spendMoney(1, 'tip'); bump(gg.state, 'morale', 3); } }, { label: 'Thank him.', effect: () => {} }] }) },
     { id: 'lu_exit', label: 'Back out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.8, radius: 1.0, action: (gg) => gg.goTo('avenue', 'restaurant') },
   ];
