@@ -364,10 +364,15 @@ burn ten CDs, and play Thursday's open mic at Lucia's. People have stories that 
 (Kev, Nia, Habib, Gloria in 4B, Dale), and recovery has more to it than appointments: a support
 contact, evening routines, invitations you can leave early, and a way back after a bad night.
 
+Out front of Habib's, Yusuf smokes a hookah at a little table and will share it if you sit.
+Outside the bodega, Papi and Tito play dominoes all day, and Papi knows everybody and everything
+on the block: ask him about a person, a place, or what is going on this week. Do not take a swing
+at either of them.
+
 Things to know about the street. The machines at Dee's give up a can if you hit them right.
 Cars do not like being punched, and some drivers get out. On Fulton you can step into the road,
-and a car doing sixty will not always stop. Knock enough people down and the Guardian Angles
-come looking, red berets first. Meatball will walk into the park with you once he trusts you, and
+and a car doing sixty will not always stop. Knock down five innocent people in five minutes and the
+Guardian Angles come looking, red berets first. Cops only come for what they see. Meatball will walk into the park with you once he trusts you, and
 he does not like muggers. Or at
 Dee's Wash & Fold, where a quarter buys a round of Eviction Snake, Pac-Mo: Debt Eater or Roach
 Invaders on the cabinets by the dryers.

@@ -10,6 +10,22 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### The corner men, and fairer heat
+
+- **Yusuf** (`hookah`: navy turban, a beard to the chest, a kurta) sits outside Habib's at a small
+  table with a hookah (`act: 'hookah'`, smoke clouds). **Papi** (white tank, gold chain) and **Tito**
+  (guayabera, flat cap) play dominoes outside the bodega (`act: 'dominoes'`). `systems/papi.js` is
+  the game's encyclopedia: people, places, and a "what is going on" page built from the run.
+- **Cutscenes** (`world.cutscene`, input locked, posed after the NPC loop): punching Papi makes
+  him stand and slap Mo over and out (`papiSmack`, then `collapseSequence('beaten')`); punching
+  Yusuf brings out a rifle, one shot at the sky, and Mo runs half a block before control returns
+  (`yusufWarning`). (Not `this.scene`, which is the 3D scene.)
+- **Cops** act only on what they see: `copSees(range)` wants a cop on foot inside the area with no
+  tall solid in between, or a cruiser passing close. A phoned-in report sends a cruiser rolling
+  through, never a chase.
+- **Guardian Angles** come only after five innocent knockouts inside five real minutes
+  (`noteKO(g, def)`); dealers, muggers, the armed, attackers and cops do not count.
+
 ### 1120 Kestrel, top to bottom
 
 - **The building.** `world/hall.js` is four floors now, by `s.b1120.floor`: a lobby (front door,

@@ -156,7 +156,8 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         upgrades, the leak), happenings (blackout, heat wave, trains, block party,
                         inspection), owes (Square Up), music (write, record, open mic), arcs
                         (multi-day stories), tenants (organizing the third floor), recovery
-                        (support contact, routines, invitations, the way back)
+                        (support contact, routines, invitations, the way back), papi (the block's
+                        encyclopedia: people, places, what is going on)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,
