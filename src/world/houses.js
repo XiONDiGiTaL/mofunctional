@@ -517,7 +517,7 @@ export function buildTower(g) {
     // the mailboxes, half of them pried open
     for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) group.add(box(0.06, 0.2, 0.26, retroMaterial(((r + c) % 4 === 0) ? 'pt_mailopen' : 'pt_mail', { color: ((r + c) % 4 === 0) ? 0x3a3a3a : 0x8a8e92 }), [-W / 2 + 0.1, 1.0 + r * 0.24, 1.6 + c * 0.28]));
     interactables.push({ id: 'pt_exit', label: 'Out to the courtyard', sub: '', x: 0, z: D / 2 - 0.9, radius: 1.0, action: (gg) => gg.goTo('projects', 'pjtower') });
-    npcs.push({ kind: 'tenant_f', x: 1.2, z: 5.6, y: 0, rot: -Math.PI / 2, still: true, pose: 'sit', talk: 'pt_lady' });
+    npcs.push({ kind: 'tenant_f', x: 1.2, z: 5.6, rot: -Math.PI / 2, still: true, pose: 'sit', talk: 'pt_lady' });
     // the mailboxes are the building's directory, and the lady in the lawn chair is its index
     const mine = Object.values(WOMEN).filter((w) => w.tower === h.tower);
     const NOTES = { crystal: '"C." · ring twice · after 5', desiree: 'DESIREE · no solicitors (ironic)', bunny: 'BUNNY ♥ · cash only · knock soft' };

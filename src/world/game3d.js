@@ -264,6 +264,12 @@ export class World {
       const row = id === 'street' && !npc.debug && !npc.still ? scheduleTarget(npc.kind, minuteOfDay(g.state.clock.m)) : null;
       rig.root.position.set(row && !row.away ? row.x : npc.x, npc.y || 0, row && !row.away ? row.z : npc.z);
       rig.baseY = npc.y || 0; // on a bench, a bed, a lottery machine
+      // somebody sitting sits on what is actually there: the seat's real top, measured, so the
+      // hips rest on it instead of sinking through a bench that is taller than the guess was
+      if (npc.pose === 'sit' && !npc.y && rig.hipY) {
+        const top = this.seatTop(rig.root.position.x, rig.root.position.z);
+        if (top != null) { rig.baseY = top + 0.07 - (rig.hipY - 0.42); rig.root.position.y = rig.baseY; }
+      }
       if (npc.scale) rig.root.scale.setScalar(npc.scale); // the kids
       rig.root.rotation.y = npc.rot || 0;
       rig.npcDef = npc;
@@ -1464,10 +1470,27 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const p = this.mo.root.position;
     this.seated = { seat, back: { x: p.x, z: p.z }, t: 0 };
     this.haltMo();
-    p.set(seat.x, (seat.y ?? 0.46) - 0.46, seat.z);
+    // the hips go on the seat's real surface (measured under the seat point), not a fixed guess
+    const top = this.seatTop(seat.x, seat.z);
+    p.set(seat.x, top != null ? top + 0.07 - (this.mo.hipY - 0.44) : (seat.y ?? 0.46) - 0.46, seat.z);
     this.mo.root.rotation.y = seat.rot || 0;
     for (const it of this.interactables) if (it.seatPrompt) it.hidden = true;
     this.prompt = 'redraw'; // not null: null is also "nothing to show", and the old prompt would stay up
+  }
+
+  /** The top of whatever is under (x, z) at sitting height: a bench, a chair, a stool, a pew. */
+  seatTop(x, z) {
+    if (!this.areaGroup) return null;
+    this.areaGroup.updateMatrixWorld(true);
+    this.seatRay = this.seatRay || new THREE.Raycaster();
+    this.seatRay.set(new THREE.Vector3(x, 1.0, z), new THREE.Vector3(0, -1, 0));
+    this.seatRay.far = 0.85;
+    for (const h of this.seatRay.intersectObject(this.areaGroup, true)) {
+      const m = h.object.material;
+      if (m?.transparent || h.object.type !== 'Mesh') continue;
+      if (h.point.y > 0.28 && h.point.y < 0.85) return h.point.y;
+    }
+    return null;
   }
 
   standUp() {
@@ -2123,6 +2146,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     rig.root.position.set(seat.x + Math.cos(0.2) * 0.75, 0, seat.z - Math.sin(0.2) * 0.75);
     rig.root.rotation.y = 0.2;
     rig.npcDef = { kind: 'kev', act: 'smoke' };
+    const top = this.seatTop(rig.root.position.x, rig.root.position.z);
+    if (top != null) { rig.baseY = top + 0.07 - (rig.hipY - 0.42); rig.root.position.y = rig.baseY; }
     this.root.add(rig.root);
     // the park's own Kev, at the chess table, is this Kev: one of him at a time
     for (const r of this.npcRigs) if (r.npcDef?.kind === 'kev') r.root.visible = false;
