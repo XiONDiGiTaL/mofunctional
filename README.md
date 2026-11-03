@@ -413,15 +413,10 @@ Want to look under the hood, run it locally or poke at the debug tools? See
 
 ## Disclaimer
 
-MO: FUNCTIONAL is a work of fiction about life choices, work and life balance, time management,
-money, and what a week costs when it gets away from you. Every character, business and place in
-it is invented. The substances in the game are fictional and are described only by what they do
-to the numbers.
+MO: FUNCTIONAL is a work of fiction about life choices, work and life balance, time management, money, and what a week costs when it gets away from you. Every character, business, and place in the game is invented. The substances in the game are fictional and are described only by what they do to the numbers.
 
-In real life, drug use is not okay and this game does not condone it. If you or someone you know
-is struggling with substance use, please reach out for help. In the US, the SAMHSA National
-Helpline is free, confidential and open 24/7 at **1-800-662-4357**. Elsewhere, contact your local
-health service or a doctor.
+MO: FUNCTIONAL does not single out, discriminate against, or hold ill will toward any individual or group based on their background, ethnicity, nationality, culture, religion, profession, lifestyle, or personal circumstances. The game is not intended to represent or stereotype any particular community. Its setting, atmosphere, characters, and humor are inspired by fictionalized depictions of New York City life, personal observations, creative influences, and cultural experiences. Any similarities to real people, places, businesses, or events are coincidental. The intention is to portray an imperfect, chaotic, and often absurd environment through fictional storytelling and dark humor, not to ridicule or condemn the people who live in it.
 
-The game contains mature themes, including addiction, crime and adult relationships. Nothing
-explicit is ever shown.
+In real life, drug use is not okay and this game does not condone it. If you or someone you know is struggling with substance use, please reach out for help. In the US, the SAMHSA National Helpline is free, confidential, and open 24/7 at 1-800-662-4357. Elsewhere, contact your local health service or a doctor.
+
+The game contains mature themes, including addiction, crime, and adult relationships. Nothing explicitly graphic is ever shown.
