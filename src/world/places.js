@@ -14,6 +14,7 @@
  */
 import * as herplace from './herplace.js';
 import { shutter as paintedShutter, utilityBox } from './walls.js';
+import { streetMouth } from './vistas.js';
 import * as music from '../systems/music.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
@@ -628,7 +629,7 @@ export function buildAvenue(g) {
     { kind: 'rasta', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true, sax: true },
     { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
     { kind: 'cop', x: -13.9, z: -5.0, rot: 0.3, still: true, act: 'talk' },
-    { kind: 'cop2', x: -11.0, z: -5.2, rot: -0.4, still: true },
+    { kind: 'cop_f', x: -11.0, z: -5.2, rot: -0.4, still: true },
     // the paper seller: a person behind the counter, not a voice inside a box. `talk` points at
     // the newsstand prompt, so the prompt follows him and the papers are bought from him.
     { kind: 'newsman', x: 3.0, z: -3.55, rot: 0, still: true, talk: 'av_news', act: 'talk' },
@@ -678,6 +679,8 @@ export function buildAvenue(g) {
   if (closedReason('laundromat', g.state.clock.m)) paintedShutter(group, 5.0, -6.3, 1.6, 2.4, 5021);
   { const pm = minuteOfDay(g.state.clock.m); if (pm < 10 * 60 || pm > 20 * 60) paintedShutter(group, 10.5, -6.3, 1.6, 2.4, 1051); }
   const ubox = utilityBox(group, -6.0, 0.6, 6061);
+  // the west end opens onto Myrtle Row
+  streetMouth(group, { x: -17, dir: -1, look: 'row', title: 'MYRTLE ROW', sub: 'FOOD CARTS · PIZZA · BACK TO KESTREL ST', seed: 41 });
   // the way down to the trains, east end of the avenue, clear of the bus stop
   group.add(buildStationEntrance(15.3, -0.4, { name: 'ASHBY AV', painted: true, rot: -Math.PI / 2 }));
   return {
@@ -910,11 +913,11 @@ export function buildPrecinct(g) {
 
   const npcs = [
     { kind: 'cop', x: -3.2, z: 1.3, rot: Math.PI, still: true, talk: 'pct_sgt' },
-    { kind: 'cop2', x: 1.4, z: 0.95, rot: Math.PI, still: true, pose: 'sit' },
+    { kind: 'cop3', x: 1.4, z: 0.95, rot: Math.PI, still: true, pose: 'sit' },
     { kind: 'cop', x: 3.8, z: 0.95, rot: Math.PI, still: true, pose: 'sit' },
-    { kind: 'cop2', x: 3.8, z: 3.15, rot: Math.PI, still: true, act: 'talk' },
+    { kind: 'cop_f2', x: 3.8, z: 3.15, rot: Math.PI, still: true, act: 'talk' },
     { kind: 'tenant_f', x: 3.8, z: 3.9, rot: 0, still: true, act: 'argue', side: 1 },
-    { kind: 'cop', x: -2, z: -1.4, walker: [-5, 5] },
+    { kind: 'cop2', x: -2, z: -1.4, walker: [-5, 5] },
     // the visit: inmates on the far side of the glass, family on this side
     { kind: 'inmate', x: -4.2, z: -3.3, rot: 0, still: true, pose: 'sit', act: 'phone' },
     { kind: 'w12', x: -4.2, z: -1.9, rot: Math.PI, still: true, pose: 'sit', act: 'phone' },

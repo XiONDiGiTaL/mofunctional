@@ -175,7 +175,8 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         walkers carry and do, sidewalk chats, barks, errands into shops),
                         incidents (purse snatch, police stop and arrest, night graffiti, the buff
                         crew), walls (graffiti art, spots per area, shutters, utility boxes,
-                        overnight changes)
+                        overnight changes), vistas (street mouths: the next street past
+                        the edge, with a gateway banner)
                         duel (a fist fight with Mo's own punches), herplace (the girlfriends'
                         homes, keys, Stephanie's couch, Melanie's rack, Diana's care)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,

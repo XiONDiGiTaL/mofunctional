@@ -484,6 +484,8 @@ const CAST = {
   drifter: { height: 1.74, build: 0.92, shirt: 0x4a4436, pants: 0x3a362c, longSleeves: true },
   // Myrtle Row's vendors (world/row.js): aprons and caps are generic accessories, see createNPC
   buffer: { height: 1.76, build: 1.06, shirt: 0xf28a1a, pants: 0x3a3a40, apron: 0xf2c81a, cap: 0x2a2a2e },
+  cartnight: { height: 1.78, build: 1.04, shirt: 0x2a2a30, pants: 0x24242a, longSleeves: true, hoodie: true, cap: 0x3a5a8a },
+  pretzelwoman: { height: 1.64, build: 1.04, shirt: 0xd8a83a, pants: 0x2a2a34, apron: 0xf4f2ea, cap: 0xc81e1e },
   sal: { height: 1.74, build: 1.14, shirt: 0xf2f2ec, pants: 0x2a2a30, apron: 0xf4f2ea, chefHat: true },
   piraguero: { height: 1.7, build: 1.02, shirt: 0xf2e8a0, pants: 0x3a4a6a, cap: 0xe8d8a0, capBrim: 0.16 },
   jerkman: { height: 1.8, build: 1.1, shirt: 0xc81e1e, pants: 0x2a2a30, apron: 0xf2e8ec, apronStripe: 0xc8323a, cap: 0x1a1a1e },
@@ -493,8 +495,11 @@ const CAST = {
   trench: { height: 1.78, build: 1.0, shirt: 0x9a7a4a, pants: 0x2a2a2e, shoes: 0x1a1210, longSleeves: true },
   hall_m: { height: 1.8, build: 1.0, shirt: 0x2a2c34, pants: 0x3a4a66, longSleeves: true },
   hall_f: { height: 1.66, build: 0.96, shirt: 0x8a2a5a, pants: 0x1a1a1e },
-  cop: { height: 1.82, build: 1.1, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
-  cop2: { height: 1.76, build: 1.04, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
+  cop: { height: 1.84, build: 1.08, shirt: 0x1c2848, pants: 0x161c30, shoes: 0x0c0c0e, longSleeves: true, uniform: 'peaked' },
+  cop3: { height: 1.76, build: 1.12, shirt: 0x1c2848, pants: 0x161c30, shoes: 0x0c0c0e, longSleeves: true, uniform: 'peaked' },
+  cop_f: { height: 1.66, build: 0.98, shirt: 0x1c2848, pants: 0x161c30, shoes: 0x0c0c0e, uniform: 'tactical' },
+  cop_f2: { height: 1.68, build: 1.0, shirt: 0x1c2848, pants: 0x161c30, shoes: 0x0c0c0e, uniform: 'tactical' },
+  cop2: { height: 1.8, build: 1.1, shirt: 0x1c2848, pants: 0x161c30, shoes: 0x0c0c0e, longSleeves: true, uniform: 'peaked' },
   inmate: { height: 1.76, build: 1.0, shirt: 0xd86a1a, pants: 0xd86a1a },
   // the man in the newsstand: cardigan over a collared shirt, has worn the same cap since 1987
   newsman: { height: 1.72, build: 1.1, shirt: 0x6a5a3a, pants: 0x3a3630, longSleeves: true },
@@ -784,6 +789,11 @@ export function castShirt(kind) {
 
 export const NPC_KINDS = Object.keys(CAST).filter((k) => k !== 'mo' && k !== 'addison');
 
+/** Every kind of officer on the force, and one picked at random for a patrol or a stop. */
+export const COP_KINDS = ['cop', 'cop2', 'cop3', 'cop_f', 'cop_f2'];
+export const isCopKind = (kind) => COP_KINDS.includes(kind);
+export const randomCop = () => COP_KINDS[Math.floor(Math.random() * COP_KINDS.length)];
+
 export function createNPC(kind = 'kev') {
   const known = !!CAST[kind];
   const spec = CAST[kind] || CAST.kev;
@@ -932,6 +942,55 @@ export function createNPC(kind = 'kev') {
     rig.head.add(cap);
     rig.head.add(box(0.2 * k, 0.015 * k, 0.08 * k, tweed, [0, 0.125 * k, 0.12 * k], [0.25, 0, 0]));
     rig.hat = cap;
+  }
+  // the uniform: a peaked cap with a silver shield and a black visor (or, on the tactical women, a
+  // navy ball cap with POLICE across it and a vest); a badge, a name bar, shoulder patches, a tie,
+  // and a duty belt with a holster and a radio
+  if (spec.uniform) {
+    const navy = retroMaterial('copNavy', { color: 0x182240, ambient: 0.7 });
+    const black = retroMaterial('copBlack', { color: 0x0e0e10, ambient: 0.8 });
+    const silver = retroMaterial('copSilver', { color: 0xd8dce0, ambient: 0.95, emissive: 0.15 });
+    const gold = retroMaterial('copGold', { color: 0xd8a83a, ambient: 0.9 });
+    const patch = retroMaterial('copPatch', { color: 0x3a6ab8, ambient: 0.85 });
+    const hat = new THREE.Group();
+    if (spec.uniform === 'peaked') {
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.165 * k, 0.135 * k, 0.1 * k, 14), navy);
+      hat.add(crown);
+      hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.137 * k, 0.137 * k, 0.04 * k, 14), black).translateY(-0.06 * k));
+      hat.add(box(0.22 * k, 0.012 * k, 0.1 * k, black, [0, -0.075 * k, 0.15 * k], [0.25, 0, 0]));
+      hat.add(box(0.045 * k, 0.05 * k, 0.01 * k, silver, [0, 0.0, 0.16 * k]));
+      hat.position.set(0, 0.17 * k, 0.0);
+    } else {
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.145 * k, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), navy);
+      crown.scale.set(1.05, 0.72, 1.12);
+      hat.add(crown);
+      hat.add(box(0.2 * k, 0.012 * k, 0.14 * k, navy, [0, 0.005 * k, 0.16 * k]));
+      hat.add(box(0.13 * k, 0.025 * k, 0.005 * k, silver, [0, 0.06 * k, 0.15 * k], [-0.5, 0, 0]));
+      hat.position.set(0, 0.12 * k, -0.005 * k);
+      // a ponytail out the back of the cap
+      rig.head.add(box(0.06 * k, 0.2 * k, 0.06 * k, retroMaterial(`copTail${kind}`, { color: parseInt(faceSpec(kind).hair.slice(1), 16) }), [0, 0.02 * k, -0.15 * k], [0.4, 0, 0]));
+    }
+    rig.head.add(hat);
+    rig.hat = hat;
+    // chest: the badge on the left, the name bar on the right
+    rig.torso.add(box(0.05 * k, 0.06 * k, 0.012 * k, silver, [-0.09 * k, 0.32 * k, 0.13 * k]));
+    rig.torso.add(box(0.07 * k, 0.018 * k, 0.012 * k, silver, [0.09 * k, 0.3 * k, 0.13 * k]));
+    if (spec.uniform === 'peaked') {
+      rig.torso.add(box(0.035 * k, 0.26 * k, 0.012 * k, black, [0, 0.27 * k, 0.128 * k]));
+      for (const sx of [-1, 1]) rig.torso.add(box(0.02 * k, 0.02 * k, 0.012 * k, gold, [sx * 0.06 * k, 0.42 * k, 0.11 * k]));
+    } else {
+      // the vest: black, squared off, a white POLICE panel across the chest
+      rig.torso.add(box(0.36 * k, 0.32 * k, 0.26 * k, black, [0, 0.22 * k, 0.0]));
+      rig.torso.add(box(0.16 * k, 0.04 * k, 0.01 * k, silver, [0.0, 0.28 * k, 0.134 * k]));
+    }
+    for (const arm of [rig.armL, rig.armR]) arm.pivot.add(box(0.08 * k, 0.09 * k, 0.02 * k, patch, [0, -0.07 * k, 0.0], [0, Math.PI / 2, 0]));
+    rig.armL.pivot.add(box(0.012 * k, 0.07 * k, 0.06 * k, gold, [-0.075 * k, -0.08 * k, 0]));
+    rig.armR.pivot.add(box(0.012 * k, 0.07 * k, 0.06 * k, gold, [0.075 * k, -0.08 * k, 0]));
+    // the duty belt
+    rig.hips.add(box(0.4 * k, 0.06 * k, 0.26 * k, black, [0, 0.08 * k, 0]));
+    rig.hips.add(box(0.06 * k, 0.16 * k, 0.08 * k, black, [0.19 * k, -0.02 * k, 0.02 * k]));
+    rig.hips.add(box(0.05 * k, 0.1 * k, 0.04 * k, black, [-0.18 * k, 0.04 * k, 0.06 * k]));
+    rig.hips.add(box(0.04 * k, 0.03 * k, 0.012 * k, silver, [0, 0.08 * k, 0.135 * k]));
   }
   // generic workwear: an apron (optionally striped), a baseball cap, a chef's toque
   if (spec.apron) {

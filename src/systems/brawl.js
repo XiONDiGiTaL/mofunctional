@@ -21,7 +21,7 @@ import { bump, logLine, addItem, countItem } from '../core/state.js';
 
 const C = () => CONFIG.brawl;
 
-const COP_KINDS = new Set(['cop', 'cop2', 'patrol', 'sergeant']);
+const COP_KINDS = new Set(['cop', 'cop2', 'cop3', 'cop_f', 'cop_f2', 'patrol', 'sergeant']);
 const KID_KINDS = new Set(['kid', 'kid_bike', 'bike_kid', 'child', 'boy', 'girl', 'schoolkid']);
 const DOG_KINDS = new Set(['dog', 'meatball', 'stray']);
 const DEALER_KINDS = new Set(['dex', 'dealer', 'pusher', 'squeak', 'corner', 'benchman', 'rolo']);

@@ -10,6 +10,26 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Street mouths, stall hours, and the 84th in uniform
+
+- **`world/vistas.js`** `streetMouth(group, { x, dir, look, title, sub })`: past the walkable edge,
+  the next street continues (sidewalk, curb, road, facades with lit windows, shopfronts with awnings
+  and signs, a row across the road, lamps, carts and flags for the Row, a cab for the Ave, a few
+  standing figures), and at the edge a gateway of two lamp posts with a double-sided banner and a
+  green street sign. Placed at Kestrel's west end (to the Row), both ends of the Row (Kestrel,
+  Ashby Ave) and the Ave's west end (to the Row).
+- **Stall hours on the Row**: Sal (10 to 02), Irie Grill (11 to 23), Mendel (09 to 19) and the
+  Istanbul Grill (11 to 01) only have their people, food, coals and regulars while open; closed,
+  Sal and the Istanbul Grill get painted shutters, the drum a tarp, the knish table is folded.
+  The carts run all day: Gary (`pretzelman`) and Rosa (`pretzelwoman`) 06 to 18, Luis
+  (`cartnight`) and Ray at night, with their own shop entries (`glizzy_night`, `pretzels_night`).
+- **Police**: `COP_KINDS` = `cop`, `cop2`, `cop3`, `cop_f`, `cop_f2` (light, dark, tan; two women),
+  `randomCop()` for patrols, chases and incidents, `isCopKind` wherever a cop is checked. CAST
+  option `uniform: 'peaked' | 'tactical'`: peaked cap with a silver shield and black visor, or a
+  navy ball cap with a ponytail and a black vest with a white panel; badge, name bar, shoulder
+  patches, tie and collar brass, a duty belt with holster and radio. Female officers do not run at
+  the first punch like other women do; they are cops.
+
 ### Graffiti and walls
 
 - **`world/walls.js`**: `SPOTS` per area key (`street`, `row`, `avenue`, `subway` platform and

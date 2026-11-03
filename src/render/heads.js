@@ -298,6 +298,14 @@ export const FACE_SPECS = {
     skin: '#9a6a4a', hair: '#1a1410', hairLight: '#3a2e24', hairDark: '#0a0806', style: 'short',
     brow: '#1a1410', eye: '#2a1e14', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#1a1410', age: 0.6,
   },
+  cartnight: {
+    skin: '#a8724e', hair: '#141010', hairLight: '#2a2420', hairDark: '#080606', style: 'short',
+    brow: '#141010', eye: '#2a1e16', lips: '#7a4838', lipsLight: '#9a6050', beard: 'goatee', beardColor: '#141010', age: 0.35,
+  },
+  pretzelwoman: {
+    skin: '#d8a888', hair: '#3a2416', hairLight: '#5a3a24', hairDark: '#1e120a', style: 'bun', fem: true,
+    brow: '#3a2416', eye: '#3a2a1e', lips: '#a8605a', lipsLight: '#c47a70', age: 0.55, jaw: 0.95,
+  },
   sal: {
     skin: '#d8a888', hair: '#2a2420', hairLight: '#4a403a', hairDark: '#141010', style: 'receding',
     brow: '#2a2420', eye: '#3a2a1e', lips: '#9a5a4a', lipsLight: '#b87262', beard: 'mustache', beardColor: '#2a2420', age: 0.7, jaw: 1.08,
@@ -334,13 +342,26 @@ export const FACE_SPECS = {
     skin: '#a87452', hair: '#2a1a12', hairLight: '#4a3020', hairDark: '#140c08', style: 'bun',
     brow: '#2a1a12', eye: '#3a2618', lips: '#9a4a40', lipsLight: '#c06a5a', age: 0.3, fem: true, jaw: 0.92,
   },
+  // the 84th's officers: peaked caps on the men, ball caps and vests on the women
   cop: {
-    skin: '#d0a080', hair: '#1a2240', hairLight: '#2a3460', hairDark: '#0c1020', style: 'beanie',
-    brow: '#3a2a1e', eye: '#3a2a1e', lips: '#8a5a48', lipsLight: '#a87262', beard: 'stubble', beardColor: '#5a4030', age: 0.45, browTilt: 0.12,
+    skin: '#e4b896', hair: '#6a4a2e', hairLight: '#8a6a44', hairDark: '#3a2818', style: 'short',
+    brow: '#5a3e26', eye: '#3a4a5a', lips: '#a8705e', lipsLight: '#c48a76', beard: 'stubble', beardColor: '#8a5a32', age: 0.3, browTilt: 0.06,
   },
   cop2: {
-    skin: '#8a5a3a', hair: '#1a2240', hairLight: '#2a3460', hairDark: '#0c1020', style: 'beanie',
-    brow: '#1a120c', eye: '#2a1e16', lips: '#6a3e30', lipsLight: '#8a5644', age: 0.35,
+    skin: '#6a4430', hair: '#141010', hairLight: '#2a2420', hairDark: '#080606', style: 'short',
+    brow: '#1a120c', eye: '#2a1e16', lips: '#5a3428', lipsLight: '#7a4a3a', beard: 'goatee', beardColor: '#141010', age: 0.4,
+  },
+  cop3: {
+    skin: '#c8946a', hair: '#1a1410', hairLight: '#3a2e24', hairDark: '#0a0806', style: 'short',
+    brow: '#1a1410', eye: '#2a1e14', lips: '#8a5040', lipsLight: '#a86858', beard: 'mustache', beardColor: '#1a1410', age: 0.55, jaw: 1.06,
+  },
+  cop_f: {
+    skin: '#d0a07c', hair: '#4a2a18', hairLight: '#6a4028', hairDark: '#2a160c', style: 'bun', fem: true,
+    brow: '#3a2414', eye: '#3a2a1e', lips: '#a8605a', lipsLight: '#c47a70', age: 0.35, jaw: 0.94,
+  },
+  cop_f2: {
+    skin: '#7a4e36', hair: '#141010', hairLight: '#2a2420', hairDark: '#080606', style: 'bun', fem: true,
+    brow: '#1a120c', eye: '#2a1e16', lips: '#6a3a30', lipsLight: '#8a5244', age: 0.3, jaw: 0.94,
   },
   inmate: {
     skin: '#b08060', hair: '#141010', hairLight: '#2e2828', hairDark: '#080606', style: 'crop',

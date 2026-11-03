@@ -272,6 +272,11 @@ jerk chicken off an oil drum; there are two carts for hot dogs and pretzels, Men
 and the Istanbul Grill with a döner turning on the spit. Bagels with cream cheese are now at the
 bodega and the Quik-Stop too. Mo eats every one of these on screen.
 
+You can see it coming: the far end of Kestrel opens onto the Row under a banner strung between two
+lamp posts, with the awnings and carts going on down the street, and each end of the Row shows the
+next street the same way. The stalls keep hours: Sal pulls down a shutter, the grill gets a tarp,
+Mendel folds up his table. The two carts never close; a night crew takes over at six.
+
 - **Food per dollar** is printed on every card. The falafel wrap is very hard to beat.
 - **The fridge** holds 24 items. Store all your food in one click on the way in, take what you
   need on the way out.
@@ -335,7 +340,8 @@ Press `Z` and Mo throws a punch at whoever is closest. The block reacts the way 
   minutes, and they will remember your face.
 - **Shopkeepers do not fight.** Hit one enough and they pick up the phone, and a cruiser finds
   the block a few minutes later.
-- **Cops** take a punch personally. A sober, rested Mo can outrun one. When one catches him, he
+- **Cops** wear the uniform now (peaked caps, badges, duty belts; the women in ball caps and
+  vests), and the 84th is not one face. They take a punch personally. A sober, rested Mo can outrun one. When one catches him, he
   can go quietly or resist on the Fight meter: win and the cop is on the ground, lose and the fine
   is bigger.
 - **Somebody who comes at you** (a mugger, a driver out of his car, a Guardian Angle) is a real

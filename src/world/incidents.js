@@ -18,7 +18,7 @@
  * changes; what happened goes in `state.worldLog` for Papi to talk about.
  */
 import * as THREE from '../../vendor/three.module.js';
-import { createNPC, animateNPC } from './characters.js';
+import { createNPC, animateNPC, randomCop } from './characters.js';
 import { retroMaterial, plane } from '../render/retro.js';
 import { faceSpec } from '../render/heads.js';
 import { bump, logLine } from '../core/state.js';
@@ -188,7 +188,7 @@ export class Incidents {
           log(gg.state, { what: 'purse', where: w.areaId, helped: false });
           // now and then, a cop on foot after him, the long way round
           if (Math.random() < 0.45) {
-            const cop = this.spawn('cop', exitX > 0 ? b.minX + 0.5 : b.maxX - 0.5, -1.0);
+            const cop = this.spawn(randomCop(), exitX > 0 ? b.minX + 0.5 : b.maxX - 0.5, -1.0);
             ev.rigs.push(cop);
             bark(cop, 'STOP! POLICE!', 2.4);
             ev.phase = 'cop'; ev.t = 0; ev.cop = cop;
@@ -226,8 +226,8 @@ export class Incidents {
         if (!ready) return;
         const fromX = ev.car ? ev.car.x : (sx > 0 ? b.maxX - 0.5 : b.minX + 0.5);
         const fromZ = ev.car ? ev.car.lane.z - 1.2 : -1.0;
-        ev.c1 = this.spawn('cop', fromX - 0.6, fromZ);
-        ev.c2 = this.spawn('cop2', fromX + 0.6, fromZ);
+        ev.c1 = this.spawn(randomCop(), fromX - 0.6, fromZ);
+        ev.c2 = this.spawn(randomCop(), fromX + 0.6, fromZ);
         ev.rigs.push(ev.c1, ev.c2);
         bark(ev.c1, pick(['Hands where I can see them!', 'Hey! Over here. Now.', 'Stop right there, sir.']), 2.6);
         this.react(sx, 0.4, 12, ['Uh oh.', 'Here we go.', 'What did he do?', 'Not my business.']);

@@ -141,7 +141,7 @@ Object.assign(SHOPS, {
     markup: 1, sellsPork: true,
   },
   pretzels: {
-    id: 'pretzels', name: 'Pretzel Palace', owner: 'Ray', ownerKind: 'pretzelman',
+    id: 'pretzels', name: 'Pretzel Palace', owner: 'Rosa', ownerKind: 'pretzelwoman',
     kicker: 'MYRTLE ROW · PRETZEL PALACE', blurb: 'A cart with a glass case of pretzels stacked like firewood and a hand-painted crown on the side.',
     voice: ['"Fresh this morning. Which morning, I will not say."', '"Twisted, like me. Salty, like me. Two fifty, unlike me."'],
     stock: [{ id: 'pretzel', note: 'warm, enormous, structurally impressive' }, { id: 'water', note: '' }],
@@ -167,6 +167,18 @@ Object.assign(SHOPS, {
     markup: 1, sellsPork: false,
   },
 });
+
+// the night shift: same carts, other people (world/row.js picks by the clock)
+SHOPS.glizzy_night = {
+  ...SHOPS.glizzy, id: 'glizzy_night', owner: 'Luis', ownerKind: 'cartnight',
+  kicker: 'MYRTLE ROW · THE LAST HONEST WIENER · NIGHT SHIFT',
+  voice: ['"Gary does days. I do the people Gary does not want to meet."', '"After midnight the dogs are a dollar more. That is the danger pay."', '"You hungry or you lonely? I sell for both."'],
+};
+SHOPS.pretzels_night = {
+  ...SHOPS.pretzels, id: 'pretzels_night', owner: 'Ray', ownerKind: 'passer_m2',
+  kicker: 'MYRTLE ROW · PRETZEL PALACE · NIGHT SHIFT',
+  voice: ['"Rosa makes them. I just stand here and keep them warm. Like a hen."', '"Pretzel at 3 a.m. is a decision. I respect a decision."'],
+};
 
 export const shopById = (id) => SHOPS[id] || SHOPS.bodega;
 

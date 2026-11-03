@@ -4,6 +4,7 @@ import * as okafor from '../systems/okafor.js';
 import * as herplace from './herplace.js';
 import * as rae from '../systems/rae.js';
 import { shutter, utilityBox } from './walls.js';
+import { streetMouth } from './vistas.js';
 import { tvTexture, tvTick, openTv } from '../ui/tv.js';
 import * as papi from '../systems/papi.js';
 import { b1120 } from './hall.js';
@@ -967,6 +968,8 @@ export function buildStreet(g) {
   // after hours the shutters come down over the shop doors, painted like every shutter on the block
   for (const b of BUILDINGS) if (['bodega', 'habibs', 'clinic'].includes(b.area) && closedReason(b.area, g.state.clock.m)) shutter(group, b.door, STREET.frontZ + 0.06, 1.6, 2.4, Math.round(b.door * 97 + 13) >>> 0);
   const uboxes = [utilityBox(group, -17.5, 0.75, 3121), utilityBox(group, 16.8, 0.75, 8087)];
+  // past the walk-up the block turns the corner into Myrtle Row: show it, with a gateway
+  streetMouth(group, { x: -25.4, dir: -1, look: 'row', title: 'MYRTLE ROW', sub: "FOOD CARTS · SAL'S PIZZA · THE GRILL · TO ASHBY AVE", seed: 11 });
 
   // the hookah setup: a folding chair, a small brass-topped table, the hookah on it, a glass of tea
   const chairAt = (x, z, rot) => {
@@ -2002,7 +2005,7 @@ export function buildPark(g) {
     // a two-cop patrol on the paths, some nights
     ...(patrol ? [
       { kind: 'cop', x: -4, z: -0.6, walker: [-6.5, 6.5] },
-      { kind: 'cop2', x: 3, z: 3.2, walker: [-6.5, 6.5] },
+      { kind: 'cop_f', x: 3, z: 3.2, walker: [-6.5, 6.5] },
     ] : []),
   ];
 

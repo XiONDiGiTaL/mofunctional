@@ -23,6 +23,7 @@ import { openShop } from './shops.js';
 import { block } from './underground.js';
 import { bark } from './crowd.js';
 import { shutter, utilityBox } from './walls.js';
+import { streetMouth } from './vistas.js';
 
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 const L = 48;
@@ -58,6 +59,9 @@ export function buildRow(g) {
   // closed for the night: the shutters come down, and the shutters are where the paint lives
   for (const [x, a, b] of [[-21, 9, 21], [-2.5, 10, 19], [6.5, 9, 20]]) if (!open(a, b)) shutter(group, x, -6.26, 1.7, 2.4, Math.round(x * 131 + 7) >>> 0);
   solids.push(utilityBox(group, -8.0, 0.65, 4411), utilityBox(group, 9.4, 0.65, 977));
+  // each end opens onto the next street: Kestrel to the west, the Ave to the east
+  streetMouth(group, { x: -L / 2, dir: -1, look: 'kestrel', title: 'KESTREL ST', sub: 'HOME · THE BODEGA · THE STATION · THE CLINIC', seed: 21 });
+  streetMouth(group, { x: L / 2, dir: 1, look: 'avenue', title: 'ASHBY AVE', sub: "THE PRECINCT · DEE'S WASH · THE PAWN SHOP · LUCIA'S", seed: 31 });
   door(-21, '99¢ DREAMS', 'EVERYTHING · SOME THINGS · NOTHING OVER 99¢*', 0x8a2a2a, '#ffe23a', '#2a1a1a');
   door(-2.5, 'BOTANICA LA FE', 'CANDLES · HERBS · SPIRITUAL ADVICE · NOTARY', 0x2a4a3a, '#c8e8a0', '#1a2a1a');
   door(6.5, "JOE'S BARBER", 'NO APPOINTMENT · NO GUARANTEE', 0x2a3a6a, '#ff5a5a', '#14142a');
@@ -77,12 +81,14 @@ export function buildRow(g) {
     group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.03, 14), M('pie', 0xf2c84a)).translateX(salX + dx).translateY(1.0).translateZ(-5.6));
     group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.02, 14), M('crust', 0xc8823a)).translateX(salX + dx).translateY(0.985).translateZ(-5.6));
   }
-  npcs.push({ kind: 'sal', x: salX + 0.3, z: -6.0, rot: 0, still: true, act: 'talk' });
+  const salOpen = open(10, 2);
+  if (salOpen) npcs.push({ kind: 'sal', x: salX + 0.3, z: -6.0, rot: 0, still: true, act: 'talk' });
+  else shutter(group, salX, -5.37, 2.9, 2.35, 22311);
   interactables.push({ id: 'row_sal', label: "Sal's window", sub: 'slices · a whole pie · ices · soda', x: salX, z: -4.6, radius: 1.5,
     unavailable: () => (open(10, 2) ? null : 'closed · the window opens at 10'), action: (gg) => openShop(gg, 'pizzeria') });
   solids.push(solid(salX, -5.7, 3.0, 0.8, 1.0));
   // somebody at the window eating a slice, folded, leaning over so it drips on the sidewalk
-  npcs.push({ kind: pick(['passer_m', 'tenant_m', 'w5']), x: salX - 2.1, z: -4.7, rot: Math.PI * 0.9, still: true, act: 'eat' });
+  if (salOpen) npcs.push({ kind: pick(['passer_m', 'tenant_m', 'w5']), x: salX - 2.1, z: -4.7, rot: Math.PI * 0.9, still: true, act: 'eat' });
 
   /* ---------------------------------------------------- Irie Grill */
   const jx = -4.5;
@@ -101,13 +107,15 @@ export function buildRow(g) {
   }
   // the drum grill: half an oil drum on legs, coals glowing, chicken on the grate
   group.add(box(1.6, 0.5, 0.7, M('drum', 0x2a2a2e), [jx + 0.3, 0.75, -4.4]));
-  group.add(box(1.5, 0.04, 0.6, M('coals', 0xff6a2a, { emissive: 0.9, unlit: true }), [jx + 0.3, 0.98, -4.4]));
-  for (let i = 0; i < 8; i++) group.add(box(0.16, 0.06, 0.12, M('jerk', 0x7a3a1a), [jx - 0.3 + (i % 4) * 0.35, 1.04, -4.55 + Math.floor(i / 4) * 0.28]));
+  const jerkOpen = open(11, 23);
+  group.add(box(1.5, 0.04, 0.6, jerkOpen ? M('coals', 0xff6a2a, { emissive: 0.9, unlit: true }) : M('coalsCold', 0x2a2624), [jx + 0.3, 0.98, -4.4]));
+  if (jerkOpen) for (let i = 0; i < 8; i++) group.add(box(0.16, 0.06, 0.12, M('jerk', 0x7a3a1a), [jx - 0.3 + (i % 4) * 0.35, 1.04, -4.55 + Math.floor(i / 4) * 0.28]));
   for (const dx of [-0.4, 1.0]) group.add(box(0.06, 0.5, 0.06, M('drumleg', 0x3a3a3e), [jx + dx, 0.25, -4.4]));
   group.add(box(1.0, 0.8, 0.6, M('jtable', 0xe8e4dc), [jx - 1.0, 0.4, -5.4]));
   group.add(box(0.5, 0.4, 0.4, M('pot', 0xc8c8cc), [jx - 1.2, 1.0, -5.4]));
   group.add(plane(2.4, 0.4, { name: 'row_irie', map: sign('rowIrie', [{ text: 'IRIE GRILL', color: '#f2c81a', size: 10 }, { text: 'JERK · PATTIES · COCO BREAD', color: '#ffffff', size: 5 }], 120, 26, '#1e6a2a', '#f2c81a'), emissive: 0.6, unlit: true }, [jx, 2.35, -3.4]));
-  npcs.push({ kind: 'jerkman', x: jx + 0.3, z: -5.15, rot: 0, still: true, act: 'grill' });
+  if (jerkOpen) npcs.push({ kind: 'jerkman', x: jx + 0.3, z: -5.15, rot: 0, still: true, act: 'grill' });
+  else group.add(box(1.7, 0.6, 0.8, M('tarp', 0x2a5a3a), [jx + 0.3, 0.85, -4.4]));
   interactables.push({ id: 'row_jerk', label: 'Irie Grill', sub: 'jerk chicken · beef patties · coco bread', x: jx + 0.3, z: -3.4, radius: 1.5,
     unavailable: () => (open(11, 23) ? null : 'the drum is cold · opens at 11'), action: (gg) => openShop(gg, 'jerk') });
   solids.push(solid(jx + 0.3, -4.4, 1.7, 0.8, 1.0), solid(jx - 1.0, -5.4, 1.0, 0.6, 0.9));
@@ -127,26 +135,30 @@ export function buildRow(g) {
     group.add(c);
     solids.push(solid(x, z, 1.5, 0.8, 1.1));
   };
+  // the carts never close: Gary and Rosa have the day, Luis and Ray the night
+  const dayShift = open(6, 18);
   cart(2.0, -2.2, 0xd8d8dc, 0x2a6ac8, 'THE LAST HONEST WIENER');
-  npcs.push({ kind: 'pretzelman', x: 2.0, z: -3.0, rot: 0, still: true, act: 'talk' });
-  interactables.push({ id: 'row_glizzy', label: 'The Last Honest Wiener', sub: 'hot dogs · pretzels · soda', x: 2.0, z: -1.2, radius: 1.4, action: (gg) => openShop(gg, 'glizzy') });
+  npcs.push({ kind: dayShift ? 'pretzelman' : 'cartnight', x: 2.0, z: -3.0, rot: 0, still: true, act: 'talk' });
+  interactables.push({ id: 'row_glizzy', label: 'The Last Honest Wiener', sub: dayShift ? 'hot dogs · pretzels · soda · Gary' : 'hot dogs · pretzels · soda · Luis, nights', x: 2.0, z: -1.2, radius: 1.4, action: (gg) => openShop(gg, open(6, 18) ? 'glizzy' : 'glizzy_night') });
   cart(12.0, -2.2, 0xf2c84a, 0xc81e1e, 'PRETZEL PALACE');
-  npcs.push({ kind: 'passer_m2', x: 12.0, z: -3.0, rot: 0, still: true, act: 'talk' });
-  interactables.push({ id: 'row_pretzel', label: 'Pretzel Palace', sub: 'pretzels, warm, enormous', x: 12.0, z: -1.2, radius: 1.4, action: (gg) => openShop(gg, 'pretzels') });
+  npcs.push({ kind: dayShift ? 'pretzelwoman' : 'passer_m2', x: 12.0, z: -3.0, rot: 0, still: true, act: 'talk' });
+  interactables.push({ id: 'row_pretzel', label: 'Pretzel Palace', sub: dayShift ? 'pretzels, warm, enormous · Rosa' : 'pretzels, warm, enormous · Ray, nights', x: 12.0, z: -1.2, radius: 1.4, action: (gg) => openShop(gg, open(6, 18) ? 'pretzels' : 'pretzels_night') });
 
   /* ---------------------------------------------------- Mendel's Knishes */
   const kx = 7.0;
-  group.add(box(2.6, 0.06, 0.9, M('ktable', 0xc8a050), [kx, 0.85, -5.3]));
-  for (const dx of [-1.2, 1.2]) group.add(box(0.06, 0.85, 0.85, M('kleg', 0x8a8a8e), [kx + dx, 0.42, -5.3]));
-  for (let i = 0; i < 5; i++) {
+  const knishOpen = open(9, 19);
+  if (!knishOpen) group.add(box(1.3, 0.9, 0.08, M('ktable', 0xc8a050), [kx + 1.0, 0.45, -6.2], [0, 0, 0.08]));
+  if (knishOpen) group.add(box(2.6, 0.06, 0.9, M('ktable', 0xc8a050), [kx, 0.85, -5.3]));
+  if (knishOpen) for (const dx of [-1.2, 1.2]) group.add(box(0.06, 0.85, 0.85, M('kleg', 0x8a8a8e), [kx + dx, 0.42, -5.3]));
+  if (knishOpen) for (let i = 0; i < 5; i++) {
     group.add(box(0.46, 0.12, 0.6, M('kbox', 0xf4f2ee), [kx - 1.0 + i * 0.5, 0.94, -5.3]));
     for (let j = 0; j < 4; j++) group.add(box(0.1, 0.06, 0.1, M('knish', 0xd8a050), [kx - 1.15 + i * 0.5 + (j % 2) * 0.16, 1.02, -5.45 + Math.floor(j / 2) * 0.22]));
   }
-  group.add(plane(2.0, 0.3, { name: 'row_mendel', map: sign('rowMendel', [{ text: "MENDEL'S KNISHES", color: '#1a2a6a', size: 9 }], 112, 18, '#f2efe4', '#1a2a6a'), emissive: 0.4, unlit: true }, [kx, 1.3, -4.85]));
-  npcs.push({ kind: 'hasid', x: kx, z: -6.1, rot: 0, still: true, act: 'talk' });
+  if (knishOpen) group.add(plane(2.0, 0.3, { name: 'row_mendel', map: sign('rowMendel', [{ text: "MENDEL'S KNISHES", color: '#1a2a6a', size: 9 }], 112, 18, '#f2efe4', '#1a2a6a'), emissive: 0.4, unlit: true }, [kx, 1.3, -4.85]));
+  if (knishOpen) npcs.push({ kind: 'hasid', x: kx, z: -6.1, rot: 0, still: true, act: 'talk' });
   interactables.push({ id: 'row_knish', label: "Mendel's Knishes", sub: 'potato · kasha · a better question', x: kx, z: -4.2, radius: 1.4,
     unavailable: () => (open(9, 19) ? null : 'packed up · back tomorrow at 9'), action: (gg) => openShop(gg, 'knish') });
-  solids.push(solid(kx, -5.3, 2.6, 0.9, 1.0));
+  if (knishOpen) solids.push(solid(kx, -5.3, 2.6, 0.9, 1.0));
 
   /* ---------------------------------------------------- Istanbul Grill: the döner */
   const tx = 16.5;
@@ -162,9 +174,11 @@ export function buildRow(g) {
   spit.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.13, 0.75, 9), M('doner', 0xa8682a)));
   spit.add(box(0.03, 1.0, 0.03, M('spitpole', 0xb8bcc0), [0, 0, 0]));
   spit.position.set(tx + 0.85, 1.55, -5.2);
-  group.add(spit);
+  const turkOpen = open(11, 1);
+  if (turkOpen) group.add(spit);
+  else shutter(group, tx, -4.22, 3.0, 2.25, 17713);
   group.add(box(0.1, 0.8, 0.4, M('element', 0xff7a2a, { emissive: 1, unlit: true }), [tx + 1.2, 1.55, -5.5]));
-  npcs.push({ kind: 'doner', x: tx + 0.2, z: -5.0, rot: 0, still: true, act: 'carve' });
+  if (turkOpen) npcs.push({ kind: 'doner', x: tx + 0.2, z: -5.0, rot: 0, still: true, act: 'carve' });
   interactables.push({ id: 'row_turk', label: 'Istanbul Grill', sub: 'döner · kebab · baklava · tea', x: tx, z: -3.4, radius: 1.5,
     unavailable: () => (open(11, 1) ? null : 'shutter down · opens at 11'), action: (gg) => openShop(gg, 'turkish') });
   solids.push(solid(tx, -5.2, 3.0, 2.0, 2.6));
@@ -183,8 +197,8 @@ export function buildRow(g) {
   if (day) {
     npcs.push({ kind: 'w7', x: -18.5, z: -5.6, rot: 0.6, still: true, act: 'talk' });
     npcs.push({ kind: 'chessman', x: -17.6, z: -5.5, rot: -2.4, still: true, act: 'talk' });
-    npcs.push({ kind: pick(['w2', 'w16']), x: 14.4, z: -3.6, rot: Math.PI * 0.9, still: true, act: 'eat' });
-    npcs.push({ kind: 'tenant_m', x: -3.0, z: -3.0, rot: -0.4, still: true, act: 'eat' });
+    if (turkOpen) npcs.push({ kind: pick(['w2', 'w16']), x: 14.4, z: -3.6, rot: Math.PI * 0.9, still: true, act: 'eat' });
+    if (jerkOpen) npcs.push({ kind: 'tenant_m', x: -3.0, z: -3.0, rot: -0.4, still: true, act: 'eat' });
   }
 
   // a little life: the spit turns, the grill smokes, vendors call out

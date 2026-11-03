@@ -17,7 +17,7 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box } from '../render/retro.js';
-import { createNPC, animateNPC } from './characters.js';
+import { createNPC, randomCop, animateNPC } from './characters.js';
 import { dayOf, pick } from '../core/util.js';
 
 const DUTY = 120;          // seconds an officer works the area
@@ -37,11 +37,12 @@ export class Patrol {
     if (!b || !OUTSIDE.has(w.areaId)) return false;
     const mo = w.mo.root.position;
     for (let i = 0; i < count; i++) {
-      const rig = createNPC(i % 2 ? 'cop2' : 'cop');
+      const kind = randomCop();
+      const rig = createNPC(kind);
       // in from the nearer end of the area, so he walks into frame instead of appearing in it
       const fromX = mo.x - b.minX < b.maxX - mo.x ? b.minX + 0.6 : b.maxX - 0.6;
       rig.root.position.set(fromX, 0, Math.max(b.minZ + 0.6, Math.min(b.maxZ - 0.6, mo.z + (i ? 1.2 : -0.6))));
-      rig.npcDef = { kind: rig.root.name === 'cop2' ? 'cop2' : 'cop', label: 'the officer', patrol: true };
+      rig.npcDef = { kind, label: 'the officer', patrol: true };
       w.root.add(rig.root);
       w.npcRigs.push(rig);
       const cop = { rig, until: (w.realT || 0) + DUTY, state: 'arrive', target: { x: mo.x + (i ? 1.5 : -1.5), z: mo.z }, t: 0, done: new Set(), fire: 0 };

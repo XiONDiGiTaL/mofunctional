@@ -5,7 +5,7 @@ import { buildHall } from './hall.js';
 import { addOwe } from '../systems/owes.js';
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
-import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose, kickPose } from './characters.js';
+import { createMo, createAddison, createNPC, randomCop, isCopKind, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose, kickPose } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu, talk } from './areas.js';
 import { Affection } from './affection.js';
 import { stephanieDoor } from './places.js';
@@ -637,7 +637,7 @@ export class World {
       }
       return true;
     };
-    const onFoot = this.npcRigs.some((r) => (r.npcDef?.kind === 'cop' || r.npcDef?.kind === 'cop2' || r.npcDef?.cop) && r.root.visible && !r.down && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range && clear(r.root.position));
+    const onFoot = this.npcRigs.some((r) => (isCopKind(r.npcDef?.kind) || r.npcDef?.cop) && r.root.visible && !r.down && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range && clear(r.root.position));
     if (onFoot) return true;
     return (this.traffic?.cars || []).some((c) => c.mesh.userData.flash && Math.hypot(c.x - mo.x, c.lane.z - mo.z) < 9);
   }
@@ -645,7 +645,7 @@ export class World {
   /** Is a cop within `range` metres of Mo? */
   copNear(range = 6) {
     const mo = this.mo.root.position;
-    return this.npcRigs.some((r) => (r.npcDef?.kind === 'cop' || r.npcDef?.kind === 'cop2') && r.root.visible && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range);
+    return this.npcRigs.some((r) => isCopKind(r.npcDef?.kind) && r.root.visible && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range);
   }
 
   /**
@@ -925,7 +925,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const maxHp = rig.brawlHpMax || brawl.hpFor(def);
     // most women on the block run at the first punch; somebody he is seeing does not stay that
     const fem = !!faceSpec(def.kind || '')?.fem;
-    if ((fem && def.kind !== 'nurse') || brawl.runsAtOnce(def)) {
+    if ((fem && def.kind !== 'nurse' && !isCopKind(def.kind)) || brawl.runsAtOnce(def)) {
       brawl.beginSwing(g.state);
       if (def.partner && CONFIG.partners?.[def.kind]) {
         const p = partnerState(g.state, def.kind);
@@ -1170,8 +1170,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   /** A cop has decided the conversation is over. */
   startChase(g, reason = 'cop') {
     if (this.chaseRig) return;
-    const rig = createNPC('cop');
-    rig.npcDef = { kind: 'cop', cop: true };
+    const copKind = randomCop();
+    const rig = createNPC(copKind);
+    rig.npcDef = { kind: copKind, cop: true };
     const p = this.mo.root.position;
     rig.root.position.set(p.x + 2.4, 0, p.z + 2.4);
     this.root.add(rig.root);
@@ -2806,7 +2807,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   noteKO(g, def = {}) {
     // dealers, muggers, the armed, the men who came at him and the Angles themselves are not
     // innocent; five innocent people on the ground inside five real minutes is a spree
-    const GUILTY = new Set(['thug', 'thug_armed', 'benchman', 'drifter', 'unknown', 'mugger', 'boxer', 'angel_m', 'angel_f', 'cop', 'cop2']);
+    const GUILTY = new Set(['thug', 'thug_armed', 'benchman', 'drifter', 'unknown', 'mugger', 'boxer', 'angel_m', 'angel_f', 'cop', 'cop2', 'cop3', 'cop_f', 'cop_f2']);
     if (GUILTY.has(def.kind) || def.assailant || def.cop || def.tough) return;
     const now = this.realT || 0;
     this.koLog = (this.koLog || []).filter((t) => now - t < 300);
