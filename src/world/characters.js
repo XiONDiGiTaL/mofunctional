@@ -367,7 +367,8 @@ function buildBody(spec) {
   const k = height / 1.78;
   const b = build * (fem ? 0.9 : 1);
   const sh = fem ? 0.86 : 1;           // shoulder breadth
-  const hp = fem ? 1.06 : 1;           // hip breadth
+  const hp = (fem ? 1.06 : 1) * (spec.hipScale || 1); // hip breadth
+  const lg = spec.legScale || 1;       // thigh and calf thickness
   const skin = tone(skinColor);
   const hand = handMat || skin;
 
@@ -390,11 +391,11 @@ function buildBody(spec) {
 
   function makeLeg(sx) {
     const pivot = joint(hips, sx * 0.098 * hp * b * k, -0.02 * k, 0);
-    pivot.add(loft(R([[0.06, 0.19, 0.2], [-0.04, 0.205, 0.215], [-0.22, 0.185, 0.195, 0.005], [-0.42, 0.165, 0.172]], k, b), pantsMat, 8));
+    pivot.add(loft(R([[0.06, 0.19 * lg, 0.2 * lg], [-0.04, 0.205 * lg, 0.215 * lg], [-0.22, 0.185 * lg, 0.195 * lg, 0.005], [-0.42, 0.15 * lg, 0.158 * lg]], k, b), pantsMat, 8));
     const knee = joint(pivot, 0, -thighH, 0);
     // knee cap: a short faceted drum that fills the joint when the leg bends
     knee.add(loft(R([[0.05, 0.164, 0.17], [-0.05, 0.164, 0.172]], k, b), pantsMat, 8));
-    knee.add(loft(R([[0.03, 0.165, 0.172], [-0.12, 0.172, 0.178], [-0.3, 0.168, 0.176], [-0.37, 0.178, 0.186]], k, b), pantsMat, 8));
+    knee.add(loft(R([[0.03, 0.165, 0.172], [-0.12, 0.172 * (spec.bareLegs ? 0.92 : 1), 0.178], [-0.3, (spec.bareLegs ? 0.12 : 0.168), (spec.bareLegs ? 0.13 : 0.176)], [-0.37, (spec.bareLegs ? 0.11 : 0.178), (spec.bareLegs ? 0.12 : 0.186)]], k, b), pantsMat, 8));
     const ankle = joint(knee, 0, -calfH, 0);
     // shoe: heel to toe, flat sole
     ankle.add(loft(R([[0.03, 0.10, 0.12, -0.005], [-0.035, 0.118, 0.25, 0.05], [-0.08, 0.122, 0.28, 0.055]], k), shoeMat, 8));
@@ -471,7 +472,8 @@ const CAST = {
   stephanie: { height: 1.66, build: 0.98, shirt: 0x19191c, pants: 0x2a2c34, longSleeves: true, hoodie: true },
   melanie: { height: 1.68, build: 1.0, shirt: 0x141416, pants: 0x24252b, tank: true },
   diana: { height: 1.72, build: 1.0, shirt: 0x8c8e92, pants: 0x3a4a66 },
-  nurse: { height: 1.70, build: 1.0, shirt: 0xdfe6e0, pants: 0x5a6a72, longSleeves: true },
+  // Nurse Okafor: the short white uniform with pink trim, bare legs, white heels (see createNPC)
+  nurse: { height: 1.72, build: 1.0, shirt: 0xf4f2f0, shoes: 0xf2f2f2, bareLegs: true, hipScale: 1.16, legScale: 1.14, tank: true },
   // 1104 Kestrel: the arguing couple on two, Squeak in the hallway on four; Ashby Avenue
   tenant_m: { height: 1.76, build: 1.12, shirt: 0xe0dcd0, pants: 0x3a3a44 },
   tenant_f: { height: 1.64, build: 1.02, shirt: 0x7a3a6a, pants: 0x2a2c34, longSleeves: true },
@@ -480,6 +482,8 @@ const CAST = {
   passer_m: { height: 1.8, build: 1.04, shirt: 0x2a4a7a, pants: 0x3a3a40, longSleeves: true },
   passer_m2: { height: 1.74, build: 0.98, shirt: 0x8a7a5a, pants: 0x4a4436, longSleeves: true },
   drifter: { height: 1.74, build: 0.92, shirt: 0x4a4436, pants: 0x3a362c, longSleeves: true },
+  // the man with the "Rolex": a tan trenchcoat to the shins, collar up, the lining full of watches
+  trench: { height: 1.78, build: 1.0, shirt: 0x9a7a4a, pants: 0x2a2a2e, shoes: 0x1a1210, longSleeves: true },
   hall_m: { height: 1.8, build: 1.0, shirt: 0x2a2c34, pants: 0x3a4a66, longSleeves: true },
   hall_f: { height: 1.66, build: 0.96, shirt: 0x8a2a5a, pants: 0x1a1a1e },
   cop: { height: 1.82, build: 1.1, shirt: 0x1e2a4a, pants: 0x141a2a, longSleeves: true },
@@ -790,6 +794,8 @@ export function createNPC(kind = 'kev') {
     // a tank top has no sleeves: the shoulder caps are skin
     sleeveMat: spec.tank ? skinTone : shirt,
     handMat: skinTone,
+    // bare legs: the pelvis and the legs are skin, and a skirt goes over them below
+    ...(spec.bareLegs ? { pantsMat: skinTone } : {}),
   });
   rig.root.name = kind;
   const { k } = rig;
@@ -804,6 +810,30 @@ export function createNPC(kind = 'kev') {
     // the scoop: chest and shoulders show above the neckline, two straps over them
     rig.torso.add(loft(R([[0.452, 0.19, 0.13, -0.015], [0.43, 0.3, 0.17, -0.004], [0.39, 0.32, 0.2, 0.012]], k, 0.9), skinTone, 10));
     for (const sx of [-1, 1]) rig.torso.add(box(0.045 * k, 0.06 * k, 0.2 * k, shirt, [sx * 0.11 * k, 0.43 * k, 0]));
+  }
+  if (kind === 'nurse') {
+    // the dress: the bodice is the shirt; a flared white skirt from the waist to mid-thigh with a
+    // pink hem, a pink belt and a pink cross on the front, puffed cap sleeves, a fuller chest, and
+    // the little cap with the cross pinned on top of her hair
+    const white = shirt;
+    const pink = retroMaterial('nursePink', { color: 0xe86aa0, ambient: 0.75 });
+    rig.hips.add(loft(R([[0.12, 0.36, 0.24], [0.0, 0.47, 0.3], [-0.11, 0.52, 0.33], [-0.16, 0.53, 0.34]], k), white, 10));
+    rig.hips.add(loft(R([[-0.155, 0.535, 0.345], [-0.18, 0.54, 0.35]], k), pink, 10));
+    rig.torso.add(loft(R([[-0.02, 0.37, 0.225], [0.03, 0.37, 0.225]], k), pink, 10));
+    rig.torso.add(loft(R([[0.22, 0.25, 0.1, 0.07], [0.29, 0.32, 0.14, 0.085], [0.36, 0.3, 0.12, 0.07]], k), white, 10));
+    rig.torso.add(box(0.07 * k, 0.022 * k, 0.012 * k, pink, [0, 0.12 * k, 0.122 * k]));
+    rig.torso.add(box(0.022 * k, 0.07 * k, 0.012 * k, pink, [0, 0.12 * k, 0.122 * k]));
+    for (const arm of [rig.armL, rig.armR]) arm.pivot.add(loft(R([[0.04, 0.12, 0.13], [-0.02, 0.16, 0.16], [-0.09, 0.15, 0.15]], k), white, 8));
+    const cap = new THREE.Group();
+    cap.add(box(0.19 * k, 0.08 * k, 0.12 * k, white, [0, 0, 0]));
+    cap.add(box(0.05 * k, 0.014 * k, 0.006 * k, pink, [0, 0.005 * k, 0.062 * k]));
+    cap.add(box(0.014 * k, 0.05 * k, 0.006 * k, pink, [0, 0.005 * k, 0.062 * k]));
+    cap.position.set(0, 0.2 * k, 0.03 * k);
+    cap.rotation.x = -0.25;
+    rig.head.add(cap);
+    rig.hat = cap;
+    // a wristband in pink on the left
+    rig.armL.elbow.add(box(0.1 * k, 0.04 * k, 0.1 * k, pink, [0, -0.2 * k, 0]));
   }
   if (kind === 'thug_armed') {
     // a handgun tucked into the waistband, grip out, where everybody can see it
@@ -896,19 +926,25 @@ export function createNPC(kind = 'kev') {
     rig.head.add(box(0.2 * k, 0.015 * k, 0.08 * k, tweed, [0, 0.125 * k, 0.12 * k], [0.25, 0, 0]));
     rig.hat = cap;
   }
+  if (kind === 'trench') {
+    // the trenchcoat: a long tan loft from the shoulders to the shins over the shirt, a darker belt,
+    // the collar turned up round the neck
+    const coat = retroMaterial('trenchCoat', { color: 0xa8875a, ambient: 0.65 });
+    rig.torso.add(loft(R([[0.0, 0.3, 0.2, 0], [-0.3, 0.33, 0.22, 0]], k), coat, 8));
+    rig.hips.add(loft(R([[0.02, 0.31, 0.21, 0], [-0.7, 0.38, 0.25, 0]], k), coat, 8));
+    rig.hips.add(box(0.6 * k, 0.045 * k, 0.43 * k, retroMaterial('trenchBelt', { color: 0x6a4e2e }), [0, 0, 0]));
+    for (const sx of [-1, 1]) rig.torso.add(box(0.06 * k, 0.09 * k, 0.16 * k, coat, [sx * 0.085 * k, 0.4 * k, 0.02 * k], [0, 0, sx * 0.35]));
+  }
   if (kind === 'hasid' || kind === 'hasid2') {
-    // the shtreimel: a wide, tall round of brown fur on a black skullcap, sitting high; the long
-    // coat hangs past the hips; sidelocks curl down in front of the ears; a white collar shows
-    const fur = retroMaterial('shtreimelFur', { color: 0xffffff, map: tex('shtreimel'), ambient: 0.8 });
+    // a black wide-brimmed hat on a black skullcap; the long coat hangs past the hips; sidelocks
+    // curl down in front of the ears; a white collar shows
+    const felt = retroMaterial('hasidHat', { color: 0x0c0c0e, ambient: 0.55 });
     const hat = new THREE.Group();
-    // a wide drum of fur, slightly domed on top, sitting high on a skullcap
-    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.215 * k, 0.185 * k, 0.15 * k, 18), fur));
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.215 * k, 18, 6, 0, Math.PI * 2, 0, Math.PI / 2), fur);
-    dome.scale.set(1, 0.22, 1);
-    dome.position.y = 0.075 * k;
-    hat.add(dome);
-    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.125 * k, 0.125 * k, 0.04 * k, 12), retroMaterial('kippah', { color: 0x0c0c0e })).translateY(-0.085 * k));
-    hat.position.set(0, 0.22 * k, -0.01 * k);
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.15 * k, 0.165 * k, 0.17 * k, 16), felt));
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.27 * k, 0.27 * k, 0.018 * k, 20), felt).translateY(-0.075 * k));
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.168 * k, 0.168 * k, 0.03 * k, 16), retroMaterial('hasidBand', { color: 0x1c1c20 })).translateY(-0.052 * k));
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.125 * k, 0.125 * k, 0.04 * k, 12), retroMaterial('kippah', { color: 0x0c0c0e })).translateY(-0.09 * k));
+    hat.position.set(0, 0.2 * k, -0.01 * k);
     rig.head.add(hat);
     rig.hat = hat;
     // the sidelocks: long curls hanging in front of the ears to the jaw

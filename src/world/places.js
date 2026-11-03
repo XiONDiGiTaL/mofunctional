@@ -12,6 +12,7 @@
  *   Lucia's       — a red-sauce restaurant with tablecloths: a meal you sit down for, and the
  *                   best date on the list (romance.js activity `lucias`).
  */
+import * as herplace from './herplace.js';
 import * as music from '../systems/music.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
@@ -244,6 +245,8 @@ export function stephanieDoor(g, partnerMenu, unit = '1B', bldg = '1120 KESTREL'
   const st = romance.partnerState(s, 'stephanie');
   g.advance(2);
   if (!row?.away) {
+    // out; with her key he can still let himself in
+    if (st.key) { herplace.knock(g, 'stephanie'); return; }
     g.openModal({ kicker: `${bldg} · ${unit}`, title: unit, body: `Nobody home. A note taped to the door in Sharpie: "OUT. OBVIOUSLY."${st.met ? `\n\n(She is ${row.area === 'street' ? 'out on the street' : `at ${row.area}`}: ${row.note}.)` : ''}`, choices: [{ label: 'Okay.', effect: () => {} }] });
     return;
   }
@@ -260,7 +263,7 @@ export function stephanieDoor(g, partnerMenu, unit = '1B', bldg = '1120 KESTREL'
     g.openModal({ kicker: `${bldg} · ${unit}`, title: 'Stephanie', body: 'She opens the door four inches. "It is too early or too late for you to be at my door, Mo. Text first. Like a person."', choices: [{ label: 'Fair.', effect: () => { bump(s, 'morale', -1); } }] });
     return;
   }
-  partnerMenu(g, 'stephanie');
+  herplace.knock(g, 'stephanie');
 }
 
 export function buildWalkup(g, { partnerMenu } = {}) {
@@ -331,7 +334,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
   } else {
     door(-1, 2.6, `${fl}A`, (gg) => knock(gg, f, `${fl}A`));
     door(1, 2.6, `${fl}B`, f === 2 ? (gg) => petrakis(gg) : (gg) => knock(gg, f, `${fl}B`), f === 2 ? 'Mrs. Petrakis' : '');
-    door(-1, -0.6, `${fl}C`, (gg) => knock(gg, f, `${fl}C`), '');
+    door(-1, -0.6, `${fl}C`, f === 2 ? (gg) => herplace.knock(gg, 'melanie') : (gg) => knock(gg, f, `${fl}C`), f === 2 ? 'Melanie · a wreath that is not seasonal' : '');
     door(1, 0.4, `${fl}D`, (gg) => knock(gg, f, `${fl}D`));
   }
   if (f === 1) {
@@ -385,7 +388,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     spawn: { x: 0, z: D / 2 - 1.6, rot: Math.PI },
     // up the stairs: at the top of the east flight; down them: at the foot of the west well;
     // out of the elevator: in front of its doors
-    spawnFor: (from) => (from === 'up' || from === 'roof' ? { x: stairX - 0.2, z: -2.4, rot: 0 } : from === 'down' ? { x: -0.95, z: -1.7, rot: 0 } : from === 'elevator' ? { x: -0.95, z: -D / 2 + 1.5, rot: 0 } : { x: 0, z: D / 2 - 1.6, rot: Math.PI }),
+    spawnFor: (from) => (from === 'herplace' ? { x: -0.6, z: -0.6, rot: -Math.PI / 2 } : from === 'up' || from === 'roof' ? { x: stairX - 0.2, z: -2.4, rot: 0 } : from === 'down' ? { x: -0.95, z: -1.7, rot: 0 } : from === 'elevator' ? { x: -0.95, z: -D / 2 + 1.5, rot: 0 } : { x: 0, z: D / 2 - 1.6, rot: Math.PI }),
     npcs,
     interactables,
     tick,

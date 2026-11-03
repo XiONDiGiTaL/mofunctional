@@ -41,7 +41,7 @@ export function placeOrder(g, shopId, cart, prepaid) {
     g.spendMoney(total, `${shopFor(shopId).name}: delivery`);
   }
   Object.assign(d, { status: 'enroute', shop: shopId, items: { ...cart }, total, prepaid: !!prepaid, eta: s.clock.m + D().minutes, arrivedAt: 0, checked: 0 });
-  g.toast(prepaid ? `"Paid. We leave it at the door, 1120, the stoop. Twenty-five minutes."` : `"Twenty-five minutes. Cash at the door. Do not make my guy wait, he has other people."`, 'good');
+  g.toast(prepaid ? `"Paid. We leave it at your door, 1120, 3B. Twenty-five minutes."` : `"Twenty-five minutes. Cash at the door. Do not make my guy wait, he has other people."`, 'good');
   logLine(g, `Ordered from ${shopFor(shopId).name}: ${itemsLine(cart)}.`, 'info');
   return true;
 }
@@ -59,10 +59,10 @@ export function tickDelivery(g) {
     pushMessage(g, {
       from: sender(d.shop), subject: 'delivery',
       body: d.prepaid
-        ? '“left it on the stoop at 1120. bag with a knot on it. get it before somebody else does.”'
+        ? '“left it outside 3B at 1120. bag with a knot on it. get it before somebody else does.”'
         : `“outside 1120. ${money(d.total)}. i'm here for an hour, then i'm gone and it's your problem.”`,
     });
-    g.toast(d.prepaid ? 'Your delivery is on the stoop outside 1120.' : 'The delivery guy is outside 1120 with your order.', 'info');
+    g.toast(d.prepaid ? 'Your delivery is outside your door, 3B.' : 'The delivery guy is upstairs outside 3B with your order.', 'info');
     return;
   }
   if (d.status === 'waiting' && now - d.arrivedAt > D().waitMinutes) {

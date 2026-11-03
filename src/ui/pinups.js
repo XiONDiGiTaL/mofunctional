@@ -7,6 +7,8 @@
  * the same every time it is opened again.
  */
 
+import { personShot } from './studio.js';
+
 function rng(seed) {
   let t = seed >>> 0;
   return () => { t = (t + 0x6d2b79f5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
@@ -136,14 +138,30 @@ function picture({ look, pose, seed }) {
 
 const url = (body) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160" shape-rendering="crispEdges">${body}</svg>`)}`;
 
-/** A picture as a data URL: `look` is a LOOKS entry or a randomLook(seed). */
+/**
+ * Who the pictures are of, in the game's own models (ui/studio.js renders them): each LonelyFans
+ * woman is one of the block's dating-app faces, HelloNurse69 is Nurse Okafor from the chin down in
+ * the clinic exam room, and a stranger on DialUpDelights is one of the twenty, picked by the seed.
+ */
+const MODEL_KIND = { velvet: 'w0', cherry: 'w7', mona: 'w12', jade: 'w6', hellonurse: 'nurse' };
+// the faces that read best at thumbnail size: hair down
+const STRANGER_KINDS = ['w0', 'w2', 'w5', 'w6', 'w7', 'w8', 'w11', 'w12', 'w13', 'w14', 'w16', 'w18', 'w19'];
+const ROOM_OF = { velvet: 'bedroom', cherry: 'neon', mona: 'kitchen', jade: 'bathroom', hellonurse: 'clinic' };
+
+/** A picture as a data URL: `look` is a LOOKS entry or a randomLook(seed). Falls back to the old drawing. */
 export function pinupURL(look, pose = 'hips', seed = 1) {
-  return url(picture({ look, pose, seed }));
+  const shot = personShot({ kind: STRANGER_KINDS[Math.abs(seed) % STRANGER_KINDS.length], room: look?.room || 'bedroom', pose, seed, adult: true });
+  return shot || url(picture({ look, pose, seed }));
 }
 
 /** A LonelyFans model's picture by id. */
 export function modelPicURL(modelId, pose, seed) {
-  return pinupURL(LOOKS[modelId] || randomLook(seed), pose, seed);
+  const kind = MODEL_KIND[modelId];
+  if (kind) {
+    const shot = personShot({ kind, room: ROOM_OF[modelId], pose, seed, adult: true, noFace: modelId === 'hellonurse' });
+    if (shot) return shot;
+  }
+  return url(picture({ look: LOOKS[modelId] || randomLook(seed), pose, seed }));
 }
 
 /** For messages: pick a pose for a new picture, avoiding the cat for the ones who would never. */

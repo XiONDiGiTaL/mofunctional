@@ -14,6 +14,7 @@ import { tex } from '../render/textures.js';
 import { signTex } from '../render/signs.js';
 import { pick } from '../core/util.js';
 import { bump, addItem, removeItem, inventoryList, countItem, itemDef } from '../core/state.js';
+import * as okafor from '../systems/okafor.js';
 
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 
@@ -129,6 +130,57 @@ const STALL_LINES = [
   'A sticker for a lawyer who will fight for you. Even here.',
   'Somebody has written the whole first verse of a song you half know. The second verse is in a different pen and is worse.',
 ];
+
+/**
+ * The Kestrel Clinic's supply room: steel shelves of gauze and gloves, a cot, a small sink and a
+ * mirror, the supply fridge humming. Mo comes round on the cot after his hour with Okafor; she is at
+ * the mirror putting herself back together (systems/okafor.js backroomWake).
+ */
+export function buildClinicBack(g) {
+  const group = new THREE.Group();
+  const W = 3.6, D = 3.4;
+  group.add(plane(W, D, { name: 'cb_floor', map: tex('tile'), color: 0xb8c4c0 }, [0, 0, 0], [-Math.PI / 2, 0, 0]));
+  group.add(plane(W, D, { name: 'cb_ceil', map: tex('ceiling') }, [0, 2.6, 0], [Math.PI / 2, 0, 0]));
+  const wall = retroMaterial('cb_wall', { color: 0x2a8a84 });
+  group.add(box(0.12, 2.6, D, wall, [-W / 2, 1.3, 0]));
+  group.add(box(0.12, 2.6, D, wall, [W / 2, 1.3, 0]));
+  group.add(box(W, 2.6, 0.12, wall, [0, 1.3, -D / 2]));
+  group.add(box(W, 2.6, 0.12, wall, [0, 1.3, D / 2]));
+  group.add(box(0.95, 2.15, 0.08, retroMaterial('cb_door', { color: 0x8a9aa0 }), [1.0, 1.08, D / 2 - 0.07]));
+  group.add(box(1.4, 0.06, 0.16, retroMaterial('cb_tube', { color: 0xf2f8ff, emissive: 1, unlit: true }), [0, 2.56, 0]));
+  // shelves of boxes along the back wall
+  const steel = retroMaterial('cb_steel', { color: 0x9aa0a4 });
+  for (const y of [0.4, 0.95, 1.5, 2.05]) group.add(box(2.2, 0.04, 0.45, steel, [-0.4, y, -D / 2 + 0.3]));
+  for (const x of [-1.5, 0.7]) group.add(box(0.04, 2.1, 0.45, steel, [x, 1.05, -D / 2 + 0.3]));
+  const boxes = [0xf2f2ec, 0x6ab0e8, 0xe8e0c8, 0xf2f2ec, 0x8ac8a0];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) group.add(box(0.4, 0.3, 0.36, retroMaterial(`cb_box${(r + c) % 5}`, { color: boxes[(r + c) % 5] }), [-1.25 + c * 0.55, 0.58 + r * 0.55, -D / 2 + 0.3]));
+  // the cot, a pillow, a blanket half off it
+  group.add(box(0.75, 0.4, 1.9, steel, [-1.25, 0.2, 0.55]));
+  group.add(box(0.72, 0.1, 1.86, retroMaterial('cb_mattress', { color: 0xe8ecec }), [-1.25, 0.45, 0.55]));
+  group.add(box(0.5, 0.1, 0.32, retroMaterial('cb_pillow', { color: 0xf8f8f4 }), [-1.25, 0.55, -0.2]));
+  group.add(box(0.76, 0.05, 1.0, retroMaterial('cb_blanket', { color: 0x4a6a9a }), [-1.15, 0.52, 0.95], [0, 0, 0.15]));
+  // the sink and the mirror on the right wall, the supply fridge in the corner
+  group.add(box(0.5, 0.16, 0.4, M.porcelain(), [W / 2 - 0.3, 0.85, 0.2]));
+  group.add(box(0.04, 0.7, 0.5, retroMaterial('cb_mirror', { color: 0xa8b8c0, emissive: 0.25 }), [W / 2 - 0.07, 1.5, 0.2]));
+  group.add(box(0.6, 1.4, 0.6, retroMaterial('cb_fridge', { color: 0xe8ecec }), [W / 2 - 0.4, 0.7, -D / 2 + 0.4]));
+
+  const interactables = [
+    { id: 'cb_out', label: 'Back out to the clinic', sub: 'walk like you had a flu shot', x: 1.0, z: D / 2 - 0.55, radius: 0.8, action: (gg) => gg.goTo('clinic', 'clinicback') },
+    { id: 'cb_sink', label: 'Wash up at the little sink', sub: '+hygiene · 5 min', x: W / 2 - 0.65, z: 0.2, radius: 0.7, action: (gg) => wash(gg, { minutes: 5, hygiene: 10, line: 'Surgical soap, which smells like a hospital and a little like her.' }) },
+  ];
+  return {
+    group,
+    bounds: { minX: -W / 2 + 0.25, maxX: W / 2 - 0.25, minZ: -D / 2 + 0.65, maxZ: D / 2 - 0.25 },
+    solids: [solid(-1.25, 0.55, 0.8, 1.95, 0.55), solid(W / 2 - 0.3, 0.2, 0.5, 0.45, 0.9), solid(W / 2 - 0.4, -D / 2 + 0.4, 0.6, 0.6, 1.4)],
+    spawn: { x: -0.6, z: 0.4, rot: Math.PI / 2 },
+    spawnFor: () => ({ x: -0.6, z: 0.4, rot: Math.PI / 2 }),
+    npcs: [{ kind: 'nurse', x: W / 2 - 0.55, z: 0.25, rot: Math.PI / 2, still: true, act: 'phone' }],
+    interactables,
+    ambient: 'clinic',
+    tick: (gg) => okafor.backroomWake(gg),
+    title: 'Kestrel Clinic · the supply room',
+  };
+}
 
 export function buildRestroom(g) {
   const group = new THREE.Group();

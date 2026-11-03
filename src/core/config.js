@@ -168,6 +168,8 @@ export const CONFIG = {
     mud_x:   { id: 'mud_x',   name: 'Black Mud',              kind: 'substance', price: 24, value: 8 },
     drip_x:  { id: 'drip_x',  name: 'Drip (pure)',            kind: 'substance', price: 12, value: 4 },
     rox:     { id: 'rox',     name: 'ROX',                    kind: 'substance', price: 40, value: 15 },
+    // off Nurse Okafor, now and then, if somebody knocks her out (please do not): everything back at once
+    epipen:  { id: 'epipen',  name: 'EpiPen', kind: 'medicine', price: 0, value: 40 },
     baking_soda: { id: 'baking_soda', name: 'Box of Baking Soda', kind: 'supply', price: 2.0, value: 0.3 },
     tv:      { id: 'tv',      name: '22" CRT Television', kind: 'valuable', value: 95,  weight: 5 },
     guitar:  { id: 'guitar',  name: 'Bolt-On Guitar', kind: 'valuable', value: 150, weight: 4 },
@@ -389,7 +391,7 @@ export const CONFIG = {
     chancePerCheck: 0.22,      // a check every ~40 s of play somewhere dangerous
     cooldownHours: 30,
     thugHits: 3,
-    hitEnergy: 18,
+    hitEnergy: 10,
     payOffShare: 0.25,
     robCashShare: [0.3, 0.6],
   },
@@ -788,6 +790,12 @@ export const CONFIG = {
     { id: 'army', name: 'army surplus jacket', shirt: 0x4e5a34, pants: 0x3a3a40, shoes: 0x2a2622, price: 45, note: 'never served, looks like he could have' },
     { id: 'sweats', name: 'grey sweatsuit', shirt: 0x7a7c80, pants: 0x7a7c80, shoes: 0xf2f2ec, price: 38, note: 'comfortable is a lifestyle' },
     { id: 'mustard', name: 'mustard tee and khakis', shirt: 0xd8b03a, pants: 0xb8a47a, shoes: 0x2a2622, price: 30, note: 'bold, cheap, on sale for a reason' },
+    // off Melanie's rack and nowhere else (world/herplace.js): never for sale
+    { id: 'mel_camel', name: 'camel overcoat and turtleneck', shirt: 0xb8925a, pants: 0x2a2a2e, shoes: 0x1a1210, price: 0, exclusive: 'melanie', note: 'she says it makes you look like you own a bookshop' },
+    { id: 'mel_linen', name: 'linen shirt and tailored chinos', shirt: 0xe8e2d0, pants: 0x6a6a5a, shoes: 0x8a5a3a, price: 0, exclusive: 'melanie', note: 'for a summer you have not had yet' },
+    { id: 'mel_leather', name: 'black leather jacket and dark denim', shirt: 0x1a1a1c, pants: 0x24304a, shoes: 0x2a1a12, price: 0, exclusive: 'melanie', note: 'her ex left it, and it is wasted on a closet' },
+    { id: 'mel_knit', name: 'cream cable-knit sweater', shirt: 0xe8dcc0, pants: 0x3a3a40, shoes: 0x5a3a24, price: 0, exclusive: 'melanie', note: 'hand-knit by her grandmother, so be careful' },
+    { id: 'mel_burgundy', name: 'burgundy bomber and black chinos', shirt: 0x6a2a3a, pants: 0x1a1a1e, shoes: 0xf2f2ec, price: 0, exclusive: 'melanie', note: 'the colour of a good decision' },
   ],
 };
 

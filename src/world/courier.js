@@ -6,7 +6,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box } from '../render/retro.js';
 import { createNPC } from './characters.js';
-import { building, STREET } from './plan.js';
+import { b1120 } from './hall.js';
 import { deliveryState, collect } from '../systems/delivery.js';
 import { money } from '../core/util.js';
 
@@ -18,15 +18,15 @@ export class Courier {
     this.it = null;
   }
 
+  /** Outside Unit 3B, on the third-floor landing: the courier buzzes up and waits at the door. */
   spot() {
-    const door = building('apartment').door;
-    return { x: door + 0.9, z: (STREET.doorZ ?? -6) + 1.1 };
+    return { x: -0.75, z: 3.0 };
   }
 
   sync(g) {
     const w = this.world;
     const d = deliveryState(g.state);
-    const want = w.areaId === 'street' && (d.status === 'waiting' || d.status === 'door') ? d.status : null;
+    const want = w.areaId === 'hall' && b1120(g.state).floor === 3 && (d.status === 'waiting' || d.status === 'door') ? d.status : null;
     if (want === this.shown) {
       if (this.it && d.status === 'waiting') this.it.sub = `${money(d.total)} · cash · he leaves after an hour`;
       return;
@@ -37,7 +37,7 @@ export class Courier {
     if (want === 'waiting') {
       const rig = createNPC('passer_m2');
       rig.root.position.set(p.x, 0, p.z);
-      rig.root.rotation.y = 0;
+      rig.root.rotation.y = -Math.PI / 2;
       // a paper bag in his hand, the receipt stapled to it
       rig.armR.pivot.add(box(0.2, 0.26, 0.14, retroMaterial('cr_bag', { color: 0xb08a5a }), [0, -0.62, 0.05]));
       w.root.add(rig.root);
@@ -53,7 +53,7 @@ export class Courier {
     }
     this.it = {
       id: 'delivery',
-      label: want === 'waiting' ? 'Your delivery' : 'Your delivery, on the stoop',
+      label: want === 'waiting' ? 'Your delivery' : 'Your delivery, outside your door',
       sub: want === 'waiting' ? `${money(d.total)} · cash · he leaves after an hour` : 'paid · pick it up',
       x: p.x - (want === 'door' ? 0.6 : 0), z: p.z - (want === 'door' ? 0.4 : 0), radius: 1.3,
       vec: new THREE.Vector2(p.x, p.z),

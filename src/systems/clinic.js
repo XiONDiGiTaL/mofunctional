@@ -33,9 +33,12 @@ export function treatmentInfo(g) {
   const t = C.treatment;
   const needsIt = s.stats.risk > 18 || s.stats.withdrawal > 18 || s.stats.addiction > 30;
   const sameDay = dayOf(s.clock.m) === c.lastVisitDay && c.treatments > 0 && s.clock.m - c.lastTreatAt < 720;
+  // Okafor's deal: treatment on the house (systems/okafor.js)
+  const free = !!s.okafor?.deal;
   return {
     ...t,
-    affordable: s.money >= t.cost,
+    cost: free ? 0 : t.cost,
+    affordable: free || s.money >= t.cost,
     needsIt,
     alreadyToday: sameDay,
     canTreat: !sameDay,
@@ -55,9 +58,11 @@ export function treat(g) {
     g.toast(`${C.nurse} says come back tomorrow. She wrote it down.`, 'info');
     return false;
   }
-  const cost = C.treatment.cost;
+  const cost = s.okafor?.deal ? 0 : C.treatment.cost;
   let paid = 0;
-  if (s.money >= cost) {
+  if (!cost) {
+    // nothing to pay: she waves the clipboard at the cash drawer and does not open it
+  } else if (s.money >= cost) {
     g.spendMoney(cost, `${C.name} — treatment`);
     paid = cost;
   } else {

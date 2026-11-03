@@ -233,6 +233,7 @@ export function loot(g, target = {}) {
   else if (kind === 'tough') { cash = 20 + Math.round(Math.random() * 90); if (Math.random() < 0.45) found.push(pick(['mud_x', 'static_x'])); if (Math.random() < 0.3) found.push(pick(['watch', 'necklace'])); }
   else if (kind === 'cop') { cash = 0; }
   else { cash = Math.round(Math.random() * 14); if (Math.random() < 0.25) found.push('loosies'); }
+  if (target.kind === 'nurse' && Math.random() < 0.35) found.push('epipen');
   if (cash > 0) g.earnMoney(cash, 'somebody\'s pockets');
   for (const id2 of found) addItem(s, id2, 1);
   bump(s, 'morale', cash > 0 ? 2 : 0);

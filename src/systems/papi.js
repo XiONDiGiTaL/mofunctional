@@ -80,6 +80,12 @@ function goingOn(g) {
   else if (s.tenants && Object.keys(s.tenants.complaints || {}).length) out.push('I hear your floor is making a list. Good. A list is a thing a landlord cannot hang up on.');
   if ((s.music?.fans || 0) >= 10) out.push(`People say your name at Lucia's on Thursdays. ${s.music.fans} people. That is a block's worth. Keep going.`);
   if (s.flags?.addisonRobbed) out.push('Somebody knocked the Shepherd down in his own church and went through his robes. I am not saying who. I am looking at who.');
+  // the new money on the block, and the new manners
+  if (Object.values(s.supply?.dealers || {}).some((d) => d.on)) out.push('There is a new thing on the corners. ROX, they call it. Benchy has new sneakers. Dex is smiling, which is worse. Somebody is cooking it, and that somebody should be careful, because I can smell a pot from here.');
+  else if (s.counters?.roxSold) out.push('The ones who walk at night are talking about rocks. Little white rocks. Mo, when the night people know a thing, the police know it a week later.');
+  if (s.rae?.kos) out.push(`Rae Vell crosses the street when he sees you now. Rent went down for you, I hear${s.rae.cut ? ` (${Math.round(s.rae.cut * 100)}%)` : ''}. For the rest of us it went up. Think about that.`);
+  if (s.okafor?.deal) out.push('Okafor at the clinic is in a good mood lately. Okafor is never in a good mood. I do not ask. I am old, not stupid.');
+  if (s.romance?.liveIn === 'diana') out.push('Diana makes you eat breakfast. I see it in your face. Marry that woman before she comes to her senses.');
   if (!out.length) out.push(pick(['Quiet week. I do not trust a quiet week. Something is coming, it always is.', 'Nothing new. Tito lost again. That is not news, that is weather.', 'Same block. Same people. You look a little different, that is the only news.']));
   return out;
 }

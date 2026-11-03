@@ -23,7 +23,7 @@ export function rentShare(s) {
 
 /** What one rent cycle actually costs Mo after his partner's contribution. */
 export function rentPerCycle(s) {
-  const base = CONFIG.economy.rent.amount;
+  const base = CONFIG.economy.rent.amount * (1 - (s.rae?.cut || 0)); // what Rae agreed to on the pavement (systems/rae.js)
   return Math.round(base * (1 - rentShare(s)) * 100) / 100;
 }
 

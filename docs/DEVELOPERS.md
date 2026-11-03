@@ -159,7 +159,9 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         (support contact, routines, invitations, the way back), papi (the block's
                         encyclopedia: people, places, what is going on), supply (ROX: the
                         three connections on consignment, daily texts, stiffing and
-                        collecting, and the fiends who buy it after dark)
+                        collecting, and the fiends who buy it after dark), okafor (HelloNurse69,
+                        the clinic deal, the supply room), rae (the landlord on the ground:
+                        rent cuts, repairs, fear that fades)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,
@@ -169,6 +171,8 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         hall (1120: lobby and three floors, the elevator), roof (both
                         walkable roofs)
                         assailant (somebody running at Mo: a driver, a Guardian Angle)
+                        duel (a fist fight with Mo's own punches), herplace (the girlfriends'
+                        homes, keys, Stephanie's couch, Melanie's rack, Diana's care)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits)
 src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
@@ -177,6 +181,7 @@ src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (
                         pinups (the mosaic pictures for LonelyFans and DialUpDelights)
                         wallpapers (the home screen's pictures, Snapz photos, memories), marquee (the happenings banner)
                         tv (looping canvas clips: Unit 3B's channels, the TV overlay, MeTube's player)
+                        studio (offscreen renders of the game's models for phone pictures)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
 scripts/test-systems.mjs  headless system checks (npm test)
 scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)

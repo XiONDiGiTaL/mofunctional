@@ -185,7 +185,7 @@ export function buildHall(g, { partnerMenu, stephanieDoor, raeTalk, kevDoor } = 
     bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -D / 2 + 0.4, maxZ: D / 2 - 0.4 },
     solids,
     spawn: { x: 0, z: D / 2 - 1.4, rot: Math.PI },
-    spawnFor: (from) => (from === 'apartment' ? { x: -0.6, z: 3.8, rot: Math.PI / 2 }
+    spawnFor: (from) => (from === 'apartment' || from === 'herplace' ? { x: -0.6, z: 3.8, rot: Math.PI / 2 }
       : from === 'elevator' ? { x: -0.7, z: -1.4, rot: Math.PI / 2 }
         : from === 'up' ? { x: -0.4, z: -2.8, rot: Math.PI }
           : from === 'down' || from === 'roof' ? { x: 0.4, z: -2.6, rot: Math.PI }

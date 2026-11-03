@@ -101,7 +101,7 @@ export function exchange(g, fight, landed, { quietWin = false } = {}) {
   return fight;
 }
 
-function win(g) {
+export function win(g) {
   const s = g.state;
   const f = fightState(s);
   f.won += 1;

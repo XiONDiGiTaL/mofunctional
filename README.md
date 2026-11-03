@@ -278,9 +278,16 @@ The board stays open so a breakfast run is three clicks, not three trips.
 - **Miguel** and **Habib** run the bodega and the halal spot, and both of them notice when you
   have not eaten.
 - **Rae Vell**, the landlord, does his rounds with a clipboard. You will learn the sound of it.
+  Put him on the pavement and the lease becomes negotiable: cheaper rent, or repairs on his dime.
 - **Stephanie, Melanie and Diana** each keep their own day all over the block. A small heart over
   someone's head means you could try, not that she is interested. Dates cost real money and real
-  evenings, and a bad one does not refund.
+  evenings, and a bad one does not refund. Each of them has a home (Stephanie in 1B, Melanie at
+  1104, Diana in a Park Slope brownstone), and a girlfriend who is sure of you hands you a key: her
+  couch, her bed and her fridge are yours to use. Stephanie will get high with you on her couch (or
+  yours, once she moves in), Melanie dresses you in clothes no store on the block sells, and Diana
+  looks after you, especially once she lives with you.
+- **Nurse Okafor** runs the clinic, and something else besides. If you work out who HelloNurse69
+  on LonelyFans is, she would like that kept quiet, and she makes it worth your while.
 - **Meatball** is a stray. Feed him twice a day and he starts following you. Earn his trust all
   the way and he will have your back after dark.
 - **Addison Octavius** leads the Golden Fellowship. He is very kind, and he would like a tenth of
@@ -303,8 +310,12 @@ Press `Z` and Mo throws a punch at whoever is closest. The block reacts the way 
   minutes, and they will remember your face.
 - **Shopkeepers do not fight.** Hit one enough and they pick up the phone, and a cruiser finds
   the block a few minutes later.
-- **Cops** take a punch personally. A sober, rested Mo can outrun one. A tired one gets the cuffs
-  and a night in holding.
+- **Cops** take a punch personally. A sober, rested Mo can outrun one. When one catches him, he
+  can go quietly or resist on the Fight meter: win and the cop is on the ground, lose and the fine
+  is bigger.
+- **Somebody who comes at you** (a mugger, a driver out of his car, a Guardian Angle) is a real
+  fight: he squares up and swings, you answer with `Z`, and stepping back as he winds up makes him
+  miss. Walk far enough away and he gives up.
 - **Children are off limits.** Mo has done a lot of things. Not that.
 - **Meatball** will forgive a kick eventually. He will not forget it soon.
 

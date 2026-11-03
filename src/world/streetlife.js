@@ -21,6 +21,38 @@ import { CONFIG } from '../core/config.js';
 
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
+/**
+ * Yusuf's hose: one smooth tube from the port on the hookah, sagging under the table edge and up
+ * to his right hand, rebuilt each frame so it follows the hand to his mouth and back down. It
+ * lives in the same parent as his rig, so it goes when the street does.
+ */
+const _h = new THREE.Vector3();
+const hoseMat = retroMaterial('hookahHoseTube', { color: 0x3a2a1e, ambient: 0.7 });
+function hookahHose(rig) {
+  const at = rig.npcDef?.hookahAt;
+  const parent = rig.root.parent;
+  if (!at || !parent || !rig.armR?.hand) return;
+  const hand = rig.armR.hand;
+  if (!hand.geometry.boundingSphere) hand.geometry.computeBoundingSphere();
+  _h.copy(hand.geometry.boundingSphere.center);
+  hand.localToWorld(_h);
+  parent.worldToLocal(_h);
+  const a = new THREE.Vector3(at[0], at[1], at[2]);
+  const mid = a.clone().lerp(_h, 0.5);
+  mid.y = Math.min(a.y, _h.y) - 0.28;
+  const curve = new THREE.CatmullRomCurve3([a, a.clone().lerp(mid, 0.55).setY(mid.y + 0.06), mid, _h.clone().lerp(mid, 0.4).setY(mid.y + 0.1), _h.clone()]);
+  const geo = new THREE.TubeGeometry(curve, 16, 0.016, 5, false);
+  if (!rig.hose) {
+    rig.hose = new THREE.Mesh(geo, hoseMat);
+    parent.add(rig.hose);
+  } else {
+    rig.hose.geometry.dispose();
+    rig.hose.geometry = geo;
+    if (rig.hose.parent !== parent) parent.add(rig.hose);
+  }
+  rig.hose.visible = rig.root.visible && !rig.down;
+}
+
 /* ------------------------------------------------------------------ acts */
 
 /** Called every frame after animateNPC for a rig whose def has an `act`. */
@@ -127,6 +159,7 @@ export function applyAct(rig, dt, life) {
     rig.armL.elbow.rotation.x = -0.55;
     if (cyc > 3.2 && cyc < 3.3 && !rig.puffed) { rig.puffed = true; life?.puff(rig, 1.6); setTimeout(() => life?.puff(rig, 1.2), 250); }
     if (cyc < 1) rig.puffed = false;
+    hookahHose(rig);
     return;
   }
   if (act === 'dominoes') {

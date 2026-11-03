@@ -5,6 +5,7 @@
  * the author's own portrait in a frame.
  */
 import { portraitURL } from '../render/faces.js';
+import { personShot, sceneShot } from './studio.js';
 
 function rng(seed) {
   let t = seed >>> 0;
@@ -110,11 +111,13 @@ export function postImage(post, authorKind) {
   if (!post.img) return '';
   if (post.img === 'selfie') {
     if (!authorKind) return '';
-    return `<div class="fpost__img fpost__img--selfie"><img src="${portraitURL(authorKind, 'content')}" alt="" /></div>`;
+    const shot = personShot({ kind: authorKind, room: ['bedroom', 'kitchen', 'stoop', 'apartment'][(post.seed || 1) % 4], pose: 'selfie', seed: post.seed || 1, w: 96, h: 96 });
+    return `<div class="fpost__img fpost__img--selfie"><img src="${shot || portraitURL(authorKind, 'content')}" alt="" /></div>`;
   }
   const scene = SCENES[post.img];
   if (!scene) return '';
-  return `<div class="fpost__img"><img src="${svgURL(scene(rng(post.seed || 1)))}" alt="" /></div>`;
+  const shot = sceneShot(post.img, post.seed || 1);
+  return `<div class="fpost__img"><img src="${shot || svgURL(scene(rng(post.seed || 1)))}" alt="" /></div>`;
 }
 
 export const SCENE_IDS = Object.keys(SCENES);
@@ -129,6 +132,12 @@ const MO_SCENES = {
 
 /** One of Mo's own posts: him, in front of somewhere, and a play button if it is a lip sync. */
 export function moPostImage(p) {
+  // Mo himself, in the game's model, in front of the place he posted from
+  const shot = personShot({ kind: 'mo', room: { bath: 'bathroom', room: 'apartment', stoop: 'stoop', night: 'night' }[p.scene] || 'apartment', pose: p.snap === 'video' ? 'peace' : 'selfie', seed: p.seed || 1, w: 128, h: 80 });
+  if (shot) {
+    return `<div class="fpost__img fpost__img--mo3d${p.snap === 'video' ? ' fpost__img--video' : ''}"><img src="${shot}" alt="" />
+    ${p.snap === 'video' ? `<span class="fpost__play">▶</span><span class="fpost__dur">0:${String(12 + (p.seed % 40)).padStart(2, '0')}</span>` : ''}</div>`;
+  }
   const r = rng(p.seed || 1);
   const bg = svgURL((MO_SCENES[p.scene] || MO_SCENES.room)(r));
   const tilt = ((p.seed % 9) - 4) * 1.5;

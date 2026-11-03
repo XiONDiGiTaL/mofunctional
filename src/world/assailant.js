@@ -1,12 +1,10 @@
 /**
  * Somebody coming for Mo on foot: a driver out of the car he just punched, or a Guardian Angle who
- * has seen enough. They run at him, and when they reach him it is a fight on the fight meter.
- * Win and they go down where they stood (pockets and all); lose and it is the pavement, then the
- * clinic, like any other beating.
+ * has seen enough. They run at him, and when they reach him it is a fist fight (world/duel.js):
+ * Mo's own punches against theirs. Win and they go down where they stood (pockets and all); lose
+ * and it is the pavement, then the clinic, like any other beating; walk far enough and they quit.
  */
 import { createNPC, animateNPC } from './characters.js';
-import { FightMeter } from '../ui/fight.js';
-import { bump } from '../core/state.js';
 
 export class Assailants {
   constructor(world) {
@@ -38,6 +36,7 @@ export class Assailants {
         if (a.downT > 90) this.drop(a);
         continue;
       }
+      if (a.state === 'fight') continue; // the duel poses him
       if (a.state !== 'run') { animateNPC(a.rig, dt, {}); continue; }
       const dx = mo.x - p.x, dz = mo.z - p.z;
       const d = Math.hypot(dx, dz);
@@ -51,7 +50,7 @@ export class Assailants {
         animateNPC(a.rig, dt, { walking: true });
         continue;
       }
-      if (g.uiBusy || this.world.fightMeter?.el) { animateNPC(a.rig, dt, {}); continue; }
+      if (g.uiBusy || this.world.duel?.active) { animateNPC(a.rig, dt, {}); continue; }
       a.state = 'fight';
       this.fight(g, a);
     }
@@ -59,31 +58,15 @@ export class Assailants {
   }
 
   fight(g, a) {
-    const s = g.state;
-    const w = this.world;
-    if (!w.fightMeter) w.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
-    const fight = { hp: a.hp ?? 3, over: null };
-    w.fightMeter.open({
-      hp: fight.hp,
-      onSwing: (landed) => {
-        if (landed) fight.hp -= 1;
-        else { bump(s, 'energy', -8); bump(s, 'stress', 4); }
-        if (fight.hp <= 0) fight.over = 'won';
-        else if (s.stats.energy <= 0) fight.over = 'lost';
-        return fight;
+    this.world.duel.start(g, {
+      rig: a.rig, hp: a.hp ?? 3, name: a.name || 'him', hit: 8,
+      onWin: (gg) => { a.state = 'down'; a.downT = 0; a.onWin?.(gg, a.rig); },
+      onLose: (gg) => {
+        this.drop(a);
+        if (a.onLose) a.onLose(gg);
+        else { gg.toast('You go down. The pavement is the last thing with an opinion about you.', 'bad'); gg.collapseSequence?.('beaten'); }
       },
-      done: (result) => {
-        if (result === 'won') {
-          a.state = 'down';
-          a.downT = 0;
-          w.knockDown(a.rig, g);
-          a.onWin?.(g, a.rig);
-        } else {
-          this.drop(a);
-          if (a.onLose) a.onLose(g);
-          else { g.toast('You go down. The pavement is the last thing with an opinion about you.', 'bad'); g.collapseSequence?.('beaten'); }
-        }
-      },
+      onRun: (gg) => { gg.toast(`${a.name ? a.name[0].toUpperCase() + a.name.slice(1) : 'He'} stops, hands on knees, and lets you go. This time.`, 'info'); this.drop(a); },
     });
   }
 

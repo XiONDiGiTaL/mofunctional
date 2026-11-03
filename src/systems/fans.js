@@ -19,6 +19,7 @@
 import { CONFIG } from '../core/config.js';
 import { dayOf, money, pick, clamp } from '../core/util.js';
 import { bump, logLine, pushMessage, spend } from '../core/state.js';
+import * as okafor from './okafor.js';
 
 const F = () => CONFIG.fans;
 
@@ -62,6 +63,17 @@ export const MODELS = [
       'A gym mirror, a towel, an expression that says she has already forgotten his name.',
       'A shower door fogged to exactly the wrong amount of fog.',
       'A hotel room, two glasses, one of them used, and a caption that is only a time of night.',
+    ],
+  },
+  {
+    // never her face; always the exam room at the Kestrel Clinic (systems/okafor.js)
+    id: 'hellonurse', name: 'HelloNurse69', handle: '@HelloNurse69', tag: 'no face · all bedside manner',
+    price: 15, cheeks: false, noFace: true,
+    pitch: '"take two of these and call me in the morning. these = my pics."',
+    selfies: [
+      'A white uniform two sizes too brave, a pink cross, and her face just out of frame. Behind her, a muscle chart.',
+      'Crossed legs on an exam table, the paper sheet crinkled, one white heel hanging off her toes.',
+      'A stethoscope, and nothing that needs one. A teal wall. Crutches leaning in the corner.',
     ],
   },
 ];
@@ -200,6 +212,7 @@ export function buySelfie(g, modelId) {
   const POSES = m.id === 'cherry' ? ['selfie', 'hips', 'kiss', 'behind', 'peace'] : ['selfie', 'hips', 'peace', 'behind', 'cat', 'kiss'];
   const pose = POSES[(r.bought + Math.floor(Math.random() * POSES.length)) % POSES.length];
   pushMessage(g, { from: m.name, subject: 'pic', body: pick(m.captions?.[pose] ? [m.captions[pose]] : CAPTIONS[pose]), pic: { model: m.id, pose, seed: Math.floor(Math.random() * 1e9) } });
+  if (m.id === 'hellonurse') okafor.onPic(g);
   return { ok: true, price: m.price, stress: S.stress, morale: S.morale, texted: m.name };
 }
 

@@ -85,6 +85,8 @@ SHOPS.quikstop = {
     { id: 'eggs', note: 'back cooler' },
     { id: 'tallboy', note: 'back cooler, ID if Dale is watching' },
     { id: 'loosies', note: 'behind the counter, if you ask right' },
+    { id: 'water', note: 'the cooler, behind the energy drinks' },
+    { id: 'baking_soda', note: 'aisle 3, between the flour and nobody' },
   ],
   markup: 1.35,
   sellsPork: true,

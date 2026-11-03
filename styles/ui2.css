@@ -1223,3 +1223,13 @@ button.relrow:hover { color: #ffd24a; }
 .tvov__controls { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
 .tvov__controls button { border: 0; border-radius: 8px; padding: 7px 11px; font: 700 10px var(--ui); letter-spacing: .1em; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
 .tvov__set--tube .tvov__controls button { background: #c81e1e; }
+
+/* ------------------------------------------------------------------ a fist fight (world/duel.js) */
+.duelbar { position: absolute; top: 74px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; padding: 7px 14px; border-radius: 12px; background: rgba(12, 10, 10, .88); box-shadow: 0 0 0 2px #c8121a; color: #f2e8e8; font: 700 12px var(--ui); letter-spacing: .06em; pointer-events: none; }
+.duelbar__hp { color: #ff4a4a; letter-spacing: .1em; font-size: 14px; }
+.duelbar__hint { opacity: .7; font-weight: 500; font-size: 10px; }
+
+/* ------------------------------------------------------------------ studio shots (ui/studio.js): hard pixels */
+.fpost__img img, .chat__pic img, .picview img, .xxx__pic, .chat__face--pic img { image-rendering: pixelated; }
+.fpost__img--mo3d { position: relative; }
+.fpost__img--mo3d img { width: 100%; display: block; }

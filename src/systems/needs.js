@@ -26,6 +26,8 @@ import { arcsNewDay } from './arcs.js';
 import { recoveryNewDay } from './recovery.js';
 import { happeningsNewDay, happeningsTick, heatSleepPenalty } from './happenings.js';
 import { supplyNewDay } from './supply.js';
+import { herNewDay } from '../world/herplace.js';
+import { raeNewDay } from './rae.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -64,6 +66,8 @@ export function simulate(g, minutes, ctx = {}) {
       recoveryNewDay(g, d);
       happeningsNewDay(g, d);
       supplyNewDay(g, d);
+      herNewDay(g, d);
+      raeNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
@@ -282,6 +286,7 @@ export function useSubstance(g, itemId) {
   if (!type) return false;
   if (s.flags.consuming) { g.toast('One thing at a time.', 'info'); return false; }
   if (s.flags.recovering) { g.toast('Not now. Your hands are not listening.', 'bad'); return false; }
+  if (g.world?.areaId === 'herplace' && s.visiting !== 'stephanie') { g.toast(s.visiting === 'diana' ? 'Not in Diana\'s home. She would know. She would always know.' : 'Not at Melanie\'s. She has a nose like a sniffer dog and a lease with her name on it.', 'bad'); return false; }
   const entry = s.inventory.find((i) => i.id === itemId && i.qty > 0);
   if (!entry) { g.toast('You are out. That is a fact and it is loud.', 'bad'); return false; }
   entry.qty -= 1;
@@ -301,6 +306,22 @@ export function useSubstance(g, itemId) {
     return true;
   }
   finish();
+  return true;
+}
+
+/** Medicine: the EpiPen puts everything back at once. */
+export function useMedicine(g, itemId) {
+  const s = g.state;
+  const entry = s.inventory.find((i) => i.id === itemId && i.qty > 0);
+  if (!entry) return false;
+  entry.qty -= 1;
+  if (entry.qty <= 0) s.inventory = s.inventory.filter((i) => i !== entry);
+  s.stats.energy = 100;
+  s.stats.stress = 0;
+  bump(s, 'morale', 6);
+  g.advance(2);
+  logLine(g, 'Used an EpiPen.', 'good');
+  g.toast('Click, a sting in the thigh, and your heart kicks like a mule. Every light in the world comes on at once. Energy: all of it. Stress: none of it.', 'good');
   return true;
 }
 

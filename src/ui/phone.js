@@ -6,7 +6,7 @@ import { money, hhmm, dayOf, minuteOfDay, duration, clamp } from '../core/util.j
 import { clock, inventoryList, countItem, pushMessage, hasItem, unreadMessages } from '../core/state.js';
 import { bump } from '../core/state.js';
 import { billInfo, payBill, setAutopay, buyFood, applyForCRP, recertCRP, claimUtilityGrant, listItem, cancelListing, buyGrabBag, GROCERY } from '../systems/economy.js';
-import { eat, useSubstance, sleep, soberUp } from '../systems/needs.js';
+import { eat, useSubstance, useMedicine, sleep, soberUp } from '../systems/needs.js';
 import { shiftInfo, doOddJob, oddJobsAvailable, applyForJob, quitJob, callOut, workShift } from '../systems/jobs.js';
 import { fellowshipStage, serviceWindow, donate, donationProgress } from '../systems/fellowship.js';
 import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js';
@@ -869,6 +869,7 @@ export class Phone {
           let buttons = '';
           if (def.kind === 'food' || def.kind === 'comfort') buttons = `<button class="btn btn--sm btn--primary" data-act="eatitem" data-arg="${i.id}">${def.kind === 'food' ? 'EAT' : i.id === 'loosies' ? 'SMOKE' : 'DRINK'}</button>`;
           else if (def.kind === 'substance') buttons = `<button class="btn btn--sm btn--danger" data-act="useitem" data-arg="${i.id}">USE</button>`;
+          else if (def.kind === 'medicine') buttons = `<button class="btn btn--sm btn--primary" data-act="medicine" data-arg="${i.id}">USE</button>`;
           else if (def.kind === 'valuable') buttons = `<button class="btn btn--sm" data-act="listitem" data-arg="${i.id}">SELL</button>`;
           return `<div class="listitem listitem--tile">
             ${itemIcon(i.id, def.kind)}
@@ -1559,6 +1560,7 @@ export class Phone {
       wapcancel() { dealer.cancelOrder(g, 'cancelled in the app'); },
       // put the phone away first, so the bite happens on screen
       eatitem(arg) { this.close(); eat(g, arg); },
+      medicine(arg) { this.close(); useMedicine(g, arg); },
       useitem(arg) {
         this.close();
         const def = CONFIG.items[arg];

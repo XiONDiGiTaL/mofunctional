@@ -12,9 +12,12 @@ import { stephanieDoor } from './places.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
 import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub, clothingMenu } from './underground.js';
 import { buildTower, buildHerRoom } from './houses.js';
-import { buildBathroom, buildRestroom } from './rooms.js';
+import { buildBathroom, buildRestroom, buildClinicBack } from './rooms.js';
 import { Courier } from './courier.js';
 import { Assailants } from './assailant.js';
+import { Duel } from './duel.js';
+import { buildHerPlace } from './herplace.js';
+import * as rae from '../systems/rae.js';
 import { ROAD } from './plan.js';
 import { Patrol, OUTSIDE } from './patrol.js';
 import { buildPawnShop, buildJays, buildReliefOffice } from './storefronts.js';
@@ -49,7 +52,7 @@ const BUILDERS = {
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
-  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom,
+  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom, clinicback: buildClinicBack, herplace: (g) => buildHerPlace(g, { partnerMenu }),
   pawn: buildPawnShop, jays: (g) => buildJays(g, clothingMenu), relief: buildReliefOffice,
 };
 
@@ -762,8 +765,11 @@ export class World {
     }
     const end = (result) => {
       if (result === 'won') {
+        // he is on the pavement now; what he dropped is Mo's
+        const loot = fights.win(g);
+        g.toast(`He goes down and stays there. ${loot ? `${money(loot)} on the pavement next to him. ` : ''}Your hand hurts in a way you will remember.`, 'good');
+      } else if (result === 'ran') {
         this.thugLeaving = true;
-        g.toast('He backs off, then runs. Your hand hurts in a way you will remember.', 'good');
       } else if (result === 'lost') {
         const r = fights.robbed(g);
         this.removeThug();
@@ -773,6 +779,12 @@ export class World {
         this.thugLeaving = true;
       }
     };
+    const mugDuel = () => this.duel.start(g, {
+      rig, hp: fight.hp, name: 'the man in the grey hood', hit: 9,
+      onWin: () => end('won'),
+      onLose: () => end('lost'),
+      onRun: () => { g.toast('You get some distance. He spits, says something about your mother, and goes back into the dark.', 'info'); end('ran'); },
+    });
     g.openModal({
       kicker: 'LATE · SOMEBODY IN A GREY HOOD',
       title: 'Wallet',
@@ -780,10 +792,7 @@ export class World {
 
 He is close enough that you can smell the cold on his jacket. Nobody else is around. Of course nobody else is around.`,
       choices: [
-        { label: 'Fight.', sub: `energy ${Math.round(s.stats.energy)} · every miss costs`, effect: () => {
-          if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
-          setTimeout(() => this.fightMeter.open({ hp: fight.hp, onSwing: (landed) => fights.exchange(g, fight, landed), done: end }), 60);
-        } },
+        { label: 'Fight.', sub: `energy ${Math.round(s.stats.energy)} · Z to swing · step back to slip`, effect: () => mugDuel() },
         ...(dogState(s).like >= 100 && (this.areaId === 'street' || this.areaId === 'park') ? [{
           label: `Whistle for ${dogState(s).name}.`, sub: 'he comes', effect: () => {
             fights.dogSave(g, dogState(s).name);
@@ -796,8 +805,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
           if (fights.tryRun(g)) { g.toast('You run. You run like 1993. He does not bother.', 'info'); end('ran'); }
           else {
             g.toast('He catches your jacket. Now you have to fight.', 'bad');
-            if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
-            setTimeout(() => this.fightMeter.open({ hp: fight.hp, onSwing: (landed) => fights.exchange(g, fight, landed), done: end }), 60);
+            mugDuel();
           }
         } },
       ],
@@ -826,6 +834,15 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const d = Math.hypot(this.thug.root.position.x - p.x, this.thug.root.position.z - p.z);
       if (d < bestD) { bestD = d; best = this.thug; }
     }
+    // whoever ran at him (a driver, an Angle) is not in the area's list either
+    for (const a of this.assailants?.list || []) {
+      if (a.state === 'down' || a.gone || a.rig.down) continue;
+      const d = Math.hypot(a.rig.root.position.x - p.x, a.rig.root.position.z - p.z);
+      if (d < bestD) { bestD = d; best = a.rig; }
+    }
+    // in a fist fight, the punch goes to the man he is fighting if he is anywhere in reach
+    const foe = this.duel?.cur?.rig;
+    if (foe && !foe.down && Math.hypot(foe.root.position.x - p.x, foe.root.position.z - p.z) < CONFIG.brawl.range) best = foe;
     return best;
   }
 
@@ -876,6 +893,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // a cat (Chairman, the bodega's) has no arms to put up and no fight to give: it bolts, and it
     // remembers. A cat used to go through the human path, whose guard pose reached for limbs a
     // cat does not have and threw every frame, which stopped the game dead.
+    if (this.duel?.isFoe(rig)) { this.duel.hit(g); return; }
     if (rig.type === 'cat') {
       this.punchT = 0;
       bump(g.state, 'morale', -8);
@@ -896,7 +914,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const maxHp = rig.brawlHpMax || brawl.hpFor(def);
     // most women on the block run at the first punch; somebody he is seeing does not stay that
     const fem = !!faceSpec(def.kind || '')?.fem;
-    if (fem || brawl.runsAtOnce(def)) {
+    if ((fem && def.kind !== 'nurse') || brawl.runsAtOnce(def)) {
       brawl.beginSwing(g.state);
       if (def.partner && CONFIG.partners?.[def.kind]) {
         const p = partnerState(g.state, def.kind);
@@ -941,6 +959,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       // a connection who kept Mo's money pays it back from the pavement
       const paid = supplyKO(g, def.kind);
       if (paid) g.toast(paid, 'good');
+      // the landlord on the ground is a conversation about the lease, not about his pockets
+      if (def.kind === 'rae') { rae.knockedOut(g, key); return; }
       g.openModal({
         kicker: 'THE STREET · SOMEBODY IS DOWN',
         title: 'Out Cold',
@@ -1227,11 +1247,48 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   caught(g) {
     const rig = this.chaseRig;
     this.chaseRig = null;
-    if (rig) {
-      rig.root.parent?.remove(rig.root);
-      this.npcRigs = this.npcRigs.filter((r) => r !== rig);
-    }
-    const res = police.book(g);
+    const s = g.state;
+    const gone = () => { if (rig) { rig.root.parent?.remove(rig.root); this.npcRigs = this.npcRigs.filter((r) => r !== rig); } };
+    const book = (extra = 0) => { gone(); this.bookMo(g, extra); };
+    g.openModal({
+      kicker: 'POLICE · HANDS WHERE I CAN SEE THEM', title: 'He Has Your Arm',
+      body: 'A hand on your shoulder, a knee behind yours, a voice that has said this a thousand times: "Hands behind your back. Do not make this worse."\n\nYou could make this worse.',
+      choices: [
+        { label: 'Go quietly.', sub: 'the cuffs · the car · a fine', effect: () => book() },
+        { label: 'Resist.', sub: `energy ${Math.round(s.stats.energy)} · win and he is on the ground · lose and it is worse`, effect: () => {
+          if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
+          const fight = { hp: 3, over: null };
+          setTimeout(() => this.fightMeter.open({
+            hp: fight.hp, title: 'RESIST', foe: 'The cop', zone: 0.24 + Math.max(0, s.stats.energy - 40) / 400,
+            onSwing: (landed) => {
+              if (landed) fight.hp -= 1;
+              else { bump(s, 'energy', -9); bump(s, 'stress', 5); }
+              if (fight.hp <= 0) fight.over = 'won';
+              else if (s.stats.energy <= 0 || (!landed && Math.random() < 0.18)) fight.over = 'lost';
+              return fight;
+            },
+            done: (result) => {
+              if (result === 'won') {
+                bump(s, 'risk', 8);
+                bump(s, 'stress', 6);
+                logLine(g, 'Knocked out a cop and ran.', 'bad');
+                if (rig) { this.knockDown(rig, g); rig.copDown = true; setTimeout(gone, 20000); }
+                g.toast(pick(['He goes down with the radio still in his hand. Run. Run now. Do not look at his face; you will see it later anyway.', 'Elbow, shoulder, and the pavement takes him. You are around the corner before his partner is out of the car.']), 'bad');
+                return;
+              }
+              g.toast('He was ready for that. You were not. "Resisting," he tells the radio, pleased.', 'bad');
+              book(150);
+            },
+          }), 60);
+        } },
+      ],
+    });
+  }
+
+  /** The cuffs, the fine (more for resisting), and the car to holding. */
+  bookMo(g, extra = 0) {
+    const s = g.state;
+    const res = police.book(g, undefined, { extraFine: extra });
     g.openModal({
       kicker: 'POLICE · APPREHENDED',
       title: 'Cuffs',
@@ -1330,6 +1387,23 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
   startBrawl(g, { hp = 3, name = 'him', armed = false } = {}) {
     const s = g.state;
+    const won = () => {
+      const loot = brawl.loot(g, { kind: armed ? 'tough' : 'dealer', key: armed ? 'armed_thug' : 'street_thug' });
+      bump(s, 'morale', 8);
+      g.toast(`He goes down. ${loot.cash ? `${money(loot.cash)} in his pockets. ` : ''}${loot.items.length ? `${loot.items.join(', ')}. ` : ''}${armed ? brawl.GUN_REFUSAL : 'Nobody on the block says anything, which is a kind of respect.'}`, 'good');
+    };
+    // the man is standing right there: it is fists, not a meter
+    const p = this.mo.root.position;
+    const foe = this.npcRigs.filter((r) => r.root.visible && !r.down && !r.gone && r.armL && r.type !== 'cat')
+      .map((r) => [r, Math.hypot(r.root.position.x - p.x, r.root.position.z - p.z)]).filter(([, d]) => d < 4).sort((a, b) => a[1] - b[1])[0]?.[0];
+    if (foe) {
+      this.duel.start(g, {
+        rig: foe, hp, name, hit: armed ? 11 : 9, onWin: won,
+        onLose: () => { g.toast('You go down. The pavement is the last thing with an opinion about you.', 'bad'); g.collapseSequence?.('beaten'); },
+        onRun: () => g.toast('You back off far enough. He lets you go, and makes sure you see him let you go.', 'info'),
+      });
+      return;
+    }
     if (!this.fightMeter) this.fightMeter = new FightMeter(document.getElementById('ui') || document.body, g);
     const fight = { hp, over: null };
     g.toast(`${name[0]?.toUpperCase() || ''}${name.slice(1)} does not step back.`, 'info');
@@ -1359,6 +1433,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const rig = this.thug;
     if (!rig) return;
     if (rig.down) { animateDown(rig); return; }
+    if (rig.inDuel) return;
     if (this.thugPunchT > 0) {
       this.thugPunchT = Math.max(0, this.thugPunchT - dt);
       punchPose(rig, 1 - this.thugPunchT / 0.34);
@@ -1926,6 +2001,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!this.patrol) this.patrol = new Patrol(this);
     this.patrol.update(dt, g);
     this.assailants.update(dt, g);
+    if (!this.duel) this.duel = new Duel(this);
+    this.duel.update(dt, g);
     this.updateFlyingHats(dt);
     if (this.cutscene) this.updateScene(dt, g);
     // standing in the road: the clock a speeding driver reads before deciding not to brake
@@ -2217,20 +2294,47 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.hang = { rig, t: 0, drags: 0, done };
   }
 
+  /**
+   * On a couch with somebody, passing it back and forth (Stephanie, at hers or at his): Mo takes
+   * the glass pipe on his turns, she smokes on hers, the high comes up on his face, then the
+   * caller's done() writes the two hours down.
+   */
+  couchHigh(g, { kind, seat, partner, done }) {
+    if (this.hang) { done?.(); return; }
+    this.sit(seat);
+    const rig = createNPC(kind);
+    rig.root.position.set(partner.x, 0, partner.z);
+    rig.root.rotation.y = seat.rot;
+    rig.npcDef = { kind, act: 'smoke', partner: true };
+    const top = this.seatTop(rig.root.position.x, rig.root.position.z);
+    if (top != null) { rig.baseY = top + 0.07 - (rig.hipY - 0.42); rig.root.position.y = rig.baseY; }
+    this.root.add(rig.root);
+    const hidden = this.npcRigs.filter((r) => r.npcDef?.kind === kind && r.root.visible);
+    for (const r of hidden) r.root.visible = false;
+    this.hang = { rig, t: 0, drags: 0, done, pipe: true, hidden, busy: false };
+  }
+
   updateHang(dt, g) {
     const h = this.hang;
     if (!h) return;
     h.t += dt;
     animateNPC(h.rig, dt, { sitting: true });
     if (h.drags % 2 === 1) applyAct(h.rig, dt, this.streetLife);
-    // Mo's turn, then Kev's, three times round
-    if (!this.eating?.active && h.t > 1 + h.drags * 4.5 && h.drags < 6) {
-      if (h.drags % 2 === 0) this.playEat('loosies', (n) => g.audio?.sfx?.(n));
+    const busy = h.pipe ? h.busy : this.eating?.active;
+    // Mo's turn, then theirs, three times round
+    if (!busy && h.t > 1 + h.drags * 4.5 && h.drags < 6) {
+      if (h.drags % 2 === 0) {
+        if (h.pipe) { h.busy = true; if (!this.playSubstance('mud', 'pipe', () => { h.busy = false; })) h.busy = false; }
+        else this.playEat('loosies', (n) => g.audio?.sfx?.(n));
+      }
       h.drags += 1;
     }
-    if (h.drags >= 6 && !this.eating?.active && h.t > 28) {
+    // the high on his face comes up with every turn of the pipe
+    if (h.pipe) setFaceHigh('mo', Math.min(1, h.drags / 5));
+    if (h.drags >= 6 && !(h.pipe ? h.busy : this.eating?.active) && h.t > 28) {
       const done = h.done;
       h.rig.root.parent?.remove(h.rig.root);
+      for (const r of h.hidden || []) r.root.visible = true;
       this.hang = null;
       this.standUp();
       done?.();

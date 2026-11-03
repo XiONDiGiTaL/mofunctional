@@ -1,5 +1,8 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
 import * as supply from '../systems/supply.js';
+import * as okafor from '../systems/okafor.js';
+import * as herplace from './herplace.js';
+import * as rae from '../systems/rae.js';
 import { tvTexture, tvTick, openTv } from '../ui/tv.js';
 import * as papi from '../systems/papi.js';
 import { b1120 } from './hall.js';
@@ -217,6 +220,21 @@ export function buildApartment(g) {
   group.add(box(0.5, 0.06, 0.5, M.fabric, [1.4, 0.45, 0.55]));
   group.add(box(0.5, 0.55, 0.06, M.fabric, [1.4, 0.72, 0.79]));
 
+  // the music corner: a milk crate with the spiral notebook and a pen on it, and once he has one,
+  // the cheap mic on a stand beside it, cable coiled on the floor
+  group.add(box(0.4, 0.34, 0.34, retroMaterial('apcrate', { color: 0x2a6ac8 }), [-1.3, 0.17, -1.0]));
+  group.add(box(0.22, 0.012, 0.28, retroMaterial('apnotebook', { color: 0xf2efe0 }), [-1.3, 0.346, -1.0], [0, 0.3, 0]));
+  group.add(box(0.012, 0.014, 0.28, retroMaterial('apspiral', { color: 0x8a8a92 }), [-1.4, 0.35, -1.04], [0, 0.3, 0]));
+  group.add(box(0.012, 0.012, 0.15, retroMaterial('appen', { color: 0x1a2a8a }), [-1.24, 0.358, -0.98], [0, -0.5, 0]));
+  if (music.musicState(g.state).gear?.mic) {
+    const stand = retroMaterial('apmicstand', { color: 0x1a1a1c });
+    group.add(box(0.3, 0.02, 0.3, stand, [-0.85, 0.01, -1.25]));
+    group.add(box(0.025, 1.35, 0.025, stand, [-0.85, 0.68, -1.25]));
+    group.add(box(0.025, 0.025, 0.28, stand, [-0.85, 1.36, -1.13], [0.5, 0, 0]));
+    group.add(box(0.07, 0.11, 0.07, retroMaterial('apmichead', { color: 0x8a8a92 }), [-0.85, 1.42, -1.0]));
+    for (let i = 0; i < 4; i++) group.add(box(0.2, 0.02, 0.02, stand, [-0.75 + Math.cos(i * 1.6) * 0.1, 0.01, -1.1 + Math.sin(i * 1.6) * 0.1], [0, i * 0.8, 0]));
+  }
+
   // tv: on the east wall, facing the couch. A CRT on a crate, or a flatscreen on the wall over a
   // ribbed cabinet. The screen is a live canvas (ui/tv.js) when it is on.
   const tvScreen = tvTexture(g);
@@ -267,7 +285,7 @@ export function buildApartment(g) {
       body: `${recovery.cleanDays(gg.state)} days. The evening is the hard part; it always was. Something to do with your hands, your feet, your head.`,
       choices: [...recovery.ROUTINES.filter((r) => !r.needsContact || recovery.recoveryState(gg.state).contact).map((r) => ({ label: r.label, sub: r.sub, effect: () => recovery.doRoutine(gg, r.id) })), { label: 'Sit with it.', effect: () => {} }],
     }) }] : []),
-    { id: 'music', label: 'The notebook and the mic', sub: 'write · record · burn CDs', x: -0.6, z: -1.0, radius: 0.8, action: (gg) => music.musicMenu(gg) },
+    { id: 'music', label: 'The notebook and the mic', sub: 'write · record · burn CDs', x: -1.1, z: -1.0, radius: 0.8, action: (gg) => music.musicMenu(gg) },
     // with the decorating guide, the fix-up list lives in the magazine on the desk
     { id: 'fixup', label: g.state.flags.decorGuide ? 'The decorating guide' : 'Fix up the place', sub: home.homeState(hs).leak ? 'there is a leak · repairs · upgrades' : g.state.flags.decorGuide ? 'on the desk · repairs · upgrades' : 'repairs · upgrades', x: g.state.flags.decorGuide ? 0.9 : 0.6, z: g.state.flags.decorGuide ? 0.4 : 3.3, radius: 0.8, action: (gg) => home.fixUpMenu(gg) },
     ...(home.has(hs, 'drapes') ? [{ id: 'drapes', label: 'The drapes', sub: 'change the colour', x: 2.6, z: -1.8, radius: 0.8, action: (gg) => home.drapesMenu(gg) }] : []),
@@ -277,7 +295,12 @@ export function buildApartment(g) {
     { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
     { id: 'bathroom', label: 'Into the bathroom', sub: 'the toilet tank · the shower that does not work', x: 2.9, z: 1.0, radius: 0.9, action: (gg) => gg.goTo('bathroom', 'apartment') },
     { id: 'tv', label: home.homeState(hs).tvOn ? 'The TV' : 'Turn on the TV', sub: home.homeState(hs).tvOn ? 'change the channel · turn it off' : 'waste time productively', x: 2.2, z: 2.7, action: (gg) => openTv(gg) },
-    { id: 'laptop', label: 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
+    { id: 'laptop', label: home.has(hs, 'computer') ? 'Use the computer' : 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
+    ...(romance.romanceState(g.state).liveIn === 'stephanie' && home.has(hs, 'couch') && stephHome(g) ? [{ id: 'steph_high', label: 'Get high with Stephanie', sub: 'the couch · the two of you · 2 h', x: -2.2, z: 2.4, radius: 1.0, action: (gg) => {
+      const d = gg.state.herDay?.stephanie === dayOf(gg.state.clock.m);
+      if (d) { gg.toast('"Once a day," she says, like a doctor, and hands you the remote instead.', 'info'); return; }
+      herplace.getHighWithSteph(gg, 'apartment');
+    } }] : []),
     { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -2.7, z: -0.95, action: (gg) => stashMenu(gg) },
     { id: 'closet', label: 'Open the closet', sub: 'what he owns · what he wears', x: -2.6, z: 0.2, radius: 0.9, action: (gg) => closetMenu(gg) },
     { id: 'door', label: 'Out to the hall', sub: 'the third floor · the stairs · the elevator · the roof', x: 0, z: 3.9, action: (gg) => { b1120(gg.state).floor = 3; gg.goTo('hall', 'apartment'); } },
@@ -888,7 +911,7 @@ export function buildStreet(g) {
     ] : []),
     // Yusuf, outside Habib's, at his small table with the hookah; Papi and Tito at dominoes
     // outside the bodega
-    ...(between(10, 24) ? [{ kind: 'hookah', x: 18.5, z: -4.75, rot: -0.25, still: true, pose: 'sit', act: 'hookah', talk: 'yusuf' }] : []),
+    ...(between(9, 2) ? [{ kind: 'hookah', x: 18.5, z: -4.75, rot: -0.25, still: true, pose: 'sit', act: 'hookah', talk: 'yusuf', hookahAt: [19.12, 0.82, -4.6] }] : []),
     ...(between(9, 21) ? [
       { kind: 'papi', x: -14.35, z: -4.5, rot: Math.PI / 2, still: true, pose: 'sit', act: 'dominoes', talk: 'papi' },
       { kind: 'viejo', x: -13.05, z: -4.5, rot: -Math.PI / 2, still: true, pose: 'sit', act: 'dominoes', talk: 'tito' },
@@ -954,12 +977,16 @@ export function buildStreet(g) {
   chairAt(18.5, -4.85, -0.25);
   group.add(box(0.5, 0.04, 0.5, retroMaterial('yusufTable', { color: 0xc8a050 }), [19.2, 0.55, -4.6]));
   group.add(box(0.06, 0.55, 0.06, M.metal, [19.2, 0.27, -4.6]));
-  group.add(box(0.22, 0.26, 0.22, retroMaterial('hookahBase', { color: 0x2a6a8a, emissive: 0.15 }), [19.2, 0.7, -4.6]));
-  group.add(box(0.04, 0.38, 0.04, retroMaterial('hookahStem', { color: 0xc8a050 }), [19.2, 1.02, -4.6]));
-  group.add(box(0.16, 0.03, 0.16, retroMaterial('hookahTray', { color: 0xc8a050 }), [19.2, 1.2, -4.6]));
-  group.add(box(0.08, 0.08, 0.08, retroMaterial('hookahCoal', { color: 0xc83a1e, emissive: 0.9, unlit: true }), [19.2, 1.25, -4.6]));
-  for (let i = 0; i < 5; i++) group.add(box(0.035, 0.035, 0.16, retroMaterial('hookahHose', { color: 0x3a2a1e }), [19.05 - i * 0.1, 0.92 - Math.sin(i / 4 * Math.PI) * 0.18, -4.6 - i * 0.03], [0, 0.4, 0]));
-  group.add(box(0.06, 0.09, 0.06, retroMaterial('teaGlass', { color: 0xc86a2a, emissive: 0.2 }), [19.35, 0.62, -4.45]));
+  // the hookah and the tea are Yusuf's: they come out with him and go in with him. The hose is not
+  // drawn here; streetlife's 'hookah' act strings it from the hookah to his hand every frame.
+  if (between(9, 2)) {
+    group.add(box(0.22, 0.26, 0.22, retroMaterial('hookahBase', { color: 0x2a6a8a, emissive: 0.15 }), [19.2, 0.7, -4.6]));
+    group.add(box(0.04, 0.38, 0.04, retroMaterial('hookahStem', { color: 0xc8a050 }), [19.2, 1.02, -4.6]));
+    group.add(box(0.16, 0.03, 0.16, retroMaterial('hookahTray', { color: 0xc8a050 }), [19.2, 1.2, -4.6]));
+    group.add(box(0.08, 0.08, 0.08, retroMaterial('hookahCoal', { color: 0xc83a1e, emissive: 0.9, unlit: true }), [19.2, 1.25, -4.6]));
+    group.add(box(0.05, 0.05, 0.05, retroMaterial('hookahPort', { color: 0xc8a050 }), [19.1, 0.82, -4.6]));
+    group.add(box(0.06, 0.09, 0.06, retroMaterial('teaGlass', { color: 0xc86a2a, emissive: 0.2 }), [19.35, 0.62, -4.45]));
+  }
   // the domino table: a card table, two folding chairs, the bones laid out in a long snake
   chairAt(-14.35, -4.5, Math.PI / 2);
   chairAt(-13.05, -4.5, -Math.PI / 2);
@@ -970,7 +997,7 @@ export function buildStreet(g) {
   for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) group.add(box(0.05, 0.09, 0.02, bone, [-13.7 + sx * 0.3, 0.75, -4.68 + i * 0.06], [0, Math.PI / 2, 0]));
   const corner = [
     ...(supply.inTheGame(g.state) ? [{ id: 'st_rox_dex', label: 'Talk ROX with Dex', sub: 'he moves it on the block · for a cut', x: -3.4, z: -2.7, radius: 1.1, action: (gg) => supply.dealerMenu(gg, 'dex') }] : []),
-    ...(between(10, 24) ? [{ id: 'yusuf', label: 'Yusuf, outside Habib\'s', sub: 'the hookah · apple, he says, always apple', x: 18.6, z: -4.0, radius: 1.2, action: (gg) => yusufMenu(gg) }] : []),
+    ...(between(9, 2) ? [{ id: 'yusuf', label: 'Yusuf, outside Habib\'s', sub: 'the hookah · apple, he says, always apple', x: 18.6, z: -4.0, radius: 1.2, action: (gg) => yusufMenu(gg) }] : []),
     ...(between(9, 21) ? [
       { id: 'papi', label: 'Papi', sub: 'dominoes · he knows everything on this block', x: -14.35, z: -3.9, radius: 1.1, action: (gg) => papi.papiMenu(gg) },
       { id: 'tito', label: 'Tito', sub: 'losing at dominoes since 1974', x: -13.05, z: -3.9, radius: 1.1, action: (gg) => gg.toast(pick(['"Do not ask him anything," Tito says. "Once he starts, it is two hours. I have lost whole summers."', '"Capicúa!" Tito slaps a bone down. Papi looks at it, looks at him, and lays the double six. Tito puts his face in his hands.', '"He cheats," Tito says, loud enough. "I do not cheat," Papi says. "I remember." That is worse.']), 'info') },
@@ -1463,6 +1490,7 @@ export function talk(g, id) {
         { label: 'Pay what you owe.', sub: `${money(info.owed)}`, disabled: info.owedCycles <= 0 || s.money < info.owed, effect: () => { g.payBill('rent'); } },
         { label: 'Promise him Friday.', sub: '+stress, +relationship', effect: () => { bump(s, 'stress', 5); s.npc.rae++; g.toast('He writes something on the clipboard. It is not "no".', 'info'); } },
         { label: 'Say nothing and go upstairs.', sub: '-morale', effect: () => { bump(s, 'morale', -5); s.npc.rae = Math.max(-5, s.npc.rae - 1); } },
+        ...rae.stairwellChoices(g),
       ],
     });
   } else if (id === 'dale') {
@@ -2041,6 +2069,9 @@ export function buildClinic(g) {
   group.add(box(0.34, 0.4, 0.34, retroMaterial('waterjug', { color: 0x9fd8e0, unlit: true, emissive: 0.15 }), [3.4, 1.9, -1.2]));
   group.add(plane(1.6, 1.0, { name: 'cliboard', color: 0xe8e4d2 }, [-2.6, 1.7, -3.5]));
   for (const x of [-1.8, 1.8]) group.add(box(2.0, 0.06, 0.24, M.lamp, [x, 2.8, 0]));
+  // the supply room door in the back wall
+  group.add(box(0.95, 2.15, 0.1, retroMaterial('clisupplydoor', { color: 0x8a9aa0 }), [1.6, 1.08, -3.9]));
+  group.add(plane(0.5, 0.16, { name: 'clisupplysign', map: signTex('cliSupply', [{ text: 'STAFF ONLY', color: '#c81e1e', size: 7 }], { w: 64, h: 20, bg: '#f2f2ec', border: '#c81e1e' }), unlit: true, emissive: 0.3 }, [1.6, 1.75, -3.84]));
   // the door out
   group.add(box(1.2, 2.3, 0.14, retroMaterial('clidoor', { color: 0x6a8a90 }), [0, 1.15, 3.7]));
   group.add(box(0.12, 2.4, 0.2, M.white, [-0.7, 1.2, 3.66]));
@@ -2052,6 +2083,7 @@ export function buildClinic(g) {
     { id: 'clinicreception', label: 'Reception', sub: 'check in · ask what it costs', x: -2.4, z: 0.2, action: (gg) => clinicReception(gg) },
     { id: 'clinicchair', label: 'Sit in a waiting chair', sub: '20 min · calm down', x: 0.3, z: 1.0, seat: { x: 0.3, z: 1.0, rot: Math.PI }, action: (gg) => { gg.advance(20); bump(gg.state, 'stress', -6); bump(gg.state, 'morale', 1); gg.toast('The chair is plastic and the clock is loud. It helps anyway.', 'info'); } },
     { id: 'clinicexit', label: 'Back out to Kestrel St.', sub: '', x: 0, z: 3.1, radius: 1.1, action: (gg) => gg.goTo('street', 'clinic') },
+    { id: 'clinicsupply', label: 'The supply room', sub: 'STAFF ONLY', x: 1.6, z: -3.0, radius: 0.9, action: (gg) => gg.toast(okafor.okaforState(gg.state).deal ? '"Not now," Okafor says, without looking, which means not now.' : 'STAFF ONLY. It is locked, and the lock is the only new thing in the building.', 'info') },
   ];
 
   return {
@@ -2064,6 +2096,7 @@ export function buildClinic(g) {
     ],
     // inside the door but clear of every prompt (it used to land in the exit's, so F walked him out)
     spawn: { x: -1.3, z: 1.9, rot: Math.PI },
+    spawnFor: (from) => (from === 'clinicback' ? { x: 1.6, z: -2.8, rot: Math.PI } : null),
     npcs: [{ kind: 'nurse', x: -1.6, z: -1.9, rot: 0.2, talk: 'nurse' }],
     interactables,
     ambient: 'clinic',
@@ -2097,6 +2130,11 @@ function parkHoops(g) {
   g.toast(good
     ? 'Three in a row. A kid on the next court says "aight" which is the highest honour available.'
     : 'The rim is bent and so is everything you throw at it. You still needed the air.', good ? 'good' : 'info');
+}
+
+function stephHome(g) {
+  const row = partnerTarget('stephanie', minuteOfDay(g.state.clock.m));
+  return row?.area === 'apartment' && row.pose !== 'sleep';
 }
 
 /** Yusuf outside Habib's: a seat by the hookah, if he likes your face today. */
@@ -2327,6 +2365,7 @@ function clinicMenu(g) {
         },
       },
       ...programChoices(g),
+      ...okafor.clinicChoices(g),
       { label: 'Check in on the line instead.', sub: 'free · 10 min · slows withdrawal', effect: () => { clinic.checkIn(g); } },
       { label: 'Ask what it costs.', sub: '', effect: () => { g.toast(`Treatment is ${money(info.cost)}. If you cannot pay, it goes on the bill and the bill grows.`, 'info'); } },
       { label: 'Leave.', sub: '', effect: () => {} },

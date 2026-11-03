@@ -30,6 +30,7 @@ import * as wardrobe from '../systems/wardrobe.js';
 import { FightMeter } from '../ui/fight.js';
 import { buildCourt, COURT, housesState, WOMEN, womanMenu } from './houses.js';
 import * as supply from '../systems/supply.js';
+import * as herplace from './herplace.js';
 
 const meter = (g) => (g.world.fightMeter ||= new FightMeter(document.getElementById('ui') || document.body, g));
 
@@ -605,6 +606,8 @@ export function buildParkSlope(g) {
           { label: 'Leave.', effect: () => {} },
         ],
       }) },
+    // Diana's: the brownstone on the corner, top floor (world/herplace.js)
+    { id: 'ps_diana', label: "Diana's building", sub: 'the brownstone on the corner · top floor', x: -11, z: -4.6, radius: 1.3, action: (gg) => herplace.knock(gg, 'diana') },
     { id: 'ps_dogs', label: 'The dog-walker board', sub: 'tear-off tabs · cash for walks', x: -5, z: 0.4, radius: 1.3,
       action: (gg) => gg.openModal({
         kicker: 'PARK SLOPE', title: 'WALKERS NEEDED',
@@ -626,7 +629,7 @@ export function buildParkSlope(g) {
   return {
     group, title: '7th Avenue · Park Slope',
     bounds: farBounds, camBounds: farCam, traffic: farTraffic, solids,
-    spawn: { x: 0.8, z: -2.6, rot: Math.PI / 2 }, spawnFor: () => ({ x: 0.8, z: -2.6, rot: Math.PI / 2 }),
+    spawn: { x: 0.8, z: -2.6, rot: Math.PI / 2 }, spawnFor: (from) => (from === 'herplace' ? { x: -11, z: -4.2, rot: 0 } : { x: 0.8, z: -2.6, rot: Math.PI / 2 }),
     npcs, interactables, ambient: 'street',
     enterToast: 'Park Slope. Brownstones, strollers that cost more than your rent, and a lot of people being very calm.',
   };

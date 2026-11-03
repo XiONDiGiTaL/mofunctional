@@ -265,8 +265,8 @@ export const FACE_SPECS = {
     brow: '#3a2416', eye: '#4a3020', lips: '#c45a74', lipsLight: '#e07a92', age: 0.3, fem: true, jaw: 0.9,
   },
   nurse: {
-    skin: '#c09a80', hair: '#241a14', hairLight: '#40302a', hairDark: '#100b08', style: 'long',
-    brow: '#241a14', eye: '#3a2c22', lips: '#96604f', lipsLight: '#b87a66', age: 0.45, fem: true,
+    skin: '#b07a58', hair: '#2a1a12', hairLight: '#4a3022', hairDark: '#140c08', style: 'shoulder',
+    brow: '#2a1a12', eye: '#3a2618', lips: '#a8505a', lipsLight: '#c86a72', age: 0.2, fem: true, jaw: 0.92,
   },
   // ---- 1104 Kestrel and Ashby Avenue: painted, like Rolo
   tenant_m: {
@@ -294,6 +294,10 @@ export const FACE_SPECS = {
     brow: '#6a4a2a', eye: '#4a5a6a', lips: '#a8705e', lipsLight: '#c48a76', age: 0.55, glasses: true,
   },
   // the man in the alley at night, the two in the 1104 stairwell, the police
+  trench: {
+    skin: '#a8785c', hair: '#2a2018', hairLight: '#4a3a2c', hairDark: '#140e0a', style: 'swept',
+    brow: '#2a1e14', eye: '#2a2018', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#2a2018', age: 0.55, browTilt: -0.08,
+  },
   drifter: {
     skin: '#9a7058', hair: '#4a3a2a', hairLight: '#6a5a44', hairDark: '#2a2018', style: 'beanie',
     brow: '#3a2a1e', eye: '#3a2c20', lips: '#6e4434', lipsLight: '#8c5a46', beard: 'full', beardColor: '#5a4a3a', age: 0.8, gaunt: true,

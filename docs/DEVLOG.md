@@ -10,6 +10,50 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Fists, homes, the clinic's secret, and pictures that look like the game
+
+- **Fixes**: Yusuf and his hookah keep the same hours (09:00 to 02:00) and the hookah is only out
+  when he is; the hose is a live `TubeGeometry` from the hookah port to his hand (`hookahHose` in
+  streetlife). The "Rolex" man is `trench` (a tan trenchcoat to the shins). The Hasidic men wear
+  black wide-brimmed hats. Baking soda and water are also at the Quik-Stop and on Amazin' (kind
+  `supply`). The desk says "Use the computer" once it is one. A milk crate with the notebook (and,
+  once bought, the mic on a stand) sits in 3B. Deliveries wait outside 3B on the third floor
+  (`Courier.spot`, `hall` floor 3).
+- **`world/duel.js`**: muggers, assailants (drivers, Angles) and street brawls are fought with Mo's
+  own punches. The foe guards, then swings every 1.1 to 2 s; the punch lands if Mo is within 1.5 m
+  when it arrives. `throwPunch` routes to `duel.hit` when the target is the foe; `punchTarget` also
+  sees assailants. Walk 5.5 m away for 2.2 s and he quits (`onRun`). A `.duelbar` shows his pips.
+- **The Fight meter** (`ui/fight.js`) takes a `zone` width, re-places the green after every swing,
+  and runs slower (0.7 to 1.4 a second); `fights.hitEnergy` is 10. **Resisting arrest**: `caught`
+  now asks first; RESIST is three landed swings to knock the cop down and run (`copDown`), a miss
+  can end it early, and losing books him with $150 extra (`bookMo`).
+- **Nurse Okafor** (`systems/okafor.js`): the `nurse` model is a short white uniform with pink trim,
+  cap, bare legs and heels (`bareLegs`, `hipScale`, `legScale` are new body options). LonelyFans has
+  `hellonurse` (@HelloNurse69, `noFace`); the second picture bought reveals who it is. At the
+  clinic: ask her (the deal: gerba once a day, `clinic.treatmentInfo` free), flirt (`like`), and,
+  only once `like` is 3 or more and as her own choice, the supply room, which fades to
+  `clinicback` (`rooms.buildClinicBack`) where she is at the mirror. She no longer runs at the
+  first punch; knocked out, she has a 35% chance of an `epipen` (kind `medicine`: energy 100,
+  stress 0, `useMedicine`).
+- **`world/herplace.js`**: one builder for all three homes, styled per partner (`state.visiting`).
+  Doors: Stephanie's 1B (via `stephanieDoor`), Melanie's 3C at 1104 (walk-up floor 2), Diana's
+  brownstone on 7th Avenue. Home is a schedule row that is `away` with "home" or "asleep" in the
+  note. Invitations at affection 55 or as a girlfriend; `herNewDay` gives a key at affection 70.
+  Inside: couch, bed (`sleep`), fridge once a day, and her hobby: `getHighWithSteph` (a
+  `world.couchHigh` scene, also on 3B's couch when she lives there), `melanieRack` (outfits with
+  `exclusive: 'melanie'`, never sold), `dianaCare`; Diana as a live-in also feeds and steadies him
+  each morning. `useSubstance` refuses at Melanie's and Diana's.
+- **`systems/rae.js`**: a knockout of Rae opens Renegotiation: a 15% rent cut (to 30%, once a week;
+  `rentPerCycle` reads `s.rae.cut`), repairs on him (leak, shower, fridge), or his rent envelope.
+  `fear` fades 4 a day; the stairwell gets "Remind him how it went last time".
+- **`ui/studio.js`**: a second, offscreen `WebGLRenderer` shoots the game's own models in small box
+  rooms at 96x128 (or 128x80), doubled with hard pixels. `pinups.modelPicURL`/`pinupURL` (LonelyFans,
+  DialUpDelights) use `personShot` with a chest and lap mosaic; FeedLove selfies, Mo's posts and
+  the scene posts (`sceneShot`: city, night, rain, park, cat, tabletop props) use it too. Cached per
+  key; the old SVG drawings remain as the fallback.
+- Papi's "what is going on" now mentions ROX on the corners, Rae's new manners, Okafor's good mood
+  and Diana's breakfasts.
+
 ### Unit 3B made over, a working TV, and ROX
 
 - **The upgraded flat** (`buildApartment`) follows a loft reference: wood floors (`floors`), white

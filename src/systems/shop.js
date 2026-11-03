@@ -19,7 +19,7 @@ export function shopState(s) {
 /** What is for sale: every valuable, gift and keepable food, at a retail markup. */
 export function catalog() {
   return Object.values(CONFIG.items)
-    .filter((it) => ['valuable', 'gift', 'comfort'].includes(it.kind) || (it.kind === 'food' && ['beans', 'ramen', 'bar', 'cereal'].includes(it.id)))
+    .filter((it) => ['valuable', 'gift', 'comfort', 'supply'].includes(it.kind) || (it.kind === 'food' && ['beans', 'ramen', 'bar', 'cereal'].includes(it.id)))
     .filter((it) => it.id !== 'nia_meal')
     .map((it) => ({ id: it.id, name: it.name, kind: it.kind, price: retail(it) }));
 }

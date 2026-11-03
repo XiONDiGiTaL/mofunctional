@@ -20,7 +20,7 @@ const COOLDOWN_MINUTES = 150;   // a couple of hours of block between one thing 
  */
 export const ENCOUNTERS = {
   panhandler: { npc: { kind: 'homeless', label: 'A man with a cup', sub: 'he has been watching you come up the block' }, run: (g) => panhandler(g) },
-  watchGuy: { npc: { kind: 'drifter', label: 'The man in the long coat', sub: '"Rolex. Forty dollars."' }, run: (g) => watchGuy(g) },
+  watchGuy: { npc: { kind: 'trench', label: 'The man in the long coat', sub: '"Rolex. Forty dollars."' }, run: (g) => watchGuy(g) },
   preacher: { npc: { kind: 'passer_m2', label: 'A man with a leaflet', sub: 'the paper has a gold border' }, run: (g) => preacher(g) },
   groceries: { npc: { kind: 'tenant_f', label: 'A woman with a split bag', sub: 'cans rolling toward the curb' }, run: (g) => spilledGroceries(g) },
   sample: { npc: { kind: 'clerk', label: 'A promo kid with a tray', sub: 'free samples, apparently' }, when: (s) => s.stats.hunger < 40, run: (g) => freeSample(g) },
