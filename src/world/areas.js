@@ -473,13 +473,97 @@ export function buildStreet(g) {
   });
   for (let i = 0; i < 2; i++) group.add(box(1.9 - i * 0.3, 0.12, 0.4, M.concrete, [apt.door, 0.06 + i * 0.12, -5.62 + i * 0.32]));
 
-  // Quik-Stop storefront
-  group.add(box(6.2, 3.0, 0.3, retroMaterial('storefront', { color: 0x2a3a30 }), [1.5, 1.5, -6.5]));
-  group.add(plane(4.6, 1.4, { name: 'storewin', map: tex('window'), emissive: 0.5, unlit: true }, [1.5, 1.6, -6.32]));
-  group.add(plane(2.4, 1.0, { name: 'storesign', map: tex('neon'), emissive: 0.9, unlit: true }, [1.5, 3.5, -6.3]));
-  group.add(box(6.4, 0.16, 1.2, M.green, [1.5, 3.1, -6.0]));
-  group.add(plane(2.6, 0.5, { name: 'qssign', map: signTex('signQuik', [{ text: 'QUIK-STOP #14', color: '#ffe36a', size: 13 }, { text: 'OPEN 24 HRS · COFFEE · LOTTO', color: '#9fe3ff', size: 6 }], { w: 128, h: 32, bg: '#0f1a14', border: '#2f6b4a' }), emissive: 1, unlit: true }, [1.5, 2.5, -6.28]));
-  group.add(plane(2.8, 2.2, { name: 'qspool', color: 0xbfe8ff, opacity: 0.14, transparent: true, unlit: true }, [1.5, 0.035, -5.2], [-Math.PI / 2, 0, 0]));
+  // Quik-Stop storefront: a corner deli crossed with a gas-station shop. Aluminium frames, a glass
+  // door you can see is a door, two lit windows with the shelves showing through, and the glass
+  // half covered in flyers the way every store on the block is: specials, EBT, lotto, MetroCard.
+  {
+    const qx = 1.5, FZ = -6.22;
+    const alu = retroMaterial('qsAlu', { color: 0xa8aeb4, ambient: 0.8 });
+    const frameDark = retroMaterial('qsFrame', { color: 0x1c2620 });
+    const lit = retroMaterial('qsInside', { color: 0xc8ccb8, emissive: 0.3, unlit: true });
+    const shelfMat = retroMaterial('qsShelf', { color: 0xd8dcd4 });
+    const glass = { color: 0xbfe0f0, opacity: 0.16, transparent: true, unlit: true };
+    // the shell: kick plate, piers, the header band the sign sits on
+    group.add(box(6.2, 0.55, 0.4, frameDark, [qx, 0.275, -6.42]));
+    group.add(box(6.2, 0.42, 0.4, retroMaterial('qsHeader', { color: 0x2a3a30 }), [qx, 2.66, -6.42]));
+    for (const [x0, x1] of [[-1.6, -1.4], [0.85, 1.0], [2.0, 2.15], [4.4, 4.6]]) group.add(box(x1 - x0, 2.9, 0.4, frameDark, [(x0 + x1) / 2, 1.45, -6.42]));
+    group.add(box(6.2, 0.15, 0.4, frameDark, [qx, 2.95, -6.42]));
+    // two display windows: the store lit up behind them, shelves of things in front of that
+    const COLS = [0xd8281e, 0xf2c41e, 0x2a6ac8, 0x3aa83a, 0xe86a1e, 0xf2f2ec, 0x8a2ab8, 0x1a1a1e, 0xc81e6a, 0x5ac8e8];
+    let seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const display = (cx, w) => {
+      group.add(box(w, 1.9, 0.04, lit, [cx, 1.5, -6.6]));
+      group.add(box(w, 0.04, 0.3, retroMaterial('qsTube', { color: 0xffffff, emissive: 1, unlit: true }), [cx, 2.4, -6.5]));
+      for (const sy of [0.78, 1.24, 1.7, 2.12]) {
+        group.add(box(w - 0.06, 0.03, 0.28, shelfMat, [cx, sy, -6.46]));
+        let x = cx - w / 2 + 0.08;
+        while (x < cx + w / 2 - 0.12) {
+          const bw = 0.07 + rnd() * 0.1, bh = 0.12 + rnd() * 0.22;
+          const tall = rnd() < 0.3;
+          group.add(box(bw, tall ? bh + 0.08 : bh, 0.12, retroMaterial(`qsProd${Math.floor(rnd() * COLS.length)}`, { color: COLS[Math.floor(rnd() * COLS.length)] }), [x + bw / 2, sy + 0.015 + (tall ? bh + 0.08 : bh) / 2, -6.44 + (rnd() - 0.5) * 0.08]));
+          x += bw + 0.015;
+        }
+      }
+      group.add(plane(w, 1.9, { name: `qsGlass${cx}`, ...glass }, [cx, 1.5, FZ + 0.01]));
+      // the aluminium: a top and bottom rail, a centre mullion
+      group.add(box(w, 0.05, 0.06, alu, [cx, 2.43, FZ]));
+      group.add(box(w, 0.05, 0.06, alu, [cx, 0.57, FZ]));
+      group.add(box(0.05, 1.9, 0.06, alu, [cx, 1.5, FZ]));
+    };
+    display(-0.275, 2.25);
+    display(3.275, 2.25);
+    // the door: a glass door in an aluminium frame, a push bar, the store bright behind it
+    group.add(box(1.0, 2.35, 0.04, lit, [qx, 1.225, -6.6]));
+    // through the door: the drink cooler on the back wall, lit, bottles in rows, and the floor
+    group.add(box(0.98, 0.1, 0.36, retroMaterial('qsFloorIn', { color: 0x8a8a80 }), [qx, 0.05, -6.42]));
+    group.add(box(0.9, 1.9, 0.06, retroMaterial('qsCooler', { color: 0x2a3036 }), [qx, 1.15, -6.57]));
+    for (const dx of [-0.22, 0.22]) {
+      group.add(box(0.4, 1.7, 0.02, retroMaterial('qsCoolerGlow', { color: 0xbfe8ff, emissive: 0.7, unlit: true }), [qx + dx, 1.15, -6.535]));
+      for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) group.add(box(0.05, 0.16, 0.03, retroMaterial(`qsBottle${(r + c) % 5}`, { color: [0xd8281e, 0x3aa83a, 0xf2c41e, 0x1a4a9a, 0xe86a1e][(r * 2 + c) % 5] }), [qx + dx - 0.15 + c * 0.075, 0.45 + r * 0.32, -6.515]));
+      group.add(box(0.02, 1.7, 0.03, alu, [qx + dx + 0.2, 1.15, -6.51]));
+    }
+    // and a chip rack in the doorway, the first thing anybody walks into
+    group.add(box(0.36, 1.1, 0.2, retroMaterial('qsRack', { color: 0x3a3a3e }), [qx - 0.25, 0.6, -6.38]));
+    for (let r = 0; r < 4; r++) group.add(box(0.32, 0.18, 0.06, retroMaterial(`qsChips${r}`, { color: [0xf2c41e, 0xd8281e, 0x2a6ac8, 0x3aa83a][r] }), [qx - 0.25, 0.3 + r * 0.25, -6.27]));
+    group.add(box(0.06, 2.35, 0.08, alu, [qx - 0.5, 1.225, FZ]));
+    group.add(box(0.06, 2.35, 0.08, alu, [qx + 0.5, 1.225, FZ]));
+    group.add(box(1.06, 0.06, 0.08, alu, [qx, 2.4, FZ]));
+    group.add(box(1.0, 0.16, 0.06, alu, [qx, 0.08, FZ]));
+    group.add(box(0.9, 0.06, 0.06, alu, [qx, 1.05, FZ + 0.05]));
+    group.add(plane(0.9, 2.2, { name: 'qsDoorGlass', ...glass }, [qx, 1.25, FZ + 0.012]));
+    group.add(plane(0.22, 0.09, { name: 'qsPush', map: signTex('qsPush', [{ text: 'PUSH', color: '#1a1a1a', size: 9 }], { w: 32, h: 14, bg: '#f2f0e4' }), emissive: 0.4 }, [qx + 0.22, 1.2, FZ + 0.03]));
+    group.add(plane(0.36, 0.22, { name: 'qsHours', map: signTex('qsHours', [{ text: 'OPEN 24/7', color: '#1a1a1a', size: 8 }, { text: '365 DAYS', color: '#c81e1e', size: 6 }, { text: 'NO SHIRT NO SHOES', color: '#1a1a1a', size: 4 }], { w: 48, h: 30, bg: '#f2f0e4', border: '#c81e1e' }), emissive: 0.4 }, [qx - 0.2, 1.62, FZ + 0.03]));
+    group.add(plane(0.3, 0.1, { name: 'qsNum', map: signTex('qsNum', [{ text: '1112', color: '#f2e6c0', size: 9 }], { w: 32, h: 12, bg: '#1a1a1a' }), emissive: 0.6, unlit: true }, [qx, 2.52, FZ + 0.03]));
+    // the flyers, taped on the glass from the inside, the way they are on every store in the city
+    const flyer = (id, x, y, w, h, lines, bg, border = null) => group.add(plane(w, h, { name: `qsFly${id}`, map: signTex(`qsFly${id}`, lines, { w: Math.round(w * 64), h: Math.round(h * 64), bg, border }), emissive: 0.55, unlit: true }, [x, y, FZ + 0.02]));
+    flyer('bfast', -1.0, 1.85, 0.78, 1.0, [{ text: 'BREAKFAST', color: '#fff8e0', size: 9 }, { text: 'SPECIAL', color: '#fff8e0', size: 9 }, { text: 'BACON EGG', color: '#3a1a0a', size: 6 }, { text: '& CHEESE', color: '#3a1a0a', size: 6 }, { text: '$2.99', color: '#1e8a2e', size: 12 }, { text: 'COFFEE 99¢', color: '#c81e1e', size: 7 }], '#ff8a1e', '#fff2c0');
+    flyer('lunch', -0.05, 2.02, 0.7, 0.66, [{ text: 'LUNCH SPECIAL', color: '#fff8e0', size: 6 }, { text: 'ANY HERO', color: '#3a1a0a', size: 6 }, { text: '$5.99', color: '#1e8a2e', size: 11 }], '#ff7a1a', '#fff2c0');
+    flyer('ebt', 0.55, 0.95, 0.42, 0.32, [{ text: 'WE ACCEPT', color: '#1a1a1a', size: 5 }, { text: 'EBT · WIC', color: '#c81e1e', size: 8 }], '#f2f0e4', '#2a6ac8');
+    flyer('lotto', 2.6, 1.95, 0.72, 0.8, [{ text: 'LOTTO', color: '#ffe23a', size: 12 }, { text: 'MEGA MILLIONS', color: '#ffffff', size: 5 }, { text: '$9,000,000', color: '#ffe23a', size: 8 }, { text: 'PLAY HERE', color: '#ffffff', size: 5 }], '#1a3a8a', '#ffe23a');
+    flyer('beer', 3.55, 2.05, 0.66, 0.6, [{ text: 'ICE COLD', color: '#ffffff', size: 8 }, { text: 'BEER', color: '#ffe23a', size: 13 }], '#c81e1e', '#ffffff');
+    flyer('metro', 4.05, 0.98, 0.5, 0.34, [{ text: 'MetroCard', color: '#1a1a1a', size: 6 }, { text: 'SOLD HERE', color: '#1a1a1a', size: 6 }], '#ffd23a', '#1a1a1a');
+    flyer('phone', 3.35, 0.98, 0.5, 0.34, [{ text: 'PHONE CARDS', color: '#ffffff', size: 5 }, { text: 'CALL D.R. $5', color: '#ffe23a', size: 5 }, { text: 'ATM INSIDE', color: '#ffffff', size: 5 }], '#2a8a4a', '#ffffff');
+    flyer('lost', 0.25, 1.32, 0.26, 0.32, [{ text: 'LOST', color: '#1a1a1a', size: 6 }, { text: 'CAT', color: '#1a1a1a', size: 6 }, { text: 'MITTENS', color: '#5a5a5a', size: 4 }], '#f2f2ec');
+    // the neon in the window: OPEN, red, and a small one for the ATM
+    group.add(plane(0.62, 0.26, { name: 'qsOpen', map: signTex('qsOpen', [{ text: 'OPEN', color: '#ff4a4a', size: 15, glow: '#ff2a2a' }], { w: 48, h: 20, bg: '#140808', border: '#ff4a4a', glow: '#ff2a2a' }), emissive: 1.3, unlit: true }, [-0.85, 0.9, FZ + 0.02]));
+    group.add(plane(0.4, 0.16, { name: 'qsAtm', map: signTex('qsAtm', [{ text: 'ATM', color: '#5af2ff', size: 11, glow: '#2ac8ff' }], { w: 32, h: 14, bg: '#04101a', glow: '#2ac8ff' }), emissive: 1.3, unlit: true }, [2.45, 1.0, FZ + 0.02]));
+    // the store's names above the door, and the old neon over the awning
+    group.add(plane(2.4, 1.0, { name: 'storesign', map: tex('neon'), emissive: 0.9, unlit: true }, [qx, 3.5, -6.3]));
+    group.add(box(6.4, 0.16, 1.2, M.green, [qx, 3.1, -6.0]));
+    group.add(plane(2.6, 0.38, { name: 'qssign', map: signTex('signQuik', [{ text: 'QUIK-STOP #14', color: '#ffe36a', size: 13 }, { text: 'OPEN 24 HRS · COFFEE · LOTTO · ATM', color: '#9fe3ff', size: 6 }], { w: 128, h: 28, bg: '#0f1a14', border: '#2f6b4a' }), emissive: 1, unlit: true }, [qx, 2.66, -6.2]));
+    group.add(plane(2.8, 2.2, { name: 'qspool', color: 0xbfe8ff, opacity: 0.14, transparent: true, unlit: true }, [qx, 0.035, -5.2], [-Math.PI / 2, 0, 0]));
+    // the step and the mat at the door
+    group.add(box(1.4, 0.06, 0.4, M.concrete, [qx, 0.03, -6.0]));
+    group.add(box(1.0, 0.02, 0.55, retroMaterial('qsMat', { color: 0x1a1a1c }), [qx, 0.07, -5.6]));
+    // out front, gas-station style: an ice chest, a sandwich board, a bin of firewood nobody buys
+    group.add(box(1.15, 0.85, 0.6, retroMaterial('qsIce', { color: 0xf2f4f6 }), [-0.9, 0.43, -5.75]));
+    group.add(box(1.16, 0.06, 0.62, retroMaterial('qsIceLid', { color: 0x2a6ac8 }), [-0.9, 0.88, -5.75]));
+    group.add(plane(0.8, 0.3, { name: 'qsIceSign', map: signTex('qsIceSign', [{ text: 'ICE', color: '#ffffff', size: 16 }], { w: 48, h: 18, bg: '#2a6ac8' }), emissive: 0.5 }, [-0.9, 0.55, -5.44]));
+    group.add(box(0.6, 0.85, 0.05, retroMaterial('qsBoard', { color: 0x1a1a1a }), [2.65, 0.43, -5.55], [0.25, 0, 0]));
+    group.add(plane(0.5, 0.7, { name: 'qsBoardFace', map: signTex('qsBoardFace', [{ text: 'COFFEE', color: '#ffffff', size: 8, font: 'cursive' }, { text: '99¢', color: '#ffe23a', size: 13 }, { text: 'ANY SIZE', color: '#ffffff', size: 5 }, { text: 'BEC $2.99', color: '#ff8a8a', size: 6 }, { text: 'LOTTO ↓', color: '#8ae8ff', size: 6 }], { w: 32, h: 46, bg: '#1a1a1a', border: '#8a6a3a' }), emissive: 0.4 }, [2.65, 0.45, -5.52], [0.25, 0, 0]));
+    group.add(box(0.5, 0.5, 0.4, retroMaterial('qsWood', { color: 0x8a5a2a }), [4.1, 0.25, -5.8]));
+  }
   // awning stripes
   for (let i = 0; i < 6; i++) {
     group.add(box(1.05, 0.18, 1.15, i % 2 ? M.white : retroMaterial('awningRed', { color: 0x8a3a32 }), [1.5 - 2.65 + i * 1.06, 3.02, -5.9]));
