@@ -77,7 +77,6 @@ export class Assailants {
           a.state = 'down';
           a.downT = 0;
           w.knockDown(a.rig, g);
-          w.noteKO?.(g);
           a.onWin?.(g, a.rig);
         } else {
           this.drop(a);

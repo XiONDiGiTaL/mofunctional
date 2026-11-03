@@ -316,6 +316,10 @@ export class Audio {
       // a car horn: two flat, slightly sour tones on top of each other
       case 'honk': this.blip(392, 0.32, 'square', 0.1); this.blip(466, 0.32, 'square', 0.08); return;
       // a dog's yelp: two high, short cries
+      // a rifle: a crack and the echo off the buildings
+      case 'gunshot': this.noise(0.12, 0.3, 900); setTimeout(() => this.noise(0.3, 0.1, 400), 90); return;
+      // an open hand, very hard
+      case 'smack': this.noise(0.06, 0.32, 3200); this.sweep(220, 70, 0.18, 'square', 0.14); return;
       case 'yelp': this.sweep(900, 1500, 0.09, 'square', 0.12); setTimeout(() => this.sweep(1300, 700, 0.14, 'square', 0.1), 110); return;
       // an angry cat: up, wavering, down
       case 'yowl': this.sweep(420, 1100, 0.25, 'sawtooth', 0.12); setTimeout(() => this.sweep(1100, 380, 0.35, 'sawtooth', 0.11), 250); return;

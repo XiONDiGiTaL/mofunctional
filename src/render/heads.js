@@ -393,6 +393,22 @@ export const FACE_SPECS = {
     skin: '#6e4632', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'short',
     brow: '#0e0c0a', eye: '#22180f', lips: '#523022', lipsLight: '#6e4434', beard: 'stubble', beardColor: '#0e0c0a', age: 0.25,
   },
+  // outside Habib's: Yusuf, fifties, a full black beard to the chest (the beard is built on the
+  // body as well), the turban added in characters.js
+  hookah: {
+    skin: '#a8724e', hair: '#141010', hairLight: '#2a2420', hairDark: '#080606', style: 'short',
+    brow: '#141010', eye: '#2a1e16', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'full', beardColor: '#141010', age: 0.6, browTilt: 0.1, jaw: 1.08,
+  },
+  // the domino table outside the bodega: Papi, seventies, white tank top, white hair, a moustache
+  papi: {
+    skin: '#b88a62', hair: '#e0e0dc', hairLight: '#f4f4f0', hairDark: '#b0b0ac', style: 'receding',
+    brow: '#d8d8d4', eye: '#3a2a1e', lips: '#8a5a48', lipsLight: '#a87262', beard: 'mustache', beardColor: '#e8e8e4', age: 0.95, browTilt: 0.14, jaw: 1.06,
+  },
+  // and Tito across the table from him, who has been losing to Papi since 1974
+  viejo: {
+    skin: '#9a6a48', hair: '#9a9a96', hairLight: '#b8b8b4', hairDark: '#6a6a66', style: 'receding',
+    brow: '#8a8a86', eye: '#2a1e16', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#b0b0ac', age: 0.9, glasses: true, browTilt: 0.04,
+  },
   // the chess table in Kestrel Park: eighties, white beard, reading glasses on a cord
   chessman: {
     skin: '#b88a6a', hair: '#d8d8d4', hairLight: '#f0f0ec', hairDark: '#a8a8a4', style: 'receding',

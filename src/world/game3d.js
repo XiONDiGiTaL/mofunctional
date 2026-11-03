@@ -129,6 +129,7 @@ export class World {
     for (const c of this.floorCans || []) c.mesh.parent?.remove(c.mesh);
     this.floorCans = [];
     this.flung = null;
+    this.cutscene = null;
     this.kickT = 0;
     if (this.addison) { this.addison.down = false; this.addison.danceT = 0; this.addison.root.rotation.set(0, this.addison.root.rotation.y, 0); this.addison.root.position.y = 0; }
     this.courier?.remove();
@@ -601,6 +602,28 @@ export class World {
 
   holdingHands(kind) { return !!this.affection?.isHolding(kind); }
 
+  /**
+   * Can a cop see Mo right now: a cop on foot within `range` with nothing solid in between (a
+   * patrol, the precinct desk, a beat cop), or a cruiser passing within a few metres.
+   */
+  copSees(range = 14) {
+    const mo = this.mo.root.position;
+    const b0 = this.area?.bounds;
+    const clear = (a) => {
+      // a cop has to be out where Mo is, not behind a facade
+      if (b0 && (a.x < b0.minX - 1 || a.x > b0.maxX + 1 || a.z < b0.minZ - 1 || a.z > b0.maxZ + 1)) return false;
+      const steps = Math.ceil(Math.hypot(a.x - mo.x, a.z - mo.z) / 0.5);
+      for (let i = 1; i < steps; i++) {
+        const x = mo.x + (a.x - mo.x) * (i / steps), z = mo.z + (a.z - mo.z) * (i / steps);
+        for (const b of this.area?.solids || []) if (!b.moving && !b.seeThrough && (b.h ?? 2.4) >= 1.4 && Math.abs(x - b.x) < b.w / 2 && Math.abs(z - b.z) < b.d / 2) return false;
+      }
+      return true;
+    };
+    const onFoot = this.npcRigs.some((r) => (r.npcDef?.kind === 'cop' || r.npcDef?.kind === 'cop2' || r.npcDef?.cop) && r.root.visible && !r.down && Math.hypot(r.root.position.x - mo.x, r.root.position.z - mo.z) < range && clear(r.root.position));
+    if (onFoot) return true;
+    return (this.traffic?.cars || []).some((c) => c.mesh.userData.flash && Math.hypot(c.x - mo.x, c.lane.z - mo.z) < 9);
+  }
+
   /** Is a cop within `range` metres of Mo? */
   copNear(range = 6) {
     const mo = this.mo.root.position;
@@ -856,6 +879,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       rig.scaredT = 4;
       return;
     }
+    // Papi and Yusuf: two men on this block you do not punch, and a scene each to say why
+    if (rig.npcDef?.kind === 'papi') { this.papiSmack(g, rig); return; }
+    if (rig.npcDef?.kind === 'hookah') { this.yusufWarning(g, rig); return; }
     const def = rig.npcDef || (rig === this.thug ? { kind: 'thug', tough: true, label: 'the man' } : { kind: 'civilian' });
     // health is per body: two different civilians used to share one pool, so the second one
     // dropped to the first one's leftovers and went down in a single punch
@@ -875,7 +901,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       g.audio?.sfx?.('deny');
       g.toast(pick(['She screams and runs, and every window on the block is looking at you now.', 'She is gone before your arm comes back. The whole block heard her.', '"CRAZY!" she yells over her shoulder, to everybody, not to you.']), 'bad');
       this.startFlee(rig);
-      if (this.copNear?.(12)) this.startChase(g, 'cop');
+      if (this.copSees(14)) this.startChase(g, 'cop');
       return;
     }
     const res = brawl.strike(g, { ...def, key, hp: rig.brawlHp, maxHp, label: def.label || def.name || def.kind });
@@ -887,6 +913,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (heat.called) g.toast('They do not swing back. They pick up the phone, and they keep looking at you while they dial.', 'bad');
     }
     g.audio?.sfx?.(res.result === 'refused' ? 'deny' : 'hit');
+    // a cop who can actually see it happen comes for him; one who cannot, does not
+    if (res.result !== 'cop' && res.result !== 'refused' && !def.cop && this.copSees(14)) { g.toast(res.line, 'info'); this.startChase(g, 'cop'); return; }
     g.toast(res.line, res.result === 'refused' || res.result === 'dog' ? 'bad' : 'info');
     if (res.result === 'cop') { this.startChase(g, 'cop'); return; }
     // a man with a gun in his waistband does not trade punches for long
@@ -903,7 +931,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (res.result === 'fled') { this.startFlee(rig); return; }
     if (res.result === 'ko') {
       this.knockDown(rig, g);
-      this.noteKO(g);
+      this.noteKO(g, def);
       g.openModal({
         kicker: 'THE STREET · SOMEBODY IS DOWN',
         title: 'Out Cold',
@@ -1068,7 +1096,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
   /** Going through somebody's pockets with a cop watching is a crime in progress. */
   lootWitnessed(g) {
-    if (!this.copNear(12)) return false;
+    if (!this.copSees(12)) return false;
     g.toast('"HEY. HEY! Step away from him." The officer is already running.', 'bad');
     this.startChase(g, 'cop');
     return true;
@@ -1128,9 +1156,11 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.punchT = Math.max(0, (this.punchT || 0) - dt);
     this.realT = (this.realT || 0) + dt;
     // somebody phoned it in a few minutes ago, and the call has worked its way down to a cruiser
+    // a phoned-in report sends nobody running at him: a cruiser rolls through, and only what a
+    // cop sees with his own eyes gets him chased
     if (!this.chaseRig && brawl.alertDue(g.state)) {
       brawl.clearAlert(g.state);
-      this.startChase(g, 'report');
+      if (OUTSIDE.has(this.areaId)) { this.traffic?.spawnSpecial?.('police'); g.toast('A cruiser rolls down the block slowly, looking at faces. It does not stop. Nobody saw anything, out loud.', 'info'); }
     }
     // the ones who ran head for the end of the block, along the pavement. Running straight away
     // from Mo meant running straight through the facades, so they have a place to get to and the
@@ -1622,7 +1652,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // a lock flag with no animation behind it is an orphan (it can only come from an
     // interrupted path): release it rather than strand the player
     if (s.flags.consuming && !this.substance?.active) s.flags.consuming = false;
-    const canMove = !g.uiBusy && !this.flung
+    const canMove = !g.uiBusy && !this.flung && !this.cutscene
       && !this.eating?.active && !this.handoff?.active && !this.substance?.active && !this.affection?.active
       && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming && !this.crossing;
 
@@ -1812,7 +1842,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
     // animation
     animateMo(this.mo, dt, {
-      walking: this.walking,
+      walking: this.walking || !!this.cutscene?.run,
       sitting: !!this.seated,
       high: s.high.level,
       withdrawal: s.stats.withdrawal,
@@ -1873,6 +1903,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.patrol.update(dt, g);
     this.assailants.update(dt, g);
     this.updateFlyingHats(dt);
+    if (this.cutscene) this.updateScene(dt, g);
     // standing in the road: the clock a speeding driver reads before deciding not to brake
     const lanes = this.area?.traffic?.lanes;
     const mp = this.mo.root.position;
@@ -2625,13 +2656,16 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
    * Knockouts, counted: three people on the ground within a couple of hours and the Guardian
    * Angles hear about it. One of them comes, red beret first.
    */
-  noteKO(g) {
-    const s = g.state;
-    const now = s.clock.m;
-    s.flags.koLog = (s.flags.koLog || []).filter((m) => now - m < 150);
-    s.flags.koLog.push(now);
-    if (s.flags.koLog.length >= 3 && OUTSIDE.has(this.areaId) && !this.assailants.active && Math.random() < 0.6) {
-      s.flags.koLog = [];
+  noteKO(g, def = {}) {
+    // dealers, muggers, the armed, the men who came at him and the Angles themselves are not
+    // innocent; five innocent people on the ground inside five real minutes is a spree
+    const GUILTY = new Set(['thug', 'thug_armed', 'benchman', 'drifter', 'unknown', 'mugger', 'boxer', 'angel_m', 'angel_f', 'cop', 'cop2']);
+    if (GUILTY.has(def.kind) || def.assailant || def.cop || def.tough) return;
+    const now = this.realT || 0;
+    this.koLog = (this.koLog || []).filter((t) => now - t < 300);
+    this.koLog.push(now);
+    if (this.koLog.length >= 5 && OUTSIDE.has(this.areaId) && !this.assailants.active) {
+      this.koLog = [];
       this.spawnAngle(g);
     }
   }
@@ -2676,7 +2710,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     ad.root.position.y = 0.16;
     this.flyHat(ad);
     animateDown(ad);
-    this.noteKO(g);
+    this.noteKO(g, { kind: 'addison' });
     const f = s.fellowship;
     g.openModal({
       kicker: 'THE GOLDEN FELLOWSHIP', title: 'The Shepherd Is Down',
@@ -2721,6 +2755,111 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (ad.hips) ad.hips.rotation.y = Math.sin(t * 1.2) * 0.6;
     ad.root.rotation.y += dt * 0.9;
     if (ad.danceT === 0) ad.root.rotation.y = 0;
+  }
+
+  /**
+   * Papi: the old man puts his bones down, stands up very slowly, and slaps Mo so hard he goes
+   * over and stays over. Nobody at the table looks surprised.
+   */
+  papiSmack(g, rig) {
+    if (this.cutscene) return;
+    this.punchT = 0.34;
+    this.haltMo?.();
+    rig.sceneBaseY = rig.baseY;
+    this.cutscene = { kind: 'papi', rig, t: 0 };
+    g.toast('Papi puts his dominoes down, face down, in order. Then he stands up. Slowly.', 'bad');
+  }
+
+  /**
+   * Yusuf: the hookah goes down, a rifle comes up out of the bag by his chair, one shot at the
+   * sky, and Mo is running before the echo is back. Yusuf puts it away and sits.
+   */
+  yusufWarning(g, rig) {
+    if (this.cutscene) return;
+    this.punchT = 0.34;
+    this.haltMo?.();
+    rig.sceneBaseY = rig.baseY;
+    const gun = new THREE.Group();
+    const steel = retroMaterial('akSteel', { color: 0x1a1a1c });
+    const wood = retroMaterial('akWood', { color: 0x7a4a22 });
+    gun.add(box(0.05, 0.05, 0.62, steel, [0, 0, 0.18]));
+    gun.add(box(0.06, 0.09, 0.26, wood, [0, -0.02, -0.18]));
+    gun.add(box(0.05, 0.16, 0.06, steel, [0, -0.1, 0.18], [0.35, 0, 0]));
+    gun.add(box(0.045, 0.05, 0.2, wood, [0, -0.02, 0.36]));
+    gun.position.set(0, -0.55, 0.1);
+    gun.rotation.x = -Math.PI / 2;
+    rig.armR.pivot.add(gun);
+    this.cutscene = { kind: 'yusuf', rig, t: 0, gun };
+    g.toast('Yusuf sets the hose down. He reaches into the bag by his chair without looking.', 'bad');
+  }
+
+  updateScene(dt, g) {
+    const sc = this.cutscene;
+    const rig = sc.rig;
+    const p = rig.root.position;
+    const mo = this.mo.root;
+    sc.t += dt;
+    const face = () => { rig.root.rotation.y = Math.atan2(mo.position.x - p.x, mo.position.z - p.z); };
+    const stand = (u) => { rig.npcDef.pose = null; p.y = (rig.sceneBaseY || 0) * (1 - u); rig.baseY = p.y; };
+    const sit = () => { rig.npcDef.pose = 'sit'; rig.baseY = rig.sceneBaseY || 0; p.y = rig.baseY; };
+    if (sc.kind === 'papi') {
+      if (sc.t < 1.2) { stand(Math.min(1, sc.t / 1.2)); face(); }
+      else if (sc.t < 1.55) {
+        punchPose(rig, (sc.t - 1.2) / 0.35);
+        if (!sc.hit && sc.t > 1.38) {
+          sc.hit = true;
+          g.audio?.sfx?.('smack');
+          const yaw = Math.atan2(mo.position.x - p.x, mo.position.z - p.z);
+          this.flung = { vx: Math.sin(yaw) * 3.4, vy: 2.6, vz: Math.cos(yaw) * 3.4, t: 0, lie: 0 };
+          g.toast('CRACK. An open hand like a door slamming. The sidewalk comes up to meet you and you let it.', 'bad');
+        }
+      } else if (sc.t < 3.0) { punchPose(rig, 1); }
+      else if (!sc.done) {
+        sc.done = true;
+        sit();
+        g.toast('"Siéntate, mijo," somebody says. Papi sits back down and turns his dominoes over, in order. Tito says "capicúa" to nobody.', 'bad');
+        this.cutscene = null;
+        this.flung = null;
+        g.collapseSequence?.('beaten');
+      }
+      return;
+    }
+    if (sc.kind === 'yusuf') {
+      if (sc.t < 0.6) { stand(Math.min(1, sc.t / 0.6)); face(); }
+      else if (sc.t < 1.4) {
+        // the rifle up, straight at the sky
+        rig.armR.pivot.rotation.set(-2.9, 0, 0.1);
+        rig.armR.elbow.rotation.x = -0.1;
+        rig.armL.pivot.rotation.set(-2.6, 0, -0.3);
+        if (!sc.shot && sc.t > 0.95) {
+          sc.shot = true;
+          g.audio?.sfx?.('gunshot');
+          const flash = box(0.16, 0.16, 0.16, retroMaterial('muzzle', { color: 0xffe28a, emissive: 1.4, unlit: true }), [0, 0, 0.55]);
+          sc.gun.add(flash);
+          setTimeout(() => flash.parent?.remove(flash), 90);
+          g.toast('BLAM. One shot at the clouds. Every pigeon on Kestrel Street leaves at once, and so do you.', 'bad');
+        }
+      } else if (sc.t < 3.6) {
+        // Mo runs: away from the chair, along the sidewalk, as fast as he has ever moved
+        rig.armR.pivot.rotation.set(-1.2, 0, 0.1);
+        if (!sc.dir) { const away = mo.position.x >= p.x ? 1 : -1; sc.dir = away; }
+        sc.run = true;
+        mo.rotation.y = sc.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        mo.position.x += sc.dir * 5.2 * dt;
+        mo.position.z += (-2.0 - mo.position.z) * Math.min(1, dt * 2);
+        const b = this.area?.bounds;
+        if (b) mo.position.x = clamp(mo.position.x, b.minX + 0.5, b.maxX - 0.5);
+        if (!sc.away && sc.t > 2.2) { sc.away = true; sc.gun.parent?.remove(sc.gun); sit(); }
+      } else {
+        sc.gun.parent?.remove(sc.gun);
+        sit();
+        bump(g.state, 'stress', 16);
+        bump(g.state, 'morale', -4);
+        logLine(g, 'Swung at Yusuf outside Habib\'s. Never again.', 'bad');
+        g.toast('Half a block later you look back. Yusuf is sitting again, the hose in his hand, the bag zipped, like nothing happened. Habib is in the doorway shaking his head at you.', 'info');
+        this.cutscene = null;
+      }
+    }
   }
 
   /** A speeding car does not stop: Mo goes over the hood and lands somewhere else. */

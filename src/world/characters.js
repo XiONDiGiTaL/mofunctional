@@ -511,6 +511,11 @@ const CAST = {
   shopclerk: { height: 1.8, build: 1.0, shirt: 0x141416, pants: 0x3a3a40 },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
+  // Yusuf outside Habib's: a long pale kurta over dark trousers; the turban and beard below
+  hookah: { height: 1.84, build: 1.16, shirt: 0xe4dece, pants: 0x2a2a30, shoes: 0x3a2a1e, longSleeves: true },
+  // Papi: the white tank top, grey slacks, house slippers; Tito: a guayabera and a flat cap
+  papi: { height: 1.7, build: 1.12, shirt: 0xf4f4ee, pants: 0x5a5a62, shoes: 0x3a2a24, tank: true },
+  viejo: { height: 1.68, build: 1.02, shirt: 0xe0d0a0, pants: 0x4a4a52, shoes: 0x2a2018 },
   // Kestrel Park's chess table: a cardigan the colour of weak tea
   chessman: { height: 1.68, build: 0.94, shirt: 0x8a7a5a, pants: 0x4a4a52, longSleeves: true },
   // a long black coat over a white shirt, black trousers; the shtreimel is added below
@@ -840,6 +845,43 @@ export function createNPC(kind = 'kev') {
     // a brass badge on the chest and the authority's patch on the shoulder
     rig.torso.add(box(0.05 * k, 0.06 * k, 0.012 * k, retroMaterial('transitBadge', { color: 0xd8b04a, emissive: 0.2 }), [0.07 * k, 0.32 * k, 0.14 * k]));
     rig.torso.add(box(0.06 * k, 0.06 * k, 0.012 * k, retroMaterial('transitPatch', { color: 0x2a6ab8 }), [-0.07 * k, 0.32 * k, 0.14 * k]));
+  }
+  if (kind === 'hookah') {
+    // a wound turban, dark navy, wrapped in layers; a beard that reaches the chest; the kurta
+    // falling past the hips
+    const cloth = retroMaterial('turbanCloth', { color: 0x23264a, ambient: 0.75 });
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.15 * k, 12, 8), cloth);
+    crown.scale.set(1.12, 0.78, 1.18);
+    crown.position.set(0, 0.17 * k, -0.01 * k);
+    rig.head.add(crown);
+    for (let i = 0; i < 3; i++) {
+      const wrap = new THREE.Mesh(new THREE.TorusGeometry((0.128 + i * 0.006) * k, 0.022 * k, 5, 14), cloth);
+      wrap.rotation.set(Math.PI / 2 + (i - 1) * 0.18, 0, (i - 1) * 0.12);
+      wrap.position.set(0, (0.12 + i * 0.04) * k, -0.005 * k);
+      rig.head.add(wrap);
+    }
+    rig.hat = crown;
+    const hair = retroMaterial('yusufBeard', { color: 0x141010 });
+    rig.head.add(loft(R([[-0.06, 0.2, 0.12, 0.06], [-0.16, 0.18, 0.1, 0.07], [-0.26, 0.12, 0.07, 0.06], [-0.32, 0.05, 0.04, 0.05]], k), hair, 8));
+    rig.torso.add(loft(R([[0.02, 0.36, 0.22, 0], [-0.36, 0.4, 0.24, 0]], k), retroMaterial('kurtaHem', { color: 0xe4dece, ambient: 0.65 }), 8));
+  }
+  if (kind === 'viejo') {
+    // a flat cap, grey tweed
+    const tweed = retroMaterial('titoCap', { color: 0x6a6a62, ambient: 0.7 });
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13 * k, 0.135 * k, 0.07 * k, 12), tweed);
+    cap.position.set(0, 0.15 * k, -0.01 * k);
+    rig.head.add(cap);
+    rig.head.add(box(0.2 * k, 0.015 * k, 0.08 * k, tweed, [0, 0.125 * k, 0.12 * k], [0.25, 0, 0]));
+    rig.hat = cap;
+  }
+  if (kind === 'papi') {
+    // a thin gold chain with a medal on it, on the tank top
+    const gold = retroMaterial('papiGold', { color: 0xe0b23a, ambient: 1, emissive: 0.15 });
+    const chain = new THREE.Mesh(new THREE.TorusGeometry(0.095 * k, 0.008 * k, 4, 14, Math.PI), gold);
+    chain.rotation.set(Math.PI / 2 + 0.25, 0, Math.PI);
+    chain.position.set(0, 0.38 * k, 0.06 * k);
+    rig.torso.add(chain);
+    rig.torso.add(box(0.03 * k, 0.035 * k, 0.01 * k, gold, [0, 0.29 * k, 0.15 * k]));
   }
   if (kind === 'chessman') {
     // a flat cap, brown tweed, brim pulled down to the glasses

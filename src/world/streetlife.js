@@ -105,6 +105,31 @@ export function applyAct(rig, dt, life) {
     rig.prop.scale.x = 0.7 + Math.sin(t * 30) * 0.3;
     return;
   }
+  if (act === 'hookah') {
+    // the hose up to the mouth, a long draw, a slow cloud out; the other hand on the knee
+    const cyc = t % 7;
+    const up = clamp01(cyc / 0.8) * (1 - clamp01((cyc - 2.6) / 0.8));
+    rig.armR.pivot.rotation.x = -0.3 - up * 0.9;
+    rig.armR.pivot.rotation.z = -0.3 * up;
+    rig.armR.elbow.rotation.x = -0.4 - up * 1.9;
+    rig.armL.pivot.rotation.x = -0.45;
+    rig.armL.elbow.rotation.x = -0.55;
+    if (cyc > 3.2 && cyc < 3.3 && !rig.puffed) { rig.puffed = true; life?.puff(rig, 1.6); setTimeout(() => life?.puff(rig, 1.2), 250); }
+    if (cyc < 1) rig.puffed = false;
+    return;
+  }
+  if (act === 'dominoes') {
+    // hands on the table, the bones in the left; now and then a slap with the right
+    const cyc = (t + (rig.root.position.x > -13.7 ? 2.3 : 0)) % 6;
+    const slap = cyc > 5.3 ? Math.sin((cyc - 5.3) / 0.7 * Math.PI) : 0;
+    rig.armL.pivot.rotation.x = -1.0;
+    rig.armL.elbow.rotation.x = -0.6;
+    rig.armR.pivot.rotation.x = -1.0 - slap * 0.6;
+    rig.armR.elbow.rotation.x = -0.5 + slap * 0.4;
+    rig.torso.rotation.x = 0.12 + slap * 0.05;
+    rig.head.rotation.x = 0.25;
+    return;
+  }
   if (act === 'dance') {
     // a two-step on the sidewalk: weight side to side, arms loose, head with the beat
     const t = (rig.t || 0) * 0.9 + (rig.root.position.x * 3);

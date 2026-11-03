@@ -1,4 +1,5 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import * as papi from '../systems/papi.js';
 import { b1120 } from './hall.js';
 import * as recovery from '../systems/recovery.js';
 import * as music from '../systems/music.js';
@@ -833,9 +834,15 @@ export function buildStreet(g) {
     ] : []),
     ...(between(7, 23) ? [
       { kind: 'tenant_m', x: 3.9, z: -4.9, rot: -0.35, still: true, act: 'smoke' },
-      { kind: 'w8', x: -14.4, z: -4.6, rot: 0.3, still: true, act: 'smoke' },
+      { kind: 'w8', x: -20.2, z: -4.6, rot: 0.3, still: true, act: 'smoke' },
     ] : []),
-    ...(between(8, 20) ? [{ kind: 'passer_m2', x: 16.9, z: -4.4, rot: Math.PI, still: true, pose: 'sit' }] : []),
+    // Yusuf, outside Habib's, at his small table with the hookah; Papi and Tito at dominoes
+    // outside the bodega
+    ...(between(10, 24) ? [{ kind: 'hookah', x: 18.5, z: -4.75, rot: -0.25, still: true, pose: 'sit', act: 'hookah', talk: 'yusuf' }] : []),
+    ...(between(9, 21) ? [
+      { kind: 'papi', x: -14.35, z: -4.5, rot: Math.PI / 2, still: true, pose: 'sit', act: 'dominoes', talk: 'papi' },
+      { kind: 'viejo', x: -13.05, z: -4.5, rot: -Math.PI / 2, still: true, pose: 'sit', act: 'dominoes', talk: 'tito' },
+    ] : []),
     // late: somebody in the alley corner, facing the wall, doing what the alley gets used for
     ...(between(23, 4) && Math.random() < 0.6 ? [{ kind: 'drifter', x: -5.0, z: -6.0, rot: Math.PI, still: true, act: 'pee', talk: 'alleypee' }] : []),
     ...(between(6, 24) ? [
@@ -883,7 +890,43 @@ export function buildStreet(g) {
     { kind: 'junkie', x: -12.4, z: -4.2, rot: 2.2, talk: 'junkie' },
   ];
 
+  // the hookah setup: a folding chair, a small brass-topped table, the hookah on it, a glass of tea
+  const chairAt = (x, z, rot) => {
+    const c = new THREE.Group();
+    const m = retroMaterial('cornerChair', { color: 0x6a4a2a });
+    c.add(box(0.46, 0.05, 0.46, m, [0, 0.45, 0]));
+    c.add(box(0.46, 0.5, 0.05, m, [0, 0.72, -0.21]));
+    for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) c.add(box(0.04, 0.45, 0.04, M.metal, [dx, 0.22, dz]));
+    c.position.set(x, 0, z);
+    c.rotation.y = rot;
+    group.add(c);
+  };
+  chairAt(18.5, -4.85, -0.25);
+  group.add(box(0.5, 0.04, 0.5, retroMaterial('yusufTable', { color: 0xc8a050 }), [19.2, 0.55, -4.6]));
+  group.add(box(0.06, 0.55, 0.06, M.metal, [19.2, 0.27, -4.6]));
+  group.add(box(0.22, 0.26, 0.22, retroMaterial('hookahBase', { color: 0x2a6a8a, emissive: 0.15 }), [19.2, 0.7, -4.6]));
+  group.add(box(0.04, 0.38, 0.04, retroMaterial('hookahStem', { color: 0xc8a050 }), [19.2, 1.02, -4.6]));
+  group.add(box(0.16, 0.03, 0.16, retroMaterial('hookahTray', { color: 0xc8a050 }), [19.2, 1.2, -4.6]));
+  group.add(box(0.08, 0.08, 0.08, retroMaterial('hookahCoal', { color: 0xc83a1e, emissive: 0.9, unlit: true }), [19.2, 1.25, -4.6]));
+  for (let i = 0; i < 5; i++) group.add(box(0.035, 0.035, 0.16, retroMaterial('hookahHose', { color: 0x3a2a1e }), [19.05 - i * 0.1, 0.92 - Math.sin(i / 4 * Math.PI) * 0.18, -4.6 - i * 0.03], [0, 0.4, 0]));
+  group.add(box(0.06, 0.09, 0.06, retroMaterial('teaGlass', { color: 0xc86a2a, emissive: 0.2 }), [19.35, 0.62, -4.45]));
+  // the domino table: a card table, two folding chairs, the bones laid out in a long snake
+  chairAt(-14.35, -4.5, Math.PI / 2);
+  chairAt(-13.05, -4.5, -Math.PI / 2);
+  group.add(box(0.8, 0.04, 0.8, retroMaterial('dominoTable', { color: 0x2a5a3a }), [-13.7, 0.68, -4.5]));
+  for (const [dx, dz] of [[-0.35, -0.35], [0.35, -0.35], [-0.35, 0.35], [0.35, 0.35]]) group.add(box(0.04, 0.68, 0.04, M.metal, [-13.7 + dx, 0.34, -4.5 + dz]));
+  const bone = retroMaterial('dominoBone', { color: 0xf2efe4 });
+  for (let i = 0; i < 9; i++) group.add(box(i % 3 === 1 ? 0.05 : 0.09, 0.015, i % 3 === 1 ? 0.09 : 0.05, bone, [-13.9 + i * 0.05, 0.71, -4.6 + Math.sin(i * 0.9) * 0.12]));
+  for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) group.add(box(0.05, 0.09, 0.02, bone, [-13.7 + sx * 0.3, 0.75, -4.68 + i * 0.06], [0, Math.PI / 2, 0]));
+  const corner = [
+    ...(between(10, 24) ? [{ id: 'yusuf', label: 'Yusuf, outside Habib\'s', sub: 'the hookah · apple, he says, always apple', x: 18.6, z: -4.0, radius: 1.2, action: (gg) => yusufMenu(gg) }] : []),
+    ...(between(9, 21) ? [
+      { id: 'papi', label: 'Papi', sub: 'dominoes · he knows everything on this block', x: -14.35, z: -3.9, radius: 1.1, action: (gg) => papi.papiMenu(gg) },
+      { id: 'tito', label: 'Tito', sub: 'losing at dominoes since 1974', x: -13.05, z: -3.9, radius: 1.1, action: (gg) => gg.toast(pick(['"Do not ask him anything," Tito says. "Once he starts, it is two hours. I have lost whole summers."', '"Capicúa!" Tito slaps a bone down. Papi looks at it, looks at him, and lays the double six. Tito puts his face in his hands.', '"He cheats," Tito says, loud enough. "I do not cheat," Papi says. "I remember." That is worse.']), 'info') },
+    ] : []),
+  ];
   const interactables = [
+    ...corner,
     ...partyIts,
     { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => apartmentDoor(gg) },
     { id: 'store', label: 'Enter Quik-Stop #14', sub: 'open 24 hrs · shop · clock in at the back', x: 1.5, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('quikstop', 'street') },
@@ -2003,6 +2046,20 @@ function parkHoops(g) {
   g.toast(good
     ? 'Three in a row. A kid on the next court says "aight" which is the highest honour available.'
     : 'The rim is bent and so is everything you throw at it. You still needed the air.', good ? 'good' : 'info');
+}
+
+/** Yusuf outside Habib's: a seat by the hookah, if he likes your face today. */
+function yusufMenu(g) {
+  const s = g.state;
+  g.openModal({
+    kicker: "KESTREL ST · OUTSIDE HABIB'S", title: 'Yusuf',
+    body: 'A big man with a beard down to his chest and a navy turban, on a folding chair with a glass of tea and a hookah that smells like apples and a little like 1987. He is Habib\'s cousin, or his uncle, or neither, depending on who asks.',
+    choices: [
+      { label: 'Sit with him a while.', sub: '20 min · the hookah · -stress', effect: () => { g.advance(20); bump(s, 'stress', -9); bump(s, 'morale', 4); g.toast(pick(['He passes you the hose without a word. Apple. The smoke is sweet and the street slows down to the speed of his tea.', '"Habib works too hard," he says. "I work exactly hard enough." He has never looked more correct about anything.', 'He tells you about a city where the hookah cafés stay open until dawn and the men argue about poetry. You are not sure it is a real city. You want it to be.']), 'good'); } },
+      { label: 'Ask about Habib.', sub: '', effect: () => g.toast('"Habib? Good man. Bad knees. Makes the white sauce himself and will not tell even me. Twenty years I ask."', 'info') },
+      { label: 'Nod and keep walking.', effect: () => {} },
+    ],
+  });
 }
 
 /** The block party grill: a plate, or a shift at the grill for Lou. */
