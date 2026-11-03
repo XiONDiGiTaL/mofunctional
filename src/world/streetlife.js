@@ -105,6 +105,22 @@ export function applyAct(rig, dt, life) {
     rig.prop.scale.x = 0.7 + Math.sin(t * 30) * 0.3;
     return;
   }
+  if (act === 'dance') {
+    // a two-step on the sidewalk: weight side to side, arms loose, head with the beat
+    const t = (rig.t || 0) * 0.9 + (rig.root.position.x * 3);
+    const b = Math.sin(t * 2.2);
+    rig.hips.rotation.y = b * 0.25;
+    rig.hips.position.y = rig.hipY + Math.abs(b) * 0.03;
+    rig.torso.rotation.z = b * 0.08;
+    rig.armL.pivot.rotation.set(-0.5 + Math.sin(t * 4.4) * 0.3, 0, -0.5 - b * 0.3);
+    rig.armR.pivot.rotation.set(-0.5 - Math.sin(t * 4.4) * 0.3, 0, 0.5 - b * 0.3);
+    rig.armL.elbow.rotation.x = -1.0;
+    rig.armR.elbow.rotation.x = -1.0;
+    rig.legL.pivot.rotation.x = Math.max(0, b) * 0.3;
+    rig.legR.pivot.rotation.x = Math.max(0, -b) * 0.3;
+    rig.head.rotation.z = b * 0.12;
+    return;
+  }
   if (act === 'lean') {
     // back to the wall, head back, hands flat on the wall behind him
     rig.head.rotation.x = -0.35 + Math.sin(t * 2.6) * 0.05;

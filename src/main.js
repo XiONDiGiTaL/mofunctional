@@ -2,6 +2,8 @@
  * MO: FUNCTIONAL — entry point and game orchestrator.
  * Boots the 3D world, the HUD, the phone, saves, and the main loop.
  */
+import { startMarquee } from './ui/marquee.js';
+import { installHappenings } from './systems/happenings.js';
 import { shouldPop } from './ui/notify.js';
 import { wouldMiss } from './ui/today.js';
 import { CONFIG } from './core/config.js';
@@ -73,6 +75,9 @@ class Game {
     this.hud.show(false);
     this.modal = new Modal(this.uiEl, this);
     this.phone = new Phone(this.uiEl, this);
+    // the block: a blackout, a heat wave, a block party, and the marquee that says so
+    installHappenings(this);
+    startMarquee(this);
     this.laptop = new Laptop(this.uiEl, this);
     this.threads = new Threads(this.uiEl, this);
     this.menu = new Menu(this.uiEl, this);

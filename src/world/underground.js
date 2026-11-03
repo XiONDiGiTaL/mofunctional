@@ -17,6 +17,7 @@
  * Every builder returns the same shape as the other areas (group, bounds, solids, npcs,
  * interactables, spawn/spawnFor, tick).
  */
+import * as happen from '../systems/happenings.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
@@ -473,6 +474,22 @@ const pitOpen = (g) => { const m = minuteOfDay(g.state.clock.m); return m >= 22 
 
 /** On the train: pick a stop. The fare, the ride, a line about the ride, and the doors open somewhere else. */
 export function boardMenu(g, here) {
+  const s = g.state;
+  if (happen.isActive(s, 'transit')) {
+    g.openModal({
+      kicker: 'THE K TRAIN · SUSPENDED', title: 'No Trains',
+      body: 'A laminated sign, a man in an orange vest, and the words SHUTTLE BUS in a tone of voice. The shuttle comes "every few minutes."',
+      choices: [
+        { label: 'Wait for the shuttle bus.', sub: '+40 min · same fare', effect: () => { g.advance(40); bump(s, 'stress', 6); g.toast('Forty minutes, one bus, standing room only, and a man with a bicycle. You are on your way.', 'info'); setTimeout(() => boardMenuReal(g, here), 60); } },
+        { label: 'Never mind.', effect: () => {} },
+      ],
+    });
+    return;
+  }
+  boardMenuReal(g, here);
+}
+
+function boardMenuReal(g, here) {
   const s = g.state;
   const stops = SUB().stops.filter((st) => st.area !== here);
   g.openModal({

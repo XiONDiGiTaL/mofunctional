@@ -30,8 +30,14 @@ export function hoursLabel(area) {
   return `${hhmm(hrs[0] * 60)}–${hhmm((hrs[1] % 24) * 60)}`;
 }
 
+let override = null;
+/** Something on the block can close a place for a while (systems/happenings.js: a blackout). */
+export function setClosedOverride(fn) { override = fn; }
+
 /** For a door's prompt: null when open, otherwise the reason. */
 export function closedReason(area, m) {
+  const o = override?.(area, m);
+  if (o) return o;
   if (openAt(area, m)) return null;
   return `Closed · opens ${hhmm(HOURS[area][0] * 60)}`;
 }

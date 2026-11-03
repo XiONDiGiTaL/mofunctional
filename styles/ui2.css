@@ -1199,3 +1199,10 @@ button.relrow:hover { color: #ffd24a; }
 .modes__it b { font-size: 12px; color: #f0ffe8; }
 .modes__it span { font-size: 10px; line-height: 1.4; color: #9fb8a4; }
 .modes__it.on { border-color: #ffd23a; box-shadow: 0 0 0 1px #ffd23a inset; background: rgba(40,34,10,.7); }
+
+/* ------------------------------------------------------------------ the happenings marquee */
+.marquee { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); width: min(560px, 62vw); z-index: 40; overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg, #2a1a04, #120a02); border: 1px solid #ffd23a; border-radius: 6px; box-shadow: 0 0 18px rgba(255,210,58,.35), inset 0 0 8px rgba(0,0,0,.6); }
+.marquee__track { display: flex; width: max-content; animation: marquee 22s linear infinite; }
+.marquee__track span { white-space: nowrap; font: 700 11px/22px var(--mono, monospace); letter-spacing: .18em; color: #ffd23a; text-shadow: 0 0 6px rgba(255,210,58,.8); padding-right: 40px; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }

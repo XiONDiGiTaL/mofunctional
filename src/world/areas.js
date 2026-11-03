@@ -1,6 +1,7 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
 import { playShift } from '../systems/shiftplay.js';
 import * as home from '../systems/home.js';
+import * as happen from '../systems/happenings.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
@@ -755,6 +756,28 @@ export function buildStreet(g) {
     ...(Math.random() < 0.35 ? [{ kind: 'angel_m', x: 6, z: -2.0, walker: [-24, 30] }, { kind: 'angel_f', x: 7.2, z: -2.0, walker: [-24, 30] }] : []),
 
   ];
+  // the block party: a grill, a folding table, a speaker, and the whole block on the sidewalk
+  const partyOn = happen.isActive(g.state, 'party');
+  const partyIts = [];
+  if (partyOn) {
+    group.add(box(0.9, 0.9, 0.6, retroMaterial('bpgrill', { color: 0x1a1a1c }), [8.5, 0.45, -3.6]));
+    group.add(box(0.9, 0.04, 0.6, retroMaterial('bpcoals', { color: 0xc8401e, emissive: 0.8, unlit: true }), [8.5, 0.92, -3.6]));
+    group.add(box(1.8, 0.05, 0.8, retroMaterial('bptable', { color: 0xe8e4dc }), [11.2, 0.74, -3.8]));
+    group.add(box(0.5, 0.8, 0.45, retroMaterial('bpspeaker', { color: 0x141416 }), [13.5, 0.4, -4.4]));
+    for (let i = 0; i < 6; i++) group.add(box(0.5, 0.5, 0.02, retroMaterial(`bpflag${i % 3}`, { color: [0xc8281e, 0xe8c41e, 0x2a6aa8][i % 3] }), [6 + i * 2, 3.1, -5.8]));
+    life.push(
+      { kind: 'tenant_m', x: 8.5, z: -4.3, rot: Math.PI, still: true, act: 'talk' },
+      { kind: 'hall_f', x: 10.6, z: -3.0, rot: 0.6, still: true, act: 'dance' },
+      { kind: 'baller2', x: 12.2, z: -3.0, rot: -0.6, still: true, act: 'dance' },
+      { kind: 'tenant_f', x: 14.0, z: -3.2, rot: -1.2, still: true, act: 'talk' },
+      { kind: 'drifter', x: 9.8, z: -4.6, rot: 0.3, still: true, act: 'dice' },
+    );
+    partyIts.push(
+      { id: 'bp_grill', label: "Lou's grill", sub: `${money(2)} a plate · or help out`, x: 8.5, z: -2.9, radius: 1.3, action: (gg) => partyGrill(gg) },
+      { id: 'bp_dance', label: 'Dance by the speaker', sub: '+morale · everybody is', x: 13.0, z: -3.4, radius: 1.4, action: (gg) => { gg.world?.dance?.play?.(); setTimeout(() => gg.world?.dance?.stop?.(), 8000); gg.advance(20); bump(gg.state, 'morale', 8); bump(gg.state, 'stress', -6); gg.toast('The speaker plays something from 1994 and the whole block knows the words. So do you.', 'good'); } },
+      { id: 'bp_people', label: 'Talk to the neighbours', sub: 'a folding chair, a plate, an hour', x: 11.2, z: -3.1, radius: 1.3, action: (gg) => partyTalk(gg) },
+    );
+  }
   const npcs = [
     ...life,
     { kind: 'rae', x: -11.8, z: -3.6, rot: 0.4, talk: 'rae' },
@@ -768,6 +791,7 @@ export function buildStreet(g) {
   ];
 
   const interactables = [
+    ...partyIts,
     { id: 'apartmentDoor', label: 'Enter 1120 Kestrel St.', sub: 'Unit 3B · upstairs, allegedly', x: apt.door, z: STREET.doorZ, radius: 1.6, action: (gg) => apartmentDoor(gg) },
     { id: 'store', label: 'Enter Quik-Stop #14', sub: 'open 24 hrs · shop · clock in at the back', x: 1.5, z: STREET.doorZ, radius: 1.6, action: (gg) => gg.goTo('quikstop', 'street') },
     { id: 'alley', label: 'Step into the alley', sub: 'Dex is usually here', x: -3.6, z: -2.4, action: (gg) => dexMenu(gg) },
@@ -1881,6 +1905,32 @@ function parkHoops(g) {
   g.toast(good
     ? 'Three in a row. A kid on the next court says "aight" which is the highest honour available.'
     : 'The rim is bent and so is everything you throw at it. You still needed the air.', good ? 'good' : 'info');
+}
+
+/** The block party grill: a plate, or a shift at the grill for Lou. */
+function partyGrill(g) {
+  const s = g.state;
+  const h = s.happening || {};
+  g.openModal({
+    kicker: 'KESTREL ST · BLOCK PARTY', title: "Lou's Grill",
+    body: 'Lou has been at the grill since noon in an apron that says KISS THE COOK, and nobody has. Burgers, jerk chicken, corn, and something in foil he will not explain.',
+    choices: [
+      { label: `A plate. ${money(2)}.`, sub: '+food · +morale', disabled: s.money < 2, effect: () => { g.spendMoney(2, 'block party plate'); bump(s, 'hunger', -40); bump(s, 'morale', 5); g.advance(15); g.toast('A plate that bends in the middle. Best two dollars you will spend this year.', 'good'); } },
+      { label: 'Take over the grill for a while.', sub: h.prepared?.help ? '2 h · Lou is expecting you · $35 and plates' : '2 h · cash and plates', effect: () => { const pay = h.prepared?.help ? 35 : 22; g.advance(120); bump(s, 'energy', -10); bump(s, 'hunger', -30); bump(s, 'morale', 8); g.earnMoney(pay, 'block party grill'); s.npc = s.npc || {}; s.npc.block = (s.npc.block || 0) + 2; g.toast(`Two hours of smoke in your eyes and everybody on the block saying your name. Lou hands you ${money(pay)} and a foil tray for later.`, 'good'); } },
+      { label: 'Just smell it.', effect: () => {} },
+    ],
+  });
+}
+
+function partyTalk(g) {
+  const s = g.state;
+  const brought = s.happening?.prepared?.dish;
+  g.advance(60);
+  bump(s, 'morale', brought ? 10 : 6);
+  bump(s, 'stress', -8);
+  s.npc = s.npc || {};
+  s.npc.block = (s.npc.block || 0) + (brought ? 2 : 1);
+  g.toast(brought ? 'Your tray of rice is gone in twenty minutes. Gloria asks for the recipe. There is no recipe. You give her one anyway.' : pick(['An hour in a folding chair, dominoes slapping down, and Ray from 2A telling the same story about 1977. It is a good story.', 'Somebody\'s aunt makes you a plate without asking. Somebody\'s kid beats you at dominoes. You leave with a phone number for a man who "might have work."']), 'good');
 }
 
 /** Chess, against whoever is sitting there, with a bottle cap for a knight. */

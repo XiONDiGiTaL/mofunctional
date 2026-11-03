@@ -21,6 +21,7 @@ import { propertyNewDay } from './market.js';
 import { shopNewDay } from './shop.js';
 import { tickRide } from './rides.js';
 import { homeNewDay, sleepBonus } from './home.js';
+import { happeningsNewDay, happeningsTick, heatSleepPenalty } from './happenings.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -54,9 +55,11 @@ export function simulate(g, minutes, ctx = {}) {
       propertyNewDay(g, d);
       shopNewDay(g, d);
       homeNewDay(g, d);
+      happeningsNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
+    happeningsTick(g, step / 60);
     bidbayTick(g);
     sisterTick(g);
     healthTick(g, step / 60);
@@ -352,7 +355,8 @@ export function sleep(g, hours = 7) {
   const start = s.clock.m;
   g.advance(hours * 60, { sleeping: true, noCollapse: true });
   s.counters.sleeps = (s.counters.sleeps || 0) + 1;
-  bump(s, 'energy', 4 + sleepBonus(s) * hours);
+  bump(s, 'energy', 4 + (sleepBonus(s) - heatSleepPenalty(s)) * hours);
+  if (heatSleepPenalty(s)) g.toast('The heat sits on you all night like a second blanket. A fan would have helped.', 'bad');
   bump(s, 'stress', -6);
   logLine(g, `Slept ${hours}h.`, 'info');
   const woke = hhmm(s.clock.m);

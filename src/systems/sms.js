@@ -21,6 +21,7 @@ import * as life from './life.js';
 import { STRANGERS } from '../core/strangers.js';
 import * as sister from './sister.js';
 import * as health from './health.js';
+import * as happen from './happenings.js';
 
 /** Senders that are people, with the face the UI should draw. */
 const PEOPLE = {
@@ -224,7 +225,9 @@ function contextFor(id, message) {
  */
 export function replyOptions(message, s) {
   if (message?.choices?.length) {
-    return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect }));
+    // a choice may be a saved id (a happening's preparation, the inspector) instead of a function,
+    // so it still works after the game is saved and loaded again
+    return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect || (c.prep ? (gg) => happen.prepare(gg, c.prep) : c.inspect ? (gg) => happen.inspectionResult(gg, c.inspect) : undefined) }));
   }
   const id = identityFor(message?.from);
   // the woman who gave him the clap: he knows, now, and he can say so

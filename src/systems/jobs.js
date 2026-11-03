@@ -1,4 +1,5 @@
 /** Employment, shifts and odd jobs. */
+import { latenessForgiven } from './happenings.js';
 import { CONFIG } from '../core/config.js';
 import { dayOf, minuteOfDay, money, clamp } from '../core/util.js';
 import { earn, logLine, pushMessage, clock } from '../core/state.js';
@@ -51,6 +52,8 @@ export function workShift(g, play = null) {
     return false;
   }
   const minutesRemaining = Math.max(30, info.minutesLeft);
+  // late because the trains were down, and Dale was told: it does not count
+  if (info.late && latenessForgiven(s)) { info.late = false; g.toast('Late, but Dale knew about the trains. He waves you in.', 'info'); }
   const latePenalty = info.late ? 0.82 : 1;
   const startStats = { energy: s.stats.energy, stress: s.stats.stress };
 
