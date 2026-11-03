@@ -140,5 +140,6 @@ export function cookBatch(g) {
 }
 
 /** How much better a night's sleep is in this bed (extra energy per hour slept). */
-export const sleepBonus = (s) => (has(s, 'bed_new') ? 2.4 : has(s, 'mattress') ? 1.4 : 0);
+/** (and a building with working heat, after the tenants got it fixed, sleeps a little better too) */
+export const sleepBonus = (s) => (has(s, 'bed_new') ? 2.4 : has(s, 'mattress') ? 1.4 : 0) + (s.flags?.heatFixed ? 0.6 : 0);
 export const showerMinutes = (s) => (has(s, 'shower') ? 15 : 25);

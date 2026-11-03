@@ -209,7 +209,7 @@ export function buildApartment(g) {
     { id: 'laptop', label: 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
     { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -3.0, z: 2.4, action: (gg) => stashMenu(gg) },
     { id: 'closet', label: 'Open the closet', sub: 'what he owns · what he wears', x: -2.6, z: 0.2, radius: 0.9, action: (gg) => closetMenu(gg) },
-    { id: 'door', label: 'Leave the apartment', sub: 'go outside', x: 0, z: 3.9, action: (gg) => gg.goTo('street', 'apartment') },
+    { id: 'door', label: 'Out to the hall', sub: 'the third floor · the stairs · the neighbours', x: 0, z: 3.9, action: (gg) => gg.goTo('hall', 'apartment') },
   ];
   if (g.state.flags.cat) {
     interactables.push({ id: 'cat', label: 'Chairman', sub: 'pet him · or not', x: 0.9, z: 1.9, action: (gg) => {
@@ -1005,7 +1005,8 @@ function dumpster(g) {
 /** 1120's door: home, or a new lock and a note from Rae. */
 function apartmentDoor(g) {
   const s = g.state;
-  if (life.isHoused?.(s) !== false) { g.goTo('apartment', 'street'); return; }
+  // up the three flights to the third floor; Unit 3B is down the hall
+  if (life.isHoused?.(s) !== false) { g.advance(1); g.goTo('hall', 'street'); return; }
   const cost = life.rehouseCost(s);
   g.openModal({
     kicker: '1120 KESTREL ST. · UNIT 3B',

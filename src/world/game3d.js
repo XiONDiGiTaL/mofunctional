@@ -1,4 +1,5 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
+import { buildHall } from './hall.js';
 import { addOwe } from '../systems/owes.js';
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
@@ -39,7 +40,7 @@ import { sisterTarget } from '../systems/sister.js';
 import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
-  apartment: buildApartment, street: buildStreet, church: buildChurch,
+  apartment: buildApartment, street: buildStreet, church: buildChurch, hall: buildHall,
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
