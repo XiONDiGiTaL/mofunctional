@@ -91,6 +91,15 @@ New on Kestrel Street? Follow this and Mo makes it to Day 8 with his dignity mos
 
 ---
 
+## Ways to start
+
+The intro asks how the week begins. **Default** is the week as it comes. **Fresh Start** covers
+the rent but not the job. **Final Warning** keeps the job by one strike. **Family First** has more
+money and a list from Nia. **Bad Week** starts with a plumber's bill and closing shifts.
+**Getting By** is gentler, with rent covered and a little saved.
+
+---
+
 ## What "Functional" means
 
 The HUD tracks how Mo is doing. Keep these out of the red and he can handle almost anything.
@@ -214,6 +223,7 @@ Press `TAB`. Everything Mo does with money, people or plans goes through here.
 | **Amazin'** | Order things, they arrive tomorrow. |
 | **Blessed+** | The Fellowship's livestream. Give any day of the week: a gift pays your tithe first, then counts toward your standing with Addison. |
 | **Snapz** | The camera. Photos, selfies, and memories you unlock along the way. |
+| **Square Up** | Who owes who: money, a favour, an apology, a shift. Pay it, do it, or talk about it. |
 | **Tweaks** | Skins, scale, wallpaper, clock, notifications, sound and saves. |
 
 The home screen has tabs (Street, Money, Life, After Dark) and an ALL drawer with every app in
@@ -328,6 +338,25 @@ now, with a gate on the west end, a real hoop and four regulars running two-on-t
 next if your knees are up to it.
 
 Some nights are better spent at home with the door locked and a bowl of instant ramen.
+
+Shifts can be played instead of skipped: four things happen at the counter, from a short drawer
+to a kid walking out with a honey bun, and how you handle them counts for a little, never for
+everything.
+
+Unit 3B can get better. Fix the shower, buy a mattress, put a hot plate on the counter, drag a
+couch in from the curb, and with the Home Decorator's Guide from the newsstand, go further. The
+flat shows it. Your door opens onto the third-floor hall now, where the neighbours live and where
+the building can be organized: collect complaints, log the heat, hold a meeting, and go to Rae
+together.
+
+The block has its own weather: blackouts, heat waves, the trains down, a block party, a building
+inspection. Most of them come with a warning and a few ways to get ready, and a marquee runs
+across the top of the screen while they last.
+
+There is a music route for anybody with a notebook: write, record around the vacuum upstairs,
+burn ten CDs, and play Thursday's open mic at Lucia's. People have stories that take a few days
+(Kev, Nia, Habib, Gloria in 4B, Dale), and recovery has more to it than appointments: a support
+contact, evening routines, invitations you can leave early, and a way back after a bad night.
 
 Things to know about the street. The machines at Dee's give up a can if you hit them right.
 Cars do not like being punched, and some drivers get out. On Fulton you can step into the road,

@@ -151,13 +151,19 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         identity and replies), scheduler (weights, cooldowns), calls
                         (contacts, the keypad and its easter eggs), delivery (Miguel's
                         and Habib's courier), feedtalk (FeedLove comments, strangers,
-                        arguments), wardrobe (outfits, Jay's mail orders)
+                        arguments), wardrobe (outfits, Jay's mail orders), modes (the six opening
+                        problems), shiftplay (the playable Quik-Stop shift), home (repairs,
+                        upgrades, the leak), happenings (blackout, heat wave, trains, block party,
+                        inspection), owes (Square Up), music (write, record, open mic), arcs
+                        (multi-day stories), tenants (organizing the third floor), recovery
+                        (support contact, routines, invitations, the way back)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,
                         handoff (Rolo on the street + Mo's smile), animations
                         (substance use, collapse, dancing), patrol (the 911 cop), courier
                         (the delivery at 1120's door)
+                        hall (1120's third-floor hallway)
                         assailant (somebody running at Mo: a driver, a Guardian Angle)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits)
@@ -165,7 +171,7 @@ src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (
                         art), shopmenu, fridge, map, threads, modal, menu, themes,
                         debug (the hidden menu), arcade (the three cabinets at Dee's),
                         pinups (the mosaic pictures for LonelyFans and DialUpDelights)
-                        wallpapers (the home screen's pictures, Snapz photos, memories)
+                        wallpapers (the home screen's pictures, Snapz photos, memories), marquee (the happenings banner)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
 scripts/test-systems.mjs  headless system checks (npm test)
 scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)

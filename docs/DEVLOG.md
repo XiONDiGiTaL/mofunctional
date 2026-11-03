@@ -10,6 +10,39 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Seats that fit, ways to start, a shift to play, a home to fix, a block with weather, and the people in it
+
+- **Sitting.** `world.seatTop(x, z)` casts down at a seat and returns the real top of whatever is
+  there; Mo (`sit`) and seated NPCs (`pose: 'sit'` with no `y`, and Kev in the park scene) are
+  placed with their hips on it, instead of a fixed guess that sank them into benches.
+- **Modes.** `systems/modes.js`: Default, Fresh Start, Final Warning, Family First, Bad Week,
+  Getting By, picked on the intro screen and applied to the fresh state (`s.mode`).
+- **Playable shift.** `systems/shiftplay.js`: four counter situations from a pool of seven, each
+  scored; `workShift(g, { played, score })` turns the score into a small pay change, a tip from
+  Dale or at most one warning. "Work normally" stays.
+- **Home.** `systems/home.js`: repairs and practical upgrades (shower, mattress, fridge, hot plate
+  with batch cooking, a curb couch, the leak) and, with the Home Decorator's Guide from the
+  newsstand, decor (flatscreen, desktop, real bed, wallpaper, rug, lamp, plant). `buildApartment`
+  draws what is in `s.home.owned`; effects are shower time, sleep energy, morning morale.
+- **Happenings.** `systems/happenings.js` + `ui/marquee.js`: blackout, heat wave, transit,
+  block party, inspection. Scheduled ahead, foreshadowed by a text whose choices are saved ids
+  (`{ prep }`, `{ inspect }`, resolved in `sms.replyOptions`), and shown on a marquee while live.
+  `hours.setClosedOverride` closes shops for a blackout.
+- **Square Up.** `systems/owes.js` and a phone app: debts both ways (cash, item, help, apology,
+  shift), paid in full or part, done, renegotiated, or forgiven; fed by borrowing, calling out,
+  covering for Kev, Family First, Mom, and punching somebody you know.
+- **Music.** `systems/music.js`: notebook at home, Kev's four-track or a pawn mic, recording around
+  the building's noises, CDs, Thursday open mic at Lucia's, selling CDs on Ashby, studio time.
+- **Stories.** `systems/arcs.js`: Kev, Nia, Habib, Gloria, Dale, each a few texts over days
+  (`{ arc, opt }` choices), each with several humane endings.
+- **The building.** `world/hall.js`: 1120's third floor between the street and 3B (the door now
+  opens onto it). `systems/tenants.js`: knock, convince, log the heat, hold a meeting, go to Rae
+  alone or together; repairs and `flags.heatFixed` as the reward.
+- **Recovery.** `systems/recovery.js`: Dennis as a support contact, evening routines that grow
+  with practice, invitations (go, leave early, decline), a check-in back onto the course
+  (`flags.returnEarly`), and small messages when the clean days add up; a setback restarts the
+  count, never the history.
+
 ### Kicks, robes, cans, hats in the air, a dog in the park, and traffic with intent
 
 - **The park.** Kev's standing double is gone (calling him for a joint no longer puts two of him in
