@@ -473,7 +473,6 @@ export function buildAvenue(g) {
   };
   void 0; // the 84th Precinct stands at -12.5 (built below)
   facade(-4.5, 7, 9, 0x9a5a4a);
-  facade(3.0, 7, 14, 0xc8c0b0);
   facade(10.5, 7, 10, 0x8a8478);
   // Lucia's: green awning, a lit script sign, a menu in the window
   group.add(box(6.0, 0.16, 1.2, retroMaterial('av_awning', { color: 0x2a5a3a }), [-4.5, 3.0, -5.9]));
@@ -489,10 +488,70 @@ export function buildAvenue(g) {
   }
   group.add(plane(3.2, 0.6, { name: 'av_pctsign', map: signTex('signPct', [{ text: '84TH PRECINCT', color: '#f2f2f0', size: 11 }, { text: 'POLICE · COURTESY · PROFESSIONALISM · PAPERWORK', color: '#b8c8e8', size: 5 }], { w: 160, h: 28, bg: '#1e2a4a', border: '#b8c8e8' }), emissive: 0.9, unlit: true }, [-12.5, 3.0, -6.3]));
   for (let i = 0; i < 3; i++) group.add(box(2.4 - i * 0.3, 0.12, 0.4, M.concrete, [-12.5, 0.06 + i * 0.12, -5.9 + i * 0.3]));
-  // Dee's Wash & Fold: a wide lit window full of machines, a sign in blue script
-  group.add(box(1.2, 2.3, 0.12, retroMaterial('av_lmdoor', { color: 0x4a6a8a }), [5.0, 1.15, -6.32]));
-  group.add(box(2.8, 1.6, 0.06, retroMaterial('av_lmwin', { color: 0xbfe0f0, emissive: 0.6, unlit: true }), [2.4, 1.4, -6.33]));
-  group.add(plane(3.6, 0.6, { name: 'av_lmsign', map: signTex('signLaundry', [{ text: "DEE'S WASH & FOLD", color: '#bfe8ff', size: 10 }, { text: 'COIN OP · DROP OFF · OPEN 6AM-MIDNIGHT', color: '#ffffff', size: 5 }], { w: 160, h: 28, bg: '#1a3a5a', border: '#bfe8ff' }), emissive: 1, unlit: true }, [3.6, 2.8, -6.3]));
+  // Dee's Wash & Fold: a two-storey red-brick front. A white cornice and AC units up top,
+  // brown-framed windows upstairs, a blue LAUNDROMAT band, and at street level an aluminium
+  // storefront: a long display window with the washers lined up behind the glass, glass double
+  // doors, a stone kick plate, decals. A red fire escape down the side, a green dumpster by it.
+  {
+    const lx = 3.0, fz = -6.4;
+    const brick = retroMaterial('av_lmbrick', { map: tex('brick'), color: 0xb8603e });
+    const alu = retroMaterial('av_lmalu', { color: 0xd8dce0, ambient: 0.9 });
+    const stone = retroMaterial('av_lmstone', { map: tex('concrete'), color: 0xb8b4aa });
+    group.add(box(7, 9.2, 1.2, brick, [lx, 4.6, -7.0]));
+    group.add(box(7.5, 0.35, 1.5, retroMaterial('av_lmcornice', { color: 0xe8e4dc }), [lx, 9.25, -6.95]));
+    group.add(box(7.3, 0.15, 1.35, retroMaterial('av_lmcornice2', { color: 0xc8c4bc }), [lx, 9.0, -6.9]));
+    for (const ax of [1.0, 3.6, 5.2]) group.add(box(0.8, 0.5, 0.6, retroMaterial('av_lmac', { color: 0xd8d8d4 }), [ax, 9.7, -7.1]));
+    // upstairs: brown frames, stone sills, on two floors
+    for (const fy of [4.6, 7.1]) for (const wx of [1.2, 4.8]) {
+      group.add(box(1.3, 1.7, 0.08, retroMaterial('av_lmframe', { color: 0x6a3a22 }), [wx, fy, fz + 0.02]));
+      group.add(plane(1.05, 1.45, { name: 'av_lmupwin', map: tex('window'), emissive: 0.3, unlit: true }, [wx, fy, fz + 0.07]));
+      group.add(box(1.4, 0.1, 0.2, stone, [wx, fy - 0.9, fz + 0.1]));
+    }
+    // the sign band, lit, with a white frame
+    group.add(box(6.0, 0.95, 0.16, retroMaterial('av_lmband', { color: 0x2a7ac8, emissive: 0.4 }), [lx, 3.05, fz + 0.1]));
+    group.add(plane(5.8, 0.85, { name: 'av_lmsign', map: signTex('signLaundry2', [{ text: 'LAUNDROMAT', color: '#ffffff', size: 15 }, { text: "DEE'S WASH & FOLD · OPEN 6 AM TO MIDNIGHT", color: '#e8f4ff', size: 5 }], { w: 192, h: 32, bg: '#2a7ac8', border: '#ffffff' }), emissive: 1, unlit: true }, [lx, 3.05, fz + 0.19]));
+    // the storefront: a back panel that is the lit laundromat, washers and dryers behind the glass
+    group.add(box(6.0, 2.3, 0.04, retroMaterial('av_lmback', { map: tex('tile'), color: 0x8ab4c8, emissive: 0.3, unlit: true }), [lx, 1.4, fz + 0.03]));
+    for (const mx of [0.6, 1.4, 2.2, 3.0, 3.8]) {
+      group.add(box(0.7, 0.8, 0.22, retroMaterial('av_lmwasher', { color: 0xf4f4f2 }), [mx, 1.0, fz + 0.16]));
+      const port = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 14), retroMaterial('av_lmporthole', { color: 0x3a4a5a, emissive: 0.1 }));
+      port.rotation.x = Math.PI / 2;
+      port.position.set(mx, 0.95, fz + 0.28);
+      group.add(port);
+      group.add(box(0.7, 0.1, 0.22, retroMaterial('av_lmpanel', { color: 0x9aa4ac }), [mx, 1.45, fz + 0.16]));
+      group.add(box(0.7, 0.6, 0.2, retroMaterial('av_lmdryer', { color: 0xd8dce0 }), [mx, 1.9, fz + 0.12]));
+    }
+    // glass over it all, aluminium mullions, a stone base under the windows, decals
+    group.add(plane(4.2, 1.95, { name: 'av_lmglass', color: 0xc8e8f8, opacity: 0.22, transparent: true, emissive: 0.3 }, [2.1, 1.45, fz + 0.32]));
+    for (const mx of [-0.05, 2.1, 4.25]) group.add(box(0.08, 2.0, 0.1, alu, [mx, 1.45, fz + 0.32]));
+    group.add(box(4.4, 0.08, 0.12, alu, [2.1, 2.45, fz + 0.32]));
+    group.add(box(4.4, 0.08, 0.12, alu, [2.1, 0.47, fz + 0.32]));
+    group.add(box(4.5, 0.45, 0.4, stone, [2.1, 0.22, fz + 0.22]));
+    group.add(box(1.0, 0.45, 0.4, stone, [6.0, 0.22, fz + 0.22]));
+    group.add(plane(1.3, 0.3, { name: 'av_lmdecal', map: signTex('lmDecal', [{ text: 'SELF SERVICE', color: '#ffffff', size: 7 }, { text: 'WASH · DRY · FOLD', color: '#ffe23a', size: 5 }], { w: 72, h: 18, bg: '#2a7ac8', border: '#2a7ac8' }), emissive: 0.6, unlit: true }, [0.9, 2.1, fz + 0.34]));
+    group.add(plane(0.8, 0.28, { name: 'av_lmopen', map: signTex('lmOpen', [{ text: 'OPEN LATE', color: '#ff5a8a', size: 8 }], { w: 48, h: 16, bg: '#1a1a2a', border: '#ff5a8a' }), emissive: 1, unlit: true }, [3.5, 2.1, fz + 0.34]));
+    // the double glass doors, framed in aluminium, push bars, the hours on the glass
+    for (const dx of [-0.29, 0.29]) {
+      group.add(box(0.56, 2.25, 0.06, retroMaterial('av_lmdoorglass', { color: 0xc8e8f8, opacity: 0.45, transparent: true, emissive: 0.3 }), [5.0 + dx, 1.13, fz + 0.12]));
+      group.add(box(0.4, 0.05, 0.05, alu, [5.0 + dx, 1.1, fz + 0.18]));
+    }
+    for (const dx of [-0.6, 0, 0.6]) group.add(box(0.07, 2.3, 0.1, alu, [5.0 + dx, 1.15, fz + 0.14]));
+    group.add(box(1.3, 0.08, 0.1, alu, [5.0, 2.3, fz + 0.14]));
+    group.add(box(1.25, 0.35, 0.05, retroMaterial('av_lmtransom', { color: 0xdcecf4, emissive: 0.6, unlit: true }), [5.0, 2.55, fz + 0.1]));
+    group.add(plane(0.5, 0.18, { name: 'av_lmhours', map: signTex('lmHours', [{ text: '6AM - 12AM', color: '#ffffff', size: 6 }], { w: 40, h: 12, bg: '#2a7ac8', border: '#2a7ac8' }), emissive: 0.6, unlit: true }, [5.29, 1.6, fz + 0.17]));
+    // the fire escape: red platforms and rails up the right edge, a ladder between them
+    const red = retroMaterial('av_lmescape', { color: 0xc8261e });
+    for (const py of [4.0, 6.5]) {
+      group.add(box(1.4, 0.06, 0.8, red, [5.9, py, fz + 0.45]));
+      group.add(box(1.4, 0.05, 0.05, red, [5.9, py + 0.9, fz + 0.84]));
+      for (const rx of [5.25, 5.9, 6.55]) group.add(box(0.04, 0.9, 0.04, red, [rx, py + 0.45, fz + 0.84]));
+      group.add(box(0.05, 0.9, 0.8, red, [6.58, py + 0.45, fz + 0.45]));
+    }
+    for (const lxx of [6.3, 6.5]) group.add(box(0.04, 2.6, 0.04, red, [lxx, 5.25, fz + 0.6], [0.35, 0, 0]));
+    // the dumpster by the side, green, lid half up
+    group.add(box(1.2, 0.9, 0.8, retroMaterial('av_lmdump', { color: 0x3a8a4a }), [6.95, 0.45, -5.9]));
+    group.add(box(1.25, 0.06, 0.85, retroMaterial('av_lmdumplid', { color: 0x2a6a3a }), [6.95, 0.98, -6.05], [-0.4, 0, 0]));
+  }
   // the pawn shop, gold letters on black
   group.add(box(1.1, 2.3, 0.12, M.door, [10.5, 1.15, -6.32]));
   group.add(plane(3.0, 0.6, { name: 'av_psign', map: signTex('signPawn', [{ text: 'ASHBY PAWN & GOLD', color: '#ffd23a', size: 10 }, { text: 'WE BUY ANYTHING (ALMOST)', color: '#e8e0c0', size: 6 }], { w: 128, h: 28, bg: '#0e0e0e', border: '#ffd23a' }), emissive: 1, unlit: true }, [10.5, 3.0, -6.3]));
@@ -676,7 +735,7 @@ export function buildAvenue(g) {
     ]), 'info');
   };
   // shutters down over the laundromat and the pawn shop after hours, and a tagged box on the curb
-  if (closedReason('laundromat', g.state.clock.m)) paintedShutter(group, 5.0, -6.3, 1.6, 2.4, 5021);
+  if (closedReason('laundromat', g.state.clock.m)) { paintedShutter(group, 5.0, -6.22, 1.4, 2.4, 5021); paintedShutter(group, 2.1, -5.95, 4.5, 2.5, 5022); }
   { const pm = minuteOfDay(g.state.clock.m); if (pm < 10 * 60 || pm > 20 * 60) paintedShutter(group, 10.5, -6.3, 1.6, 2.4, 1051); }
   const ubox = utilityBox(group, -6.0, 0.6, 6061);
   // the west end opens onto Myrtle Row
@@ -688,7 +747,7 @@ export function buildAvenue(g) {
     bounds: { minX: -15.5, maxX: 15.5, minZ: -5.6, maxZ: 1.3 },
     camBounds: { minX: -17, maxX: 17, minZ: -5.6, maxZ: 9 },
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
-    solids: [ubox, solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3), solid(16.95, -0.4, 3.9, 3.0, 1.1)],
+    solids: [ubox, solid(6.95, -5.9, 1.2, 0.8, 1.0), solid(2.1, -6.0, 4.5, 0.4, 2.5), solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3), solid(16.95, -0.4, 3.9, 3.0, 1.1)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
     spawnFor: (from) => (from === 'row' ? { x: -14.0, z: -1.6, rot: Math.PI / 2 } : from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'pawn' ? { x: 10.5, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.1, z: -0.4, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,

@@ -10,6 +10,15 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Dee's storefront
+
+- The laundromat on Ashby Avenue (`buildAvenue`) is a two-storey red-brick front now: a white
+  cornice and AC units, brown-framed upstairs windows on stone sills, a lit blue LAUNDROMAT band
+  ("DEE'S WASH & FOLD · OPEN 6 AM TO MIDNIGHT"), an aluminium storefront with washers (portholes)
+  and dryers behind the glass on blue tile, SELF SERVICE and OPEN LATE decals, glass double doors
+  with push bars and the hours, a stone kick plate, a red fire escape and a green dumpster (solid).
+  After hours, painted shutters cover both the doors and the window.
+
 ### Scene cuts, NPCs that run like people, break-ins, and the brownstone
 
 - **`Game.sceneCut({ caption, hold, run })`** (main.js): fade to black, a held caption, `run` moves
