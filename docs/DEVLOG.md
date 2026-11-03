@@ -10,6 +10,25 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Graffiti and walls
+
+- **`world/walls.js`**: `SPOTS` per area key (`street`, `row`, `avenue`, `subway` platform and
+  tunnel wall, `projects`, `roof1120`, `roof1104` via `areaKey`), each `[x, z, y, rotY, w, h,
+  kind]` with kind `big` or `small`. `paintArt(seed, style, age)` draws six styles on nearest-
+  filtered canvases (`piece` with a cloud and a stepped shadow, `throw`, `tag`, `stencil`,
+  `sticker`, `poster`), invented crews and events only, fading with age. `wallArt` builds a spot's
+  planes: an optional grey buff patch under the piece, `set(progress)` reveal, `buff(progress)`
+  roller band. `wallList` seeds a run's walls (about 70% of spots, already aged); old saves' lists
+  carry on. `wallsNewDay` (from `needs.js`): new paint overnight (30% per area), the city buffs one
+  (12%), and a buffed patch gets painted over after a few days.
+- **Shutters** (`shutter`) come down over closed doors, always painted: the bodega, Habib's and
+  the clinic on Kestrel; 99¢ Dreams, the botanica and the barber on the Row; the laundromat and
+  the pawn shop on the Ave. **Utility boxes** (`utilityBox`) on the curb, tagged, with solids.
+- **Incidents**: writers now paint through `wallArt` (preferring a grey patch); a daytime `buff`
+  event walks a worker (`buffer`: orange vest, cap, a roller on a pole) to a piece and rolls it
+  grey; wall events also run on the platform, at the Houses and on the roofs. Papi mentions buffs.
+- Speech barks are half the size they were.
+
 ### Myrtle Row, a street that lives without Mo, and Day One with Ma
 
 - **Wallpaper**: `assets/img/wallpapers/firstday_mom.jpg` (Mo and his mother on his first day at

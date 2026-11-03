@@ -28,6 +28,7 @@ import { happeningsNewDay, happeningsTick, heatSleepPenalty } from './happenings
 import { supplyNewDay } from './supply.js';
 import { herNewDay } from '../world/herplace.js';
 import { raeNewDay } from './rae.js';
+import { wallsNewDay } from '../world/walls.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -68,6 +69,7 @@ export function simulate(g, minutes, ctx = {}) {
       supplyNewDay(g, d);
       herNewDay(g, d);
       raeNewDay(g, d);
+      wallsNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);

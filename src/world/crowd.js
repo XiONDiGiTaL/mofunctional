@@ -223,7 +223,7 @@ export function bark(rig, text, secs = 2.5) {
   tex.magFilter = THREE.NearestFilter;
   tex.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-  sp.scale.set(w / 110, 40 / 110, 1);
+  sp.scale.set(w / 210, 40 / 210, 1);
   sp.position.set(0, 2.15, 0);
   sp.renderOrder = 10;
   rig.root.add(sp);

@@ -294,6 +294,10 @@ export const FACE_SPECS = {
     brow: '#6a4a2a', eye: '#4a5a6a', lips: '#a8705e', lipsLight: '#c48a76', age: 0.55, glasses: true,
   },
   // the man in the alley at night, the two in the 1104 stairwell, the police
+  buffer: {
+    skin: '#9a6a4a', hair: '#1a1410', hairLight: '#3a2e24', hairDark: '#0a0806', style: 'short',
+    brow: '#1a1410', eye: '#2a1e14', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#1a1410', age: 0.6,
+  },
   sal: {
     skin: '#d8a888', hair: '#2a2420', hairLight: '#4a403a', hairDark: '#141010', style: 'receding',
     brow: '#2a2420', eye: '#3a2a1e', lips: '#9a5a4a', lipsLight: '#b87262', beard: 'mustache', beardColor: '#2a2420', age: 0.7, jaw: 1.08,

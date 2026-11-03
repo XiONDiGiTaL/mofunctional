@@ -3,6 +3,7 @@ import * as supply from '../systems/supply.js';
 import * as okafor from '../systems/okafor.js';
 import * as herplace from './herplace.js';
 import * as rae from '../systems/rae.js';
+import { shutter, utilityBox } from './walls.js';
 import { tvTexture, tvTick, openTv } from '../ui/tv.js';
 import * as papi from '../systems/papi.js';
 import { b1120 } from './hall.js';
@@ -963,6 +964,10 @@ export function buildStreet(g) {
     { kind: 'junkie', x: -12.4, z: -4.2, rot: 2.2, talk: 'junkie' },
   ];
 
+  // after hours the shutters come down over the shop doors, painted like every shutter on the block
+  for (const b of BUILDINGS) if (['bodega', 'habibs', 'clinic'].includes(b.area) && closedReason(b.area, g.state.clock.m)) shutter(group, b.door, STREET.frontZ + 0.06, 1.6, 2.4, Math.round(b.door * 97 + 13) >>> 0);
+  const uboxes = [utilityBox(group, -17.5, 0.75, 3121), utilityBox(group, 16.8, 0.75, 8087)];
+
   // the hookah setup: a folding chair, a small brass-topped table, the hookah on it, a glass of tea
   const chairAt = (x, z, rot) => {
     const c = new THREE.Group();
@@ -1054,6 +1059,7 @@ export function buildStreet(g) {
       solid(-5.0, 0.9, 0.5, 0.5, 0.65),
       solid(-6.2, -4.7, 0.9, 0.9), solid(8.8, -4.7, 0.9, 0.9), solid(17.6, -4.7, 0.9, 0.9),
       solid(7.2, -4.9, 0.5, 0.5, 0.9), solid(-6.6, -4.9, 0.5, 0.5, 0.9), solid(4.2, 1.1, 0.3, 0.3),
+      ...uboxes,
       solid(-13.65, -0.4, 3.9, 3.0, 1.1), // the station stair: railings on three sides, in only at the mouth
     ],
     spawn: streetSpawn('apartment'),

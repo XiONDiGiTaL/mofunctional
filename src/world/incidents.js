@@ -24,92 +24,16 @@ import { faceSpec } from '../render/heads.js';
 import { bump, logLine } from '../core/state.js';
 import { minuteOfDay, dayOf, pick, money } from '../core/util.js';
 import { bark } from './crowd.js';
+import { SPOTS, areaKey, wallList, wallArt } from './walls.js';
 
 const WHERE = new Set(['street', 'row', 'avenue', 'parkslope']);
-const AREA_NAME = { street: 'Kestrel', row: 'Myrtle Row', avenue: 'Ashby Avenue', parkslope: '7th Avenue' };
-
-/** Where a wall can take a piece, per area: x, the wall's z, the height of the middle. */
-const WALLS = {
-  street: [[-7.8, -6.42, 1.5], [6.6, -6.42, 1.6], [26.5, -6.42, 1.5], [-23.8, -6.42, 1.4]],
-  row: [[-16.8, -6.36, 1.5], [0.6, -6.36, 1.6], [11.0, -6.36, 1.4], [21.4, -6.36, 1.5]],
-  avenue: [[-8.0, -6.36, 1.5], [1.0, -6.36, 1.5]],
-};
+// walls with paint, where only the wall events happen (writers, the buff crew)
+const WALL_ONLY = new Set(['subway', 'projects', 'roof']);
+const AREA_NAME = { street: 'Kestrel', row: 'Myrtle Row', avenue: 'Ashby Avenue', parkslope: '7th Avenue', subway: 'the Kestrel platform', projects: 'the Houses', roof: 'the roof' };
 
 export function log(s, what) {
   s.worldLog = (s.worldLog || []).slice(-19);
   s.worldLog.push({ day: dayOf(s.clock.m), ...what });
-}
-
-/* ------------------------------------------------------------------ graffiti art */
-
-const CREWS = ['KROME', 'SNEAK9', 'DUSTER', 'ZEPH', 'WAKE', 'TOMO', 'LUXE', 'DREAMR', 'KSB', 'NITE', 'RUBIX', 'OWLS'];
-const PALETTE = [['#ff3a6a', '#ffe23a'], ['#3ad8ff', '#2a2aa8'], ['#7aff5a', '#1a6a2a'], ['#ff8a2a', '#8a1e1e'], ['#c85aff', '#ffe0ff'], ['#f2f2f2', '#1a1a1a']];
-
-function rng(seed) {
-  let t = seed >>> 0;
-  return () => { t = (t + 0x6d2b79f5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
-}
-
-/** Paint a piece onto a 2D canvas: a throw-up (fat letters, outline, drips) or a tag. */
-function paint(seed) {
-  const r = rng(seed);
-  const cv = document.createElement('canvas');
-  cv.width = 192; cv.height = 80;
-  const c = cv.getContext('2d');
-  const name = CREWS[Math.floor(r() * CREWS.length)];
-  const [fill, out] = PALETTE[Math.floor(r() * PALETTE.length)];
-  const style = r();
-  c.textAlign = 'center';
-  c.textBaseline = 'middle';
-  if (style < 0.6) {
-    // a throw-up: fat, leaning letters with a thick outline and a highlight, drips underneath
-    c.font = `900 ${44 + Math.floor(r() * 10)}px Impact, "Arial Black", sans-serif`;
-    c.save();
-    c.translate(96, 40);
-    c.rotate((r() - 0.5) * 0.18);
-    c.lineJoin = 'round';
-    c.lineWidth = 12; c.strokeStyle = '#111'; c.strokeText(name, 0, 0);
-    c.lineWidth = 7; c.strokeStyle = out; c.strokeText(name, 0, 0);
-    c.fillStyle = fill; c.fillText(name, 0, 0);
-    c.fillStyle = 'rgba(255,255,255,.55)';
-    c.fillRect(-70, -14, 140, 3);
-    c.restore();
-    c.fillStyle = fill;
-    for (let i = 0; i < 6; i++) c.fillRect(30 + r() * 130, 58, 2, 6 + r() * 14);
-    if (r() < 0.5) { c.fillStyle = '#ffe23a'; c.font = '900 16px sans-serif'; c.fillText('★', 172, 14); }
-  } else {
-    // a tag: quick, slanted, one colour, an underline swoosh
-    c.font = `italic 700 ${30 + Math.floor(r() * 8)}px "Brush Script MT", "Comic Sans MS", cursive`;
-    c.fillStyle = fill;
-    c.save(); c.translate(96, 36); c.rotate(-0.12); c.fillText(`${name.toLowerCase()}${Math.floor(r() * 99)}`, 0, 0); c.restore();
-    c.strokeStyle = fill; c.lineWidth = 3;
-    c.beginPath(); c.moveTo(40, 62); c.quadraticCurveTo(100, 48, 160, 60); c.stroke();
-  }
-  return { cv, name };
-}
-
-/** A piece on a wall: a plane with a canvas that can be revealed left to right (`progress`). */
-function piece(world, spot, seed, progress = 1) {
-  const { cv, name } = paint(seed);
-  const show = document.createElement('canvas');
-  show.width = cv.width; show.height = cv.height;
-  const t = new THREE.CanvasTexture(show);
-  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
-  t.colorSpace = THREE.SRGBColorSpace;
-  const mesh = plane(2.4, 1.0, retroMaterial(`graf_${seed}`, { map: t, transparent: true, alphaTest: 0.05, ambient: 0.8 }), [spot[0], spot[2], spot[1] + 0.04]);
-  world.root.add(mesh);
-  const p = {
-    mesh, name,
-    set(v) {
-      const c = show.getContext('2d');
-      c.clearRect(0, 0, show.width, show.height);
-      const w = Math.max(0, Math.min(1, v)) * cv.width;
-      if (w > 0) c.drawImage(cv, 0, 0, w, cv.height, 0, 0, w, cv.height);
-      t.needsUpdate = true;
-    },
-  };
-  p.set(progress);
-  return p;
 }
 
 /* ------------------------------------------------------------------ the director */
@@ -126,42 +50,54 @@ export class Incidents {
   onLoad(g, areaId) {
     this.clear();
     const s = g.state;
-    const spots = WALLS[areaId];
-    if (!spots) return;
-    s.graffiti = s.graffiti || {};
-    // every wall starts a run with something on it already: old pieces, faded into the brick
-    if (!s.graffiti[areaId]) s.graffiti[areaId] = spots.slice(0, 2).map((sp, i) => ({ i: spots.indexOf(sp), seed: (areaId.length * 977 + i * 131) >>> 0, p: 1 }));
-    for (const gp of s.graffiti[areaId]) {
-      const sp = spots[gp.i];
-      if (sp) this.pieces.push(piece(this.world, sp, gp.seed, gp.p));
+    const key = areaKey(s, areaId);
+    const spots = SPOTS[key];
+    const list = wallList(s, key);
+    if (!spots || !list) return;
+    const day = dayOf(s.clock.m);
+    for (const rec of list) {
+      const sp = spots[rec.i];
+      if (sp) this.pieces.push({ rec, art: wallArt(this.world.root, sp, rec, day) });
     }
+  }
+
+  /** Take one spot's art down and put its record back up (after a change). */
+  redraw(g, item) {
+    item.art.group.parent?.remove(item.art.group);
+    const sp = SPOTS[areaKey(g.state, this.world.areaId)][item.rec.i];
+    item.art = wallArt(this.world.root, sp, item.rec, dayOf(g.state.clock.m));
   }
 
   clear() {
     for (const r of this.cur?.rigs || []) { r.root.parent?.remove(r.root); this.world.npcRigs = this.world.npcRigs.filter((x) => x !== r); }
     if (this.cur?.car) this.cur.car.stopAt = null;
     this.cur = null;
-    for (const p of this.pieces) p.mesh.parent?.remove(p.mesh);
+    for (const p of this.pieces) p.art.group.parent?.remove(p.art.group);
     this.pieces = [];
   }
 
   update(dt, g) {
     const w = this.world;
     if (this.cur) { this.cur.step(dt, g); return; }
-    if (!WHERE.has(w.areaId) || g.uiBusy) return;
+    if ((!WHERE.has(w.areaId) && !WALL_ONLY.has(w.areaId)) || g.uiBusy) return;
     this.next -= dt;
     if (this.next > 0 || w.duel?.active || w.chaseRig || w.cutscene) return;
     this.next = 90 + Math.random() * 120;
     const m = minuteOfDay(g.state.clock.m);
     const night = m >= 21 * 60 || m < 5 * 60;
     const options = [];
-    if (!night || Math.random() < 0.3) options.push('purse');
-    options.push('stop');
-    if (night && WALLS[w.areaId]) options.push('graffiti', 'graffiti');
+    const walls = !!SPOTS[areaKey(g.state, w.areaId)];
+    if (WHERE.has(w.areaId)) {
+      if (!night || Math.random() < 0.3) options.push('purse');
+      options.push('stop');
+    }
+    if (night && walls) options.push('graffiti', 'graffiti');
+    if (!night && walls && this.pieces.some((p) => !p.rec.buffed)) options.push('buff');
     const kind = pick(options);
     if (kind === 'purse') this.purse(g);
     else if (kind === 'stop') this.stop(g);
-    else this.graffiti(g);
+    else if (kind === 'buff') this.buff(g);
+    else if (kind === 'graffiti') this.graffiti(g);
   }
 
   spawn(kind, x, z, extra = {}) {
@@ -353,35 +289,39 @@ export class Incidents {
   graffiti(g) {
     const w = this.world;
     const s = g.state;
-    const spots = WALLS[w.areaId];
-    if (!spots) return;
-    s.graffiti = s.graffiti || {};
-    const list = s.graffiti[w.areaId] = s.graffiti[w.areaId] || [];
-    const i = Math.floor(Math.random() * spots.length);
-    const sp = spots[i];
-    // a new piece goes over whatever was there
-    const old = list.findIndex((x) => x.i === i);
-    if (old >= 0) { list.splice(old, 1); const pc = this.pieces.splice(old, 1)[0]; pc?.mesh.parent?.remove(pc.mesh); }
-    const rec = { i, seed: Math.floor(Math.random() * 1e9), p: 0 };
-    list.push(rec);
-    const pc = piece(w, sp, rec.seed, 0);
-    this.pieces.push(pc);
-    const writer = this.spawn(pick(['passer_m2', 'w11', 'hall_m']), sp[0] - 0.4, sp[1] + 0.75);
-    const look = this.spawn(pick(['passer_m', 'w3', 'tenant_m']), sp[0] + 1.6, sp[1] + 1.9);
-    writer.root.rotation.y = Math.PI;
+    const key = areaKey(s, w.areaId);
+    const spots = SPOTS[key];
+    const list = wallList(s, key);
+    if (!spots || !list) return;
+    // a big wall, preferably a grey patch the city left (that is an invitation)
+    const big = spots.map((sp, i) => [sp, i]).filter(([sp]) => sp[6] !== 'small');
+    const patches = big.filter(([, i]) => list.find((r) => r.i === i)?.buffed);
+    const [sp, i] = pick(patches.length ? patches : big);
+    const day = dayOf(s.clock.m);
+    const oldIdx = list.findIndex((x) => x.i === i);
+    const rec = { i, seed: Math.floor(Math.random() * 1e9), p: 0, day, age0: 0, patch: oldIdx >= 0 && !!(list[oldIdx].buffed || list[oldIdx].patch) };
+    if (oldIdx >= 0) list.splice(oldIdx, 1, rec); else list.push(rec);
+    const old = this.pieces.findIndex((x) => x.rec.i === i);
+    if (old >= 0) { this.pieces[old].art.group.parent?.remove(this.pieces[old].art.group); this.pieces.splice(old, 1); }
+    const item = { rec, art: wallArt(w.root, sp, rec, day) };
+    this.pieces.push(item);
+    const nx = Math.sin(sp[3] || 0), nz = Math.cos(sp[3] || 0);
+    const writer = this.spawn(pick(['passer_m2', 'w11', 'hall_m']), sp[0] + nx * 0.75, sp[1] + nz * 0.75);
+    const look = this.spawn(pick(['passer_m', 'w3', 'tenant_m']), sp[0] + nx * 1.9 + nz * 1.6, sp[1] + nz * 1.9 - nx * 1.6);
+    writer.root.rotation.y = (sp[3] || 0) + Math.PI;
     writer.armR.elbow.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.06), retroMaterial('inc_can', { color: 0xc8c8cc })).translateY(-0.33));
     const ev = { kind: 'graffiti', rigs: [writer, look], phase: 'paint', t: 0 };
+    const along = (v) => { const off = (v - 0.5) * (sp[4] || 2.4) * 0.8; writer.root.position.set(sp[0] + nx * 0.75 + Math.cos(sp[3] || 0) * off, 0, sp[1] + nz * 0.75 - Math.sin(sp[3] || 0) * off); };
     ev.step = (dt, gg) => {
       ev.t += dt;
       if (ev.phase === 'paint') {
         // the arm sweeps across the wall; the piece fills in behind it
         rec.p = Math.min(1, rec.p + dt / 26);
-        pc.set(rec.p);
-        writer.root.position.x = sp[0] - 1.0 + rec.p * 2.0;
+        item.art.set(rec.p);
+        along(rec.p);
         writer.armR.pivot.rotation.x = -1.7 + Math.sin(ev.t * 5) * 0.25;
         writer.armR.pivot.rotation.z = Math.sin(ev.t * 3) * 0.3;
         look.root.rotation.y = Math.sin(ev.t * 0.7) * 1.4;
-        look.armL.pivot.rotation.x = 0;
         if (Math.random() < dt * 0.6) gg.audio?.sfx?.('puff');
         if (w.copSees?.(18) || (w.patrol?.cops || []).length) {
           bark(look, pick(['Five-oh! Go go go!', 'Cops! Move!']), 2);
@@ -395,13 +335,63 @@ export class Incidents {
       if (ev.phase === 'run') {
         const b = w.area.bounds;
         const ex = writer.root.position.x > (b.minX + b.maxX) / 2 ? b.maxX - 0.3 : b.minX + 0.3;
-        const a = this.walkTo(writer, ex, -1.0, 3.0, dt);
-        const c = this.walkTo(look, ex, -0.4, 3.0, dt);
-        if ((a && c) || ev.t > 15) {
-          log(gg.state, { what: 'graffiti', where: w.areaId, done: rec.p >= 1, name: pc.name });
+        const ez = Math.max(b.minZ + 0.4, Math.min(b.maxZ - 0.4, writer.root.position.z));
+        const a1 = this.walkTo(writer, ex, ez, 3.0, dt);
+        const c1 = this.walkTo(look, ex, ez + 0.6, 3.0, dt);
+        if ((a1 && c1) || ev.t > 15) {
+          log(gg.state, { what: 'graffiti', where: w.areaId, done: rec.p >= 1, name: item.art.name });
           this.end();
         }
       }
+    };
+    this.cur = ev;
+  }
+
+  /* ---------------------------------------------- the buff crew, by day */
+  buff(g) {
+    const w = this.world;
+    const s = g.state;
+    const key = areaKey(s, w.areaId);
+    const spots = SPOTS[key];
+    const item = pick(this.pieces.filter((p) => !p.rec.buffed && spots[p.rec.i]));
+    if (!item) return;
+    const sp = spots[item.rec.i];
+    const nx = Math.sin(sp[3] || 0), nz = Math.cos(sp[3] || 0);
+    const b = w.area.bounds;
+    const startX = sp[0] > (b.minX + b.maxX) / 2 ? b.maxX - 0.4 : b.minX + 0.4;
+    const worker = this.spawn('buffer', startX, Math.max(b.minZ + 0.4, Math.min(b.maxZ - 0.4, sp[1] + nz * 0.9)));
+    // the roller on a pole, and a tray of grey at his feet
+    const pole = new THREE.Group();
+    pole.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.9, 0.03), retroMaterial('inc_pole', { color: 0xc8a050 })).translateY(-0.6));
+    pole.add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.07, 0.07), retroMaterial('inc_roller', { color: 0x8a8a84 })).translateY(-1.05));
+    worker.armR.elbow.add(pole);
+    const ev = { kind: 'buff', rigs: [worker], phase: 'walk', t: 0 };
+    const at = { x: sp[0] + nx * 0.8, z: sp[1] + nz * 0.8 };
+    ev.step = (dt, gg) => {
+      ev.t += dt;
+      if (ev.phase === 'walk') {
+        if (this.walkTo(worker, at.x, at.z, 1.2, dt) || ev.t > 30) {
+          ev.phase = 'roll'; ev.t = 0;
+          worker.root.rotation.y = (sp[3] || 0) + Math.PI;
+          bark(worker, pick(['City says it goes, it goes.', 'Third time this month. Third.', 'I got a whole truck of this grey.', 'Nice letters. Shame.']), 2.8);
+        }
+        return;
+      }
+      if (ev.phase === 'roll') {
+        const v = Math.min(1, ev.t / 14);
+        item.art.buff(v);
+        worker.armR.pivot.rotation.x = -2.2 + Math.sin(ev.t * 4) * 0.5;
+        worker.armR.elbow.rotation.x = -0.3;
+        if (v >= 1) {
+          const name = item.art.name;
+          Object.assign(item.rec, { buffed: true, day: dayOf(gg.state.clock.m) });
+          this.redraw(gg, item);
+          log(gg.state, { what: 'buff', where: w.areaId, name });
+          ev.phase = 'leave'; ev.t = 0;
+        }
+        return;
+      }
+      if (ev.phase === 'leave' && (this.walkTo(worker, startX, worker.root.position.z, 1.2, dt) || ev.t > 25)) this.end();
     };
     this.cur = ev;
   }
@@ -425,5 +415,6 @@ export function recentIncident(s) {
     arrest: `The police took a man off ${where}. Hands up, cuffs, the car. Everybody watched, nobody saw anything.`,
     chase: `The police chased a man down ${where}. He was faster. Today.`,
     graffiti: `Somebody painted ${e.name || 'their name'} on a wall on ${where} in the night.${e.done ? ' It is good, honestly.' : ' They did not finish. The cops came.'}`,
+    buff: `The city sent a man with a roller to ${where}. ${e.name || 'A piece'} is grey now. Give it three days, something new will be on it.`,
   }[e.what] || null;
 }

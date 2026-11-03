@@ -22,6 +22,7 @@ import { minuteOfDay, pick } from '../core/util.js';
 import { openShop } from './shops.js';
 import { block } from './underground.js';
 import { bark } from './crowd.js';
+import { shutter, utilityBox } from './walls.js';
 
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 const L = 48;
@@ -54,6 +55,9 @@ export function buildRow(g) {
   );
 
   // storefronts that are only for looking at
+  // closed for the night: the shutters come down, and the shutters are where the paint lives
+  for (const [x, a, b] of [[-21, 9, 21], [-2.5, 10, 19], [6.5, 9, 20]]) if (!open(a, b)) shutter(group, x, -6.26, 1.7, 2.4, Math.round(x * 131 + 7) >>> 0);
+  solids.push(utilityBox(group, -8.0, 0.65, 4411), utilityBox(group, 9.4, 0.65, 977));
   door(-21, '99¢ DREAMS', 'EVERYTHING · SOME THINGS · NOTHING OVER 99¢*', 0x8a2a2a, '#ffe23a', '#2a1a1a');
   door(-2.5, 'BOTANICA LA FE', 'CANDLES · HERBS · SPIRITUAL ADVICE · NOTARY', 0x2a4a3a, '#c8e8a0', '#1a2a1a');
   door(6.5, "JOE'S BARBER", 'NO APPOINTMENT · NO GUARANTEE', 0x2a3a6a, '#ff5a5a', '#14142a');

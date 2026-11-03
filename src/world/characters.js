@@ -483,6 +483,7 @@ const CAST = {
   passer_m2: { height: 1.74, build: 0.98, shirt: 0x8a7a5a, pants: 0x4a4436, longSleeves: true },
   drifter: { height: 1.74, build: 0.92, shirt: 0x4a4436, pants: 0x3a362c, longSleeves: true },
   // Myrtle Row's vendors (world/row.js): aprons and caps are generic accessories, see createNPC
+  buffer: { height: 1.76, build: 1.06, shirt: 0xf28a1a, pants: 0x3a3a40, apron: 0xf2c81a, cap: 0x2a2a2e },
   sal: { height: 1.74, build: 1.14, shirt: 0xf2f2ec, pants: 0x2a2a30, apron: 0xf4f2ea, chefHat: true },
   piraguero: { height: 1.7, build: 1.02, shirt: 0xf2e8a0, pants: 0x3a4a6a, cap: 0xe8d8a0, capBrim: 0.16 },
   jerkman: { height: 1.8, build: 1.1, shirt: 0xc81e1e, pants: 0x2a2a30, apron: 0xf2e8ec, apronStripe: 0xc8323a, cap: 0x1a1a1e },

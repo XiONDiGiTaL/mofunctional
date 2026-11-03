@@ -131,6 +131,14 @@ something happens without Mo: a bag gets snatched (one punch and the thief is do
 pulls over and two officers make an arrest, or at night two writers paint a piece on a wall that
 stays there. Papi hears about all of it.
 
+The walls keep a record. Brick between the doors, the tile behind the subway benches, the tunnel
+wall across the tracks, the low wall at the Houses and the bulkheads on both roofs all carry
+paint: throw-ups, full-colour pieces, tags, stencils, stickers and photocopied posters for
+invented crews and invented events. Shop shutters come down painted after closing, and the
+utility boxes on the curb are tagged. Things go up overnight, old paint fades, and by day the
+city's buff crew rolls grey over a piece now and then, which a writer usually takes as an
+invitation.
+
 <p align="center">
   <img src="assets/img/guide/street_night.jpg" alt="Kestrel Street at night outside Quik-Stop #14, with Meatball the dog trotting beside Mo" width="49%">
   <img src="assets/img/guide/apartment.jpg" alt="Unit 3B: the bed, the kitchen counter, the fridge and the laptop on the table" width="49%">

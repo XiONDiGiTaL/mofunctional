@@ -13,6 +13,7 @@
  *                   best date on the list (romance.js activity `lucias`).
  */
 import * as herplace from './herplace.js';
+import { shutter as paintedShutter, utilityBox } from './walls.js';
 import * as music from '../systems/music.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
@@ -673,6 +674,10 @@ export function buildAvenue(g) {
       'The smell from Lucia\'s door reaches the bus stop. It is garlic. It is a lot of garlic.',
     ]), 'info');
   };
+  // shutters down over the laundromat and the pawn shop after hours, and a tagged box on the curb
+  if (closedReason('laundromat', g.state.clock.m)) paintedShutter(group, 5.0, -6.3, 1.6, 2.4, 5021);
+  { const pm = minuteOfDay(g.state.clock.m); if (pm < 10 * 60 || pm > 20 * 60) paintedShutter(group, 10.5, -6.3, 1.6, 2.4, 1051); }
+  const ubox = utilityBox(group, -6.0, 0.6, 6061);
   // the way down to the trains, east end of the avenue, clear of the bus stop
   group.add(buildStationEntrance(15.3, -0.4, { name: 'ASHBY AV', painted: true, rot: -Math.PI / 2 }));
   return {
@@ -680,7 +685,7 @@ export function buildAvenue(g) {
     bounds: { minX: -15.5, maxX: 15.5, minZ: -5.6, maxZ: 1.3 },
     camBounds: { minX: -17, maxX: 17, minZ: -5.6, maxZ: 9 },
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
-    solids: [solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3), solid(16.95, -0.4, 3.9, 3.0, 1.1)],
+    solids: [ubox, solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3), solid(16.95, -0.4, 3.9, 3.0, 1.1)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
     spawnFor: (from) => (from === 'row' ? { x: -14.0, z: -1.6, rot: Math.PI / 2 } : from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'pawn' ? { x: 10.5, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.1, z: -0.4, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
