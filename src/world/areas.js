@@ -152,7 +152,19 @@ export function buildApartment(g) {
     { id: 'door', label: 'Leave the apartment', sub: 'go outside', x: 0, z: 3.9, action: (gg) => gg.goTo('street', 'apartment') },
   ];
   if (g.state.flags.cat) {
-    interactables.push({ id: 'cat', label: 'Pet Chairman', sub: '+morale', x: 0.9, z: 1.9, action: (gg) => { bump(gg.state, 'morale', 6); bump(gg.state, 'stress', -4); gg.advance(5); gg.toast(npcLine('chairman'), 'good'); } });
+    interactables.push({ id: 'cat', label: 'Chairman', sub: 'pet him · or not', x: 0.9, z: 1.9, action: (gg) => {
+      const cat = gg.world?.npcRigs?.find((r) => r.type === 'cat');
+      if (cat && (cat.fly || (cat.koUntil || 0) > (gg.world.realT || 0))) { gg.toast('Chairman is out cold on the rug. Breathing. Judging you, even unconscious.', 'bad'); return; }
+      gg.openModal({
+        kicker: 'UNIT 3B', title: 'Chairman',
+        body: (gg.state.flags.catKicked ? 'Chairman watches your feet now. Always your feet.\n\n' : '') + 'Chairman is on the radiator, which is his, and looking at you, which is his right.',
+        choices: [
+          { label: 'Pet him.', sub: '+morale -stress', effect: () => { bump(gg.state, 'morale', 6); bump(gg.state, 'stress', -4); gg.advance(5); gg.toast(npcLine('chairman'), 'good'); } },
+          { label: 'Kick him.', sub: 'he will remember', effect: () => gg.world?.kickCat?.(gg) },
+          { label: 'Leave him be.', effect: () => {} },
+        ],
+      });
+    } });
   }
 
   // ---- someone lives here now. She is in the room, not in a menu.
@@ -679,6 +691,11 @@ export function buildStreet(g) {
       { kind: pick(['w0', 'w12', 'w19', 'w3']), x: 12, z: -0.9, walker: [-24, 30] },
       { kind: 'tenant_f', x: 22, z: -3.0, walker: [-24, 30] },
     ] : []),
+    // Brooklyn foot traffic: men from Williamsburg on the way somewhere, and, some days, a pair of
+    // Guardian Angles walking a patrol nobody asked for
+    ...(between(7, 20) && Math.random() < 0.55 ? [{ kind: pick(['hasid', 'hasid2']), x: -8, z: -1.6, walker: [-24, 30] }] : []),
+    ...(Math.random() < 0.35 ? [{ kind: 'angel_m', x: 6, z: -2.0, walker: [-24, 30] }, { kind: 'angel_f', x: 7.2, z: -2.0, walker: [-24, 30] }] : []),
+
   ];
   const npcs = [
     ...life,
@@ -732,7 +749,7 @@ export function buildStreet(g) {
     // block's ends): the curb is not a wall. Treating it as one collapsed the arm whenever he
     // stood near the street and set off the sideways swing.
     camBounds: { minX: STREET.bounds.minX - 2, maxX: STREET.bounds.maxX + 2, minZ: STREET.bounds.minZ, maxZ: 14.5 },
-    traffic: { lanes: [{ z: ROAD.laneEastZ, dir: 1 }, { z: ROAD.laneWestZ, dir: -1 }], x0: STREET.bounds.minX - 4, x1: STREET.bounds.maxX + 4, rate: [3, 9], bus: 0.07 },
+    traffic: { lanes: [{ z: ROAD.laneEastZ, dir: 1 }, { z: ROAD.laneWestZ, dir: -1 }], x0: STREET.bounds.minX - 4, x1: STREET.bounds.maxX + 4, rate: [3, 9], bus: 0.07, speeders: 0.06, chases: 0.25 },
     solids: [
       ...parkedSolids,
       solid(-4.2, -5.2, 1.5, 1.0, 1.0), solid(-7.5, 0.2, 2.0, 0.7, 0.9), solid(4.6, -0.45, 2.3, 0.3),

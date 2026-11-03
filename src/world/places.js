@@ -632,6 +632,10 @@ export function buildAvenue(g) {
     { kind: 'passer_m', x: -10, z: -1.6, walker: [-15, 15] },
     { kind: 'w14', x: 6, z: -0.6, walker: [-15, 15] },
     { kind: 'passer_m2', x: 0, z: -2.6, walker: [-15, 15] },
+    // Brooklyn foot traffic: men from Williamsburg on the way somewhere, and, some days, a pair of
+    // Guardian Angles walking a patrol nobody asked for
+    ...((minuteOfDay(g.state.clock.m) >= 420 && minuteOfDay(g.state.clock.m) < 1200) && Math.random() < 0.55 ? [{ kind: pick(['hasid', 'hasid2']), x: -6, z: -1.8, walker: [-15, 15] }] : []),
+    ...(Math.random() < 0.35 ? [{ kind: 'angel_m', x: 4, z: -2.2, walker: [-15, 15] }, { kind: 'angel_f', x: 5.1, z: -2.2, walker: [-15, 15] }] : []),
     { kind: pick(['w0', 'w3', 'w8', 'w12', 'w19']), x: -2, z: -1.0, walker: [-15, 15] },
     // the sax player: an older Jamaican man, big, slow, locks under a tam, shades on day and night
     { kind: 'rasta', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true, sax: true },
@@ -1112,6 +1116,8 @@ export function buildLaundromat(g) {
   return {
     group,
     seats: [{ x: -0.9, z: 2.6, y: 0.45, rot: -1.32, label: 'Sit in a plastic chair' }],
+    // the two machines take a punch (game3d.punchVending): a clang, and sometimes a can on the floor
+    punchables: [{ kind: 'vending', x: 2.9, z: 3.4, r: 0.45, out: -0.7 }, { kind: 'vending', x: 3.9, z: 3.4, r: 0.45, out: -0.7 }],
     bounds: { minX: -W / 2 + 0.3, maxX: W / 2 - 0.3, minZ: -D / 2 + 0.3, maxZ: D / 2 - 0.3 },
     solids: [solid(-4.45, -0.5, 0.9, 6.0, 1.0), solid(4.45, -0.5, 0.9, 6.0, 2.0), solid(0, -0.4, 3.4, 1.0, 0.9), solid(0, -3.4, 2.4, 0.7, 1.1), solid(3.4, 3.4, 2.0, 0.8, 2.0), solid(-2.45, -3.45, 2.5, 0.75, 1.9)],
     spawn: { x: 0, z: D / 2 - 1.5, rot: Math.PI },

@@ -665,6 +665,23 @@ export function punchPose(rig, u) {
 }
 
 /**
+ * A kick with the right foot, `u` 0..1: the knee comes up, the leg snaps out, and it comes back
+ * down; the arms swing the other way for balance.
+ */
+export function kickPose(rig, u) {
+  const up = u < 0.3 ? u / 0.3 : u < 0.55 ? 1 : 1 - Math.min(1, (u - 0.55) / 0.45);
+  const snap = u < 0.3 ? 0 : u < 0.55 ? (u - 0.3) / 0.25 : 1 - Math.min(1, (u - 0.55) / 0.45);
+  rig.legR.pivot.rotation.x = 1.35 * up;
+  rig.legR.knee.rotation.x = 1.3 * up * (1 - snap) + 0.08;
+  rig.legL.pivot.rotation.x = -0.12 * up;
+  rig.legL.knee.rotation.x = 0.18 * up;
+  rig.torso.rotation.set(-0.18 * up, 0, 0);
+  rig.armL.pivot.rotation.set(-0.6 * up, 0, -0.5 * up);
+  rig.armR.pivot.rotation.set(0.5 * up, 0, 0.45 * up);
+  rig.hips.rotation.y = 0.15 * up;
+}
+
+/**
  * Hands up, chin down, weight on the back foot, bouncing a little: the half second before
  * somebody decides to swing back. `t` is a running clock, for the bounce.
  */
@@ -837,17 +854,22 @@ export function createNPC(kind = 'kev') {
   if (kind === 'hasid' || kind === 'hasid2') {
     // the shtreimel: a wide, tall round of brown fur on a black skullcap, sitting high; the long
     // coat hangs past the hips; sidelocks curl down in front of the ears; a white collar shows
-    const fur = retroMaterial('shtreimelFur', { color: 0x3a2618, ambient: 0.75 });
+    const fur = retroMaterial('shtreimelFur', { color: 0xffffff, map: tex('shtreimel'), ambient: 0.8 });
     const hat = new THREE.Group();
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2 * k, 0.17 * k, 0.17 * k, 14), fur);
-    hat.add(crown);
-    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.205 * k, 0.205 * k, 0.03 * k, 14), retroMaterial('shtreimelTop', { color: 0x4a3220, ambient: 0.8 })).translateY(0.085 * k));
-    hat.position.set(0, 0.2 * k, -0.01 * k);
+    // a wide drum of fur, slightly domed on top, sitting high on a skullcap
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.215 * k, 0.185 * k, 0.15 * k, 18), fur));
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.215 * k, 18, 6, 0, Math.PI * 2, 0, Math.PI / 2), fur);
+    dome.scale.set(1, 0.22, 1);
+    dome.position.y = 0.075 * k;
+    hat.add(dome);
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.125 * k, 0.125 * k, 0.04 * k, 12), retroMaterial('kippah', { color: 0x0c0c0e })).translateY(-0.085 * k));
+    hat.position.set(0, 0.22 * k, -0.01 * k);
     rig.head.add(hat);
     rig.hat = hat;
-    const curl = retroMaterial(`peyos${kind}`, { color: kind === 'hasid' ? 0x4a2e1c : 0x1a1410 });
+    // the sidelocks: long curls hanging in front of the ears to the jaw
+    const curl = retroMaterial(`peyos${kind}`, { color: kind === 'hasid' ? 0x3a2414 : 0x141010 });
     for (const sx of [-1, 1]) {
-      for (let i = 0; i < 4; i++) rig.head.add(box(0.03 * k, 0.05 * k, 0.03 * k, curl, [sx * (0.115 + (i % 2) * 0.012) * k, (0.02 - i * 0.05) * k, 0.03 * k], [0, 0, sx * (i % 2 ? 0.4 : -0.4)]));
+      for (let i = 0; i < 6; i++) rig.head.add(box(0.035 * k, 0.045 * k, 0.035 * k, curl, [sx * (0.128 + (i % 2) * 0.014) * k, (0.03 - i * 0.042) * k, 0.045 * k], [0, 0, sx * (i % 2 ? 0.45 : -0.45)]));
     }
     const coat = retroMaterial('hasidCoat', { color: 0x0e0e10, ambient: 0.6 });
     rig.torso.add(loft(R([[0.02, 0.33, 0.2, 0], [-0.32, 0.37, 0.22, 0]], k), coat, 8));

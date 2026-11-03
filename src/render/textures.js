@@ -149,6 +149,15 @@ export const textures = {
     };
     palm(6, 5); palm(21, 3); palm(13, 18); palm(27, 20); palm(4, 25);
   }),
+  // a shtreimel's fur: dark sable, combed upward, lighter at the tips
+  shtreimel: () => make('shtreimel', 32, 16, (c, w, h) => {
+    c.fillStyle = '#3a2416'; c.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x++) {
+      const tone = ['#2a180c', '#4a2e1a', '#5a3a22', '#3a2416'][(x * 7 + (x >> 2)) % 4];
+      c.fillStyle = tone; c.fillRect(x, 0, 1, h);
+      c.fillStyle = 'rgba(160,110,70,.35)'; c.fillRect(x, (x * 5) % 3, 1, 2);
+    }
+  }),
   // the Guardian Angles' back patch: white wings, an eye, and the name in white on red
   angelPatch: () => make('angelPatch', 64, 32, (c, w, h) => {
     c.fillStyle = '#c01e1a'; c.fillRect(0, 0, w, h);

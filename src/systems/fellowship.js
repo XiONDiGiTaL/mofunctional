@@ -85,6 +85,23 @@ export function visitFellowship(g) {
         effect: () => offerPledge(g),
       } : null,
       { label: 'Just talk. Twenty minutes.', sub: '+morale, -20 min', effect: () => { g.advance(20); bump(s, 'morale', 3); bump(s, 'stress', -3); } },
+      {
+        // his movement ministry: arms up, a slow turn, something with the knees. Doing it with him
+        // is worth more to the Shepherd than most tithes, and he says so
+        label: 'Follow his guidance.', sub: s.flags.addisonDanced === dayOf(s.clock.m) ? 'once a day is plenty, he says' : '+favor with Addison · +morale',
+        disabled: s.flags.addisonDanced === dayOf(s.clock.m),
+        effect: () => {
+          s.flags.addisonDanced = dayOf(s.clock.m);
+          s.npc = s.npc || {};
+          s.npc.addison = (s.npc.addison || 0) + 3;
+          s.fellowship.donated = Math.round(((s.fellowship.donated || 0) + 10) * 100) / 100;
+          bump(s, 'morale', 6);
+          bump(s, 'stress', -4);
+          g.advance(10);
+          g.world?.addisonDance?.(g);
+          g.toast('"Arms to the ceiling. The ceiling is the Lord. Now turn. Slower. SLOWER. Feel the gold." You do. Somehow, you do. Addison nods like you have been saved a little.', 'gold');
+        },
+      },
       { label: 'Leave.', sub: '', effect: () => {} },
     ].filter(Boolean),
   });

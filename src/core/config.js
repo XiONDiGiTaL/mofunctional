@@ -147,6 +147,7 @@ export const CONFIG = {
     mint_tea:     { id: 'mint_tea',     name: 'Mint Tea', kind: 'comfort', price: 1.5, stress: -5, morale: 3, value: 0.4 },
     coffee:       { id: 'coffee',       name: 'Quik-Stop Coffee', kind: 'comfort', price: 1.25, energy: 9, stress: 2, morale: 1, value: 0.2 },
     // out of the laundromat machines
+    angle_pamphlet: { id: 'angle_pamphlet', name: '"Be Vigilant!" Pamphlet', kind: 'doc', price: 0, value: 0 },
     soda:         { id: 'soda',         name: 'Can of Soda', kind: 'comfort', price: 1.0, energy: 6, hunger: 2, morale: 3, value: 0.2 },
     water:        { id: 'water',        name: 'Bottle of Water', kind: 'comfort', price: 1.0, energy: 3, stress: -2, hygiene: 1, value: 0.2 },
     chips:        { id: 'chips',        name: 'Bag of Chips', kind: 'food', price: 0.75, hunger: 10, energy: 2, morale: 2, value: 0.2 },

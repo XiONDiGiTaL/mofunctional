@@ -598,6 +598,10 @@ export function buildParkSlope(g) {
     { kind: 'tenant_f', x: -8, z: -1.2, walker: [-15, 15] },
     { kind: pick(['w4', 'w9', 'w15']), x: 2, z: -2.4, walker: [-15, 15] },
     { kind: 'passer_m2', x: 9, z: -0.8, walker: [-15, 15] },
+    // Brooklyn foot traffic: men from Williamsburg on the way somewhere, and, some days, a pair of
+    // Guardian Angles walking a patrol nobody asked for
+    ...((minuteOfDay(g.state.clock.m) >= 420 && minuteOfDay(g.state.clock.m) < 1200) && Math.random() < 0.55 ? [{ kind: pick(['hasid', 'hasid2']), x: -5, z: -1.6, walker: [-15, 15] }] : []),
+    ...(Math.random() < 0.35 ? [{ kind: 'angel_m', x: 3, z: -2.4, walker: [-15, 15] }, { kind: 'angel_f', x: 4.1, z: -2.4, walker: [-15, 15] }] : []),
     { kind: pick(['w6', 'w10']), x: 12.4, z: -4.6, rot: 0, still: true, act: 'talk' },
     { kind: 'waiter', x: 5.6, z: -5.6, rot: 0, still: true, act: 'smoke' },
   ];
@@ -682,13 +686,18 @@ export function buildDowntown(g) {
     { kind: 'passer_m', x: -9, z: -1.4, walker: [-15, 15] },
     { kind: pick(['w2', 'w3', 'w17']), x: -2, z: -2.6, walker: [-15, 15] },
     { kind: 'passer_m2', x: 6, z: -0.6, walker: [-15, 15] },
+    // Brooklyn foot traffic: men from Williamsburg on the way somewhere, and, some days, a pair of
+    // Guardian Angles walking a patrol nobody asked for
+    ...((minuteOfDay(g.state.clock.m) >= 420 && minuteOfDay(g.state.clock.m) < 1200) && Math.random() < 0.55 ? [{ kind: pick(['hasid', 'hasid2']), x: -5, z: -1.6, walker: [-15, 15] }] : []),
+    ...(Math.random() < 0.35 ? [{ kind: 'angel_m', x: 3, z: -2.4, walker: [-15, 15] }, { kind: 'angel_f', x: 4.1, z: -2.4, walker: [-15, 15] }] : []),
     { kind: pick(['w5', 'w12', 'w18']), x: 0, z: -3.0, walker: [-15, 15] },
     { kind: 'clerk', x: 9.2, z: -2.6, rot: 0.3, still: true, act: 'talk' },
     { kind: 'tenant_m', x: 13.4, z: -4.8, rot: -0.4, still: true },
   ];
   return {
     group, title: 'Fulton St · Downtown',
-    bounds: farBounds, camBounds: farCam, traffic: farTraffic, solids,
+    // the curb is not a wall on Fulton: Mo can step into the road, and the road has opinions
+    bounds: { ...farBounds, maxZ: 7.9 }, camBounds: farCam, traffic: { ...farTraffic, speeders: 0.2, chases: 0.5 }, solids,
     spawn: { x: 0.8, z: -2.4, rot: Math.PI / 2 },
     spawnFor: (from) => (from === 'jays' ? { x: -11, z: -4.4, rot: Math.PI } : from === 'relief' ? { x: -3.5, z: -4.4, rot: Math.PI } : { x: 0.8, z: -2.4, rot: Math.PI / 2 }),
     npcs, interactables, ambient: 'street',

@@ -287,7 +287,7 @@ export class StreetLife {
     }
     this.eventTimer = 20 + Math.random() * 25;
     this.dog = null;
-    if (world.areaId === 'street') this.spawnDog(g);
+    if (world.areaId === 'street' || (world.areaId === 'park' && dogState(g.state).withMo)) this.spawnDog(g);
   }
 
   remove() {
@@ -327,7 +327,9 @@ export class StreetLife {
 
   spawnDog(g) {
     this.dog = buildDog();
-    this.dog.root.position.set(-6 + Math.random() * 12, 0, -1.2);
+    const mo = this.world.mo?.root.position;
+    if (this.world.areaId === 'park' && mo) this.dog.root.position.set(mo.x - 1, 0, mo.z + 0.8);
+    else this.dog.root.position.set(-6 + Math.random() * 12, 0, -1.2);
     this.dog.target = this.pickDogSpot();
     this.world.root.add(this.dog.root);
     const d = dogState(g.state);
@@ -344,6 +346,7 @@ export class StreetLife {
   }
 
   pickDogSpot() {
+    if (this.world.areaId === 'park') return { x: -6 + Math.random() * 12, z: -6 + Math.random() * 12, wait: 1 + Math.random() * 4 };
     return { x: -22 + Math.random() * 50, z: -0.4 - Math.random() * 3.6, wait: 1 + Math.random() * 4 };
   }
 
@@ -369,6 +372,7 @@ export class StreetLife {
             if (was === 0) d.name = 'Meatball';
             g.toast(d.like >= 100 && was < 100 ? `${d.name} eats it in two bites and then sits on your foot. That is a contract.` : `${d.name} eats it like somebody might take it away, then looks at you like you might do it again.`, 'good');
           } },
+        { label: 'Kick him.', sub: 'he will remember', effect: () => this.world.kickDog?.(g) },
         { label: 'Scratch behind his ears.', sub: '+morale', effect: () => { bump(s, 'morale', 3); bump(s, 'stress', -3); g.advance(2); if (d.like === 0) d.name = 'Meatball'; g.toast(`${d.like > 0 ? d.name : 'The dog'} closes his eyes. Your whole week gets a little smaller.`, 'good'); } },
         { label: 'Leave him be.', sub: '', effect: () => {} },
       ],
@@ -382,12 +386,15 @@ export class StreetLife {
     const d = dogState(s);
     const mo = this.world.mo.root.position;
     const p = dog.root.position;
+    const park = this.world.areaId === 'park';
     // kicked: he runs from Mo for a few seconds and does not come back to heel for a while
     if (dog.scared > 0) {
       dog.scared -= dt;
       const ang = Math.atan2(p.x - mo.x, p.z - mo.z);
       p.x += Math.sin(ang) * 4 * dt;
-      p.z = Math.max(-4.2, Math.min(0.9, p.z + Math.cos(ang) * 4 * dt));
+      p.z = park ? Math.max(-7.5, Math.min(7.5, p.z + Math.cos(ang) * 4 * dt)) : Math.max(-4.2, Math.min(0.9, p.z + Math.cos(ang) * 4 * dt));
+      // the yelp: a hop off the ground, then the run
+      if (dog.hop > 0) { dog.hop = Math.max(0, dog.hop - dt); p.y = Math.sin((1 - dog.hop / 0.35) * Math.PI) * 0.35; } else p.y = 0;
       dog.root.rotation.y = Math.atan2(-Math.cos(ang), Math.sin(ang));
       dog.t += dt * 14;
       dog.legs.forEach((leg, i) => { leg.rotation.z = Math.sin(dog.t + (i % 2 ? Math.PI : 0)) * 0.6; });
@@ -396,9 +403,9 @@ export class StreetLife {
     }
     let tx, tz;
     const moDist = Math.hypot(mo.x - p.x, mo.z - p.z);
-    if (d.like >= CONFIG.dog.followAt && moDist < 14 && mo.z < 1.4) {
+    if (d.like >= CONFIG.dog.followAt && moDist < 14 && (park || mo.z < 1.4)) {
       // trot along a step behind and to the side
-      tx = mo.x - 1.0; tz = Math.min(1.0, mo.z + 0.8);
+      tx = mo.x - 1.0; tz = park ? mo.z + 0.8 : Math.min(1.0, mo.z + 0.8);
     } else {
       if (!dog.target) dog.target = this.pickDogSpot();
       tx = dog.target.x; tz = dog.target.z;

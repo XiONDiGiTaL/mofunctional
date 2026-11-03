@@ -1,7 +1,7 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
-import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose } from './characters.js';
+import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose, kickPose } from './characters.js';
 import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
 import { Affection } from './affection.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
@@ -9,11 +9,13 @@ import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightCl
 import { buildTower, buildHerRoom } from './houses.js';
 import { buildBathroom, buildRestroom } from './rooms.js';
 import { Courier } from './courier.js';
+import { Assailants } from './assailant.js';
+import { ROAD } from './plan.js';
 import { Patrol, OUTSIDE } from './patrol.js';
 import { buildPawnShop, buildJays, buildReliefOffice } from './storefronts.js';
 import * as brawl from '../systems/brawl.js';
 import { worn } from '../systems/wardrobe.js';
-import { bump } from '../core/state.js';
+import { bump, addItem, logLine } from '../core/state.js';
 import * as police from '../systems/police.js';
 import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
@@ -78,6 +80,8 @@ export class World {
     this.camSwing = 0;
     this.tilt = 0;
     this.ragdollTimer = 0;
+    this.flyingHats = [];
+    this.assailants = new Assailants(this);
     this.ragdollParts = [];
     this.time = 0;
     this.audioLevel = 0;
@@ -113,6 +117,14 @@ export class World {
   clearArea() {
     this.cutHidden = null;
     this.patrol?.clear();
+    this.assailants?.clear();
+    for (const h of this.flyingHats || []) h.mesh.parent?.remove(h.mesh);
+    this.flyingHats = [];
+    for (const c of this.floorCans || []) c.mesh.parent?.remove(c.mesh);
+    this.floorCans = [];
+    this.flung = null;
+    this.kickT = 0;
+    if (this.addison) { this.addison.down = false; this.addison.danceT = 0; this.addison.root.rotation.set(0, this.addison.root.rotation.y, 0); this.addison.root.position.y = 0; }
     this.courier?.remove();
     if (this.hang) { this.hang.rig.root.parent?.remove(this.hang.rig.root); this.hang = null; }
     this.clearEncounter?.();
@@ -175,6 +187,17 @@ export class World {
   }
 
   loadArea(id, g, spawnId = null) {
+    // Meatball goes as far as the park with him, if he is at Mo's heel when Mo goes; he does not
+    // do doors, stations or shops, and waits on Kestrel Street for him instead
+    if (g?.state) {
+      const d = dogState(g.state);
+      const dog = this.streetLife?.dog;
+      const p = this.mo?.root.position;
+      const atHeel = dog && p && !(dog.scared > 0) && d.like >= CONFIG.dog.followAt && Math.hypot(dog.root.position.x - p.x, dog.root.position.z - p.z) < 7;
+      const from = this.areaId;
+      d.withMo = !!(atHeel && ((from === 'street' && id === 'park') || (from === 'park' && id === 'street')));
+      if (atHeel && !d.withMo && id !== from) g.toast?.(`${d.name} sits down at the door and watches you go. He does not do indoors. He will be on Kestrel Street.`, 'info');
+    }
     // a new place lets go of anything that had hold of Mo in the old one (the phone can move him
     // mid-anything); an in-flight lock surviving the move is a man who can never walk again
     if (this.affection?.holding) this.affection.letGo?.();
@@ -677,6 +700,15 @@ export class World {
     this.vel?.set(0, 0, 0);
     this.moveTarget = null;
     const fight = fights.startMugging(g);
+    const dog = this.streetLife?.dog;
+    if (dog && dogState(s).like >= CONFIG.dog.followAt && Math.hypot(dog.root.position.x - mo.position.x, dog.root.position.z - mo.position.z) < 9) {
+      dog.charge = 2.2;
+      fights.dogSave(g, dogState(s).name);
+      this.thugLeaving = true;
+      g.audio?.sfx?.('deny');
+      g.toast(`"Ay. Wallet—" ${dogState(s).name} is already moving, low and fast and loud. The guy in the hood is over the fence before the sentence ends. ${dogState(s).name} comes back looking like he would like that ear scratch now.`, 'good');
+      return;
+    }
     // with a cop in sight it ends before it starts, and then the cop looks at Mo
     if (this.copNear(14)) {
       this.thugLeaving = true;
@@ -782,6 +814,19 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       g.toast(res.line, 'bad');
       return;
     }
+    // Addison is not in the NPC list (he is the church's own rig), so he is checked here
+    const ad = this.addison;
+    if (ad?.root.visible && !ad.down && Math.hypot(ad.root.position.x - pos.x, ad.root.position.z - pos.z) < Math.min(CONFIG.brawl.range, rigD)) {
+      this.punchAddison(g);
+      return;
+    }
+    // things that are not people: a vending machine, a car
+    const thing = this.punchableAt(pos);
+    if (thing && thing.d < rigD) {
+      if (thing.kind === 'vending') this.punchVending(g, thing);
+      else this.punchCar(g, thing);
+      return;
+    }
     if (!rig) {
       bump(g.state, 'energy', -1);
       g.toast('You swing at the air. The air takes it personally and does nothing.', 'info');
@@ -845,6 +890,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (res.result === 'fled') { this.startFlee(rig); return; }
     if (res.result === 'ko') {
       this.knockDown(rig, g);
+      this.noteKO(g);
       g.openModal({
         kicker: 'THE STREET · SOMEBODY IS DOWN',
         title: 'Out Cold',
@@ -862,6 +908,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   knockDown(rig, g) {
+    this.flyHat(rig);
     rig.down = true;
     rig.downT = 0;
     rig.downUntil = (this.realT || 0) + CONFIG.brawl.downSeconds;
@@ -1544,7 +1591,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // a lock flag with no animation behind it is an orphan (it can only come from an
     // interrupted path): release it rather than strand the player
     if (s.flags.consuming && !this.substance?.active) s.flags.consuming = false;
-    const canMove = !g.uiBusy
+    const canMove = !g.uiBusy && !this.flung
       && !this.eating?.active && !this.handoff?.active && !this.substance?.active && !this.affection?.active
       && !this.collapse?.active && !this.dance?.active && !g.state.flags.consuming && !this.crossing;
 
@@ -1742,6 +1789,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     });
     // the swing is his whole body: wind up, drive through, recover
     if (this.punchT > 0) punchPose(this.mo, 1 - this.punchT / 0.34);
+    if (this.kickT > 0) { this.kickT = Math.max(0, this.kickT - dt); kickPose(this.mo, 1 - this.kickT / 0.5); }
+    if (this.flung) this.updateFlung(dt, g);
     this.eating?.update(dt);
     this.handoff?.update(dt);
     this.substance?.update(dt);
@@ -1763,7 +1812,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     for (const rig of this.npcRigs) {
       if (rig.gone) continue;
       this.syncTalkIt(rig);
-      if (rig.type === 'cat') { animateNPC(rig, dt); continue; }
+      if (rig.type === 'cat') { if (rig.fly || (rig.koUntil || 0) > this.realT) this.updateCatKO(rig, dt); else animateNPC(rig, dt); continue; }
       if (rig.down) { this.npcDown(rig, dt); continue; }
       if (rig.patrol) continue; // driven by Patrol, below
       this.patrolNPC(rig, dt, g);
@@ -1791,6 +1840,12 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.affection?.update(dt);
     if (!this.patrol) this.patrol = new Patrol(this);
     this.patrol.update(dt, g);
+    this.assailants.update(dt, g);
+    this.updateFlyingHats(dt);
+    // standing in the road: the clock a speeding driver reads before deciding not to brake
+    const lanes = this.area?.traffic?.lanes;
+    const mp = this.mo.root.position;
+    this.roadT = lanes && lanes.some((l) => Math.abs(mp.z - l.z) < 1.4) ? (this.roadT || 0) + dt : 0;
     this.area?.tick?.(g, dt, this);
 
     // trouble after dark: somebody steps out of the shadows in the park, the alley end or the lot
@@ -1817,7 +1872,15 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       this.streetTimer = 16;
       if (canMove && this.areaId === 'street') maybeStreetEvent(g);
     }
-    if (this.addison.root.visible) animateAddison(this.addison, dt);
+    if (this.addison.root.visible) {
+      if (this.addison.down) {
+        if (this.realT >= (this.addison.downUntil || 0)) this.getUp(this.addison);
+        else animateDown(this.addison);
+      } else {
+        animateAddison(this.addison, dt);
+        if (this.addison.danceT > 0) this.addisonMoves(dt);
+      }
+    }
 
     // camera follow — a spring arm. The orbit is applied to the arm instantly, so turning the
     // view is crisp; only the boom length eases, sampled outward from Mo until something solid
@@ -2332,6 +2395,345 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (Math.abs(x - b.x) < b.w / 2 + 0.22 && Math.abs(z - b.z) < b.d / 2 + 0.22) return true;
     }
     return false;
+  }
+
+  /* ------------------------------ kicks, hats, things that are not people ------------------------------ */
+
+  /** Mo's kick: turn to face the target, then the leg. `then` runs as the foot lands. */
+  kick(at, then) {
+    const p = this.mo.root.position;
+    if (at) this.mo.root.rotation.y = Math.atan2(at.x - p.x, at.z - p.z);
+    this.kickT = 0.5;
+    setTimeout(() => then?.(), 190);
+  }
+
+  /** Meatball: a yelp, and a dog running for the end of the block. He remembers. */
+  kickDog(g) {
+    const dog = this.streetLife?.dog;
+    if (!dog) return;
+    const s = g.state;
+    const d = dogState(s);
+    this.kick(dog.root.position, () => {
+      g.audio?.sfx?.('yelp');
+      dog.scared = 9;
+      dog.hop = 0.35;
+      d.like = Math.max(0, d.like - 45);
+      d.kicked = (d.kicked || 0) + 1;
+      d.withMo = false;
+      bump(s, 'morale', -8);
+      bump(s, 'stress', 3);
+      logLine(g, `Kicked ${d.like > 0 ? d.name : 'the stray'}.`, 'bad');
+      g.toast(pick([`A yelp you will hear tonight when you try to sleep. ${d.name} is gone up the block with his tail under him.`, `${d.name} yelps and runs, and keeps looking back to see if you are still the same person. You are.`, 'The dog yelps and bolts. Across the street an old lady says "shame" without looking up from her cart.']), 'bad');
+    });
+  }
+
+  /** Chairman, through the air, and out on the rug for a while. An angry cat is not a quiet cat. */
+  kickCat(g) {
+    const cat = this.npcRigs.find((r) => r.type === 'cat' && r.root.visible);
+    if (!cat || cat.fly || (cat.koUntil || 0) > this.realT) return;
+    const s = g.state;
+    this.kick(cat.root.position, () => {
+      g.audio?.sfx?.('yowl');
+      const yaw = this.mo.root.rotation.y;
+      cat.fly = { vx: Math.sin(yaw) * 2.6, vy: 3.4, vz: Math.cos(yaw) * 2.6, spin: 9 };
+      cat.koUntil = this.realT + 45;
+      s.flags.catKicked = (s.flags.catKicked || 0) + 1;
+      bump(s, 'morale', -10);
+      bump(s, 'stress', 4);
+      logLine(g, 'Kicked Chairman across the apartment.', 'bad');
+      g.toast(pick(['Chairman makes a noise like a car alarm being strangled, goes end over end, hits the radiator and lies there. Breathing. Plotting.', 'A yowl, a short flight, and a soft landing on nothing soft. Chairman is out, and when he wakes up, he will remember everything.']), 'bad');
+    });
+  }
+
+  updateCatKO(rig, dt) {
+    const f = rig.fly;
+    const p = rig.root.position;
+    if (f) {
+      f.vy -= 14 * dt;
+      p.x += f.vx * dt; p.y += f.vy * dt; p.z += f.vz * dt;
+      rig.root.rotation.x += f.spin * dt;
+      const b = this.area?.bounds;
+      if (b) { p.x = clamp(p.x, b.minX + 0.3, b.maxX - 0.3); p.z = clamp(p.z, b.minZ + 0.3, b.maxZ - 0.3); }
+      if (p.y <= 0 && f.vy < 0) { p.y = 0; rig.fly = null; rig.root.rotation.set(0, rig.root.rotation.y, Math.PI / 2); p.y = 0.12; }
+      return;
+    }
+    if (this.realT >= (rig.koUntil || 0) - 0.05) { rig.root.rotation.set(0, rig.root.rotation.y, 0); p.y = 0; rig.koUntil = 0; }
+  }
+
+  /** Somebody's hat leaves their head when they go down: up, over, and onto the ground beside them. */
+  flyHat(rig) {
+    const hat = rig.hat;
+    if (!hat || rig.hatGone || !hat.parent) return;
+    rig.hatGone = true;
+    this.root.attach(hat);
+    const yaw = this.mo.root.rotation.y;
+    this.flyingHats.push({ mesh: hat, vx: Math.sin(yaw) * 2.2 + (Math.random() - 0.5), vy: 3.8, vz: Math.cos(yaw) * 2.2 + (Math.random() - 0.5), spin: 8 + Math.random() * 6, landed: false });
+  }
+
+  updateFlyingHats(dt) {
+    for (const h of this.flyingHats) {
+      if (h.landed) continue;
+      h.vy -= 13 * dt;
+      h.mesh.position.x += h.vx * dt;
+      h.mesh.position.y += h.vy * dt;
+      h.mesh.position.z += h.vz * dt;
+      h.mesh.rotation.x += h.spin * dt;
+      h.mesh.rotation.z += h.spin * 0.4 * dt;
+      if (h.mesh.position.y <= 0.08 && h.vy < 0) { h.landed = true; h.mesh.position.y = 0.08; h.mesh.rotation.set(Math.PI * (Math.random() < 0.5 ? 0 : 1), Math.random() * 6, 0); }
+    }
+  }
+
+  /** The nearest thing within reach that is not a person: an area's machines, then the cars. */
+  punchableAt(pos) {
+    const reach = CONFIG.brawl.range + 0.3;
+    let best = null;
+    for (const m of this.area?.punchables || []) {
+      const d = Math.hypot(m.x - pos.x, m.z - pos.z) - (m.r || 0.5);
+      if (d < reach && (!best || d < best.d)) best = { ...m, d };
+    }
+    // traffic: a car's box, measured from its edge
+    for (const c of this.traffic?.cars || []) {
+      const w = c.mesh.userData.width || 1.8;
+      const dx = Math.max(0, Math.abs(pos.x - c.x) - c.len / 2), dz = Math.max(0, Math.abs(pos.z - c.lane.z) - w / 2);
+      const d = Math.hypot(dx, dz);
+      if (d < reach && (!best || d < best.d)) best = { kind: 'car', car: c, d };
+    }
+    // and the cars parked along Kestrel Street
+    if (this.areaId === 'street') {
+      for (const c of ROAD.parkedNear) {
+        const dx = Math.max(0, Math.abs(pos.x - c.x) - 2.1), dz = Math.max(0, Math.abs(pos.z - ROAD.parkNearZ) - 0.9);
+        const d = Math.hypot(dx, dz);
+        if (d < reach && (!best || d < best.d)) best = { kind: 'parked', x: c.x, z: ROAD.parkNearZ, d };
+      }
+    }
+    return best;
+  }
+
+  /** A vending machine takes a punch the way they all do: a clang, a hum, and sometimes a can. */
+  punchVending(g, m) {
+    const s = g.state;
+    this.punchT = 0.34;
+    g.audio?.sfx?.('clang');
+    bump(s, 'energy', -1);
+    this.vendHits = (this.vendHits || 0) + 1;
+    if (Math.random() < 0.35) {
+      const can = box(0.07, 0.12, 0.07, retroMaterial('floorCan', { color: pick([0xc8121a, 0x1a6ac8, 0x2a9a3a]) }), [m.x + (Math.random() - 0.5) * 0.5, 0.06, m.z + (m.out || 0.75)]);
+      can.rotation.z = Math.PI / 2;
+      this.root.add(can);
+      const it = { id: `can_${Math.random().toString(36).slice(2, 6)}`, label: 'A can of soda on the floor', sub: 'free, technically', x: can.position.x, z: can.position.z, radius: 0.9, action: (gg) => {
+        addItem(gg.state, 'soda', 1);
+        can.parent?.remove(can);
+        this.interactables = this.interactables.filter((i) => i !== it);
+        this.floorCans = (this.floorCans || []).filter((c) => c.mesh !== can);
+        gg.toast('A can of soda, dented, warm, yours. It is in your pocket.', 'good');
+      } };
+      this.interactables.push(it);
+      (this.floorCans = this.floorCans || []).push({ mesh: can, it });
+      g.toast(pick(['CLANG. The machine thinks about it, and drops a can on the floor like it is apologising.', 'A metal BONG, a shudder, and a can rolls out of the flap. The machine hums a little higher now.']), 'good');
+    } else {
+      g.toast(pick(['CLANG. Nothing. Your knuckles and the machine both remember this.', 'A hollow BONG. The machine keeps your money and its dignity.', 'CLANG. Somewhere inside, a can moves an inch and decides against it.']), 'info');
+    }
+    if (this.vendHits >= 3 && this.areaId === 'laundromat') { this.vendHits = 0; g.toast('"HEY." Dee does not look up from her magazine. "You break it, it is yours. It is not worth having."', 'bad'); }
+  }
+
+  /** A car. A parked one screams; a running one has a driver in it, and he gets out. */
+  punchCar(g, thing) {
+    const s = g.state;
+    this.punchT = 0.34;
+    g.audio?.sfx?.('clang');
+    bump(s, 'energy', -2);
+    if (thing.kind === 'parked') {
+      g.audio?.sfx?.('alarm');
+      setTimeout(() => g.audio?.sfx?.('alarm'), 420);
+      setTimeout(() => g.audio?.sfx?.('alarm'), 840);
+      if (Math.random() < 0.3 && !this.assailants.active) {
+        const p = this.mo.root.position;
+        this.assailants.spawn(g, { kind: 'tenant_m', x: p.x + 5, z: -4.6, hp: 3, speed: 3.6, name: 'the owner', onWin: (gg, rig) => this.assailantLoot(gg, rig, 'the owner') });
+        g.toast('A car alarm, then a window, then a man in a tank top coming down the stoop three steps at a time: "THAT IS MY CAR."', 'bad');
+      } else g.toast('The car alarm goes off. Nobody on Kestrel Street so much as looks up. Car alarms are weather here.', 'info');
+      return;
+    }
+    const c = thing.car;
+    c.speed = 0;
+    c.cruise = 0;
+    c.angry = true;
+    if (c.mesh.userData.flash) { this.startChase(g, 'cop'); return; }
+    if (c.driverOut || this.assailants.active || Math.random() > 0.6) {
+      g.toast(pick(['BONG. The driver leans on the horn and says a word that rhymes with the whole situation.', 'The hood takes a dent the shape of your hand. The driver looks at you like a man doing math about his insurance.']), 'info');
+      setTimeout(() => { c.cruise = 6; }, 2500);
+      return;
+    }
+    c.driverOut = true;
+    const w = c.mesh.userData.width || 1.8;
+    const line = pick(['"YOU HIT MY CAR? YOU HIT MY CAR?"', '"Oh, you want to do this? We are doing this."', '"That is a LEASE, my man!"']);
+    this.assailants.spawn(g, { kind: pick(['passer_m', 'tenant_m', 'drifter']), x: c.x, z: c.lane.z - w / 2 - 0.4, hp: 3, speed: 3.8, name: 'the driver', onWin: (gg, rig) => {
+      this.assailantLoot(gg, rig, 'the driver');
+      setTimeout(() => { c.cruise = 9; }, 4000);
+    } });
+    g.toast(`The door flies open. ${line}`, 'bad');
+  }
+
+  /** Down and breathing: the two things there are to do about it, as a prompt by the body. */
+  assailantLoot(g, rig, who, extra = null) {
+    const a = this.assailants.list.find((x) => x.rig === rig);
+    const it = { id: `alt_${Math.random().toString(36).slice(2, 6)}`, label: 'Somebody is out cold', sub: `${who} · check their pockets`, x: rig.root.position.x, z: rig.root.position.z, radius: 1.3, action: (gg) => {
+      if (this.lootWitnessed(gg)) return;
+      const loot = brawl.loot(gg, { kind: 'civilian', key: rig.npcId || it.id, label: who });
+      if (extra) extra(gg);
+      this.interactables = this.interactables.filter((i) => i !== it);
+      if (!loot.ok) { gg.toast('Nothing on him but a bad attitude.', 'info'); return; }
+      gg.toast(`${loot.cash ? `${money(loot.cash)}. ` : ''}${loot.items.length ? `And ${loot.items.join(', ')}.` : 'Otherwise, keys and a receipt.'}`, 'info');
+    } };
+    if (a) a.it = it;
+    this.interactables.push(it);
+  }
+
+  /**
+   * Knockouts, counted: three people on the ground within a couple of hours and the Guardian
+   * Angles hear about it. One of them comes, red beret first.
+   */
+  noteKO(g) {
+    const s = g.state;
+    const now = s.clock.m;
+    s.flags.koLog = (s.flags.koLog || []).filter((m) => now - m < 150);
+    s.flags.koLog.push(now);
+    if (s.flags.koLog.length >= 3 && OUTSIDE.has(this.areaId) && !this.assailants.active && Math.random() < 0.6) {
+      s.flags.koLog = [];
+      this.spawnAngle(g);
+    }
+  }
+
+  spawnAngle(g) {
+    const p = this.mo.root.position;
+    const b = this.area?.bounds || { minX: p.x - 10, maxX: p.x + 10 };
+    const fromLeft = p.x - b.minX > b.maxX - p.x;
+    const kind = Math.random() < 0.7 ? 'angel_m' : 'angel_f';
+    this.assailants.spawn(g, {
+      kind, x: fromLeft ? b.minX + 1 : b.maxX - 1, z: p.z, hp: 4, speed: 4.2, name: 'the Guardian Angle',
+      onWin: (gg, rig) => this.assailantLoot(gg, rig, 'a Guardian Angle', (g2) => {
+        addItem(g2.state, 'angle_pamphlet', 1);
+        g2.toast('Folded in the jacket: a pamphlet. "BE VIGILANT IN THESE TROUBLED TIMES." There is a picture of a man who looks a lot like you on the back.', 'info');
+      }),
+      onLose: (gg) => {
+        gg.toast('"CITIZEN\'S ARREST!" is the last thing you hear, followed by a lot of very sincere knee. Then nothing. Then a ceiling.', 'bad');
+        gg.collapseSequence?.('beaten');
+      },
+    });
+    g.audio?.sfx?.('alarm');
+    g.toast(pick(['A red beret at the end of the block, then a whistle, then a woman yelling "GUARDIAN ANGLES! STAY WHERE YOU ARE, CITIZEN!" She is running at you. They mean well. At an angle.', '"THIS NEIGHBOURHOOD IS PROTECTED!" A man in a red satin jacket is jogging at you with the confidence of a man who has never once been asked to. Fight or run.']), 'bad');
+  }
+
+  /** Shepherd Addison takes a punch like a sermon: twice, then he is down, and the robes have pockets. */
+  punchAddison(g) {
+    const s = g.state;
+    const ad = this.addison;
+    this.punchT = 0.34;
+    g.audio?.sfx?.('hit');
+    ad.hits = (ad.hits || 0) + 1;
+    if (ad.hits < 2) {
+      bump(s, 'stress', 4);
+      g.toast(pick(['"I forgive you," Addison says, holding his jaw. "That will be reflected in your standing."', 'Addison staggers, and smiles with blood on his teeth. "The Lord tests. The Lord also keeps a ledger."']), 'bad');
+      return;
+    }
+    ad.hits = 0;
+    ad.down = true;
+    ad.downUntil = this.realT + CONFIG.brawl.downSeconds;
+    ad.danceT = 0;
+    ad.root.rotation.set(0, ad.root.rotation.y, Math.PI / 2);
+    ad.root.position.y = 0.16;
+    this.flyHat(ad);
+    animateDown(ad);
+    this.noteKO(g);
+    const f = s.fellowship;
+    g.openModal({
+      kicker: 'THE GOLDEN FELLOWSHIP', title: 'The Shepherd Is Down',
+      body: 'Addison Octavius is on the carpet of his own church, breathing, the white suit not white any more. The collection plate is on the table behind him. His robes have deep pockets. They would.',
+      choices: [
+        { label: 'Go through his robes.', sub: 'the Fellowship will know · standing drops', disabled: s.flags.addisonRobbed === dayOf(s.clock.m), effect: () => {
+          const cash = Math.round((40 + Math.random() * 110) * 100) / 100;
+          g.earnMoney(cash, 'Addison\'s robes');
+          s.flags.addisonRobbed = dayOf(s.clock.m);
+          f.stage = Math.max(1, (f.stage || 1) - 1);
+          f.donated = Math.max(0, (f.donated || 0) - 60);
+          s.npc = s.npc || {};
+          s.npc.addison = Math.max(0, (s.npc.addison || 0) - 10);
+          bump(s, 'risk', 10);
+          bump(s, 'morale', -4);
+          logLine(g, `Robbed Shepherd Addison of ${money(cash)}. The Fellowship will remember.`, 'bad');
+          g.toast(`${money(cash)} in small bills, a gold pen and a list of names with yours on it, underlined. You keep the money. The ledger keeps you.`, 'bad');
+        } },
+        { label: 'Leave him there.', sub: 'he will be up in a minute', effect: () => {} },
+      ],
+    });
+  }
+
+  /** Follow his guidance: Addison's dance, which is not a dance, and Mo doing it with him. */
+  addisonDance(g) {
+    const ad = this.addison;
+    if (!ad?.root.visible) return;
+    ad.danceT = 9;
+    this.dance?.play();
+    setTimeout(() => this.dance?.stop(), 9000);
+  }
+
+  addisonMoves(dt) {
+    const ad = this.addison;
+    ad.danceT = Math.max(0, ad.danceT - dt);
+    const t = (this.time || 0) * 1.6;
+    // arms up and rippling, a slow spin, and a dip of the knees on every fourth beat
+    if (ad.armL) {
+      ad.armL.pivot.rotation.set(-2.6 + Math.sin(t * 3) * 0.4, 0, -0.5 + Math.sin(t * 2) * 0.5);
+      ad.armR.pivot.rotation.set(-2.6 + Math.sin(t * 3 + 1.5) * 0.4, 0, 0.5 - Math.sin(t * 2 + 1) * 0.5);
+    }
+    if (ad.hips) ad.hips.rotation.y = Math.sin(t * 1.2) * 0.6;
+    ad.root.rotation.y += dt * 0.9;
+    if (ad.danceT === 0) ad.root.rotation.y = 0;
+  }
+
+  /** A speeding car does not stop: Mo goes over the hood and lands somewhere else. */
+  hitByCar(g, car) {
+    if (this.flung) return;
+    const s = g.state;
+    const dir = car.lane.dir;
+    this.flung = { vx: dir * Math.min(9, car.speed * 0.55), vy: 5.2, vz: (Math.random() - 0.5) * 2, t: 0, lie: 0 };
+    this.seated = null;
+    this.walking = false;
+    g.audio?.sfx?.('hit');
+    g.audio?.sfx?.('honk');
+    bump(s, 'energy', -30);
+    bump(s, 'stress', 18);
+    bump(s, 'morale', -6);
+    logLine(g, 'Hit by a car on Fulton. Kept the change.', 'bad');
+    g.toast(pick(['THUMP. The world goes hood, sky, hood, pavement. The car does not stop. The car was never going to stop.', 'A horn, a bang, and you are airborne for longer than a person should be. You land. The driver yells "WATCH WHERE YOU\'RE STANDING" and is gone.']), 'bad');
+  }
+
+  updateFlung(dt, g) {
+    const f = this.flung;
+    const mo = this.mo.root;
+    f.t += dt;
+    if (f.lie > 0) {
+      f.lie -= dt;
+      if (f.lie <= 0) {
+        mo.rotation.set(0, mo.rotation.y, 0);
+        mo.position.y = 0;
+        this.flung = null;
+        if (g.state.stats.energy <= 0) g.collapseSequence?.('beaten');
+      }
+      return;
+    }
+    f.vy -= 14 * dt;
+    mo.position.x += f.vx * dt;
+    mo.position.y += f.vy * dt;
+    mo.position.z += f.vz * dt;
+    mo.rotation.x += 7 * dt;
+    const b = this.area?.bounds;
+    if (b) { mo.position.x = clamp(mo.position.x, b.minX, b.maxX); mo.position.z = clamp(mo.position.z, b.minZ, b.maxZ); }
+    if (mo.position.y <= 0 && f.vy < 0) {
+      mo.position.y = 0.16;
+      mo.rotation.set(0, mo.rotation.y, Math.PI / 2);
+      f.lie = 1.6;
+      this.tilt = 1;
+    }
   }
 
   render() {
