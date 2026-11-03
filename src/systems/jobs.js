@@ -1,4 +1,5 @@
 /** Employment, shifts and odd jobs. */
+import { addOwe } from './owes.js';
 import { latenessForgiven } from './happenings.js';
 import { CONFIG } from '../core/config.js';
 import { dayOf, minuteOfDay, money, clamp } from '../core/util.js';
@@ -120,6 +121,13 @@ export function callOut(g) {
   if (!s.job.employed) return false;
   if (!info.today || info.worked) { g.toast('Nothing to call out of.', 'info'); return false; }
   if (s.job.calledOutDay === dayOf(s.clock.m)) { g.toast('You already called out today.', 'info'); return false; }
+  // Kev owes him a shift: he covers this one, and it is not a strike
+  if (s.flags.coverOwed) {
+    s.flags.coverOwed = false;
+    s.job.calledOutDay = dayOf(s.clock.m);
+    g.toast('Kev covers it, like he said he would. No strike. He texts "we even now" and you are.', 'good');
+    return true;
+  }
   g.advance(10);
   s.job.calledOutDay = dayOf(s.clock.m);
   s.job.strikes++;
@@ -127,6 +135,9 @@ export function callOut(g) {
   bump(s, 'morale', 2);
   logLine(g, 'Called out of work.', 'info');
   g.toast(`Called out. Strike ${s.job.strikes}/${J.maxStrikes}. Dale sounded tired.`, 'bad');
+  // and Dale is a man short: Mo owes the store a shift, by Friday
+  const day = dayOf(s.clock.m);
+  if (!(s.owes || []).some((o) => !o.settled && o.who === 'dale' && o.kind === 'shift')) addOwe(g, { who: 'dale', kind: 'shift', note: 'by Friday', due: day + ((5 - ((day - 1) % 7) + 7) % 7 || 7) });
   g.audio.sfx('phone');
   if (s.job.strikes >= J.maxStrikes) fireJob(g);
   return true;

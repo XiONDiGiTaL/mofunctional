@@ -1,4 +1,5 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
+import { addOwe } from '../systems/owes.js';
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose, kickPose } from './characters.js';
@@ -873,6 +874,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       return;
     }
     const res = brawl.strike(g, { ...def, key, hp: rig.brawlHp, maxHp, label: def.label || def.name || def.kind });
+    if (['kev', 'miguel', 'habib', 'dale', 'hector'].includes(def.kind) && !(g.state.owes || []).some((o) => !o.settled && o.who === def.kind && o.kind === 'apology')) addOwe(g, { who: def.kind, kind: 'apology', note: 'for the punch' });
     if (typeof res.hp === 'number') { rig.brawlHp = res.hp; rig.brawlHpMax = maxHp; }
     // somebody with a counter to lose does the one thing that actually costs him: they call it in
     if (brawl.isImportant(def.kind, def)) {

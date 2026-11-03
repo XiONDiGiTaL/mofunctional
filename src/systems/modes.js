@@ -3,6 +3,7 @@
  * a fresh state, between "New Game" and "Begin Monday"; it moves money, the job, the rent and the
  * people around, and leaves a text or two so the first thing on the phone explains the week.
  */
+import { addOwe } from './owes.js';
 import { CONFIG } from '../core/config.js';
 import { pushMessage, bump } from '../core/state.js';
 
@@ -43,6 +44,7 @@ export function applyMode(g, id) {
       s.npc.nia = Math.max(Number(s.npc.nia) || 0, 4);
       s.sister = { ...(s.sister || {}), status: 'coming', visitDay: 2, askedDay: 1, visits: s.sister?.visits || 0 };
       s.flags.familyFirst = true;
+      addOwe(g, { who: 'nia', kind: 'help', hours: 2, note: 'moving her dresser', due: 6 });
       pushMessage(g, { from: 'NIA', subject: 'the list', body: 'Okay. Mom sent money so you are fine for now, that is the good news. The list: Tuesday I am coming over with food, be home at six. Thursday Mom wants a call. Saturday I need help moving a dresser. Sunday you are coming to Mom’s. This is not a request, this is family.' });
       break;
     case 'bad':

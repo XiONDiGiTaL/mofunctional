@@ -4,6 +4,7 @@
  * and Kev's, and at worst earns one warning; it never fires anybody on its own. "Work normally"
  * is still there for anybody who has seen enough coupons for one life.
  */
+import { addOwe } from './owes.js';
 import { bump, logLine } from '../core/state.js';
 import { pick, money } from '../core/util.js';
 import { workShift } from './jobs.js';
@@ -44,7 +45,7 @@ const SITUATIONS = [
     id: 'kev', title: 'Watch The Counter',
     body: '"Watch the counter for two minutes," Kev says, already untying his apron. That was forty minutes ago. Dale is coming in from the back and asks where Kev is.',
     choices: (g) => [
-      { label: 'Cover for him. "Bathroom."', sub: '+Kev · a small lie', effect: () => { npc(g.state, 'kev', 2); return { score: 0, line: '"For forty minutes?" Dale lets it go. Kev comes back eating a chopped cheese and mouths "I owe you." He does.' }; } },
+      { label: 'Cover for him. "Bathroom."', sub: '+Kev · he owes you one', effect: () => { npc(g.state, 'kev', 2); if (!(g.state.owes || []).some((o) => !o.settled && o.who === 'kev' && o.dir === 'them')) addOwe(g, { who: 'kev', dir: 'them', kind: 'shift', note: 'when you need it', due: 999 }); return { score: 0, line: '"For forty minutes?" Dale lets it go. Kev comes back eating a chopped cheese and mouths "I owe you." He does.' }; } },
       { label: 'Tell Dale the truth.', sub: '+Dale · -Kev', effect: () => { npc(g.state, 'dale', 1); npc(g.state, 'kev', -2); return { score: 1, line: 'Dale writes something down. When Kev comes back, he does not say anything to you for the rest of the shift, which for Kev is a speech.' }; } },
       { label: 'Text him: "where r u"', sub: 'buys time', effect: () => (Math.random() < 0.5 ? { score: 1, line: 'Kev texts back "2 min" and is back in two minutes, which is the first time that has ever happened.' } : { score: -1, line: 'Kev texts back a photo of a pigeon. No words. Dale is still waiting for an answer.' }) },
     ],

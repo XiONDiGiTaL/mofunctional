@@ -21,6 +21,7 @@ import { propertyNewDay } from './market.js';
 import { shopNewDay } from './shop.js';
 import { tickRide } from './rides.js';
 import { homeNewDay, sleepBonus } from './home.js';
+import { owesNewDay } from './owes.js';
 import { happeningsNewDay, happeningsTick, heatSleepPenalty } from './happenings.js';
 
 const N = CONFIG.needs;
@@ -55,6 +56,7 @@ export function simulate(g, minutes, ctx = {}) {
       propertyNewDay(g, d);
       shopNewDay(g, d);
       homeNewDay(g, d);
+      owesNewDay(g, d);
       happeningsNewDay(g, d);
       g.bus.emit('newday', d);
     }

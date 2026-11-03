@@ -10,6 +10,7 @@
  *
  * Everything here is headless: it returns data and small effects, never markup.
  */
+import * as owes from './owes.js';
 import { CONFIG } from '../core/config.js';
 import { money, dayOf, clamp, pick } from '../core/util.js';
 import { bump, pushMessage, logLine } from '../core/state.js';
@@ -431,6 +432,7 @@ function applyAct(g, message, opt) {
       if (s.flags.borrowWeek[kind] !== week && Math.random() < lends) {
         s.flags.borrowWeek[kind] = week;
         g.earnMoney?.(20, `borrowed from ${name}`);
+        if (['kev', 'miguel', 'habib'].includes(kind)) owes.addOwe(g, { who: kind, kind: 'cash', amount: 20 });
         followUp(g, message.from, 're', pickOne(['“slid a twenty under ur door. u owe me nothing. u owe me everything. both”', '“ok. $20. this is a loan, which means i will forget and then bring it up at your funeral”', '“left it with Miguel. dont spend it on scratch-offs. ok spend $2 on scratch-offs”']));
         g.toast(`${name} came through: $20.`, 'good');
       } else {

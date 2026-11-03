@@ -8,6 +8,7 @@
  * schedule, the women asked out, Kev talked into a joint in the park. The keypad also takes any
  * number, and a few of them are worth dialling.
  */
+import * as owes from './owes.js';
 import { CONFIG } from '../core/config.js';
 import { money, pick, dayOf, minuteOfDay, hhmm } from '../core/util.js';
 import { bump, pushMessage, logLine } from '../core/state.js';
@@ -79,6 +80,7 @@ const CALLS = {
     screen(g, 'Mom', `She picks up on the first ring, like she always does, like she has been sitting next to it.\n\n${pick(MOM_LINES)}`, [
       { label: 'Tell her you are fine.', sub: '10 min · she knows', effect: () => { mins(g, 10); bump(s, 'morale', 3); g.toast('"Fine." She lets it go, which is the most generous thing she does.', 'info'); } },
       { label: 'Tell her the truth.', sub: '25 min · +morale -stress', effect: () => { mins(g, 25); bump(s, 'morale', 9); bump(s, 'stress', -8); g.toast('She does not interrupt once. At the end she says "okay", and then "okay" again, softer, and then she asks if you have eaten.', 'good'); } },
+      { label: 'Ask her for a little money.', sub: '$40 · you will pay her back', disabled: (s.owes || []).some((o) => !o.settled && o.who === 'mom'), effect: () => { mins(g, 10); g.earnMoney(40, 'Mom'); owes.addOwe(g, { who: 'mom', kind: 'cash', amount: 40, due: dayOf(s.clock.m) + 10 }); bump(s, 'morale', -2); g.toast('"Of course." She sends it before you finish asking. That is somehow the worst part.', 'info'); } },
       { label: 'Ask about home.', sub: '15 min', effect: () => { mins(g, 15); bump(s, 'morale', 4); g.toast(pick(['The neighbour\'s dog died. The neighbour got a new dog. It has the same name. Nobody is allowed to mention it.', 'The building got new mailboxes. Hers sticks. She has written to three people about it.', 'Church is the same. The pastor is the same. The coffee is worse.']), 'info'); } },
       hangUp,
     ]);

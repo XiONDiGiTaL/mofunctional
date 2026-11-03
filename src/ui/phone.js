@@ -1,4 +1,5 @@
 /** The smartphone: the primary management interface. Every button does something. */
+import * as owes from '../systems/owes.js';
 import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { money, hhmm, dayOf, minuteOfDay, duration, clamp } from '../core/util.js';
 import { clock, inventoryList, countItem, pushMessage, hasItem, unreadMessages } from '../core/state.js';
@@ -776,6 +777,36 @@ export class Phone {
     const who = sms.identityFor(from);
     if (who.model) return `<span class="chat__face chat__face--pic"><img src="${modelPicURL(who.model, 'hips', 7)}" alt="" /></span>`;
     return serviceAvatar(from, 'chat__face') || `<img class="chat__face" src="${portraitURL(kindForName(from), 'content')}" alt="" />`;
+  }
+
+  /* ------------------------------ SQUARE UP ------------------------------ */
+
+  owesView() {
+    const s = this.g.state;
+    const list = owes.open(s);
+    const mine = list.filter((o) => o.dir !== 'them');
+    const theirs = list.filter((o) => o.dir === 'them');
+    const day = dayOf(s.clock.m);
+    const row = (o) => {
+      const late = o.dir !== 'them' && day > o.due;
+      const acts = o.dir === 'them'
+        ? `<button class="btn btn--sm btn--primary" data-act="owecollect" data-arg="${o.id}">CALL IT IN</button><button class="btn btn--sm" data-act="oweforgive" data-arg="${o.id}">LET IT GO</button>`
+        : o.kind === 'cash'
+          ? `<button class="btn btn--sm btn--primary" data-act="owepay" data-arg="${o.id}">PAY ${money(o.amount)}</button>${o.amount > 5 ? `<button class="btn btn--sm" data-act="owepart" data-arg="${o.id}">PAY ${money(5)}</button>` : ''}<button class="btn btn--sm btn--ghost" data-act="owetalk" data-arg="${o.id}">TALK</button>`
+          : `<button class="btn btn--sm btn--primary" data-act="owedo" data-arg="${o.id}">${o.kind === 'apology' ? 'APOLOGIZE' : o.kind === 'item' ? 'REPLACE IT' : 'DO IT'}</button><button class="btn btn--sm btn--ghost" data-act="owetalk" data-arg="${o.id}">TALK</button>`;
+      return `<div class="owe ${late ? 'owe--late' : ''}">
+        <div class="row row--between"><b>${T(owes.whoName(o.who))}</b><span class="tiny mono-dim">${o.dir === 'them' ? 'owes you' : late ? `${day - o.due}d late` : o.due >= 999 ? 'whenever' : `by day ${o.due}`}</span></div>
+        <div class="owe__what">${T(owes.describe(o))}</div>
+        <div class="row row--wrap owe__acts">${acts}</div>
+      </div>`;
+    };
+    return `${this.header('Square Up', `${mine.length} owed`)}
+      <div class="app__h">You owe</div>
+      ${mine.length ? mine.map(row).join('') : '<div class="empty">Nobody. Enjoy it. It will not last.</div>'}
+      <div class="app__h">Owed to you</div>
+      ${theirs.length ? theirs.map(row).join('') : '<div class="empty">Nobody owes you anything. That is its own kind of rich.</div>'}
+      <div class="tiny mono-dim">${T('Pay it, do it, or talk about it. Partial counts. Late counts too, in the other direction.')}</div>
+      ${this.footer()}`;
   }
 
   /* ------------------------------ SNAPZ ------------------------------ */
@@ -1724,6 +1755,12 @@ export class Phone {
         }, 140);
       },
       camview(arg) { this.camShot = arg; },
+      owepay(arg) { owes.pay(g, arg); },
+      owepart(arg) { owes.pay(g, arg, 5); },
+      owedo(arg) { owes.doIt(g, arg); },
+      owetalk(arg) { owes.renegotiate(g, arg); },
+      owecollect(arg) { owes.collect(g, arg); },
+      oweforgive(arg) { owes.collect(g, arg, true); },
       camback() { this.camShot = null; },
       camdelete(arg) { walls.deletePhoto(s, String(arg).split(':')[1]); this.camShot = null; g.toast('Deleted. Nobody has to know.', 'info'); },
       autopay() { setAutopay(g, !s.autopay?.on); g.toast(s.autopay.on ? 'Shale Pay AutoPay is on.' : 'AutoPay is off. Every bill is yours again.', 'info'); },
@@ -1793,6 +1830,7 @@ export class Phone {
       fellowship: this.fellowshipView,
       system: this.systemView,
       camera: this.cameraView,
+      owes: this.owesView,
       dealer: this.dealerView,
       rolo: this.roloView,
       dates: this.datesView,

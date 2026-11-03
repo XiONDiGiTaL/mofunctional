@@ -18,6 +18,10 @@ export const APPS = {
     name: 'Snapz', tag: 'every photo is evidence', a: '#ffd23a', b: '#d8551e',
     icon: svg('<path d="M3.5 8.5h3l1.8-2.5h7.4l1.8 2.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.2" r="3.6"/>'),
   },
+  owes: {
+    name: 'Square Up', tag: 'who owes who, honestly', a: '#9ad86a', b: '#2a6a3a',
+    icon: svg('<path d="M4 12h6M14 12h6M8 8l-4 4 4 4M16 8l4 4-4 4"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>'),
+  },
   bank: {
     name: 'Shale Pay', tag: 'your money, briefly', a: '#2bd2c4', b: '#0d3550',
     icon: svg('<rect x="2.5" y="5.5" width="19" height="13" rx="2.2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/>'),
@@ -211,7 +215,7 @@ export const APP_SHELVES_OLD = [
  * for them. The shelves had become tabs, and the tabs hid half the phone behind a scroll.
  */
 export const APP_SHELVES = [
-  { id: 'all', name: 'Apps', apps: ['call', 'camera', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'] },
+  { id: 'all', name: 'Apps', apps: ['call', 'camera', 'owes', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'] },
 ];
 
 /**
@@ -221,10 +225,10 @@ export const APP_SHELVES = [
 export const CATEGORIES = [
   { id: 'street', name: 'Street', apps: ['call', 'ride', 'jobs', 'block', 'social', 'rolo'] },
   { id: 'money', name: 'Money', apps: ['bills', 'bidbay', 'shop', 'invest', 'casino'] },
-  { id: 'life', name: 'Life', apps: ['camera', 'inventory', 'calendar', 'clinic', 'fellowship', 'system'] },
+  { id: 'life', name: 'Life', apps: ['camera', 'owes', 'inventory', 'calendar', 'clinic', 'fellowship', 'system'] },
   { id: 'late', name: 'After Dark', apps: ['fans'] },
 ];
-export const DRAWER = ['messages', 'call', 'camera', 'bank', 'pantry', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'];
+export const DRAWER = ['messages', 'call', 'camera', 'owes', 'bank', 'pantry', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'];
 /** Every app on the home screen, in order (kept for anything that wants a flat list). */
 export const HOME_GRID = APP_SHELVES.flatMap((s) => s.apps);
 
