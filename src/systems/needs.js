@@ -20,6 +20,7 @@ import { healthTick } from './health.js';
 import { propertyNewDay } from './market.js';
 import { shopNewDay } from './shop.js';
 import { tickRide } from './rides.js';
+import { homeNewDay, sleepBonus } from './home.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -52,6 +53,7 @@ export function simulate(g, minutes, ctx = {}) {
       sisterNewDay(g, d);
       propertyNewDay(g, d);
       shopNewDay(g, d);
+      homeNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
@@ -350,7 +352,7 @@ export function sleep(g, hours = 7) {
   const start = s.clock.m;
   g.advance(hours * 60, { sleeping: true, noCollapse: true });
   s.counters.sleeps = (s.counters.sleeps || 0) + 1;
-  bump(s, 'energy', 4);
+  bump(s, 'energy', 4 + sleepBonus(s) * hours);
   bump(s, 'stress', -6);
   logLine(g, `Slept ${hours}h.`, 'info');
   const woke = hhmm(s.clock.m);

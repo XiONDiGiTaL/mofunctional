@@ -148,6 +148,7 @@ export const CONFIG = {
     coffee:       { id: 'coffee',       name: 'Quik-Stop Coffee', kind: 'comfort', price: 1.25, energy: 9, stress: 2, morale: 1, value: 0.2 },
     // out of the laundromat machines
     angle_pamphlet: { id: 'angle_pamphlet', name: '"Be Vigilant!" Pamphlet', kind: 'doc', price: 0, value: 0 },
+    batch_meal:   { id: 'batch_meal',   name: 'Rice & Beans (home batch)', kind: 'food', price: 2.0, hunger: 34, energy: 12, morale: 4, hygiene: 0, value: 0.6 },
     soda:         { id: 'soda',         name: 'Can of Soda', kind: 'comfort', price: 1.0, energy: 6, hunger: 2, morale: 3, value: 0.2 },
     water:        { id: 'water',        name: 'Bottle of Water', kind: 'comfort', price: 1.0, energy: 3, stress: -2, hygiene: 1, value: 0.2 },
     chips:        { id: 'chips',        name: 'Bag of Chips', kind: 'food', price: 0.75, hunger: 10, energy: 2, morale: 2, value: 0.2 },

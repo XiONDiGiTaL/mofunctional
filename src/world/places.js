@@ -730,6 +730,12 @@ function newsstand(g) {
         s.flags.jaysCatalog = true;
         g.toast("Mr. Jay's Fall Catalog, glossy, smells of perfume strips. The order line is in Contacts now. Jay ships next morning, for a fee, like everybody.", 'good');
       } },
+      { label: s.flags.decorGuide ? "Flip through the Home Decorator's Guide." : "Buy the Home Decorator's Guide.", sub: s.flags.decorGuide ? 'you own it · fix up Unit 3B from home' : `${money(3)} · unlocks the nicer upgrades at home`, disabled: !s.flags.decorGuide && s.money < 3, effect: () => {
+        if (s.flags.decorGuide) { g.toast('Chapter 4: "Your Lamp Is Your Personality." You have read it twice. You do not have a lamp.', 'info'); return; }
+        if (!g.spendMoney(3, "Home Decorator's Guide")) return;
+        s.flags.decorGuide = true;
+        g.toast("THE HOME DECORATOR'S GUIDE, 1997 edition. A woman on the cover is very happy about a throw pillow. Fix up the place from home now: wallpaper, a rug, a real TV.", 'good');
+      } },
       { label: 'Just look at the headlines.', sub: '', effect: () => {} },
     ],
   });

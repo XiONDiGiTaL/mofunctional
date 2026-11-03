@@ -224,6 +224,10 @@ const ART = {
   lease: svg(`<path d="M18 8h26l4 6v40H22l-4-4z" fill="#f2e6c4"/><path d="M44 8l4 6h-4z" fill="#d9c79a"/><path d="M18 50l4 4v-4z" fill="#d9c79a"/>`
     + `<path d="M23 18h20M23 23h20M23 28h20M23 33h14" stroke="#9a8f74" stroke-width="1.4"/>${txt(32, 14.6, 3.4, '#5a4a2a', 'LEASE 3B')}`
     + `<circle cx="40" cy="44" r="4.6" fill="#c4202a"/><path d="M38 48l-2 5M42 48l2 5" stroke="#c4202a" stroke-width="2"/><path d="M24 44c3-3 5 1 8-2" stroke="#2c5fb8" stroke-width="1.4"/>`, 16),
+  // a plastic container of rice and beans, lid half on
+  batch_meal: svg(`<path d="M12 30h40l-4 22H16z" fill="#e8ecef" opacity=".85"/><ellipse cx="32" cy="30" rx="20" ry="5" fill="#f2f0e4"/>`
+    + `<ellipse cx="32" cy="31" rx="17" ry="4" fill="#efe6c8"/><circle cx="26" cy="30" r="1.6" fill="#7a2e22"/><circle cx="33" cy="31" r="1.6" fill="#7a2e22"/><circle cx="38" cy="29.5" r="1.6" fill="#7a2e22"/>`
+    + `<path d="M10 22l40-6 2 5-40 6z" fill="#c8d8e0" opacity=".9"/>`, 16),
   // the Guardian Angles' tri-fold: red, white wings, an eye, and a lot of exclamation marks
   angle_pamphlet: svg(`<path d="M12 14l14-4v42l-14 4z" fill="#c01e1a"/><path d="M26 10l14 4v42l-14-4z" fill="#f2f2ec"/><path d="M40 14l14-4v42l-14 4z" fill="#c01e1a"/>`
     + `<path d="M15 26l4-3 4 3M15 30l4-3 4 3" stroke="#f2f2ec" stroke-width="1.6"/><circle cx="33" cy="24" r="3.4" fill="#c01e1a"/><circle cx="33" cy="24" r="1.3" fill="#141416"/>`

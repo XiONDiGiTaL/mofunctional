@@ -1,5 +1,6 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
 import { playShift } from '../systems/shiftplay.js';
+import * as home from '../systems/home.js';
 import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
@@ -70,22 +71,60 @@ export function buildApartment(g) {
   const floor = plane(W, D, { name: 'apfloor', map: tex('linoleum'), repeat: [3, 4] }, [0, 0, 0], [-Math.PI / 2, 0, 0]);
   group.add(floor);
 
-  // walls
-  group.add(box(W, 2.7, 0.16, { name: 'apwall', map: tex('wallpaper') }, [0, 1.35, -D / 2]));
-  group.add(box(W, 2.7, 0.16, { name: 'apwall2', map: tex('wallpaper') }, [0, 1.35, D / 2]));
-  group.add(box(0.16, 2.7, D, { name: 'apwall3', map: tex('wallpaper') }, [-W / 2, 1.35, 0]));
-  group.add(box(0.16, 2.7, D, { name: 'apwall4', map: tex('wallpaper') }, [W / 2, 1.35, 0]));
+  // walls (new wallpaper, if he put it up: the same paper, a warmer colour over it)
+  const hs = g.state;
+  const papered = home.has(hs, 'wallpaper');
+  const wallMat = (n) => (papered ? retroMaterial(`apwallnew${n}`, { map: tex('wallpaper'), color: 0xe8c89a }) : { name: `apwall${n}`, map: tex('wallpaper') });
+  group.add(box(W, 2.7, 0.16, wallMat(''), [0, 1.35, -D / 2]));
+  group.add(box(W, 2.7, 0.16, wallMat('2'), [0, 1.35, D / 2]));
+  group.add(box(0.16, 2.7, D, wallMat('3'), [-W / 2, 1.35, 0]));
+  group.add(box(0.16, 2.7, D, wallMat('4'), [W / 2, 1.35, 0]));
   group.add(plane(W, D, { name: 'apceil', map: tex('ceiling'), repeat: [2, 3] }, [0, 2.7, 0], [Math.PI / 2, 0, 0]));
 
   // window (front wall) with a view that is just a wall
   group.add(plane(1.5, 1.2, { name: 'apwin', map: tex('window'), emissive: 0.4, unlit: true }, [1.6, 1.6, -D / 2 + 0.09]));
 
-  // bed
-  group.add(box(1.1, 0.22, 2.0, M.metal, [-2.4, 0.24, -2.4]));
-  group.add(box(1.0, 0.16, 1.9, M.mattress, [-2.4, 0.42, -2.4]));
-  group.add(box(1.0, 0.06, 0.5, M.white, [-2.4, 0.53, -3.1]));
-  group.add(box(1.0, 0.05, 1.2, retroMaterial('blanket', { color: 0x4a5560 }), [-2.4, 0.52, -2.1]));
-  group.add(box(0.08, 0.5, 1.9, M.metal, [-3.0, 0.6, -2.4]));
+  // bed: the old cot, a new mattress on it, or a real bed with a headboard
+  if (home.has(hs, 'bed_new')) {
+    const wood = retroMaterial('bednew', { map: tex('wood'), color: 0x8a5a3a });
+    group.add(box(1.4, 0.3, 2.1, wood, [-2.3, 0.15, -2.4]));
+    group.add(box(1.36, 0.22, 2.0, retroMaterial('bednewmat', { color: 0xf0ece4 }), [-2.3, 0.41, -2.4]));
+    group.add(box(1.4, 0.9, 0.1, wood, [-2.3, 0.75, -3.45]));
+    group.add(box(1.0, 0.1, 0.36, M.white, [-2.3, 0.57, -3.15]));
+    group.add(box(1.38, 0.06, 1.35, retroMaterial('bednewblanket', { color: 0x7a2a3a }), [-2.3, 0.55, -1.95]));
+  } else {
+    group.add(box(1.1, 0.22, 2.0, M.metal, [-2.4, 0.24, -2.4]));
+    group.add(box(1.0, 0.16, 1.9, home.has(hs, 'mattress') ? retroMaterial('mattressnew', { color: 0xe8eef0 }) : M.mattress, [-2.4, 0.42, -2.4]));
+    group.add(box(1.0, 0.06, 0.5, M.white, [-2.4, 0.53, -3.1]));
+    group.add(box(1.0, 0.05, 1.2, retroMaterial('blanket', { color: home.has(hs, 'mattress') ? 0x2a4a7a : 0x4a5560 }), [-2.4, 0.52, -2.1]));
+    group.add(box(0.08, 0.5, 1.9, M.metal, [-3.0, 0.6, -2.4]));
+  }
+  // the rug, the lamp, the plant, the couch, the hot plate: whatever he has put in here
+  if (home.has(hs, 'rug')) group.add(plane(2.2, 1.6, { name: 'aprug', color: 0x8a2a2a }, [0.2, 0.012, 1.4], [-Math.PI / 2, 0, 0]));
+  if (home.has(hs, 'rug')) group.add(plane(1.9, 1.3, { name: 'aprug2', color: 0xc89a4a }, [0.2, 0.014, 1.4], [-Math.PI / 2, 0, 0]));
+  if (home.has(hs, 'lamp')) {
+    group.add(box(0.06, 1.5, 0.06, M.metal, [-3.0, 0.75, -0.4]));
+    group.add(box(0.36, 0.3, 0.36, retroMaterial('aplampshade', { color: 0xf2d89a, emissive: 0.6, unlit: true }), [-3.0, 1.6, -0.4]));
+  }
+  if (home.has(hs, 'plant')) {
+    group.add(box(0.24, 0.24, 0.24, retroMaterial('appot', { color: 0xb05a2a }), [2.1, 1.02, -3.6]));
+    for (let i = 0; i < 5; i++) group.add(box(0.06, 0.36, 0.14, retroMaterial('apleaf', { color: 0x3a8a3a }), [2.1 + Math.sin(i * 1.3) * 0.12, 1.3, -3.6 + Math.cos(i * 1.3) * 0.12], [Math.sin(i) * 0.5, i, Math.cos(i) * 0.5]));
+  }
+  if (home.has(hs, 'couch')) {
+    const cushion = retroMaterial('apcouch', { color: 0x5a6a4a });
+    group.add(box(1.8, 0.42, 0.8, cushion, [-1.6, 0.21, 2.6]));
+    group.add(box(1.8, 0.5, 0.18, cushion, [-1.6, 0.6, 2.95]));
+    for (const sx of [-1, 1]) group.add(box(0.18, 0.3, 0.8, cushion, [-1.6 + sx * 0.86, 0.55, 2.6]));
+  }
+  if (home.has(hs, 'hotplate')) {
+    group.add(box(0.5, 0.08, 0.34, retroMaterial('aphotplate', { color: 0x2a2a2c }), [-0.8, 0.9, -3.55]));
+    for (const dx of [-0.12, 0.12]) group.add(box(0.16, 0.012, 0.16, retroMaterial('apcoil', { color: 0xc83a1e, emissive: 0.4 }), [-0.8 + dx, 0.95, -3.55]));
+  }
+  // the leak: a pot under a drip by the window
+  if (home.homeState(hs).leak) {
+    group.add(box(0.3, 0.2, 0.3, M.metal, [1.6, 0.1, -3.0]));
+    group.add(plane(0.6, 0.6, { name: 'apleakstain', color: 0x5a4a3a, opacity: 0.5, transparent: true }, [1.6, 2.69, -3.0], [Math.PI / 2, 0, 0]));
+  }
 
   // fridge
   group.add(box(0.8, 1.8, 0.75, retroMaterial('fridge', { color: 0xc9c9bd }), [2.7, 0.9, -3.5]));
@@ -105,16 +144,30 @@ export function buildApartment(g) {
   for (const [x, z] of [[0.95, -0.5], [1.85, -0.5], [0.95, 0.1], [1.85, 0.1]]) {
     group.add(box(0.06, 0.72, 0.06, M.wood, [x, 0.36, z]));
   }
-  group.add(box(0.42, 0.03, 0.3, M.dark, [1.4, 0.76, -0.2]));
-  group.add(box(0.4, 0.24, 0.02, retroMaterial('laptop', { map: tex('static'), emissive: 0.5, unlit: true }), [1.4, 0.88, -0.34], [-0.5, 0, 0]));
+  if (home.has(hs, 'computer')) {
+    // a beige tower under the table and a big monitor on it
+    group.add(box(0.2, 0.45, 0.45, retroMaterial('aptower', { color: 0xd8d0b8 }), [1.95, 0.23, -0.2]));
+    group.add(box(0.5, 0.42, 0.4, retroMaterial('apmonitor', { color: 0xd8d0b8 }), [1.4, 0.98, -0.35]));
+    group.add(plane(0.4, 0.3, { name: 'apmonscreen', color: 0x3a6ab8, emissive: 0.8, unlit: true }, [1.4, 1.0, -0.14]));
+    group.add(box(0.44, 0.02, 0.16, M.dark, [1.4, 0.76, 0.0]));
+  } else {
+    group.add(box(0.42, 0.03, 0.3, M.dark, [1.4, 0.76, -0.2]));
+    group.add(box(0.4, 0.24, 0.02, retroMaterial('laptop', { map: tex('static'), emissive: 0.5, unlit: true }), [1.4, 0.88, -0.34], [-0.5, 0, 0]));
+  }
   // chair
   group.add(box(0.5, 0.06, 0.5, M.fabric, [1.4, 0.45, 0.55]));
   group.add(box(0.5, 0.55, 0.06, M.fabric, [1.4, 0.72, 0.79]));
 
-  // tv
-  group.add(box(0.8, 0.5, 0.6, M.wood, [-2.6, 0.25, 1.6]));
-  group.add(box(0.75, 0.6, 0.62, retroMaterial('crt', { color: 0x3a3a38 }), [-2.6, 0.85, 1.6]));
-  group.add(plane(0.56, 0.42, { name: 'tvscreen', map: tex('static'), emissive: 0.7, unlit: true }, [-2.6, 0.88, 1.29]));
+  // tv: the CRT on a crate, or a flatscreen on the west wall
+  if (home.has(hs, 'tv_flat')) {
+    group.add(box(0.06, 0.7, 1.2, retroMaterial('apflat', { color: 0x141416 }), [-W / 2 + 0.12, 1.45, 1.6]));
+    group.add(plane(1.1, 0.6, { name: 'apflatscreen', color: 0x4a7ab8, emissive: 0.9, unlit: true }, [-W / 2 + 0.16, 1.45, 1.6], [0, Math.PI / 2, 0]));
+    group.add(box(0.4, 0.3, 1.0, M.wood, [-W / 2 + 0.3, 0.15, 1.6]));
+  } else {
+    group.add(box(0.8, 0.5, 0.6, M.wood, [-2.6, 0.25, 1.6]));
+    group.add(box(0.75, 0.6, 0.62, retroMaterial('crt', { color: 0x3a3a38 }), [-2.6, 0.85, 1.6]));
+    group.add(plane(0.56, 0.42, { name: 'tvscreen', map: tex('static'), emissive: 0.7, unlit: true }, [-2.6, 0.88, 1.29]));
+  }
 
   // door
   group.add(box(1.0, 2.2, 0.12, M.door, [0, 1.1, D / 2 - 0.05]));
@@ -143,6 +196,9 @@ export function buildApartment(g) {
 
   const interactables = [
     { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
+    { id: 'fixup', label: 'Fix up the place', sub: home.homeState(hs).leak ? 'there is a leak · repairs · upgrades' : 'repairs · upgrades', x: 0.6, z: 3.3, radius: 0.9, action: (gg) => home.fixUpMenu(gg) },
+    ...(home.has(hs, 'hotplate') ? [{ id: 'cook', label: 'Cook a batch on the hot plate', sub: `${money(6)} · 45 min · three meals`, x: -0.8, z: -2.9, radius: 0.9, action: (gg) => home.cookBatch(gg) }] : []),
+    ...(home.homeState(hs).leak ? [{ id: 'leak', label: 'The leak', sub: 'a pot under a drip', x: 1.6, z: -2.5, radius: 0.9, action: (gg) => home.leakMenu(gg) }] : []),
     { id: 'fridge', label: 'Open the fridge', sub: 'eat · store food for later', x: 2.7, z: -2.9, action: (gg) => showFridge(gg) },
     { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
     { id: 'bathroom', label: 'Into the bathroom', sub: 'the toilet tank · the shower that does not work', x: 2.9, z: 1.0, radius: 0.9, action: (gg) => gg.goTo('bathroom', 'apartment') },
@@ -203,12 +259,13 @@ export function buildApartment(g) {
 
   return {
     group,
-    seats: [{ x: 1.4, z: 0.55, rot: Math.PI, label: 'Sit at the desk' }],
+    seats: [{ x: 1.4, z: 0.55, rot: Math.PI, label: 'Sit at the desk' }, ...(home.has(g.state, 'couch') ? [{ x: -1.6, z: 2.55, rot: Math.PI, label: 'Sit on the couch', sub: 'yours, from the curb' }] : [])],
     bounds: { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 },
     solids: [
       solid(-2.4, -2.4, 1.3, 2.1, 0.6), solid(2.7, -3.5, 0.9, 0.85, 1.8), solid(1.1, -3.6, 2.5, 0.8, 0.9),
       solid(-0.8, -3.6, 1.0, 0.8, 0.9), solid(1.4, -0.2, 1.2, 0.9, 0.9), solid(-2.6, 1.6, 0.9, 0.7, 1.15),
       solid(2.9, 2.6, 0.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5, 0.35), solid(-W / 2 + 0.36, 0.2, 0.6, 1.35, 2.0),
+      ...(home.has(g.state, 'couch') ? [solid(-1.6, 2.75, 1.8, 0.5, 0.45)] : []),
     ],
     spawn: { x: 0, z: 1.15, rot: Math.PI },
     spawnFor: (from) => (from === 'bathroom' ? { x: 2.7, z: 1.0, rot: -Math.PI / 2 } : null),
@@ -245,9 +302,9 @@ function shower(g) {
     g.toast('Cold shower. Every hair on your body files a separate complaint.', 'bad');
     return;
   }
-  g.advance(25);
-  bump(s, 'hygiene', 34);
-  bump(s, 'stress', -7);
+  g.advance(home.showerMinutes(s));
+  bump(s, 'hygiene', home.has(s, 'shower') ? 42 : 34);
+  bump(s, 'stress', home.has(s, 'shower') ? -10 : -7);
   bump(s, 'morale', 2);
   g.audio.sfx('confirm');
   g.toast('Clean. The world is 4% more negotiable.', 'good');
