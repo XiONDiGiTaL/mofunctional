@@ -25,6 +25,7 @@ import { STRANGERS } from '../core/strangers.js';
 import * as sister from './sister.js';
 import * as health from './health.js';
 import * as happen from './happenings.js';
+import * as supply from './supply.js';
 
 /** Senders that are people, with the face the UI should draw. */
 const PEOPLE = {
@@ -234,7 +235,7 @@ export function replyOptions(message, s) {
   if (message?.choices?.length) {
     // a choice may be a saved id (a happening's preparation, the inspector) instead of a function,
     // so it still works after the game is saved and loaded again
-    return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect || (c.arc ? (gg) => arcs.choose(gg, c.arc, c.opt) : c.recov ? (gg) => recovery.answer(gg, c.recov) : c.prep ? (gg) => happen.prepare(gg, c.prep) : c.inspect ? (gg) => happen.inspectionResult(gg, c.inspect) : undefined) }));
+    return message.choices.map((c) => ({ act: null, label: c.label, effect: c.effect || (c.arc ? (gg) => arcs.choose(gg, c.arc, c.opt) : c.recov ? (gg) => recovery.answer(gg, c.recov) : c.prep ? (gg) => happen.prepare(gg, c.prep) : c.inspect ? (gg) => happen.inspectionResult(gg, c.inspect) : c.supply ? (gg) => supply.reply(gg, c.supply, c.opt) : undefined) }));
   }
   const id = identityFor(message?.from);
   // the woman who gave him the clap: he knows, now, and he can say so

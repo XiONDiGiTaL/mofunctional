@@ -29,6 +29,17 @@ export function applyAct(rig, dt, life) {
   if (!act) return;
   rig.actT = (rig.actT || Math.random() * 10) + dt;
   const t = rig.actT;
+  if (act === 'fiend') {
+    // visibly high: the slow sway, the nod, one hand worrying at the other arm
+    rig.torso.rotation.z = Math.sin(t * 0.9) * 0.08;
+    rig.torso.rotation.x = 0.2 + Math.sin(t * 0.5) * 0.12;
+    rig.head.rotation.x = 0.3 + Math.max(0, Math.sin(t * 0.7)) * 0.45;
+    rig.armR.pivot.rotation.x = -0.7;
+    rig.armR.elbow.rotation.x = -1.6 + Math.sin(t * 9) * 0.25;
+    rig.armL.pivot.rotation.x = -0.3 + Math.sin(t * 0.8) * 0.15;
+    rig.armL.elbow.rotation.x = -0.9;
+    return;
+  }
   if (act === 'dice' || act === 'watch') {
     // down on the haunches over the crates
     const crouch = act === 'dice' ? 1 : 0.35;

@@ -35,7 +35,8 @@ import { SubstanceUse, CollapseFall, DanceBeat } from './animations.js';
 import { isPartnerId, partnerState, PARTNER_KEYS, homeChat, breakUp } from '../systems/romance.js';
 import { CONFIG } from '../core/config.js';
 import { clamp, lerp, minuteOfDay, dayOf, money, hhmm, pick } from '../core/util.js';
-import { faceSpec } from '../render/heads.js';
+import { faceSpec, setFaceHigh, setFaceExpression } from '../render/heads.js';
+import { addFiends, onKnockout as supplyKO } from '../systems/supply.js';
 import { scheduleTarget, partnerTarget, PARTNER_AREA_NAMES, PARTNER_HOME_SPOTS, strangerRunIns, strangerTarget } from './schedules.js';
 import { ceilingFor, armLength, armMax, eyeHeight, liftFor } from './cameraLimits.js';
 import { strangerMenu, strangerLabel, niaMenu } from './encounters.js';
@@ -243,6 +244,9 @@ export class World {
     this.camTarget.set(this.mo.root.position.x, 1.15, this.mo.root.position.z);
     this.camera.lookAt(this.camTarget);
 
+    // fiends: out on the block, the park and the platform after dark, asleep in the towers by day
+    addFiends(g, id, this.area);
+    this.fiendScatter = false;
     this.interactables = this.area.interactables.map((it) => ({ ...it, vec: new THREE.Vector2(it.x, it.z) }));
     this.seated = null;
     this.addSeats(this.area.seats || []);
@@ -284,6 +288,8 @@ export class World {
       // the three women carry a heart until one of them is actually his girlfriend
       if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
     }
+    // a fiend looks like what they are: the high face, all the way
+    for (const k of ['fiend', 'fiend_f']) if (this.area.npcs.some((n) => n.kind === k)) setFaceExpression(k, 'high', 1);
     // Nia, when she has come over: walks into Unit 3B with a bag of food (systems/sister.js)
     if (id === 'apartment') {
       const rig = createNPC('nia');
@@ -932,6 +938,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (res.result === 'ko') {
       this.knockDown(rig, g);
       this.noteKO(g, def);
+      // a connection who kept Mo's money pays it back from the pavement
+      const paid = supplyKO(g, def.kind);
+      if (paid) g.toast(paid, 'good');
       g.openModal({
         kicker: 'THE STREET · SOMEBODY IS DOWN',
         title: 'Out Cold',
@@ -1161,6 +1170,19 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!this.chaseRig && brawl.alertDue(g.state)) {
       brawl.clearAlert(g.state);
       if (OUTSIDE.has(this.areaId)) { this.traffic?.spawnSpecial?.('police'); g.toast('A cruiser rolls down the block slowly, looking at faces. It does not stop. Nobody saw anything, out loud.', 'info'); }
+    }
+    // fiends do not stay where a uniform or a red beret can see them
+    this.fiendT = (this.fiendT || 0) - dt;
+    if (this.fiendT <= 0 && this.npcRigs.some((r) => r.npcDef?.fiend)) {
+      this.fiendT = 0.5;
+      const law = this.assailants.list.some((a) => /^angel/.test(a.kind || '')) || this.copSees(16);
+      if (law) {
+        for (const r of this.npcRigs) {
+          if (!r.npcDef?.fiend || r.gone || r.flee > 0 || r.down || r.npcDef.pose === 'sleep') continue;
+          this.startFlee(r);
+          if (!this.fiendScatter) { this.fiendScatter = true; g.toast(pick(['The fiends see the uniform before you do and are gone, like pigeons when a door slams.', 'Somebody whistles two notes and every fiend on the block remembers an appointment.']), 'info'); }
+        }
+      }
     }
     // the ones who ran head for the end of the block, along the pavement. Running straight away
     // from Mo meant running straight through the facades, so they have a place to get to and the
@@ -1848,6 +1870,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       withdrawal: s.stats.withdrawal,
       speed: 1,
     });
+    // high, it shows on his face: bloodshot, lids down, the corner of the mouth up (ROX all the way)
+    if (this.mode === 'play') setFaceHigh('mo', Math.min(1, s.high.level / 70) * (s.high.kind === 'rox' ? 1 : 0.6));
     // the swing is his whole body: wind up, drive through, recover
     if (this.punchT > 0) punchPose(this.mo, 1 - this.punchT / 0.34);
     if (this.kickT > 0) { this.kickT = Math.max(0, this.kickT - dt); kickPose(this.mo, 1 - this.kickT / 0.5); }

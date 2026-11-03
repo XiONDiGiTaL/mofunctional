@@ -157,7 +157,9 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         inspection), owes (Square Up), music (write, record, open mic), arcs
                         (multi-day stories), tenants (organizing the third floor), recovery
                         (support contact, routines, invitations, the way back), papi (the block's
-                        encyclopedia: people, places, what is going on)
+                        encyclopedia: people, places, what is going on), supply (ROX: the
+                        three connections on consignment, daily texts, stiffing and
+                        collecting, and the fiends who buy it after dark)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,
@@ -174,6 +176,7 @@ src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (
                         debug (the hidden menu), arcade (the three cabinets at Dee's),
                         pinups (the mosaic pictures for LonelyFans and DialUpDelights)
                         wallpapers (the home screen's pictures, Snapz photos, memories), marquee (the happenings banner)
+                        tv (looping canvas clips: Unit 3B's channels, the TV overlay, MeTube's player)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
 scripts/test-systems.mjs  headless system checks (npm test)
 scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)

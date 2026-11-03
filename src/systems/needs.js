@@ -25,6 +25,7 @@ import { owesNewDay } from './owes.js';
 import { arcsNewDay } from './arcs.js';
 import { recoveryNewDay } from './recovery.js';
 import { happeningsNewDay, happeningsTick, heatSleepPenalty } from './happenings.js';
+import { supplyNewDay } from './supply.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -62,6 +63,7 @@ export function simulate(g, minutes, ctx = {}) {
       arcsNewDay(g, d);
       recoveryNewDay(g, d);
       happeningsNewDay(g, d);
+      supplyNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
@@ -330,6 +332,7 @@ function applySubstance(g, itemId) {
   s.high.lastDose = s.clock.m;
   s.high.until = s.clock.m + S.highDurationMinutes;
   s.high.level = 100;
+  s.high.kind = itemId;
   s.counters.doses++;
   s.flags.firstDose = true;
   logLine(g, `Used ${type.name}.`, 'bad');

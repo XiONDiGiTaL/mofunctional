@@ -29,6 +29,7 @@ import * as fights from '../systems/fights.js';
 import * as wardrobe from '../systems/wardrobe.js';
 import { FightMeter } from '../ui/fight.js';
 import { buildCourt, COURT, housesState, WOMEN, womanMenu } from './houses.js';
+import * as supply from '../systems/supply.js';
 
 const meter = (g) => (g.world.fightMeter ||= new FightMeter(document.getElementById('ui') || document.body, g));
 
@@ -805,6 +806,11 @@ export function buildProjects(g) {
     { id: 'pj_north', label: 'Into the North Tower', sub: 'six floors · stairs only', x: -12, z: -7.6, radius: 1.5, action: (gg) => { const h = housesState(gg.state); h.tower = 'north'; h.floor = 0; gg.goTo('pjtower', 'projects'); } },
     { id: 'pj_east', label: 'Into the East Tower', sub: 'six floors · stairs only', x: 10, z: -7.6, radius: 1.5, action: (gg) => { const h = housesState(gg.state); h.tower = 'east'; h.floor = 0; gg.goTo('pjtower', 'projects'); } },
     { id: 'pj_post', label: 'Post up on the bench', sub: 'an hour · high risk, high reward', x: -4, z: -2.0, radius: 1.5, seat: { x: -4, z: -2.95, rot: 0 }, action: (gg) => postUp(gg) },
+    // once Mo has ROX, Benchy and Squeak will move it for him (systems/supply.js)
+    ...(supply.inTheGame(g.state) ? [
+      { id: 'pj_rox_benchy', label: 'Talk ROX with Benchy', sub: 'he moves it, you get paid · maybe', x: 4.6, z: -1.7, radius: 1.2, action: (gg) => supply.dealerMenu(gg, 'benchy') },
+      { id: 'pj_rox_squeak', label: 'Talk ROX with Squeak', sub: 'by the dice game', x: 3.2, z: 3.3, radius: 1.2, action: (gg) => supply.dealerMenu(gg, 'squeak') },
+    ] : []),
   ];
   // after dark one of the women from upstairs is out front of her tower, smoking, which is how
   // most men find out the towers have them at all; the tower doors say whose light is on

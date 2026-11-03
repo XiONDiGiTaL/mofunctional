@@ -94,6 +94,13 @@ export const CONFIG = {
         tolerance: 3, effects: { energy: 10, hunger: -16, morale: 3, stress: -10, hygiene: -9 },
         flavor: 'Cheap because the risk is the price.',
       },
+      // Mo's own product, off the hot plate. Not for sale anywhere: he makes it, he smokes it, or
+      // he moves it (systems/supply.js). The strongest thing in the game and the worst idea in it.
+      rox: {
+        id: 'rox', name: 'ROX', price: 40, addiction: 19, risk: 21, homemade: true,
+        tolerance: 6, effects: { energy: 36, hunger: -15, morale: 36, stress: -36, hygiene: -8 },
+        flavor: 'Little off-white rocks that feel like a standing ovation for about forty minutes, followed by the bill.',
+      },
     },
     // a bad batch from Dex: on top of the dose
     badBatch: { risk: 12, stress: 10, morale: -6 },
@@ -101,7 +108,7 @@ export const CONFIG = {
     highEnergyBonus: 8,
     // How each invented substance is taken, for the on-screen use animation. Never real
     // instructions: these are the game's own props (a vial, two pills, a pipe, a dropper).
-    useAnim: { bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop', bliss_x: 'vial', static_x: 'pill', mud_x: 'pipe', drip_x: 'drop' },
+    useAnim: { bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop', bliss_x: 'vial', static_x: 'pill', mud_x: 'pipe', drip_x: 'drop', rox: 'pipe' },
     useDurationSeconds: { vial: 3.2, pill: 3.6, pipe: 4.2, drop: 3.0 },
     withdrawal: {
       startsAfterMinutes: 10 * 60,
@@ -160,6 +167,8 @@ export const CONFIG = {
     static_x:{ id: 'static_x',name: 'Static (double-stack)',  kind: 'substance', price: 29, value: 10 },
     mud_x:   { id: 'mud_x',   name: 'Black Mud',              kind: 'substance', price: 24, value: 8 },
     drip_x:  { id: 'drip_x',  name: 'Drip (pure)',            kind: 'substance', price: 12, value: 4 },
+    rox:     { id: 'rox',     name: 'ROX',                    kind: 'substance', price: 40, value: 15 },
+    baking_soda: { id: 'baking_soda', name: 'Box of Baking Soda', kind: 'supply', price: 2.0, value: 0.3 },
     tv:      { id: 'tv',      name: '22" CRT Television', kind: 'valuable', value: 95,  weight: 5 },
     guitar:  { id: 'guitar',  name: 'Bolt-On Guitar', kind: 'valuable', value: 150, weight: 4 },
     watch:   { id: 'watch',   name: "Grandad's Watch", kind: 'valuable', value: 60,  weight: 1 },

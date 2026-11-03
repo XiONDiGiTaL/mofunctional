@@ -320,6 +320,21 @@ level, a ring made of pallets and rope, and a bookie with a cash box. One fight 
 the other man out and the purse is yours, and it grows every time you win. Get knocked out and
 you wake up at the clinic with a story nobody believes.
 
+### ROX
+
+With a hot plate, a box of baking soda from Miguel's, a bottle of water, anything he is holding
+and two hours with a towel under the door, Mo can cook **ROX**: little off-white rocks, the
+strongest high in the game and the worst idea in it. Smoking it shows on his face.
+
+ROX is also money. Benchy and Squeak at the Kestrel Houses and Dex on the block will move it on
+consignment and text every morning with how it went, sending Mo's cut to Shale Pay. The market
+moves day to day, and when it moves too well a man can decide the money is his now. A text might
+fix that. Standing very close might. Finding him and putting him on the pavement always does.
+
+After dark, **fiends** turn up on the block, in the park and on the platform, swaying and paying
+well. They vanish at the first sight of a uniform or a red beret. By day the ones with nowhere to
+go are asleep in the Houses stairwells, and they will not buy, but they do have pockets.
+
 ### Kestrel Houses at night
 
 The man on the bench sells the strong stuff, posting up on a bench can turn into lookout work,
@@ -350,8 +365,12 @@ all the way round, and a few minutes at the edge buys back some quiet. The walk-
 roof too, alarm notice and all.
 
 Unit 3B can get better. Fix the shower, buy a mattress, put a hot plate on the counter, drag a
-couch in from the curb, and with the Home Decorator's Guide from the newsstand, go further. The
-flat shows it. Your door opens onto the third-floor hall now, where the neighbours live and where
+couch in from the curb, and with the Home Decorator's Guide from the newsstand, go further:
+wood floors, an exposed brick wall, a sectional, a tall mirror, drapes in any colour you like,
+and a flatscreen over a ribbed cabinet. Once the guide is on the desk beside the laptop, every
+upgrade is ordered from there. The TV has nine channels of nonsense (the news, home shopping, a
+pigeon documentary, a cooking show, wrestling, a cartoon, a soap, a televangelist and static),
+an off switch, and an hour to lose. The flat shows it. Your door opens onto the third-floor hall now, where the neighbours live and where
 the building can be organized: collect complaints, log the heat, hold a meeting, and go to Rae
 together.
 

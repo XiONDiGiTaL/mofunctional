@@ -1,4 +1,6 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import * as supply from '../systems/supply.js';
+import { tvTexture, tvTick, openTv } from '../ui/tv.js';
 import * as papi from '../systems/papi.js';
 import { b1120 } from './hall.js';
 import * as recovery from '../systems/recovery.js';
@@ -73,21 +75,43 @@ import { closetMenu, buildStationEntrance } from './district.js';
 export function buildApartment(g) {
   const group = new THREE.Group();
   const W = 7, D = 9;
-  const floor = plane(W, D, { name: 'apfloor', map: tex('linoleum'), repeat: [3, 4] }, [0, 0, 0], [-Math.PI / 2, 0, 0]);
+  const floor = home.has(g.state, 'floors')
+    ? plane(W, D, { name: 'apfloorwood', map: tex('wood'), color: 0xd8904a, repeat: [4, 5] }, [0, 0, 0], [-Math.PI / 2, 0, 0])
+    : plane(W, D, { name: 'apfloor', map: tex('linoleum'), repeat: [3, 4] }, [0, 0, 0], [-Math.PI / 2, 0, 0]);
   group.add(floor);
 
   // walls (new wallpaper, if he put it up: the same paper, a warmer colour over it)
   const hs = g.state;
   const papered = home.has(hs, 'wallpaper');
-  const wallMat = (n) => (papered ? retroMaterial(`apwallnew${n}`, { map: tex('wallpaper'), color: 0xe8c89a }) : { name: `apwall${n}`, map: tex('wallpaper') });
+  const wallMat = (n) => (papered ? retroMaterial(`apwallwhite${n}`, { color: 0xeeeae2 }) : { name: `apwall${n}`, map: tex('wallpaper') });
   group.add(box(W, 2.7, 0.16, wallMat(''), [0, 1.35, -D / 2]));
   group.add(box(W, 2.7, 0.16, wallMat('2'), [0, 1.35, D / 2]));
-  group.add(box(0.16, 2.7, D, wallMat('3'), [-W / 2, 1.35, 0]));
+  group.add(box(0.16, 2.7, D, papered ? retroMaterial('apbrick', { map: tex('brick'), color: 0xd88a6a }) : wallMat('3'), [-W / 2, 1.35, 0]));
   group.add(box(0.16, 2.7, D, wallMat('4'), [W / 2, 1.35, 0]));
+  if (papered) {
+    // dark ceiling beams across the room, and white baseboards
+    for (let i = 0; i < 6; i++) group.add(box(W, 0.16, 0.14, retroMaterial('apbeam', { map: tex('wood'), color: 0x3a2618 }), [0, 2.62, -3.8 + i * 1.5]));
+    for (const [x, z, w, d] of [[0, D / 2 - 0.1, W, 0.04], [W / 2 - 0.1, 0, 0.04, D]]) group.add(box(w, 0.12, d, M.white, [x, 0.06, z]));
+  }
   group.add(plane(W, D, { name: 'apceil', map: tex('ceiling'), repeat: [2, 3] }, [0, 2.7, 0], [Math.PI / 2, 0, 0]));
 
   // window (front wall) with a view that is just a wall
   group.add(plane(1.5, 1.2, { name: 'apwin', map: tex('window'), emissive: 0.4, unlit: true }, [1.6, 1.6, -D / 2 + 0.09]));
+  group.add(plane(1.1, 1.1, { name: 'apwin2', map: tex('window'), emissive: 0.4, unlit: true }, [W / 2 - 0.09, 1.6, -1.8], [0, -Math.PI / 2, 0]));
+  for (const [x, z, ry] of [[1.6, -D / 2 + 0.1, 0], [W / 2 - 0.1, -1.8, -Math.PI / 2]]) {
+    const sill = box(ry ? 0.12 : 1.6, 0.05, ry ? 1.2 : 0.12, M.white, [x + (ry ? -0.04 : 0), 0.98, z + (ry ? 0 : 0.04)]);
+    group.add(sill);
+  }
+  if (home.has(hs, 'drapes')) {
+    const DR = home.DRAPES[home.homeState(hs).drapes] || home.DRAPES.cream;
+    const drape = retroMaterial(`apdrape${DR.hex}`, { color: DR.hex, ambient: 0.75 });
+    for (const sx of [-1, 1]) {
+      group.add(box(0.4, 1.7, 0.05, drape, [1.6 + sx * 0.9, 1.45, -D / 2 + 0.14]));
+      group.add(box(0.05, 1.6, 0.36, drape, [W / 2 - 0.14, 1.45, -1.8 + sx * 0.72]));
+    }
+    group.add(box(2.4, 0.04, 0.04, M.metal, [1.6, 2.32, -D / 2 + 0.16]));
+    group.add(box(0.04, 0.04, 1.9, M.metal, [W / 2 - 0.16, 2.28, -1.8]));
+  }
 
   // bed: the old cot, a new mattress on it, or a real bed with a headboard
   if (home.has(hs, 'bed_new')) {
@@ -105,21 +129,51 @@ export function buildApartment(g) {
     group.add(box(0.08, 0.5, 1.9, M.metal, [-3.0, 0.6, -2.4]));
   }
   // the rug, the lamp, the plant, the couch, the hot plate: whatever he has put in here
-  if (home.has(hs, 'rug')) group.add(plane(2.2, 1.6, { name: 'aprug', color: 0x8a2a2a }, [0.2, 0.012, 1.4], [-Math.PI / 2, 0, 0]));
-  if (home.has(hs, 'rug')) group.add(plane(1.9, 1.3, { name: 'aprug2', color: 0xc89a4a }, [0.2, 0.014, 1.4], [-Math.PI / 2, 0, 0]));
+  if (home.has(hs, 'rug')) group.add(plane(1.8, 2.3, { name: 'aprug', color: 0x8a2a2a }, [-1.9, 0.012, 2.3], [-Math.PI / 2, 0, 0]));
+  if (home.has(hs, 'rug')) group.add(plane(1.55, 2.05, { name: 'aprug2', color: 0xc89a4a }, [-1.9, 0.014, 2.3], [-Math.PI / 2, 0, 0]));
   if (home.has(hs, 'lamp')) {
-    group.add(box(0.06, 1.5, 0.06, M.metal, [-3.0, 0.75, -0.4]));
-    group.add(box(0.36, 0.3, 0.36, retroMaterial('aplampshade', { color: 0xf2d89a, emissive: 0.6, unlit: true }), [-3.0, 1.6, -0.4]));
+    group.add(box(0.06, 1.5, 0.06, M.metal, [3.0, 0.75, 3.8]));
+    group.add(box(0.36, 0.3, 0.36, retroMaterial('aplampshade', { color: 0xf2d89a, emissive: 0.6, unlit: true }), [3.0, 1.6, 3.8]));
+  }
+  if (home.has(hs, 'mirror')) {
+    group.add(box(0.06, 1.9, 0.8, retroMaterial('apmirrorframe', { color: 0x1a1414 }), [W / 2 - 0.12, 0.95, 3.75], [0, 0, -0.08]));
+    group.add(plane(0.7, 1.75, { name: 'apmirror', color: 0x9ab0c0, emissive: 0.35, unlit: true }, [W / 2 - 0.17, 0.95, 3.75], [0, -Math.PI / 2, 0.08]));
+  }
+  // the coffee table, wood planks, a candle and the remote, wherever the couch is
+  if (home.has(hs, 'couch')) {
+    const plank = retroMaterial('apcoffee', { map: tex('wood'), color: 0xc8904a });
+    group.add(box(0.7, 0.08, 1.15, plank, [-1.75, 0.42, 2.25]));
+    for (const [dx, dz] of [[-0.3, -0.5], [0.3, -0.5], [-0.3, 0.5], [0.3, 0.5]]) group.add(box(0.05, 0.38, 0.05, M.dark, [-1.75 + dx, 0.19, 2.25 + dz]));
+    group.add(box(0.09, 0.1, 0.09, retroMaterial('apcandle', { color: 0xf2ece0, emissive: 0.3 }), [-1.7, 0.51, 2.0]));
+    group.add(box(0.05, 0.02, 0.16, M.dark, [-1.85, 0.47, 2.5]));
+  }
+  // the brick wall gets shelves and frames over the couch once it is brick
+  if (papered) {
+    const shelf = retroMaterial('apshelf', { map: tex('wood'), color: 0xb87a4a });
+    for (const [z, y] of [[1.4, 1.7], [3.0, 1.85]]) {
+      group.add(box(0.22, 0.04, 0.7, shelf, [-W / 2 + 0.19, y, z]));
+      group.add(box(0.12, 0.18, 0.12, retroMaterial('apvase', { color: 0xc86a3a }), [-W / 2 + 0.2, y + 0.11, z - 0.15]));
+      group.add(box(0.1, 0.14, 0.18, retroMaterial('apbooks', { color: 0x2a4a7a }), [-W / 2 + 0.2, y + 0.09, z + 0.18]));
+    }
+    const FRAMES = [[2.2, 1.6, 0.55, 0.7, 0xd84a2a], [2.2, 2.25, 0.4, 0.3, 0x2a8a8a], [0.95, 2.05, 0.4, 0.5, 0xe8c83a], [3.6, 1.5, 0.45, 0.6, 0x8a3ab8]];
+    for (const [z, y, w, h, col] of FRAMES) {
+      group.add(box(0.03, h + 0.06, w + 0.06, M.dark, [-W / 2 + 0.1, y, z]));
+      group.add(plane(w, h, { name: `apart${col}`, color: col, emissive: 0.25 }, [-W / 2 + 0.12, y, z], [0, Math.PI / 2, 0]));
+    }
   }
   if (home.has(hs, 'plant')) {
     group.add(box(0.24, 0.24, 0.24, retroMaterial('appot', { color: 0xb05a2a }), [2.1, 1.02, -3.6]));
     for (let i = 0; i < 5; i++) group.add(box(0.06, 0.36, 0.14, retroMaterial('apleaf', { color: 0x3a8a3a }), [2.1 + Math.sin(i * 1.3) * 0.12, 1.3, -3.6 + Math.cos(i * 1.3) * 0.12], [Math.sin(i) * 0.5, i, Math.cos(i) * 0.5]));
   }
   if (home.has(hs, 'couch')) {
-    const cushion = retroMaterial('apcouch', { color: 0x5a6a4a });
-    group.add(box(1.8, 0.42, 0.8, cushion, [-1.6, 0.21, 2.6]));
-    group.add(box(1.8, 0.5, 0.18, cushion, [-1.6, 0.6, 2.95]));
-    for (const sx of [-1, 1]) group.add(box(0.18, 0.3, 0.8, cushion, [-1.6 + sx * 0.86, 0.55, 2.6]));
+    // a grey sectional along the west wall, its chaise turning out toward the room
+    const cushion = retroMaterial('apcouch', { color: 0x8a8c90 });
+    group.add(box(0.85, 0.42, 2.3, cushion, [-2.92, 0.21, 2.3]));
+    group.add(box(0.2, 0.42, 2.3, cushion, [-3.25, 0.62, 2.3]));
+    group.add(box(0.95, 0.42, 0.75, cushion, [-2.05, 0.21, 3.1]));
+    group.add(box(0.85, 0.3, 0.18, cushion, [-2.92, 0.55, 1.2]));
+    for (const z of [1.6, 2.9]) group.add(box(0.14, 0.32, 0.36, retroMaterial('appillow', { color: 0x141416 }), [-3.08, 0.6, z], [0, 0, -0.2]));
+    group.add(box(0.14, 0.3, 0.34, retroMaterial('appillow2', { color: 0xe8e4dc }), [-3.08, 0.58, 2.3], [0, 0, -0.2]));
   }
   if (home.has(hs, 'hotplate')) {
     group.add(box(0.5, 0.08, 0.34, retroMaterial('aphotplate', { color: 0x2a2a2c }), [-0.8, 0.9, -3.55]));
@@ -163,15 +217,18 @@ export function buildApartment(g) {
   group.add(box(0.5, 0.06, 0.5, M.fabric, [1.4, 0.45, 0.55]));
   group.add(box(0.5, 0.55, 0.06, M.fabric, [1.4, 0.72, 0.79]));
 
-  // tv: the CRT on a crate, or a flatscreen on the west wall
+  // tv: on the east wall, facing the couch. A CRT on a crate, or a flatscreen on the wall over a
+  // ribbed cabinet. The screen is a live canvas (ui/tv.js) when it is on.
+  const tvScreen = tvTexture(g);
   if (home.has(hs, 'tv_flat')) {
-    group.add(box(0.06, 0.7, 1.2, retroMaterial('apflat', { color: 0x141416 }), [-W / 2 + 0.12, 1.45, 1.6]));
-    group.add(plane(1.1, 0.6, { name: 'apflatscreen', color: 0x4a7ab8, emissive: 0.9, unlit: true }, [-W / 2 + 0.16, 1.45, 1.6], [0, Math.PI / 2, 0]));
-    group.add(box(0.4, 0.3, 1.0, M.wood, [-W / 2 + 0.3, 0.15, 1.6]));
+    group.add(box(0.06, 0.72, 1.24, retroMaterial('apflat', { color: 0x141416 }), [W / 2 - 0.12, 1.55, 2.7]));
+    group.add(plane(1.12, 0.62, { name: 'apflatscreen', map: tvScreen, emissive: 0.1, unlit: true }, [W / 2 - 0.16, 1.55, 2.7], [0, -Math.PI / 2, 0]));
+    group.add(box(0.42, 0.72, 0.9, retroMaterial('apcabinet', { color: 0xc8963a }), [W / 2 - 0.3, 0.36, 2.7]));
+    for (let i = 0; i < 9; i++) group.add(box(0.01, 0.6, 0.02, retroMaterial('apcabrib', { color: 0x9a6a2a }), [W / 2 - 0.52, 0.38, 2.32 + i * 0.095]));
   } else {
-    group.add(box(0.8, 0.5, 0.6, M.wood, [-2.6, 0.25, 1.6]));
-    group.add(box(0.75, 0.6, 0.62, retroMaterial('crt', { color: 0x3a3a38 }), [-2.6, 0.85, 1.6]));
-    group.add(plane(0.56, 0.42, { name: 'tvscreen', map: tex('static'), emissive: 0.7, unlit: true }, [-2.6, 0.88, 1.29]));
+    group.add(box(0.6, 0.5, 0.8, M.wood, [2.9, 0.25, 2.7]));
+    group.add(box(0.62, 0.6, 0.75, retroMaterial('crt', { color: 0x3a3a38 }), [2.9, 0.85, 2.7]));
+    group.add(plane(0.56, 0.42, { name: 'tvscreen', map: tvScreen, emissive: 0.1, unlit: true }, [2.58, 0.88, 2.7], [0, -Math.PI / 2, 0]));
   }
 
   // door
@@ -196,8 +253,12 @@ export function buildApartment(g) {
   for (const dz of [-0.12, 0.12]) group.add(box(0.03, 0.14, 0.03, M.metal, [-W / 2 + 0.65, 1.1, 0.2 + dz]));
 
   // trash + bag
-  group.add(box(0.45, 0.6, 0.45, M.dark, [2.9, 0.3, 2.6]));
-  group.add(box(0.5, 0.35, 0.4, retroMaterial('bag', { color: 0x2a2a26 }), [-3.0, 0.18, 2.4]));
+  group.add(box(0.45, 0.6, 0.45, M.dark, [3.0, 0.3, -2.6]));
+  group.add(box(0.5, 0.35, 0.4, retroMaterial('bag', { color: 0x2a2a26 }), [-3.05, 0.18, -0.95]));
+  if (g.state.flags.decorGuide) {
+    group.add(box(0.26, 0.015, 0.34, retroMaterial('apmag', { color: 0xe8e0d0 }), [0.98, 0.76, -0.05], [0, 0.3, 0]));
+    group.add(plane(0.22, 0.28, { name: 'apmagcover', map: signTex('apMagCover', [{ text: 'HOME', color: '#c8281e', size: 9 }, { text: 'DECOR', color: '#1a1a1a', size: 7 }, { text: '1997', color: '#5a5a5a', size: 5 }], { w: 24, h: 30, bg: '#f2ece0' }), emissive: 0.3 }, [0.98, 0.77, -0.05], [-Math.PI / 2, 0, 0.3]));
+  }
 
   const interactables = [
     { id: 'bed', label: 'Sleep in the bed', sub: 'rest · costs hours', x: -2.4, z: -1.9, action: (gg) => bedMenu(gg) },
@@ -207,15 +268,17 @@ export function buildApartment(g) {
       choices: [...recovery.ROUTINES.filter((r) => !r.needsContact || recovery.recoveryState(gg.state).contact).map((r) => ({ label: r.label, sub: r.sub, effect: () => recovery.doRoutine(gg, r.id) })), { label: 'Sit with it.', effect: () => {} }],
     }) }] : []),
     { id: 'music', label: 'The notebook and the mic', sub: 'write · record · burn CDs', x: -0.6, z: -1.0, radius: 0.8, action: (gg) => music.musicMenu(gg) },
-    { id: 'fixup', label: 'Fix up the place', sub: home.homeState(hs).leak ? 'there is a leak · repairs · upgrades' : 'repairs · upgrades', x: 0.6, z: 3.3, radius: 0.9, action: (gg) => home.fixUpMenu(gg) },
-    ...(home.has(hs, 'hotplate') ? [{ id: 'cook', label: 'Cook a batch on the hot plate', sub: `${money(6)} · 45 min · three meals`, x: -0.8, z: -2.9, radius: 0.9, action: (gg) => home.cookBatch(gg) }] : []),
+    // with the decorating guide, the fix-up list lives in the magazine on the desk
+    { id: 'fixup', label: g.state.flags.decorGuide ? 'The decorating guide' : 'Fix up the place', sub: home.homeState(hs).leak ? 'there is a leak · repairs · upgrades' : g.state.flags.decorGuide ? 'on the desk · repairs · upgrades' : 'repairs · upgrades', x: g.state.flags.decorGuide ? 0.9 : 0.6, z: g.state.flags.decorGuide ? 0.4 : 3.3, radius: 0.8, action: (gg) => home.fixUpMenu(gg) },
+    ...(home.has(hs, 'drapes') ? [{ id: 'drapes', label: 'The drapes', sub: 'change the colour', x: 2.6, z: -1.8, radius: 0.8, action: (gg) => home.drapesMenu(gg) }] : []),
+    ...(home.has(hs, 'hotplate') ? [{ id: 'cook', label: 'Use the hot plate', sub: 'a batch of meals · or something else', x: -0.8, z: -2.9, radius: 0.9, action: (gg) => home.stoveMenu(gg) }] : []),
     ...(home.homeState(hs).leak ? [{ id: 'leak', label: 'The leak', sub: 'a pot under a drip', x: 1.6, z: -2.5, radius: 0.9, action: (gg) => home.leakMenu(gg) }] : []),
     { id: 'fridge', label: 'Open the fridge', sub: 'eat · store food for later', x: 2.7, z: -2.9, action: (gg) => showFridge(gg) },
     { id: 'sink', label: 'Shower in the sink-room', sub: '+hygiene · 25 min', x: 1.1, z: -3.0, action: (gg) => shower(gg) },
     { id: 'bathroom', label: 'Into the bathroom', sub: 'the toilet tank · the shower that does not work', x: 2.9, z: 1.0, radius: 0.9, action: (gg) => gg.goTo('bathroom', 'apartment') },
-    { id: 'tv', label: 'Turn on the TV', sub: 'waste time productively', x: -2.6, z: 1.0, action: (gg) => tvMenu(gg) },
+    { id: 'tv', label: home.homeState(hs).tvOn ? 'The TV' : 'Turn on the TV', sub: home.homeState(hs).tvOn ? 'change the channel · turn it off' : 'waste time productively', x: 2.2, z: 2.7, action: (gg) => openTv(gg) },
     { id: 'laptop', label: 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
-    { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -3.0, z: 2.4, action: (gg) => stashMenu(gg) },
+    { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -2.7, z: -0.95, action: (gg) => stashMenu(gg) },
     { id: 'closet', label: 'Open the closet', sub: 'what he owns · what he wears', x: -2.6, z: 0.2, radius: 0.9, action: (gg) => closetMenu(gg) },
     { id: 'door', label: 'Out to the hall', sub: 'the third floor · the stairs · the elevator · the roof', x: 0, z: 3.9, action: (gg) => { b1120(gg.state).floor = 3; gg.goTo('hall', 'apartment'); } },
   ];
@@ -270,19 +333,20 @@ export function buildApartment(g) {
 
   return {
     group,
-    seats: [{ x: 1.4, z: 0.55, rot: Math.PI, label: 'Sit at the desk' }, ...(home.has(g.state, 'couch') ? [{ x: -1.6, z: 2.55, rot: Math.PI, label: 'Sit on the couch', sub: 'yours, from the curb' }] : [])],
+    seats: [{ x: 1.4, z: 0.55, rot: Math.PI, label: 'Sit at the desk' }, ...(home.has(g.state, 'couch') ? [{ x: -2.85, z: 2.0, rot: Math.PI / 2, label: 'Sit on the couch', sub: 'facing the TV' }, { x: -2.85, z: 2.8, rot: Math.PI / 2, label: 'Sit on the couch', sub: 'the other end' }] : [])],
     bounds: { minX: -3.2, maxX: 3.2, minZ: -4.1, maxZ: 4.0 },
     solids: [
       solid(-2.4, -2.4, 1.3, 2.1, 0.6), solid(2.7, -3.5, 0.9, 0.85, 1.8), solid(1.1, -3.6, 2.5, 0.8, 0.9),
-      solid(-0.8, -3.6, 1.0, 0.8, 0.9), solid(1.4, -0.2, 1.2, 0.9, 0.9), solid(-2.6, 1.6, 0.9, 0.7, 1.15),
-      solid(2.9, 2.6, 0.6, 0.6, 0.6), solid(-3.0, 2.4, 0.6, 0.5, 0.35), solid(-W / 2 + 0.36, 0.2, 0.6, 1.35, 2.0),
-      ...(home.has(g.state, 'couch') ? [solid(-1.6, 2.75, 1.8, 0.5, 0.45)] : []),
+      solid(-0.8, -3.6, 1.0, 0.8, 0.9), solid(1.4, -0.2, 1.2, 0.9, 0.9), solid(2.95, 2.7, 0.6, 1.0, 1.15),
+      solid(3.0, -2.6, 0.6, 0.6, 0.6), solid(-3.05, -0.95, 0.6, 0.5, 0.35), solid(-W / 2 + 0.36, 0.2, 0.6, 1.35, 2.0),
+      ...(home.has(g.state, 'couch') ? [solid(-3.05, 2.3, 0.7, 2.3, 0.45), solid(-2.05, 3.15, 0.95, 0.7, 0.45), solid(-1.75, 2.25, 0.7, 1.15, 0.42)] : []),
     ],
     spawn: { x: 0, z: 1.15, rot: Math.PI },
     spawnFor: (from) => (from === 'bathroom' ? { x: 2.7, z: 1.0, rot: -Math.PI / 2 } : null),
     npcs,
     interactables,
     ambient: 'apartment',
+    tick: (gg, dt) => tvTick(gg, dt),
   };
 }
 
@@ -319,20 +383,6 @@ function shower(g) {
   bump(s, 'morale', 2);
   g.audio.sfx('confirm');
   g.toast('Clean. The world is 4% more negotiable.', 'good');
-}
-
-function tvMenu(g) {
-  const s = g.state;
-  g.openModal({
-    kicker: 'THE TELEVISION',
-    title: 'Whatever Is On',
-    body: 'A show about people buying storage units. A commercial for a mattress. The news, briefly, and then not the news.',
-    choices: [
-      { label: 'Watch for an hour.', sub: '-1h · +morale · -stress', effect: () => { g.advance(60); bump(s, 'morale', 6); bump(s, 'stress', -9); bump(s, 'energy', -3); g.toast('You laugh once, genuinely, at a commercial.', 'good'); } },
-      { label: 'Watch until you hate yourself.', sub: '-3h · +morale then -morale', effect: () => { g.advance(180); bump(s, 'morale', 4); bump(s, 'stress', -6); bump(s, 'energy', -9); bump(s, 'hygiene', -3); g.toast('Three hours. You could describe the plot of nothing that happened.', 'bad'); } },
-      { label: 'Turn it off.', sub: '', effect: () => {} },
-    ],
-  });
 }
 
 function stashMenu(g) {
@@ -919,6 +969,7 @@ export function buildStreet(g) {
   for (let i = 0; i < 9; i++) group.add(box(i % 3 === 1 ? 0.05 : 0.09, 0.015, i % 3 === 1 ? 0.09 : 0.05, bone, [-13.9 + i * 0.05, 0.71, -4.6 + Math.sin(i * 0.9) * 0.12]));
   for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) group.add(box(0.05, 0.09, 0.02, bone, [-13.7 + sx * 0.3, 0.75, -4.68 + i * 0.06], [0, Math.PI / 2, 0]));
   const corner = [
+    ...(supply.inTheGame(g.state) ? [{ id: 'st_rox_dex', label: 'Talk ROX with Dex', sub: 'he moves it on the block · for a cut', x: -3.4, z: -2.7, radius: 1.1, action: (gg) => supply.dealerMenu(gg, 'dex') }] : []),
     ...(between(10, 24) ? [{ id: 'yusuf', label: 'Yusuf, outside Habib\'s', sub: 'the hookah · apple, he says, always apple', x: 18.6, z: -4.0, radius: 1.2, action: (gg) => yusufMenu(gg) }] : []),
     ...(between(9, 21) ? [
       { id: 'papi', label: 'Papi', sub: 'dominoes · he knows everything on this block', x: -14.35, z: -3.9, radius: 1.1, action: (gg) => papi.papiMenu(gg) },

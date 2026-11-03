@@ -11,6 +11,7 @@
  *
  * installSites(Phone) adds the views to the class; siteActions() returns their click handlers.
  */
+import { playTube } from './tv.js';
 import { CONFIG } from '../core/config.js';
 import { money, dayOf, pick } from '../core/util.js';
 import { bump } from '../core/state.js';
@@ -190,7 +191,7 @@ const VIEWS = {
     const r = rng(day * 991 + 5);
     const list = VIDEOS.slice().sort(() => r() - 0.5).slice(0, 7);
     return `${this.header('MeTube', 'broadcast yourself (please don\'t)')}
-      ${list.map(([title, desc, th]) => `<button class="tube__vid" data-act="tubewatch" data-arg="${T(title)}">
+      ${list.map(([title, desc, th]) => `<button class="tube__vid" data-act="tubewatch" data-arg="${T(title)}|${th}">
         <span class="tube__thumb" style="--c:${THUMB[th] || '#555'}"><i>▶</i><em>${Math.floor(1 + r() * 9)}:${String(Math.floor(r() * 60)).padStart(2, '0')}</em></span>
         <span class="tube__meta"><b>${T(title)}</b><span class="tiny mono-dim">${T(desc)}</span><span class="tiny mono-dim">${(1 + r() * 900).toFixed(0)}K views · RealPlayer required</span></span>
       </button>`).join('')}
@@ -300,6 +301,9 @@ export function siteActions(g, s) {
         : 'Cancelled, no charge. He had not reached the curb yet.', res.fee > 0 ? 'info' : 'good');
     },
     tubewatch(arg) {
+      const [title, fam] = String(arg).split('|');
+      arg = title;
+      playTube(g, title, fam);
       g.advance(15);
       bump(s, 'morale', 3);
       bump(s, 'stress', -3);

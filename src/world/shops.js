@@ -33,6 +33,8 @@ export const SHOPS = {
       { id: 'tallboy', note: 'back cooler, coldest thing in the store' },
       { id: 'ramen', note: 'the shelf by the door' },
       { id: 'bar', note: 'protein brick' },
+      { id: 'water', note: 'the cooler by the door' },
+      { id: 'baking_soda', note: 'for the fridge, Miguel says, not looking up' },
     ],
     sellsPork: true,
   },

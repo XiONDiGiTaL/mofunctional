@@ -144,6 +144,13 @@ const ART = {
     + `<rect x="22" y="26" width="20" height="10" fill="#2f6fd6"/>${txt(32, 33.2, 4, '#fff', 'WATER')}${shine(25, 20, 2.2, 26)}`, 14),
 
   /* ---------------------------------------------------------------- the fictional substances */
+  rox: svg(`<path d="M14 44l6-9 9 2 4 9-8 5z" fill="#efe4b8"/><path d="M20 35l9 2-3 4-7-1z" fill="#fbf4d6"/>`
+    + `<path d="M30 40l7-10 10 3 3 10-9 6z" fill="#e6d79c"/><path d="M37 30l10 3-4 4-8-2z" fill="#f8efc8"/>`
+    + `<path d="M42 47l6-5 7 3-1 6-8 1z" fill="#ead9a0"/><path d="M24 26l5-5 6 3-2 5-6 1z" fill="#f2e6b4"/>`
+    + `<g fill="#fffbe8" stroke="none" fill-opacity=".8"><circle cx="18" cy="49" r="1.2"/><circle cx="34" cy="51" r="1"/><circle cx="52" cy="40" r="1"/><circle cx="27" cy="33" r=".9"/><circle cx="46" cy="52" r=".8"/></g>`, 24),
+  baking_soda: svg(box({ x: 18, y: 16, w: 26, h: 34, d: 8, c: '#f0a020', top: '#ffc04a', side: '#b8761a' })
+    + `<rect x="21" y="24" width="20" height="14" fill="#fff6e0" stroke="none"/>` + txt(31, 33, 7, '#c03a1a', 'SODA')
+    + `<path d="M24 44h14" stroke="#c03a1a" stroke-width="2"/>`),
   bliss: svg(`<rect x="27" y="8" width="10" height="7" rx="1.5" fill="#a87a4a"/><path d="M26 15h12v28a6 6 0 0 1-12 0z" fill="#dff1ff" fill-opacity=".9"/>`
     + `<path d="M26.6 26h10.8v17a5.4 5.4 0 0 1-10.8 0z" fill="#3f8cff"/><path d="M33 26h4.4v17a5.4 5.4 0 0 1-3 4.8z" fill="#2a64c4" stroke="none"/>${shine(28.5, 18, 2, 24)}`, 12),
   static: svg(`<g transform="rotate(-10 32 34)">${box({ x: 12, y: 22, w: 36, h: 22, d: 5, c: '#c9d2dc', top: '#eef2f6', side: '#9aa6b2' })}`

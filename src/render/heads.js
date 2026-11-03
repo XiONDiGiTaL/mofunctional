@@ -230,6 +230,14 @@ export const FACE_SPECS = {
     skin: '#af806c', hair: '#3a2a1e', hairLight: '#56402e', hairDark: '#1e150e', style: 'crop',
     brow: '#30261c', eye: '#3a3226', lips: '#86605a', lipsLight: '#a07a70', beard: 'stubble', beardColor: '#3a3024', age: 0.5, gaunt: true,
   },
+  fiend: {
+    skin: '#9a7058', hair: '#4a3a2c', hairLight: '#6a5442', hairDark: '#2a2018', style: 'crop',
+    brow: '#3a2c20', eye: '#3a3226', lips: '#7a5048', lipsLight: '#966860', beard: 'stubble', beardColor: '#4a3a2c', age: 0.6, gaunt: true,
+  },
+  fiend_f: {
+    skin: '#c09078', hair: '#5a3a24', hairLight: '#7a5636', hairDark: '#3a2414', style: 'long', fem: true,
+    brow: '#4a3020', eye: '#3a2c20', lips: '#9a6458', lipsLight: '#b27a6e', age: 0.5, gaunt: true,
+  },
   // Rolo: the voice on the other end of the dealer line; painted, not from the face bank
   rolo: {
     skin: '#9a6a4c', hair: '#141010', hairLight: '#2a2420', hairDark: '#080606', style: 'beanie',

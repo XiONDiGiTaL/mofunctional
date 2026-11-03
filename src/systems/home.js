@@ -27,6 +27,9 @@ export const UPGRADES = [
   { id: 'bed_new', name: 'A real bed', price: 260, kind: 'decor', note: 'queen, a headboard, sheets that match · the best rest in the borough', comfort: 3, needs: 'mattress' },
   { id: 'wallpaper', name: 'New wallpaper', price: 60, kind: 'decor', note: 'over the stains, mostly · the room feels like a choice', comfort: 2 },
   { id: 'rug', name: 'A rug', price: 55, kind: 'decor', note: 'over the linoleum, where your feet go first', comfort: 1 },
+  { id: 'floors', name: 'Refinish the floors', price: 120, kind: 'decor', note: 'the linoleum comes up, there is wood under it, of course there is', comfort: 2 },
+  { id: 'drapes', name: 'Drapes for the windows', price: 30, kind: 'decor', note: 'two windows, four panels, any colour you want after', comfort: 1 },
+  { id: 'mirror', name: 'A tall mirror', price: 45, kind: 'decor', note: 'leaning by the door, the way they do in magazines', comfort: 1 },
   { id: 'plant', name: 'A plant', price: 18, kind: 'decor', note: 'a pothos, unkillable, which is the point', comfort: 1 },
   { id: 'lamp', name: 'A floor lamp', price: 35, kind: 'decor', note: 'warm light that is not the ceiling bulb', comfort: 1 },
 ];
@@ -137,6 +140,81 @@ export function cookBatch(g) {
   bump(s, 'morale', 4);
   logLine(g, 'Cooked a batch: three meals of rice and beans.', 'good');
   g.toast('Rice, beans, an onion, the last of the hot sauce. Three containers. Your mother would say it needs salt. It needs salt.', 'good');
+}
+
+/** What could go in the pot: every substance he is holding except ROX itself. */
+function cookable(s) {
+  return (s.inventory || []).filter((i) => i.qty > 0 && i.id !== 'rox' && CONFIG.substances.types[i.id]);
+}
+const holds = (s, id) => (s.inventory || []).some((i) => i.id === id && i.qty > 0);
+const takeOne = (s, id) => {
+  const e = s.inventory.find((i) => i.id === id && i.qty > 0);
+  if (!e) return;
+  e.qty -= 1;
+  if (e.qty <= 0) s.inventory = s.inventory.filter((i) => i !== e);
+};
+
+/** The hot plate: dinner, or the other thing. */
+export function stoveMenu(g) {
+  const s = g.state;
+  const sub = cookable(s);
+  const ready = holds(s, 'baking_soda') && holds(s, 'water') && sub.length;
+  const missing = [!holds(s, 'baking_soda') && 'baking soda', !holds(s, 'water') && 'a bottle of water', !sub.length && 'something to start with'].filter(Boolean);
+  g.openModal({
+    kicker: 'UNIT 3B · THE HOT PLATE', title: 'Two Burners, One Works',
+    body: 'Dinner for three days, or an afternoon you will not describe to anyone. The hot plate does not judge. The smoke detector would, if it had a battery.',
+    choices: [
+      { label: 'Cook a batch of rice and beans.', sub: `${money(6)} · 45 min · three meals`, effect: () => cookBatch(g) },
+      { label: 'Cook up some ROX.', sub: ready ? `2 h · baking soda, water and one ${sub[0] && CONFIG.items[sub[0].id]?.name}` : `needs ${missing.join(', ')}`, disabled: !ready, effect: () => setTimeout(() => cookRox(g), 60) },
+      { label: 'Leave it off.', effect: () => {} },
+    ],
+  });
+}
+
+/**
+ * ROX: baking soda, water, any substance he is holding, and two hours with the window open.
+ * Nothing here is a recipe; the game just takes the three things and the time, and gives back rocks.
+ */
+export function cookRox(g) {
+  const s = g.state;
+  const sub = cookable(s)[0];
+  if (!sub || !holds(s, 'baking_soda') || !holds(s, 'water')) { g.toast('Something is missing. Probably your judgment, but also an ingredient.', 'bad'); return; }
+  takeOne(s, 'baking_soda');
+  takeOne(s, 'water');
+  takeOne(s, sub.id);
+  g.advance(120);
+  const strong = /_x$/.test(sub.id);
+  const n = strong ? 4 : 3;
+  addItem(s, 'rox', n);
+  bump(s, 'risk', 4);
+  bump(s, 'hygiene', -6);
+  bump(s, 'stress', 4);
+  s.counters.roxCooked = (s.counters.roxCooked || 0) + n;
+  logLine(g, `Cooked ${n} ROX on the hot plate.`, 'bad');
+  g.toast(pick([
+    `Two hours, a towel under the door, and a smell that will outlive the lease. ${n} little off-white rocks. They look like the gravel of a very sad aquarium.`,
+    `The pot hisses, the hot plate clicks, the radiator bangs once in solidarity. ${n} ROX. Mrs. Pryce knocks to ask if you are making popcorn. You say yes. She does not believe you.`,
+    `${n} ROX. You put the pot in the sink and decide never to eat out of it again. Then you remember it is your only pot.`,
+  ]), 'event');
+}
+
+/** Drape colours: free to change once they are up. */
+export const DRAPES = {
+  cream: { name: 'cream', hex: 0xe8dcc0 }, rust: { name: 'rust', hex: 0xb8502a }, navy: { name: 'navy', hex: 0x22305a },
+  sage: { name: 'sage', hex: 0x7a9a6a }, mustard: { name: 'mustard', hex: 0xd0a030 }, plum: { name: 'plum', hex: 0x6a2a5a }, black: { name: 'black-out', hex: 0x18181a },
+};
+
+export function drapesMenu(g) {
+  const s = g.state;
+  const h = homeState(s);
+  g.openModal({
+    kicker: 'UNIT 3B · THE WINDOWS', title: 'The Drapes',
+    body: `Right now they are ${DRAPES[h.drapes || 'cream'].name}. The guide says drapes "set the emotional temperature of a room." The guide says a lot of things.`,
+    choices: [
+      ...Object.entries(DRAPES).map(([id, d]) => ({ label: d.name[0].toUpperCase() + d.name.slice(1), disabled: (h.drapes || 'cream') === id, effect: () => { h.drapes = id; g.advance(10); g.world?.loadArea?.('apartment', g); g.toast(`${d.name[0].toUpperCase() + d.name.slice(1)}. The room takes it personally, in a good way.`, 'good'); } })),
+      { label: 'Leave them.', effect: () => {} },
+    ],
+  });
 }
 
 /** How much better a night's sleep is in this bed (extra energy per hour slept). */

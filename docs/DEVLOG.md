@@ -10,6 +10,37 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Unit 3B made over, a working TV, and ROX
+
+- **The upgraded flat** (`buildApartment`) follows a loft reference: wood floors (`floors`), white
+  walls with an exposed brick west wall and dark ceiling beams once papered, a second window on the
+  east wall, drapes on both (`drapes`, colour from `home.DRAPES`, changed at the window with
+  `drapesMenu`), a tall mirror (`mirror`), a grey sectional and a plank coffee table on the rug,
+  shelves and frames on the brick, and the TV on the east wall (flatscreen over a ribbed cabinet,
+  or the CRT on its crate). With the Decorator's Guide, a magazine sits on the desk by the laptop
+  and the Fix Up menu moves there.
+- **`ui/tv.js`**: every clip is a `draw(ctx, t)` on a 96x54 canvas. The world screen is a
+  `CanvasTexture` redrawn at ~12 fps by the area tick while `home.tvOn`; `openTv` is the overlay
+  (power, channel up and down, watch an hour); `playTube` loops a clip for a clicked MeTube video
+  (`TUBE_CLIP` maps thumbnail families to clips).
+- **ROX** (`substances.types.rox`, `homemade`): the hot plate opens `home.stoveMenu`; `cookRox`
+  takes baking soda, water and one held substance (not ROX), two hours, and yields 3 (4 from Dex's
+  uncut stock). Uses the title screen's glass pipe (`useAnim.rox: 'pipe'`). `s.high.kind` records
+  what he took, and game3d now shows the `high` face expression while high (full strength for ROX).
+  Baking soda and water are on Miguel's shelf. The game takes the ingredients and the time; no
+  method is described anywhere.
+- **`systems/supply.js`**: three connections (`DEALERS`: Benchy, Squeak, Dex) take ROX on
+  consignment in person (`dealerMenu`, interactables appear once Mo has had ROX). `supplyNewDay`
+  drifts `market`, sells, deposits Mo's cut with a text, and sometimes sets `stiff` (texts carry
+  `supply: 'threat' | 'ride'` replies, resolved in `sms.js`). `leanOn` in person, or knock the
+  man out: `onKnockout` (called from game3d's KO branch) pays back what he owes plus loot. Small
+  chance a corner gets raided and the stock is lost.
+- **Fiends** (`fiend`, `fiend_f`, act `fiend`, the high face): `addFiends` adds them while an area
+  loads, at night (21:00 to 05:00) on the street, in the park and on the platform; `fiendMenu`
+  sells ROX for $55 to $85 a rock, once per fiend per night, refused if a cop can see. They flee
+  when `copSees(16)` or a Guardian Angle is running. By day one sleeps on alternate Houses tower
+  floors and uses the ordinary sleeper loot.
+
 ### The corner men, and fairer heat
 
 - **Yusuf** (`hookah`: navy turban, a beard to the chest, a kurta) sits outside Habib's at a small
