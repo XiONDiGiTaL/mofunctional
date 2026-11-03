@@ -1,4 +1,5 @@
 /** The smartphone: the primary management interface. Every button does something. */
+import * as recovery from '../systems/recovery.js';
 import * as owes from '../systems/owes.js';
 import { CONFIG, DAY_NAMES } from '../core/config.js';
 import { money, hhmm, dayOf, minuteOfDay, duration, clamp } from '../core/util.js';
@@ -1491,7 +1492,12 @@ export class Phone {
       ${p.status === 'active' ? `<div class="kv"><span>Next appointment</span><b>${p.dueToday ? 'today' : `day ${p.next}`} · 10:00-16:00</b></div>
       <div class="kv"><span>Missed</span><b class="${p.missed ? 'bad' : ''}">${p.missed} · ${CONFIG.clinic.program.missAllowance} forgiven</b></div>` : ''}
       <div class="tiny mono-dim">${p.status === 'active' ? 'Appointments are kept in person at the clinic counter.' : p.canEnroll ? 'Sign up at the clinic counter. Five sessions, every other day, $35 each.' : ''}</div>
-    </div>`;
+    </div>
+    ${recovery.inRecovery(this.g.state) ? `<div class="card">
+      <div class="kv"><span>Days</span><b class="creditv">${recovery.cleanDays(this.g.state)}${recovery.recoveryState(this.g.state).best > recovery.cleanDays(this.g.state) ? ` · best ${recovery.recoveryState(this.g.state).best}` : ''}</b></div>
+      <div class="tiny mono-dim">${T('A hard evening? Pick something to do with it instead.')}</div>
+      <div class="row row--wrap">${recovery.ROUTINES.filter((r) => !r.needsContact || recovery.recoveryState(this.g.state).contact).map((r) => `<button class="btn btn--sm" data-act="routine" data-arg="${r.id}" title="${T(r.sub)}">${T(r.label)}</button>`).join('')}</div>
+    </div>` : ''}`;
   }
 
   /* ------------------------------ ACTIONS ------------------------------ */
@@ -1755,6 +1761,7 @@ export class Phone {
         }, 140);
       },
       camview(arg) { this.camShot = arg; },
+      routine(arg) { if (recovery.doRoutine(g, arg) && arg === 'bed') this.close(); },
       owepay(arg) { owes.pay(g, arg); },
       owepart(arg) { owes.pay(g, arg, 5); },
       owedo(arg) { owes.doIt(g, arg); },

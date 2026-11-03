@@ -23,6 +23,7 @@ import { tickRide } from './rides.js';
 import { homeNewDay, sleepBonus } from './home.js';
 import { owesNewDay } from './owes.js';
 import { arcsNewDay } from './arcs.js';
+import { recoveryNewDay } from './recovery.js';
 import { happeningsNewDay, happeningsTick, heatSleepPenalty } from './happenings.js';
 
 const N = CONFIG.needs;
@@ -59,6 +60,7 @@ export function simulate(g, minutes, ctx = {}) {
       homeNewDay(g, d);
       owesNewDay(g, d);
       arcsNewDay(g, d);
+      recoveryNewDay(g, d);
       happeningsNewDay(g, d);
       g.bus.emit('newday', d);
     }

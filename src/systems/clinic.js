@@ -162,7 +162,8 @@ export function programInfo(g) {
   const inHours = mod >= P.window[0] && mod < P.window[1];
   const referred = !!(life.lifeState(s).counselor || s.flags.wantsHelp);
   const eligible = referred || s.stats.addiction >= P.eligibleDependence;
-  const waitUntil = p.status === 'dropped' ? p.endedDay + P.reenrollDays : 0;
+  // a check-in after a setback brings him back sooner: from where he is, not from zero (recovery.js)
+  const waitUntil = p.status === 'dropped' && !s.flags.returnEarly ? p.endedDay + P.reenrollDays : 0;
   return {
     ...p,
     sessions: P.sessions,
@@ -196,6 +197,7 @@ export function enroll(g) {
   });
   life.lifeState(s).counselor = true;
   s.flags.wantsHelp = false;
+  s.flags.returnEarly = false;
   logLine(g, 'Enrolled in the Kestrel Clinic outpatient course.', 'good');
   pushMessage(g, {
     from: 'KESTREL CLINIC',

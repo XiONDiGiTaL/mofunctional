@@ -8,6 +8,7 @@
  * schedule, the women asked out, Kev talked into a joint in the park. The keypad also takes any
  * number, and a few of them are worth dialling.
  */
+import * as recovery from './recovery.js';
 import * as owes from './owes.js';
 import { CONFIG } from '../core/config.js';
 import { money, pick, dayOf, minuteOfDay, hhmm } from '../core/util.js';
@@ -43,6 +44,7 @@ export function contacts(s) {
     { id: 'clinic', name: 'Kestrel Clinic', service: 'KESTREL CLINIC', sub: 'appointments' },
     { id: 'relief', name: 'Civic Relief Program', service: 'CIVIC RELIEF PROGRAM', sub: 'book a recertification slot' },
     { id: 'fellowship', name: 'The Golden Fellowship', service: 'THE GOLDEN FELLOWSHIP', sub: 'Stewardship Office' },
+    ...(s.recovery?.contact ? [{ id: 'dennis', name: 'Dennis', kind: 'newsman', sub: 'Tuesday group · any hour, mostly' }] : []),
     { id: '911', name: '911', service: '911', sub: 'police · they come, eventually' },
   );
   return rows;
@@ -189,6 +191,7 @@ const CALLS = {
     ]);
   },
 
+  dennis(g) { recovery.callSupport(g); },
   miguel(g) { deliveryCall(g, 'bodega'); },
   habib(g) { deliveryCall(g, 'habibs'); },
 
