@@ -158,12 +158,14 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         handoff (Rolo on the street + Mo's smile), animations
                         (substance use, collapse, dancing), patrol (the 911 cop), courier
                         (the delivery at 1120's door)
+                        assailant (somebody running at Mo: a driver, a Guardian Angle)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits)
 src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
                         art), shopmenu, fridge, map, threads, modal, menu, themes,
                         debug (the hidden menu), arcade (the three cabinets at Dee's),
                         pinups (the mosaic pictures for LonelyFans and DialUpDelights)
+                        wallpapers (the home screen's pictures, Snapz photos, memories)
 scripts/check-syntax.mjs  parses every module in src/ (npm run check)
 scripts/test-systems.mjs  headless system checks (npm test)
 scripts/stamp.mjs         cache-busting import map in index.html (npm run stamp)

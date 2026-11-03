@@ -213,9 +213,14 @@ Press `TAB`. Everything Mo does with money, people or plans goes through here.
 | **TradeHarder** | Stocks from 1999 and real estate on Kestrel Street. |
 | **Amazin'** | Order things, they arrive tomorrow. |
 | **Blessed+** | The Fellowship's livestream. Give any day of the week: a gift pays your tithe first, then counts toward your standing with Addison. |
-| **Tweaks** | Skins, scale, notifications, sound and saves. |
+| **Snapz** | The camera. Photos, selfies, and memories you unlock along the way. |
+| **Tweaks** | Skins, scale, wallpaper, clock, notifications, sound and saves. |
 
-Every app sits on one home screen, no scrolling. LonelyFans pictures arrive as texts, mosaic
+The home screen has tabs (Street, Money, Life, After Dark) and an ALL drawer with every app in
+it, or one page of everything if you prefer. Snapz is the camera: take photos and selfies, and
+put any of them behind the home screen. Some pictures you have to earn, and they appear in the
+roll on their own: Chairman, the dog, a girlfriend, a first shift, a childhood photo with Nia, a
+booking photo, a good suit. LonelyFans pictures arrive as texts, mosaic
 where it counts, and one of the women will only pose with her cat.
 
 There are seven colour skins (Functional, Amber, Ice, VHS, Primo, Bodega and Graphite), and the
@@ -322,7 +327,13 @@ caught, with nobody to text about it. The half-court in the courtyard is fenced 
 now, with a gate on the west end, a real hoop and four regulars running two-on-two. Ask for
 next if your knees are up to it.
 
-Some nights are better spent at home with the door locked and a bowl of instant ramen. Or at
+Some nights are better spent at home with the door locked and a bowl of instant ramen.
+
+Things to know about the street. The machines at Dee's give up a can if you hit them right.
+Cars do not like being punched, and some drivers get out. On Fulton you can step into the road,
+and a car doing sixty will not always stop. Knock enough people down and the Guardian Angles
+come looking, red berets first. Meatball will walk into the park with you once he trusts you, and
+he does not like muggers. Or at
 Dee's Wash & Fold, where a quarter buys a round of Eviction Snake, Pac-Mo: Debt Eater or Roach
 Invaders on the cabinets by the dryers.
 

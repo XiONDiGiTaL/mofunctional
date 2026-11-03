@@ -10,6 +10,42 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Kicks, robes, cans, hats in the air, a dog in the park, and traffic with intent
+
+- **The park.** Kev's standing double is gone (calling him for a joint no longer puts two of him in
+  the park). An old man (`chessman`: white beard, glasses, a flat cap) sits at the chess table
+  over a real board, pieces mid-game and the bottle-cap knight; "Play chess" is against him. The
+  pigeon lady sits on the far bench.
+- **The phone.** The home screen has category tabs again (Street, Money, Life, After Dark) and an
+  ALL tab that is the app drawer, every app including the dock's; Tweaks can switch home to one
+  page of everything. New Phone settings: wallpaper (thumbnails), dim, 12/24 h clock, icon names,
+  widgets. `ui/wallpapers.js` holds five stock wallpapers, Snapz photos (`world.snapshot()` reads
+  the frame, crops 3:4, keeps nine JPEGs in `s.phone.photos`) and memories that unlock with the
+  run: Chairman, Meatball at full trust, each girlfriend, the first shift, Nia as kids, a cloud of
+  smoke, a booking photo, a suit. Memories are SVG around the HUD portraits, so they cost nothing
+  in the save.
+- **Kicks.** `kickPose`; the dog's menu and Chairman's have "Kick him." The dog yelps, hops and runs,
+  and loses trust; the cat yowls, flies (`updateCatKO`) and lies out cold for a while.
+- **Addison.** He is punchable (two hits): down on his own carpet, robes to go through once a day,
+  for cash and a drop in Fellowship stage and standing. "Follow his guidance" in his menu plays his
+  movement ministry (arms up, a slow turn) with Mo dancing beside him, for favour.
+- **Punchables.** An area can list `punchables`; Dee's two machines clang and sometimes drop a can
+  that sits on the floor until it is picked up. Cars can be punched: a parked one screams, a
+  running one stops and its driver may get out and come for Mo.
+- **Attackers.** `world/assailant.js` runs somebody at Mo until the fight meter opens; win and they
+  are down with pockets, lose and it is the clinic. Three knockouts inside a couple of hours
+  (`noteKO`) and a Guardian Angle comes; beat one for change and a pamphlet.
+- **New faces.** Hasidic men (shtreimel, sidelocks, long coat) and the Guardian Angles (red berets,
+  red satin, a patch on the back) walk Kestrel Street, Ashby Ave, Park Slope and Fulton as ordinary
+  pedestrians. Anybody with a hat (`rig.hat`) loses it when they go down: it flies and lands.
+- **Meatball in the park.** At Mo's heel when he walks into Kestrel Park, the dog comes in with him
+  and wanders the paths; a mugger with the dog in sight is run off before the menu. He waits
+  outside anywhere else.
+- **Traffic.** Lanes may have `speeders` and `chases`: fast cars, and a car with a cruiser on its
+  bumper, siren and all. Fulton's road is walkable now; a fast car brakes for a man who just
+  stepped out, not for one who has been standing there, and one that hits him throws him over the
+  hood (`hitByCar`, `updateFlung`).
+
 ### The phone grows a dial tone, cops with a job, an arcade, a catalog, pictures
 
 - **The freeze.** A punch at the bodega cat threw inside the guard pose every frame and the loop
