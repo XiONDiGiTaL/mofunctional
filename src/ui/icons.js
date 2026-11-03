@@ -224,6 +224,10 @@ const ART = {
   lease: svg(`<path d="M18 8h26l4 6v40H22l-4-4z" fill="#f2e6c4"/><path d="M44 8l4 6h-4z" fill="#d9c79a"/><path d="M18 50l4 4v-4z" fill="#d9c79a"/>`
     + `<path d="M23 18h20M23 23h20M23 28h20M23 33h14" stroke="#9a8f74" stroke-width="1.4"/>${txt(32, 14.6, 3.4, '#5a4a2a', 'LEASE 3B')}`
     + `<circle cx="40" cy="44" r="4.6" fill="#c4202a"/><path d="M38 48l-2 5M42 48l2 5" stroke="#c4202a" stroke-width="2"/><path d="M24 44c3-3 5 1 8-2" stroke="#2c5fb8" stroke-width="1.4"/>`, 16),
+  // the Guardian Angles' tri-fold: red, white wings, an eye, and a lot of exclamation marks
+  angle_pamphlet: svg(`<path d="M12 14l14-4v42l-14 4z" fill="#c01e1a"/><path d="M26 10l14 4v42l-14-4z" fill="#f2f2ec"/><path d="M40 14l14-4v42l-14 4z" fill="#c01e1a"/>`
+    + `<path d="M15 26l4-3 4 3M15 30l4-3 4 3" stroke="#f2f2ec" stroke-width="1.6"/><circle cx="33" cy="24" r="3.4" fill="#c01e1a"/><circle cx="33" cy="24" r="1.3" fill="#141416"/>`
+    + `<path d="M29 32h8M29 36h8M29 40h6" stroke="#9a9a94" stroke-width="1.3"/><path d="M47 22v12M47 38v2" stroke="#f2f2ec" stroke-width="2.2"/>`, 16),
   grab_bag: svg(box({ x: 14, y: 22, w: 30, h: 30, d: 10, c: '#c9a26b', top: '#e2c38e', side: '#a07c48' })
     + `<path d="M14 22l4-6h30l3 2" fill="#d9b67e"/><path d="M18 16l3 6M26 16l-1 6M34 16l2 6" stroke="#a07c48" stroke-width="1"/>`
     + txt(29, 44, 16, '#fff', '?') + `<path d="M22 28h14" stroke="#a07c48" stroke-width="1"/>`),
