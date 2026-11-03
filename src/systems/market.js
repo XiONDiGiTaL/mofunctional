@@ -118,7 +118,7 @@ export const PROPERTIES = {
   laundromat: { id: 'laundromat', name: "Dee's Wash & Fold", blurb: 'twenty machines, two vending machines, Dee, and a back room', price: 60000, units: 0, rent: 0, flat: 780, upkeep: 190 },
 };
 
-const TENANTS = ['Ray & Denise (2A)', 'Mr. Okafor (2B)', 'Mrs. Petrakis (3B)', 'Lenny (3A)', 'Squeak (4A)', 'The Nguyens (4D)', 'Stephanie (5C)', 'Teresa R. (5A)'];
+const TENANTS = ['Ray & Denise (2A)', 'Mr. Okafor (2B)', 'Mrs. Petrakis (3B)', 'Lenny (3A)', 'Squeak (4A)', 'The Nguyens (4D)', 'The Ortizes (5C)', 'Teresa R. (5A)'];
 
 export function owns(s, id) { return !!marketState(s).properties[id]; }
 

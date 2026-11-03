@@ -1,11 +1,14 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
+import { buildRoof } from './roof.js';
+import { kevDoor } from '../systems/calls.js';
 import { buildHall } from './hall.js';
 import { addOwe } from '../systems/owes.js';
 import * as THREE from '../../vendor/three.module.js';
 import { createRenderer, setSize, retroMaterial, retroUniforms, box } from '../render/retro.js';
 import { createMo, createAddison, createNPC, createCat, animateMo, animateAddison, animateNPC, applyOutfit as dressMo, addSaxophone, animateSax, punchPose, animateDown, guardPose, kickPose } from './characters.js';
-import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu } from './areas.js';
+import { buildApartment, buildStreet, buildChurch, buildBodega, buildHabibs, buildPark, buildClinic, buildQuikStop, buildMenuWorld, partnerMenu, talk } from './areas.js';
 import { Affection } from './affection.js';
+import { stephanieDoor } from './places.js';
 import { buildWalkup, buildAvenue, buildRestaurant, buildPrecinct, buildLaundromat, buildLaundryBack } from './places.js';
 import { buildSubway, buildParkSlope, buildDowntown, buildProjects, buildFightClub, clothingMenu } from './underground.js';
 import { buildTower, buildHerRoom } from './houses.js';
@@ -40,7 +43,8 @@ import { sisterTarget } from '../systems/sister.js';
 import { maybeStreetEvent } from '../systems/street.js';
 
 const BUILDERS = {
-  apartment: buildApartment, street: buildStreet, church: buildChurch, hall: buildHall,
+  apartment: buildApartment, street: buildStreet, church: buildChurch, roof: buildRoof,
+  hall: (g) => buildHall(g, { partnerMenu, stephanieDoor, raeTalk: (gg) => talk(gg, 'rae'), kevDoor }),
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
@@ -230,8 +234,8 @@ export class World {
     this.camera.position.set(this.mo.root.position.x + behind.x, 2.9, this.mo.root.position.z + behind.z);
     this.camPos.copy(this.camera.position);
     this.camFocus.set(this.mo.root.position.x, 0, this.mo.root.position.z);
-    this.camBoom = this.roomBoom(id !== 'street');
-    this.boomHeight = id !== 'street' ? 1.98 : 2.62;
+    this.camBoom = this.roomBoom(id !== 'street' && id !== 'roof');
+    this.boomHeight = id !== 'street' && id !== 'roof' ? 1.98 : 2.62;
     this.swingGoal = 0;
     this.prevCamYaw = this.camYaw;
     this.walking = false;
@@ -1608,8 +1612,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
 
     // audio-reactive fog: the corridor closes in on the loud parts
     const f = retroUniforms.fogFar;
-    f.value = CONFIG.render.fogFar * (0.82 + this.audioLevel * 0.4);
-    retroUniforms.fogNear.value = CONFIG.render.fogNear * (0.8 + this.audioLevel * 1.2);
+    // an area can see further than the street (a roof: the whole skyline)
+    f.value = (this.area?.fogFar ?? CONFIG.render.fogFar) * (0.82 + this.audioLevel * 0.4);
+    retroUniforms.fogNear.value = (this.area?.fogNear ?? CONFIG.render.fogNear) * (0.8 + this.audioLevel * 1.2);
   }
 
   updatePlay(dt, g) {
@@ -1915,7 +1920,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // Habib's (rooms under 7 m across) got the street's 4.1 m arm: longer than the room, it hit
     // a wall every frame, shortened, clamped and swung, which is the camera that thrashed about
     // in the shops. The arm is now sized to the room it is in.
-    const interior = this.areaId !== 'street';
+    const interior = this.areaId !== 'street' && this.areaId !== 'roof'; // a roof is shot like the street: the long lens, the skyline
     const camSet = s.settings || {};
     const distMul = clamp(Number(camSet.camDist) || 1, 0.7, 1.4);
     const heightMul = clamp(Number(camSet.camHeight) || 1, 0.8, 1.35);

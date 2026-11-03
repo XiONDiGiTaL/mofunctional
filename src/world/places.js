@@ -3,7 +3,7 @@
  *
  *   1104 Kestrel  — the walk-up west of the bodega. A lobby and four floors of narrow hallway:
  *                   a man asleep by the stairs, a couple who have been arguing since 1994,
- *                   Mrs. Petrakis and her soup, Squeak selling out of his coat, Stephanie in 5C,
+ *                   Mrs. Petrakis and her soup, Squeak selling out of his coat, the Ortizes in 5C,
  *                   and the roof. The stairs take real minutes. It is a place to lose an hour.
  *   The bus       — the stop on Kestrel goes to Ashby Avenue and back (and to the park, which
  *                   you could walk to, and everybody does say that).
@@ -58,7 +58,7 @@ const DIRECTORY = [
   '2nd · 2A Ray & Denise (arguing, in the hall) · 2B–2D',
   '3rd · 3B Mrs. Petrakis (soup) · 3A, 3C, 3D',
   '4th · 4A Squeak (in the hallway) · 4B–4D',
-  '5th · 5C Stephanie · the roof, up the last flight',
+  '5th · 5C the Ortizes · the roof, up the last flight',
 ];
 export const walkupDirectory = () => DIRECTORY.slice();
 
@@ -237,48 +237,30 @@ function coupleMenu(g) {
   });
 }
 
-/** Stephanie's door, 5C. She is home when her day has her off the map. */
-function stephanieDoor(g, partnerMenu) {
+/** Stephanie's door (1120 Kestrel, 1B). She is home when her day has her off the map. */
+export function stephanieDoor(g, partnerMenu, unit = '1B', bldg = '1120 KESTREL') {
   const s = g.state;
   const row = partnerTarget('stephanie', minuteOfDay(s.clock.m));
   const st = romance.partnerState(s, 'stephanie');
   g.advance(2);
   if (!row?.away) {
-    g.openModal({ kicker: '1104 KESTREL · 5C', title: '5C', body: `Nobody home. A note taped to the door in Sharpie: "OUT. OBVIOUSLY."${st.met ? `\n\n(She is ${row.area === 'street' ? 'out on the street' : `at ${row.area}`}: ${row.note}.)` : ''}`, choices: [{ label: 'Okay.', effect: () => {} }] });
+    g.openModal({ kicker: `${bldg} · ${unit}`, title: unit, body: `Nobody home. A note taped to the door in Sharpie: "OUT. OBVIOUSLY."${st.met ? `\n\n(She is ${row.area === 'street' ? 'out on the street' : `at ${row.area}`}: ${row.note}.)` : ''}`, choices: [{ label: 'Okay.', effect: () => {} }] });
     return;
   }
   if (!st.met) {
     romance.meetPartner(g, 'stephanie');
     g.openModal({
-      kicker: '1104 KESTREL · 5C', title: 'Stephanie',
+      kicker: `${bldg} · ${unit}`, title: 'Stephanie',
       body: 'A woman in a black zip hoodie opens the door with a spoon in her mouth. She takes it out. "You\'re the guy from 1120. I see you on the stoop. I\'m Stephanie. I\'m in the middle of cereal."',
       choices: [{ label: '"Mo. Sorry. Wrong — no, right door, actually."', effect: () => { bump(s, 'morale', 5); } }],
     });
     return;
   }
   if (!st.girlfriend && st.affection < 40) {
-    g.openModal({ kicker: '1104 KESTREL · 5C', title: 'Stephanie', body: 'She opens the door four inches. "It is too early or too late for you to be at my door, Mo. Text first. Like a person."', choices: [{ label: 'Fair.', effect: () => { bump(s, 'morale', -1); } }] });
+    g.openModal({ kicker: `${bldg} · ${unit}`, title: 'Stephanie', body: 'She opens the door four inches. "It is too early or too late for you to be at my door, Mo. Text first. Like a person."', choices: [{ label: 'Fair.', effect: () => { bump(s, 'morale', -1); } }] });
     return;
   }
   partnerMenu(g, 'stephanie');
-}
-
-/** The roof: tar paper, a lawn chair somebody left, the whole skyline for free. */
-function roof(g) {
-  const s = g.state;
-  const mod = minuteOfDay(s.clock.m);
-  const night = mod >= 20 * 60 || mod < 5 * 60;
-  g.openModal({
-    kicker: '1104 KESTREL · THE ROOF', title: 'The Roof',
-    body: night
-      ? 'The city at night from five floors up: a million windows, every one of them somebody else\'s problem. A helicopter goes over. Somebody on the next roof is playing the same song you were thinking of.'
-      : 'Tar paper, a lawn chair with one good leg, pigeons with opinions. You can see the Fellowship\'s gold roof from here, and the park, and, if you squint, a version of the week where things go fine.',
-    choices: [
-      { label: 'Sit for a while.', sub: '45 min · +morale · -stress', effect: () => { g.advance(45); bump(s, 'morale', night ? 10 : 7); bump(s, 'stress', -10); g.toast(night ? 'You stay until the song ends.' : 'A pigeon sits next to you. You are both on break.', 'good'); } },
-      ...(countItem(s, 'loosies') ? [{ label: 'Smoke a loosie up here.', sub: '15 min', effect: () => { removeItem(s, 'loosies', 1); g.advance(15); bump(s, 'stress', -8); bump(s, 'morale', 3); } }] : []),
-      { label: 'Go back down.', sub: '', effect: () => {} },
-    ],
-  });
 }
 
 export function buildWalkup(g, { partnerMenu } = {}) {
@@ -349,7 +331,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
   } else {
     door(-1, 2.6, `${fl}A`, (gg) => knock(gg, f, `${fl}A`));
     door(1, 2.6, `${fl}B`, f === 2 ? (gg) => petrakis(gg) : (gg) => knock(gg, f, `${fl}B`), f === 2 ? 'Mrs. Petrakis' : '');
-    door(-1, -0.6, `${fl}C`, f === 4 && partnerMenu ? (gg) => stephanieDoor(gg, partnerMenu) : (gg) => knock(gg, f, `${fl}C`), f === 4 ? 'a cartoon bench sticker' : '');
+    door(-1, -0.6, `${fl}C`, (gg) => knock(gg, f, `${fl}C`), '');
     door(1, 0.4, `${fl}D`, (gg) => knock(gg, f, `${fl}D`));
   }
   if (f === 1) {
@@ -375,7 +357,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     // the last flight goes to the roof door, at the top of the east stairs
     group.add(box(1.0, 2.0, 0.12, retroMaterial('wu_roofdoor', { color: 0x6a6a6a }), [stairX, 2.4, -D / 2 + 0.1]));
     group.add(plane(0.8, 0.22, { name: 'wu_roofsign', map: signTex('wuRoof', [{ text: 'ROOF · ALARM WILL SOUND', color: '#ff6a5a', size: 6 }], { w: 96, h: 16, bg: '#1a1a1a', border: '#5a5a5a' }), emissive: 0.6, unlit: true }, [1.6, 2.4, -2.6], [0, -Math.PI / 2, 0]));
-    interactables.push({ id: 'wu_roof', label: 'Up the last flight to the roof', sub: 'the alarm has not worked since 1989', x: stairX - 0.2, z: -3.2, radius: 0.9, action: (gg) => roof(gg) });
+    interactables.push({ id: 'wu_roof', label: 'Up the last flight to the roof', sub: 'ALARM WILL SOUND · it has not since 1989', x: stairX - 0.2, z: -3.2, radius: 0.9, action: (gg) => { gg.state.roofOf = '1104'; gg.advance(CONFIG.walkup.stairMinutes); gg.goTo('roof', 'walkup'); } });
   }
   if (f < FLOOR_NAMES.length - 1) interactables.push({ id: 'wu_up', label: `Up to the ${FLOOR_NAMES[f + 1]}`, sub: `${CONFIG.walkup.stairMinutes} min · the stairs`, x: stairX - 0.2, z: -3.2, radius: 0.9, action: (gg) => stairs(gg, 1) });
   if (f > 0) interactables.push({ id: 'wu_down', label: `Stairs down to the ${FLOOR_NAMES[f - 1]}`, sub: 'the west stairwell', x: -1.05, z: -2.4, radius: 1.0, action: (gg) => stairs(gg, -1) });
@@ -403,7 +385,7 @@ export function buildWalkup(g, { partnerMenu } = {}) {
     spawn: { x: 0, z: D / 2 - 1.6, rot: Math.PI },
     // up the stairs: at the top of the east flight; down them: at the foot of the west well;
     // out of the elevator: in front of its doors
-    spawnFor: (from) => (from === 'up' ? { x: stairX - 0.2, z: -2.4, rot: 0 } : from === 'down' ? { x: -0.95, z: -1.7, rot: 0 } : from === 'elevator' ? { x: -0.95, z: -D / 2 + 1.5, rot: 0 } : { x: 0, z: D / 2 - 1.6, rot: Math.PI }),
+    spawnFor: (from) => (from === 'up' || from === 'roof' ? { x: stairX - 0.2, z: -2.4, rot: 0 } : from === 'down' ? { x: -0.95, z: -1.7, rot: 0 } : from === 'elevator' ? { x: -0.95, z: -D / 2 + 1.5, rot: 0 } : { x: 0, z: D / 2 - 1.6, rot: Math.PI }),
     npcs,
     interactables,
     tick,

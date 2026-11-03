@@ -269,7 +269,7 @@ function callPartner(g, id) {
 }
 
 /** Kev, a bench, a joint passed back and forth, and the walk home that you do not remember. */
-function hangWithKev(g) {
+export function hangWithKev(g) {
   const s = g.state;
   g.fadeOut(() => {
     g.goTo('park', null);
@@ -361,3 +361,22 @@ export function dialNumber(g, digits) {
 }
 
 export { hhmm };
+
+/** Kev's door, 2A in 1120: home in the evenings and on his days off, at the store otherwise. */
+export function kevDoor(g) {
+  const s = g.state;
+  const m = minuteOfDay(s.clock.m);
+  const wd = ((dayOf(s.clock.m) - 1) % 7) + 1;
+  const atWork = wd <= 5 && m >= 9 * 60 && m < 17 * 60;
+  g.advance(1);
+  if (atWork || m < 8 * 60) { g.toast(atWork ? 'Nobody answers 2A. Kev is at the Quik-Stop, or he is supposed to be.' : 'A snore through the door like a truck in low gear. Kev is asleep.', 'info'); return; }
+  g.openModal({
+    kicker: '1120 KESTREL · 2A', title: 'Kev',
+    body: 'Kev opens the door in a Mets jersey and one sock. Behind him: a TV, a beanbag that has seen things, and a tank with a turtle named Dale (not after Dale. Mostly after Dale).',
+    choices: [
+      { label: 'Come in for a beer and a game.', sub: '45 min · +morale -stress', effect: () => { g.advance(45); bump(s, 'morale', 7); bump(s, 'stress', -6); g.toast(pick(['The Mets lose in the ninth. Kev takes it personally. You take a second beer.', 'Kev explains his fantasy team for forty minutes. You understand none of it. It is the best part of your day.']), 'good'); } },
+      { label: 'Hang out in the park.', sub: m < 9 * 60 ? 'too early for Kev' : '2 h · a joint · the park', disabled: m < 9 * 60, effect: () => hangWithKev(g) },
+      { label: 'Just saying hi.', effect: () => g.toast('"Hi," Kev says, and then, "that is it? Okay. Respect."', 'info') },
+    ],
+  });
+}

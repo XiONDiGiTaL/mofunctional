@@ -1,4 +1,5 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import { b1120 } from './hall.js';
 import * as recovery from '../systems/recovery.js';
 import * as music from '../systems/music.js';
 import { playShift } from '../systems/shiftplay.js';
@@ -215,7 +216,7 @@ export function buildApartment(g) {
     { id: 'laptop', label: 'Use the laptop', sub: 'the internet: jobs, stocks, MeTube, the board', x: 1.4, z: 0.1, action: (gg) => gg.openLaptop() },
     { id: 'bag', label: 'Check your bag', sub: 'the drawer, sort of', x: -3.0, z: 2.4, action: (gg) => stashMenu(gg) },
     { id: 'closet', label: 'Open the closet', sub: 'what he owns · what he wears', x: -2.6, z: 0.2, radius: 0.9, action: (gg) => closetMenu(gg) },
-    { id: 'door', label: 'Out to the hall', sub: 'the third floor · the stairs · the neighbours', x: 0, z: 3.9, action: (gg) => gg.goTo('hall', 'apartment') },
+    { id: 'door', label: 'Out to the hall', sub: 'the third floor · the stairs · the elevator · the roof', x: 0, z: 3.9, action: (gg) => { b1120(gg.state).floor = 3; gg.goTo('hall', 'apartment'); } },
   ];
   if (g.state.flags.cat) {
     interactables.push({ id: 'cat', label: 'Chairman', sub: 'pet him · or not', x: 0.9, z: 1.9, action: (gg) => {
@@ -1095,8 +1096,8 @@ function dumpster(g) {
 /** 1120's door: home, or a new lock and a note from Rae. */
 function apartmentDoor(g) {
   const s = g.state;
-  // up the three flights to the third floor; Unit 3B is down the hall
-  if (life.isHoused?.(s) !== false) { g.advance(1); g.goTo('hall', 'street'); return; }
+  // in through the front door to the lobby (1120's elevator or stairs from there)
+  if (life.isHoused?.(s) !== false) { b1120(s).floor = 0; g.goTo('hall', 'street'); return; }
   const cost = life.rehouseCost(s);
   g.openModal({
     kicker: '1120 KESTREL ST. · UNIT 3B',
@@ -1340,7 +1341,7 @@ function speak(g, id, words = 10) {
   g.audio?.mumble?.('word '.repeat(Math.max(3, words)), { pitch: NPC_VOICE[id] ?? 1 });
 }
 
-function talk(g, id) {
+export function talk(g, id) {
   const s = g.state;
   speak(g, id, 8);
   g.advance(10);
