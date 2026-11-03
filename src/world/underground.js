@@ -538,7 +538,7 @@ function homeTrain(x, z) {
 /* ================================================================== a street block, for the far stops */
 
 /** Sidewalk, road, curb, lamps and a row of facades. Returns { group, door(x, label, color) }. */
-function block(name, facades, { L = 34, sidewalkTex = 'sidewalk' } = {}) {
+export function block(name, facades, { L = 34, sidewalkTex = 'sidewalk' } = {}) {
   const group = new THREE.Group();
   group.add(plane(L, 9, { name: `${name}_sw`, map: tex(sidewalkTex), repeat: [10, 3] }, [0, 0, -2.0], [-Math.PI / 2, 0, 0]));
   group.add(plane(L, 9, { name: `${name}_road`, map: tex('asphalt'), repeat: [12, 3] }, [0, -0.01, 6.0], [-Math.PI / 2, 0, 0]));

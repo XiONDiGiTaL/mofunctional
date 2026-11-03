@@ -7,6 +7,7 @@
  * The "what is going on" page reads the run (a happening on the way, a story in progress, the
  * dog, the building) so his gossip is always about this week.
  */
+import { recentIncident } from '../world/incidents.js';
 import { pick, dayOf } from '../core/util.js';
 
 const PEOPLE = [
@@ -80,6 +81,8 @@ function goingOn(g) {
   else if (s.tenants && Object.keys(s.tenants.complaints || {}).length) out.push('I hear your floor is making a list. Good. A list is a thing a landlord cannot hang up on.');
   if ((s.music?.fans || 0) >= 10) out.push(`People say your name at Lucia's on Thursdays. ${s.music.fans} people. That is a block's worth. Keep going.`);
   if (s.flags?.addisonRobbed) out.push('Somebody knocked the Shepherd down in his own church and went through his robes. I am not saying who. I am looking at who.');
+  const inc = recentIncident(s);
+  if (inc) out.push(inc);
   // the new money on the block, and the new manners
   if (Object.values(s.supply?.dealers || {}).some((d) => d.on)) out.push('There is a new thing on the corners. ROX, they call it. Benchy has new sneakers. Dex is smiling, which is worse. Somebody is cooking it, and that somebody should be careful, because I can smell a pot from here.');
   else if (s.counters?.roxSold) out.push('The ones who walk at night are talking about rocks. Little white rocks. Mo, when the night people know a thing, the police know it a week later.');

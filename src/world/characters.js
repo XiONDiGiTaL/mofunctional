@@ -482,6 +482,12 @@ const CAST = {
   passer_m: { height: 1.8, build: 1.04, shirt: 0x2a4a7a, pants: 0x3a3a40, longSleeves: true },
   passer_m2: { height: 1.74, build: 0.98, shirt: 0x8a7a5a, pants: 0x4a4436, longSleeves: true },
   drifter: { height: 1.74, build: 0.92, shirt: 0x4a4436, pants: 0x3a362c, longSleeves: true },
+  // Myrtle Row's vendors (world/row.js): aprons and caps are generic accessories, see createNPC
+  sal: { height: 1.74, build: 1.14, shirt: 0xf2f2ec, pants: 0x2a2a30, apron: 0xf4f2ea, chefHat: true },
+  piraguero: { height: 1.7, build: 1.02, shirt: 0xf2e8a0, pants: 0x3a4a6a, cap: 0xe8d8a0, capBrim: 0.16 },
+  jerkman: { height: 1.8, build: 1.1, shirt: 0xc81e1e, pants: 0x2a2a30, apron: 0xf2e8ec, apronStripe: 0xc8323a, cap: 0x1a1a1e },
+  pretzelman: { height: 1.76, build: 1.0, shirt: 0x2a3a5a, pants: 0x3a3a40, longSleeves: true, cap: 0xc81e1e },
+  doner: { height: 1.74, build: 1.08, shirt: 0x2a6ab8, pants: 0x2a2a34, longSleeves: true, apron: 0x7ab0d8, cap: 0xf2f2ee },
   // the man with the "Rolex": a tan trenchcoat to the shins, collar up, the lining full of watches
   trench: { height: 1.78, build: 1.0, shirt: 0x9a7a4a, pants: 0x2a2a2e, shoes: 0x1a1210, longSleeves: true },
   hall_m: { height: 1.8, build: 1.0, shirt: 0x2a2c34, pants: 0x3a4a66, longSleeves: true },
@@ -925,6 +931,36 @@ export function createNPC(kind = 'kev') {
     rig.head.add(cap);
     rig.head.add(box(0.2 * k, 0.015 * k, 0.08 * k, tweed, [0, 0.125 * k, 0.12 * k], [0.25, 0, 0]));
     rig.hat = cap;
+  }
+  // generic workwear: an apron (optionally striped), a baseball cap, a chef's toque
+  if (spec.apron) {
+    const am = retroMaterial(`apron${spec.apron}`, { color: spec.apron, ambient: 0.75 });
+    rig.torso.add(box(0.3 * k, 0.4 * k, 0.012 * k, am, [0, 0.12 * k, 0.128 * k]));
+    rig.hips.add(box(0.34 * k, 0.42 * k, 0.012 * k, am, [0, -0.14 * k, 0.135 * k]));
+    if (spec.apronStripe) for (let i = -2; i <= 2; i++) rig.hips.add(box(0.018 * k, 0.42 * k, 0.014 * k, retroMaterial(`apronStripe${spec.apronStripe}`, { color: spec.apronStripe }), [i * 0.06 * k, -0.14 * k, 0.137 * k]));
+  }
+  if (spec.cap) {
+    const cm = retroMaterial(`cap${spec.cap}`, { color: spec.cap, ambient: 0.7 });
+    const cap = new THREE.Group();
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.145 * k, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), cm);
+    crown.scale.set(1.05, 0.7, 1.12);
+    cap.add(crown);
+    cap.add(box(0.2 * k, 0.012 * k, (spec.capBrim || 0.13) * k, cm, [0, 0.005 * k, 0.15 * k]));
+    cap.position.set(0, 0.12 * k, -0.005 * k);
+    rig.head.add(cap);
+    rig.hat = cap;
+  }
+  if (spec.chefHat) {
+    const wm = retroMaterial('chefHat', { color: 0xf8f8f4, ambient: 0.85 });
+    const hat = new THREE.Group();
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.135 * k, 0.13 * k, 0.12 * k, 12), wm));
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(0.15 * k, 10, 6), wm);
+    puff.scale.set(1, 0.6, 1);
+    puff.position.y = 0.08 * k;
+    hat.add(puff);
+    hat.position.set(0, 0.2 * k, -0.005 * k);
+    rig.head.add(hat);
+    rig.hat = hat;
   }
   if (kind === 'trench') {
     // the trenchcoat: a long tan loft from the shoulders to the shins over the shirt, a darker belt,

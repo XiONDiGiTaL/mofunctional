@@ -294,6 +294,26 @@ export const FACE_SPECS = {
     brow: '#6a4a2a', eye: '#4a5a6a', lips: '#a8705e', lipsLight: '#c48a76', age: 0.55, glasses: true,
   },
   // the man in the alley at night, the two in the 1104 stairwell, the police
+  sal: {
+    skin: '#d8a888', hair: '#2a2420', hairLight: '#4a403a', hairDark: '#141010', style: 'receding',
+    brow: '#2a2420', eye: '#3a2a1e', lips: '#9a5a4a', lipsLight: '#b87262', beard: 'mustache', beardColor: '#2a2420', age: 0.7, jaw: 1.08,
+  },
+  piraguero: {
+    skin: '#b07850', hair: '#1a1410', hairLight: '#3a2e24', hairDark: '#0a0806', style: 'short',
+    brow: '#1a1410', eye: '#2a1e14', lips: '#8a5040', lipsLight: '#a86858', beard: 'mustache', beardColor: '#3a3430', age: 0.8,
+  },
+  jerkman: {
+    skin: '#5a3a28', hair: '#100c0a', hairLight: '#2a201a', hairDark: '#060404', style: 'short',
+    brow: '#100c0a', eye: '#1a1210', lips: '#5a3028', lipsLight: '#7a4638', beard: 'stubble', beardColor: '#100c0a', age: 0.55, jaw: 1.06,
+  },
+  pretzelman: {
+    skin: '#c89a78', hair: '#3a2a1e', hairLight: '#5a4430', hairDark: '#1e150e', style: 'short',
+    brow: '#3a2a1e', eye: '#2a2018', lips: '#8a5a48', lipsLight: '#a87262', beard: 'stubble', beardColor: '#3a2a1e', age: 0.4,
+  },
+  doner: {
+    skin: '#c8946a', hair: '#2a2420', hairLight: '#4a403a', hairDark: '#141010', style: 'short',
+    brow: '#2a2420', eye: '#3a2a1e', lips: '#8a5040', lipsLight: '#a86858', beard: 'mustache', beardColor: '#1a1410', age: 0.65, jaw: 1.06,
+  },
   trench: {
     skin: '#a8785c', hair: '#2a2018', hairLight: '#4a3a2c', hairDark: '#140e0a', style: 'swept',
     brow: '#2a1e14', eye: '#2a2018', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#2a2018', age: 0.55, browTilt: -0.08,

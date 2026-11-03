@@ -10,6 +10,38 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Myrtle Row, a street that lives without Mo, and Day One with Ma
+
+- **Wallpaper**: `assets/img/wallpapers/firstday_mom.jpg` (Mo and his mother on his first day at
+  Quik-Stop, downscaled, palette-reduced, scanlined, captioned) is a `DEFAULTS` wallpaper with a
+  `url`, so every run starts with it unlocked.
+- **Foods**: `pizza_slice`, `pizza_pie`, `italian_ice`, `bagel_cc`, `piragua`, `beef_patty`,
+  `coco_bread`, `jerk_chicken`, `pretzel`, `knish`, `kebab`, `doner`, `hotdog`, each with an icon
+  and a hand prop in `eating.js` (`LOOK` entries take a sixth element of detail boxes: crust,
+  pepperoni, syrup, skewer, mustard). Bagels are at the bodega and the Quik-Stop.
+- **`world/row.js`** (area `row`): 48 m between Kestrel's west end (`toRow`) and the Ave's west
+  end (`av_row`). Sal's window (shop `pizzeria`), Irie Grill (`jerk`), The Last Honest Wiener
+  (`glizzy`), Pretzel Palace (`pretzels`), Mendel's Knishes (`knish`), Istanbul Grill (`turkish`,
+  a turning spit), and Don Cheo's cart (`piragua`): a walker with `carry: 'pcart'` whose talk
+  prompt follows him. Vendors call out with barks; each stall has hours. New vendor kinds: `sal`,
+  `piraguero`, `jerkman`, `pretzelman`, `doner`; generic CAST options `apron`, `apronStripe`,
+  `cap`, `capBrim`, `chefHat`. New acts: `eat`, `grill`, `carve`.
+- **`world/crowd.js`**: `dressWalker` gives every walker something (food, coffee, phone, bags,
+  paper, package, headphones, stroller, cane, jog; seeded by face spec when unset) as child props
+  of the rig, `rig.pace` per kind, `carryPose` after the walk cycle; `crowdTick` stops walkers on a
+  collision course for a short conversation (`bark` sprites over heads) and drives `reactT`
+  (stop and look at an incident); `errand` walks a passer into a shop door from `area.doors` and
+  back out with a bag.
+- **`world/incidents.js`**: one event at a time on street, row, avenue and Park Slope, every 1.5 to
+  3.5 minutes: `purse` (thief runs up, takes the bag, flees; bystanders react; one punch drops him,
+  `npcDef.thief`, for a reward; else sometimes a cop on foot), `stop` (a cruiser told to `stopAt`
+  pulls over, two officers walk up, hands up and cuffs then escort, or the man runs and one chases),
+  and `graffiti` at night (a writer and a lookout; the piece reveals across a canvas, scatters if a
+  cop is in sight; kept in `state.graffiti[area]`, walls start each run with two old pieces).
+  Scripted rigs (`rig.scripted`) are only animated by the world loop. Outcomes go in
+  `state.worldLog`; `recentIncident` feeds Papi.
+- `traffic.spawnSpecial` returns the car; cars honour `car.stopAt`.
+
 ### Fists, homes, the clinic's secret, and pictures that look like the game
 
 - **Fixes**: Yusuf and his hookah keep the same hours (09:00 to 02:00) and the hookah is only out

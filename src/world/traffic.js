@@ -25,8 +25,9 @@ export class Traffic {
   /** A particular vehicle (the patrol car) instead of a random one. */
   spawnSpecial(type) {
     this.special = type;
-    this.spawn();
+    const car = this.spawn();
     this.special = null;
+    return car;
   }
 
   spawn(atX = null) {
@@ -125,7 +126,9 @@ export class Traffic {
       // a fast car brakes for Mo only if he stepped out just now; a man who has been standing in
       // the road for a while is, to a man doing sixty, part of the road
       const ignoresMo = c.fast && (this.world.roadT || 0) > 1.2;
-      const blockAt = Math.min(gap - 2.0, ignoresMo ? Infinity : moAhead - 1.6);
+      // a cruiser told to pull over (world/incidents.js) stops level with its mark
+      const stopFor = c.stopAt != null ? (c.stopAt - c.x) * d : Infinity;
+      const blockAt = Math.min(gap - 2.0, ignoresMo ? Infinity : moAhead - 1.6, stopFor);
       // ease toward cruise, brake hard for whatever is in front
       const want = blockAt <= 0 ? 0 : blockAt < 8 ? c.cruise * (blockAt / 8) : c.cruise;
       c.speed += (want - c.speed) * Math.min(1, dt * (want < c.speed ? 6 : 1.5));

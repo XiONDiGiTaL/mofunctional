@@ -17,6 +17,9 @@ import { Courier } from './courier.js';
 import { Assailants } from './assailant.js';
 import { Duel } from './duel.js';
 import { buildHerPlace } from './herplace.js';
+import { buildRow } from './row.js';
+import { dressWalker, carryPose, crowdTick, errand } from './crowd.js';
+import { Incidents } from './incidents.js';
 import * as rae from '../systems/rae.js';
 import { ROAD } from './plan.js';
 import { Patrol, OUTSIDE } from './patrol.js';
@@ -52,7 +55,7 @@ const BUILDERS = {
   bodega: buildBodega, habibs: buildHabibs, park: buildPark, clinic: buildClinic, quikstop: buildQuikStop,
   walkup: (g) => buildWalkup(g, { partnerMenu }), avenue: buildAvenue, restaurant: buildRestaurant, precinct: buildPrecinct, laundromat: buildLaundromat, laundry_back: buildLaundryBack,
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
-  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom, clinicback: buildClinicBack, herplace: (g) => buildHerPlace(g, { partnerMenu }),
+  pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom, clinicback: buildClinicBack, row: buildRow, herplace: (g) => buildHerPlace(g, { partnerMenu }),
   pawn: buildPawnShop, jays: (g) => buildJays(g, clothingMenu), relief: buildReliefOffice,
 };
 
@@ -126,6 +129,7 @@ export class World {
 
   clearArea() {
     this.cutHidden = null;
+    this.incidents?.clear();
     this.patrol?.clear();
     this.assailants?.clear();
     for (const h of this.flyingHats || []) h.mesh.parent?.remove(h.mesh);
@@ -291,6 +295,11 @@ export class World {
       // the three women carry a heart until one of them is actually his girlfriend
       if (isPartnerId(npc.kind) && !partnerState(g.state, npc.kind).girlfriend) this.addHeart(rig, npc.kind);
     }
+    // everybody walking past has something in their hands (world/crowd.js)
+    for (const rig of this.npcRigs) if (rig.npcDef?.walker) dressWalker(rig, rig.npcDef);
+    // the walls keep their paint; the street keeps its own business (world/incidents.js)
+    if (!this.incidents) this.incidents = new Incidents(this);
+    this.incidents.onLoad(g, id);
     // a fiend looks like what they are: the high face, all the way
     for (const k of ['fiend', 'fiend_f']) if (this.area.npcs.some((n) => n.kind === k)) setFaceExpression(k, 'high', 1);
     // Nia, when she has come over: walks into Unit 3B with a bag of food (systems/sister.js)
@@ -894,6 +903,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // remembers. A cat used to go through the human path, whose guard pose reached for limbs a
     // cat does not have and threw every frame, which stopped the game dead.
     if (this.duel?.isFoe(rig)) { this.duel.hit(g); return; }
+    // the bag thief goes down in one: he is running, not fighting
+    if (rig.npcDef?.thief) { g.audio?.sfx?.('hit'); this.knockDown(rig, g); return; }
     if (rig.type === 'cat') {
       this.punchT = 0;
       bump(g.state, 'morale', -8);
@@ -1975,6 +1986,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       if (rig.type === 'cat') { if (rig.fly || (rig.koUntil || 0) > this.realT) this.updateCatKO(rig, dt); else animateNPC(rig, dt); continue; }
       if (rig.down) { this.npcDown(rig, dt); continue; }
       if (rig.patrol) continue; // driven by Patrol, below
+      // somebody an incident brought: it moves them; this only works their legs
+      if (rig.scripted) { animateNPC(rig, dt * (rig.runK || 1), { walking: !!rig.walking }); continue; }
       this.patrolNPC(rig, dt, g);
       if (rig.heart) {
         rig.heart.position.y = 2.06 + Math.sin(this.time * 2.2 + rig.root.position.x) * 0.045;
@@ -1991,6 +2004,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
         sleeping: pose === 'sleep' || (settled && (mod >= 22 * 60 || mod < 7 * 60)),
       });
       if (rig.npcDef?.act) applyAct(rig, dt, this.streetLife);
+      if (rig.carry) carryPose(rig, !!rig.walking);
       // after the idle cycle, or it takes the arms back down to his sides
       if (rig.sax) animateSax(rig, dt);
       this.brawlPose(rig, dt);
@@ -2001,6 +2015,8 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!this.patrol) this.patrol = new Patrol(this);
     this.patrol.update(dt, g);
     this.assailants.update(dt, g);
+    crowdTick(this, dt);
+    this.incidents?.update(dt, g);
     if (!this.duel) this.duel = new Duel(this);
     this.duel.update(dt, g);
     this.updateFlyingHats(dt);
@@ -2454,6 +2470,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // somebody walking the avenue end to end, on the way to somewhere that is not here
     if (def.walker) {
       if (rig.walkDir === undefined) rig.walkDir = Math.random() < 0.5 ? 1 : -1;
+      if (rig.chatT > 0) { rig.walking = false; return; }
+      if (rig.reactT > 0) { rig.walking = false; return; }
+      if (errand(this, rig, dt)) return;
       const [x0, x1] = def.walker;
       const tx = rig.walkDir > 0 ? x1 : x0;
       const dx = tx - rig.root.position.x;
@@ -2463,7 +2482,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const ahead = (mo.x - rig.root.position.x) * Math.sign(dx);
       if (ahead > 0 && ahead < 1.2 && Math.abs(mo.z - rig.root.position.z) < 0.7) { rig.walking = false; return; }
       rig.walking = true;
-      rig.root.position.x += Math.sign(dx) * 1.1 * dt;
+      rig.root.position.x += Math.sign(dx) * (rig.pace || 1.1) * dt;
       rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.sign(dx) > 0 ? Math.PI / 2 : -Math.PI / 2) * Math.min(1, dt * 6);
       return;
     }

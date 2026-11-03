@@ -33,6 +33,20 @@ const LOOK = {
   tallboy: ['drink', 0x3c7bd6, 0.07, 0.17, 0.07],
   mint_tea: ['drink', 0xc9862c, 0.075, 0.09, 0.075],
   loosies: ['smoke', 0xfbfbf6, 0.012, 0.012, 0.085],
+  // [style, colour, w, h, d, details: [colour, w, h, d, x, y, z]]
+  pizza_slice: ['bite', 0xf2c84a, 0.12, 0.012, 0.2, [[0xc8823a, 0.13, 0.03, 0.03, 0, 0.004, -0.1], [0xc83a2a, 0.025, 0.006, 0.025, 0.02, 0.008, 0.02], [0xc83a2a, 0.025, 0.006, 0.025, -0.025, 0.008, -0.04]]],
+  pizza_pie: ['bite', 0xf2c84a, 0.12, 0.012, 0.2, [[0xc8823a, 0.13, 0.03, 0.03, 0, 0.004, -0.1], [0xc83a2a, 0.025, 0.006, 0.025, 0.0, 0.008, 0.0]]],
+  italian_ice: ['cup', 0xf4f2ee, 0.075, 0.07, 0.075, [[0xe84a6a, 0.07, 0.04, 0.07, 0, 0.05, 0], [0xf2f2f2, 0.008, 0.06, 0.008, 0.02, 0.08, 0]]],
+  bagel_cc: ['bite', 0xd8a05a, 0.11, 0.045, 0.11, [[0xf4f2ea, 0.1, 0.012, 0.1, 0, 0.0, 0]]],
+  piragua: ['cup', 0xf4f2ee, 0.06, 0.12, 0.06, [[0xe83a5a, 0.07, 0.05, 0.07, 0, 0.08, 0], [0x3ad8a0, 0.05, 0.02, 0.05, 0, 0.115, 0]]],
+  beef_patty: ['bite', 0xe8b03a, 0.16, 0.025, 0.1],
+  coco_bread: ['bite', 0xf2e2c0, 0.17, 0.05, 0.12, [[0xe8b03a, 0.16, 0.022, 0.1, 0, 0, 0]]],
+  jerk_chicken: ['cup', 0xf4f1ea, 0.17, 0.05, 0.13, [[0x7a3a1a, 0.12, 0.03, 0.08, 0, 0.035, 0]]],
+  pretzel: ['bite', 0xa8602a, 0.15, 0.025, 0.12, [[0xf4f4f0, 0.02, 0.006, 0.02, 0.03, 0.014, 0.02], [0xf4f4f0, 0.02, 0.006, 0.02, -0.04, 0.014, -0.01]]],
+  knish: ['bite', 0xd8a050, 0.1, 0.07, 0.1],
+  kebab: ['bite', 0xa8682a, 0.24, 0.035, 0.035, [[0x3a8a3a, 0.03, 0.04, 0.04, 0.04, 0, 0], [0xc83a2a, 0.03, 0.04, 0.04, -0.04, 0, 0], [0xb8b8bc, 0.3, 0.006, 0.006, 0, 0, 0]]],
+  doner: ['bite', 0xf2e2c0, 0.13, 0.08, 0.11, [[0xa8682a, 0.1, 0.03, 0.09, 0, 0.03, 0], [0x3a8a3a, 0.08, 0.015, 0.06, 0, 0.05, 0]]],
+  hotdog: ['bite', 0xe8c890, 0.18, 0.045, 0.05, [[0xb84a2a, 0.2, 0.025, 0.025, 0, 0.018, 0], [0xf2c81a, 0.16, 0.006, 0.01, 0, 0.032, 0]]],
 };
 const DUR = { bite: 4.4, cup: 4.4, can: 4.4, drink: 3.8, smoke: 6.2 };
 
@@ -116,7 +130,7 @@ export class EatAnim {
     this.stop();
     // the follow camera sits behind him; he turns three-quarters to it so the bite is on screen
     this.faceYaw = faceYaw;
-    const [style, color, w, h, d] = LOOK[itemId] || ['bite', 0xd8c49a, 0.1, 0.06, 0.08];
+    const [style, color, w, h, d, details = []] = LOOK[itemId] || ['bite', 0xd8c49a, 0.1, 0.06, 0.08];
     const mo = this.world.mo;
     const k = mo.k;
     const g = new THREE.Group();
@@ -124,6 +138,8 @@ export class EatAnim {
     g.add(box(w, h, d, mat, [0, 0, 0]));
     if (style === 'cup') g.add(box(w * 0.86, 0.012, d * 0.86, retroMaterial(`eat_${itemId}_top`, { color: 0xf2d27a, ambient: 0.8 }), [0, h / 2, 0]));
     if (style === 'smoke') g.add(box(0.013, 0.013, 0.012, retroMaterial('eat_ember', { color: 0xff8a3a, emissive: 1, unlit: true }), [0, 0, -d / 2]));
+    // the toppings, the crust, the skewer, the syrup
+    details.forEach(([c, dw, dh, dd, x, y, z], i) => g.add(box(dw, dh, dd, retroMaterial(`eat_${itemId}_d${i}`, { color: c, ambient: 0.8 }), [x, y, z])));
     // held in the fist, the business end toward the mouth
     g.position.set(0, -0.31 * k, 0.07 * k);
     g.rotation.set(style === 'drink' || style === 'can' ? 0 : -0.5, 0, 0);

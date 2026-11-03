@@ -41,6 +41,9 @@ const skyline = (y, col, seed = 1) => {
 
 /** The phone's own wallpapers. */
 const DEFAULTS = {
+  // a real photo, stylized to the game's look: Mo's first day at Quik-Stop, with his mother. Every run
+  // starts with it.
+  mom: { name: 'Day One, with Ma', url: 'assets/img/wallpapers/firstday_mom.jpg' },
   dusk: { name: 'Kestrel Dusk', draw: () => `${grad('g', '#ff8a5a', '#2a1a4a')}<rect width="180" height="320" fill="url(#g)"/>${skyline(320, '#1a1424', 3)}` },
   neon: { name: 'Bodega Neon', draw: () => `${grad('g', '#120a24', '#3a0a3a')}<rect width="180" height="320" fill="url(#g)"/><rect x="30" y="110" width="120" height="44" rx="8" fill="none" stroke="#ff5ab8" stroke-width="3"/><text x="90" y="141" font-family="monospace" font-size="20" font-weight="bold" fill="#ff8ad0" text-anchor="middle">OPEN 24</text><rect x="40" y="170" width="100" height="6" fill="#5af2ff" opacity=".6"/>` },
   static: { name: 'Channel 3', draw: () => { let o = '<rect width="180" height="320" fill="#222"/>'; let r = 7; for (let i = 0; i < 900; i++) { r = (r * 9301 + 49297) % 233280; const v = Math.floor((r / 233280) * 200) + 30; o += `<rect x="${(i * 37) % 180}" y="${Math.floor(i / 5) * 1.8}" width="4" height="2" fill="rgb(${v},${v},${v})"/>`; } return o; } },
@@ -113,6 +116,7 @@ export function wallpaperURL(s, key) {
     return cache.get(k);
   }
   const d = DEFAULTS[id] || DEFAULTS.dusk;
+  if (d.url) return d.url;
   if (!cache.has(`def:${id}`)) cache.set(`def:${id}`, enc(d.draw()));
   return cache.get(`def:${id}`);
 }

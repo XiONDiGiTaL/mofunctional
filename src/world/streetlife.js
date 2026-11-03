@@ -61,6 +61,30 @@ export function applyAct(rig, dt, life) {
   if (!act) return;
   rig.actT = (rig.actT || Math.random() * 10) + dt;
   const t = rig.actT;
+  if (act === 'eat') {
+    // standing at the stall with a slice or a plate, a bite every few seconds
+    if (!rig.eatProp) {
+      rig.eatProp = box(0.11, 0.012, 0.19, retroMaterial('sl_slice', { color: 0xf2c84a }), [0, -0.31, 0.06]);
+      rig.armR.elbow.add(rig.eatProp);
+    }
+    const cyc = t % 4.5;
+    const up = cyc > 3.4 ? Math.sin((cyc - 3.4) / 1.1 * Math.PI) : 0;
+    rig.armR.pivot.rotation.x = -0.5 - up * 0.55;
+    rig.armR.elbow.rotation.x = -1.2 - up * 1.0;
+    rig.head.rotation.x = 0.12 + up * 0.15;
+    return;
+  }
+  if (act === 'grill' || act === 'carve') {
+    // tongs over the drum, or the long knife down the spit: a steady working rhythm
+    const s = Math.sin(t * (act === 'grill' ? 2.4 : 3.2));
+    rig.armR.pivot.rotation.x = -0.9 + s * 0.2;
+    rig.armR.elbow.rotation.x = -0.7 + (act === 'carve' ? s * 0.5 : 0);
+    rig.armR.pivot.rotation.z = act === 'carve' ? -0.4 : 0;
+    rig.armL.pivot.rotation.x = -0.5;
+    rig.armL.elbow.rotation.x = -0.9;
+    rig.head.rotation.x = 0.25;
+    return;
+  }
   if (act === 'fiend') {
     // visibly high: the slow sway, the nod, one hand worrying at the other arm
     rig.torso.rotation.z = Math.sin(t * 0.9) * 0.08;

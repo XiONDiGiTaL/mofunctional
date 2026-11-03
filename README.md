@@ -124,6 +124,13 @@ end. It just makes Monday harder.
 
 ## A tour of the neighbourhood
 
+The street has a life of its own now. People walk past eating a slice, sipping a coffee, on the
+phone, carrying bags, pushing a stroller, leaning on a cane, reading the paper; two of them will
+stop to talk and carry on; somebody turns into the bodega and comes out with a bag. Now and then
+something happens without Mo: a bag gets snatched (one punch and the thief is down), a cruiser
+pulls over and two officers make an arrest, or at night two writers paint a piece on a wall that
+stays there. Papi hears about all of it.
+
 <p align="center">
   <img src="assets/img/guide/street_night.jpg" alt="Kestrel Street at night outside Quik-Stop #14, with Meatball the dog trotting beside Mo" width="49%">
   <img src="assets/img/guide/apartment.jpg" alt="Unit 3B: the bed, the kitchen counter, the fridge and the laptop on the table" width="49%">
@@ -246,6 +253,16 @@ for every item with its price, what it does for Mo and how many he already has. 
 The board stays open so a breakfast run is three clicks, not three trips.
 
 <img src="assets/img/guide/shop.jpg" alt="Habib's Corner menu board with cards for chicken over rice, the combo plate, falafel, lentil soup, baklava and mint tea" width="100%">
+
+### Myrtle Row
+
+Walk west past the 1104 walk-up and Kestrel turns the corner into **Myrtle Row**, the side street
+that runs through to Ashby Avenue. It is where the block eats: Sal's Famous sells slices, whole
+pies, sodas and Italian ices through a window onto the sidewalk; Don Cheo pushes his piragua cart
+up and down the Row (catch him to buy); Desmond's Irie Grill does beef patties, coco bread and
+jerk chicken off an oil drum; there are two carts for hot dogs and pretzels, Mendel's knish table,
+and the Istanbul Grill with a döner turning on the spit. Bagels with cream cheese are now at the
+bodega and the Quik-Stop too. Mo eats every one of these on screen.
 
 - **Food per dollar** is printed on every card. The falafel wrap is very hard to beat.
 - **The fridge** holds 24 items. Store all your food in one click on the way in, take what you

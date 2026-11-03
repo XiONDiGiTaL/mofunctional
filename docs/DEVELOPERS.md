@@ -171,6 +171,9 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         hall (1120: lobby and three floors, the elevator), roof (both
                         walkable roofs)
                         assailant (somebody running at Mo: a driver, a Guardian Angle)
+                        row (Myrtle Row: Sal's, the carts, the grill, the döner), crowd (what
+                        walkers carry and do, sidewalk chats, barks, errands into shops),
+                        incidents (purse snatch, police stop and arrest, night graffiti)
                         duel (a fist fight with Mo's own punches), herplace (the girlfriends'
                         homes, keys, Stephanie's couch, Melanie's rack, Diana's care)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,

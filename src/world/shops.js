@@ -27,6 +27,7 @@ export const SHOPS = {
     ],
     stock: [
       { id: 'bec', note: 'the neighbourhood breakfast' },
+      { id: 'bagel_cc', note: 'everything bagel, a schmear the size of a fist' },
       { id: 'chopped', note: 'chopped cheese on a hero' },
       { id: 'hero', note: 'cold cuts, no ceremony' },
       { id: 'loosies', note: 'two loose cigarettes, under the counter' },
@@ -77,6 +78,7 @@ SHOPS.quikstop = {
   ],
   stock: [
     { id: 'coffee', note: 'burnt since six, honest about it' },
+    { id: 'bagel_cc', note: 'in the warmer since 6, cream cheese in a tub' },
     { id: 'sandwich', note: 'cold case, triangle, dated tomorrow' },
     { id: 'ramen', note: 'the noodle wall' },
     { id: 'bar', note: 'protein brick, by the register' },
@@ -91,6 +93,80 @@ SHOPS.quikstop = {
   markup: 1.35,
   sellsPork: true,
 };
+
+/* ------------------------------------------------------------------ Myrtle Row (world/row.js) */
+Object.assign(SHOPS, {
+  pizzeria: {
+    id: 'pizzeria', name: "Sal's Famous", owner: 'Sal', ownerKind: 'sal',
+    kicker: "SAL'S FAMOUS PIZZERIA · THE WINDOW", blurb: 'A window onto the sidewalk, a counter with a shaker of red pepper chained to it, and three pies that have been "just out of the oven" since noon.',
+    voice: ['"Plain or pepperoni. Do not ask me about pineapple. I am a grown man."', '"Fold it. Who taught you to eat pizza with a fork? Who hurt you?"', '"Ices are in the freezer. Lemon, cherry, rainbow. Rainbow is just the other two having an argument."'],
+    stock: [
+      { id: 'pizza_slice', note: 'folded, dripping, the real thing' },
+      { id: 'pizza_pie', note: 'eight slices in a box he signs with a marker' },
+      { id: 'italian_ice', note: 'lemon, cherry or rainbow · a wooden spoon' },
+      { id: 'soda', note: 'cans in the window cooler' },
+      { id: 'water', note: 'for the red pepper emergency' },
+    ],
+    markup: 1, sellsPork: true,
+  },
+  piragua: {
+    id: 'piragua', name: 'Piraguas', owner: 'Don Cheo', ownerKind: 'piraguero',
+    kicker: 'MYRTLE ROW · THE PIRAGUA CART', blurb: 'A green cart with a red and yellow sign, a block of ice under a towel, and a row of syrup bottles that glow in the sun like stained glass.',
+    voice: ['"¡Piragua, piragua! Tamarindo, coco, frambuesa. Cold as your ex."', '"I shave it fresh. Machines are for people who do not love you."', '"Coco is the best one. I am not supposed to say. I am saying."'],
+    stock: [{ id: 'piragua', note: 'shaved ice, syrup to the bottom, a paper cone' }, { id: 'water', note: 'from the cooler under the cart' }],
+    markup: 1, sellsPork: true,
+  },
+  jerk: {
+    id: 'jerk', name: "Irie Grill", owner: 'Desmond', ownerKind: 'jerkman',
+    kicker: 'MYRTLE ROW · IRIE GRILL', blurb: 'An oil-drum grill under a green-and-white awning, flags strung overhead, and smoke you can smell from the train.',
+    voice: ['"Jerk chicken, patty, coco bread. Pick one. Pick two. I am not your mother, pick three."', '"Mild or spicy? There is no mild. I lied. It is spicy."', '"The coco bread is the hug. The patty is the handshake."'],
+    stock: [
+      { id: 'beef_patty', note: 'flaky, yellow, molten in the middle' },
+      { id: 'coco_bread', note: 'the patty, folded into soft sweet bread' },
+      { id: 'jerk_chicken', note: 'off the drum · rice and peas · a little slaw' },
+      { id: 'soda', note: 'ginger beer, the cold kind' },
+    ],
+    markup: 1, sellsPork: true,
+  },
+  glizzy: {
+    id: 'glizzy', name: 'The Last Honest Wiener', owner: 'Gary', ownerKind: 'pretzelman',
+    kicker: 'MYRTLE ROW · THE LAST HONEST WIENER', blurb: 'A steel cart with an umbrella that has seen things. Dirty water dogs, salted pretzels, and a sign that says NO CHECKS, NO CREDIT, NO FEELINGS.',
+    voice: ['"Dog? Pretzel? Both? Both is a lifestyle."', '"Onions, mustard, sauerkraut. The works. I do not do ketchup for adults."', '"This water has been here since the Dinkins administration. That is the flavour."'],
+    stock: [
+      { id: 'hotdog', note: 'dirty water dog, the works' },
+      { id: 'pretzel', note: 'salt like a snowstorm · mustard on request' },
+      { id: 'soda', note: 'cans on ice' },
+      { id: 'water', note: 'a dollar, like God intended' },
+    ],
+    markup: 1, sellsPork: true,
+  },
+  pretzels: {
+    id: 'pretzels', name: 'Pretzel Palace', owner: 'Ray', ownerKind: 'pretzelman',
+    kicker: 'MYRTLE ROW · PRETZEL PALACE', blurb: 'A cart with a glass case of pretzels stacked like firewood and a hand-painted crown on the side.',
+    voice: ['"Fresh this morning. Which morning, I will not say."', '"Twisted, like me. Salty, like me. Two fifty, unlike me."'],
+    stock: [{ id: 'pretzel', note: 'warm, enormous, structurally impressive' }, { id: 'water', note: '' }],
+    markup: 1, sellsPork: true,
+  },
+  knish: {
+    id: 'knish', name: "Mendel's Knishes", owner: 'Mendel', ownerKind: 'hasid',
+    kicker: "MYRTLE ROW · MENDEL'S KNISHES", blurb: 'A folding table, boxes of knishes in rows, and a man with a beard who answers every question with a better question.',
+    voice: ['"Potato. Kasha. Spinach. You want the potato. Everybody wants the potato."', '"You look hungry. You look like a man who has never had a real knish. Sit down. Standing is fine also."', '"Mustard? Of course mustard. What are we, animals?"'],
+    stock: [{ id: 'knish', note: 'square, heavy, hot · a little mustard' }, { id: 'soda', note: 'cream soda, naturally' }],
+    markup: 1, sellsPork: false,
+  },
+  turkish: {
+    id: 'turkish', name: 'Istanbul Grill', owner: 'Mehmet', ownerKind: 'doner',
+    kicker: 'MYRTLE ROW · ISTANBUL GRILL', blurb: 'A booth with a döner spit turning slowly behind the counter, a long knife, and a tray of baklava under a glass lid.',
+    voice: ['"Döner, kebab, baklava. Tea is free if you are polite."', '"I shave it thin. Thick is for amateurs."', '"My baklava has forty layers. I counted. I did not have anything else to do."'],
+    stock: [
+      { id: 'doner', note: 'shaved off the spit into a pita · yogurt sauce' },
+      { id: 'kebab', note: 'lamb and peppers, off the grill' },
+      { id: 'baklava', note: 'honey, pistachio, forty layers' },
+      { id: 'mint_tea', note: 'in a tulip glass' },
+    ],
+    markup: 1, sellsPork: false,
+  },
+});
 
 export const shopById = (id) => SHOPS[id] || SHOPS.bodega;
 
