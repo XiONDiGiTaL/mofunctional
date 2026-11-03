@@ -2338,6 +2338,30 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.cutaway();
     this.renderer.render(this.scene, this.camera);
   }
+
+  /**
+   * Snapz: the frame as it is, cropped to a phone (3:4 from the middle), as a small JPEG. A selfie
+   * turns Mo round to the lens for the one frame it takes. Rendered and read in the same task, so
+   * the drawing buffer is still there to read.
+   */
+  snapshot(selfie = false) {
+    try {
+      const mo = this.mo.root;
+      const yaw = mo.rotation.y;
+      if (selfie) mo.rotation.y = (this.camYaw || 0) + (this.camSwing || 0) + Math.PI;
+      this.render();
+      const src = this.renderer.domElement;
+      const c = document.createElement('canvas');
+      c.width = 180; c.height = 240;
+      const tw = Math.min(src.width, src.height * 0.75);
+      c.getContext('2d').drawImage(src, (src.width - tw) / 2, 0, tw, src.height, 0, 0, 180, 240);
+      mo.rotation.y = yaw;
+      return c.toDataURL('image/jpeg', 0.72);
+    } catch (e) {
+      console.warn('[snapz]', e);
+      return null;
+    }
+  }
 }
 
 function angleDelta(from, to) {

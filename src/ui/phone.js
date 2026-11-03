@@ -11,7 +11,8 @@ import { el, esc as _esc, chance, pick, clamp as _clamp } from '../core/util.js'
 import { portraitURL } from '../render/faces.js';
 import { kindForName } from './threads.js';
 import { THEMES, SCALES, themeLabel } from './themes.js';
-import { APPS, APP_SHELVES, DOCK, appIcon, serviceAvatar } from './apps.js';
+import { APPS, APP_SHELVES, CATEGORIES, DRAWER, DOCK, appIcon, serviceAvatar } from './apps.js';
+import * as walls from './wallpapers.js';
 import { itemIcon } from './icons.js';
 import * as dealer from '../systems/dealer.js';
 import * as life from '../systems/life.js';
@@ -83,6 +84,10 @@ export class Phone {
     // LoveLine is a tab of FeedLove now; anything that still asks for it lands there
     if (appId === 'dates') { appId = 'social'; this.feedTab = 'love'; }
     this.app = appId || 'home';
+    try {
+      const fresh = walls.newMemories(this.g.state);
+      if (fresh.length) setTimeout(() => this.g.toast(`Snapz: a new memory in your camera roll (${fresh.map((m) => T(m.name)).join(', ')}). It can be your wallpaper.`, 'good'), 400);
+    } catch (e) { /* a memory is never worth a broken phone */ }
     this.wrap = el(`<div class="phone-wrap"><div class="phone">
       <span class="phone__side phone__side--1"></span>
       <span class="phone__side phone__side--2"></span>
@@ -254,12 +259,20 @@ export class Phone {
     const c = clock(s);
     const mood = this.g.hud?.mood || { id: 'content', label: 'CONTENT', note: '' };
     const fit = s.stats.energy > 55 ? 'Roughly' : s.stats.energy > 25 ? 'Barely' : 'No';
-    return `<div class="mohome">
+    const set = s.settings;
+    const wall = walls.wallpaperURL(s, set.wallpaper || 'def:dusk');
+    const dim = set.wallDim ?? 0.45;
+    const time = set.clock12 ? (() => { const [h, m] = c.hhmm.split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; })() : c.hhmm;
+    const label = set.iconLabels ?? true;
+    const tab = set.homeLayout === 'all' ? 'all' : (set.homeTab || 'street');
+    const apps = tab === 'all' ? (set.homeLayout === 'all' ? APP_SHELVES[0].apps : DRAWER) : (CATEGORIES.find((x) => x.id === tab) || CATEGORIES[0]).apps;
+    const tabs = set.homeLayout === 'all' ? '' : `<div class="mohome__tabs">${CATEGORIES.map((x) => `<button class="${tab === x.id ? 'on' : ''}" data-act="hometab" data-arg="${x.id}">${T(x.name)}</button>`).join('')}<button class="mohome__drawer ${tab === 'all' ? 'on' : ''}" data-act="hometab" data-arg="all" aria-label="All apps">▦ ALL</button></div>`;
+    return `<div class="mohome mohome--wall" style="--wall:url(&quot;${wall}&quot;);--dim:${dim}">
       <div class="mohome__lock">
-        <span class="mohome__time">${c.hhmm}</span>
+        <span class="mohome__time">${time}</span>
         <span class="mohome__date">${DAY_NAMES[(ctx.day - 1) % 7]} · Day ${ctx.day}</span>
       </div>
-      <div class="mohome__widgets">
+      <div class="mohome__widgets" ${set.widgets === false ? 'hidden' : ''}>
         <div class="widget widget--mo">
           <img src="${portraitURL('mo', mood.id)}" alt="" />
           <div><b>${T(mood.label)}</b><em>${T(mood.note || 'holding')}</em></div>
@@ -270,7 +283,8 @@ export class Phone {
         </div>
       </div>
       ${this.notifyCenter()}
-      <div class="mohome__grid mohome__grid--all">${APP_SHELVES[0].apps.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0 })).join('')}</div>
+      ${tabs}
+      <div class="mohome__grid mohome__grid--all ${tab === 'all' && set.homeLayout !== 'all' ? 'mohome__grid--drawer' : ''}">${apps.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0, label })).join('')}</div>
       <div class="mohome__signal">${s.flags.phoneLate ? 'Shale Mobile · signal degraded (bill overdue)' : 'Shale Mobile · weak but honest'}</div>
       <div class="mohome__dock">${DOCK.map((id) => appIcon(id, { ...ctx, badge: badges[id] || 0, label: false })).join('')}</div>
     </div>`;
@@ -764,6 +778,42 @@ export class Phone {
     return serviceAvatar(from, 'chat__face') || `<img class="chat__face" src="${portraitURL(kindForName(from), 'content')}" alt="" />`;
   }
 
+  /* ------------------------------ SNAPZ ------------------------------ */
+
+  cameraView() {
+    const s = this.g.state;
+    const p = walls.phoneState(s);
+    if (this.camShot) {
+      const key = this.camShot;
+      const isPhoto = key.startsWith('photo:');
+      const exists = !isPhoto || p.photos.some((x) => `photo:${x.id}` === key);
+      if (exists) {
+        const photo = isPhoto ? p.photos.find((x) => `photo:${x.id}` === key) : null;
+        return `${this.header('Snapz', isPhoto ? (photo.selfie ? 'SELFIE' : 'PHOTO') : 'MEMORY')}
+          <div class="snapview"><img src="${walls.wallpaperURL(s, key)}" alt="" /></div>
+          <div class="tiny mono-dim snapview__cap">${isPhoto ? `Day ${photo.day}` : T(walls.memoryName(key.slice(4)))}</div>
+          <button class="btn btn--primary" data-act="setwall" data-arg="${key}">SET AS WALLPAPER</button>
+          ${isPhoto ? `<button class="btn btn--ghost" data-act="camdelete" data-arg="${key}">DELETE</button>` : ''}
+          <button class="btn btn--ghost" data-act="camback">◀ CAMERA ROLL</button>
+          ${this.footer()}`;
+      }
+      this.camShot = null;
+    }
+    const mems = walls.unlockedMemories(s);
+    return `${this.header('Snapz', `${p.photos.length}/${walls.MAX_PHOTOS}`)}
+      <div class="row snap__shoot">
+        <button class="btn btn--primary" data-act="snap" data-arg="photo">📷 TAKE A PHOTO</button>
+        <button class="btn" data-act="snap" data-arg="selfie">🤳 SELFIE</button>
+      </div>
+      <div class="tiny mono-dim">The phone comes down, the shutter goes, and whatever is in front of Mo is in the roll. Nine fit; the oldest goes.</div>
+      <div class="app__h">Camera roll</div>
+      ${p.photos.length ? `<div class="snapgrid">${p.photos.map((x) => `<button data-act="camview" data-arg="photo:${x.id}"><img src="${x.url}" alt="" /></button>`).join('')}</div>` : '<div class="empty">Nothing yet. The world is out there being photogenic.</div>'}
+      <div class="app__h">Memories · ${mems.length}</div>
+      ${mems.length ? `<div class="snapgrid">${mems.map((m) => `<button data-act="camview" data-arg="mem:${m.id}"><img src="${walls.wallpaperURL(s, `mem:${m.id}`)}" alt="" /><span>${T(m.name)}</span></button>`).join('')}</div>` : ''}
+      <div class="tiny mono-dim">${T('Some pictures you have to earn: a cat, a dog, a girl, a first shift, a sister, a bad night, a good suit.')}</div>
+      ${this.footer()}`;
+  }
+
   /* ------------------------------ INVENTORY ------------------------------ */
 
   inventoryView() {
@@ -1136,6 +1186,24 @@ export class Phone {
           <span><b>${T(t.label)}</b><em>${T(t.note)}</em></span>
         </button>`).join('')}
       </div>
+      <div class="app__h">Phone</div>
+      <div class="tiny mono-dim">Wallpaper</div>
+      <div class="wallpick">
+        ${[...walls.defaultWallpapers(), ...walls.unlockedMemories(s).map((m) => ({ key: `mem:${m.id}`, name: m.name })), ...walls.phoneState(s).photos.map((p) => ({ key: `photo:${p.id}`, name: p.selfie ? 'Selfie' : 'Photo' }))]
+          .map((w) => `<button class="wallpick__it ${(s.settings.wallpaper || 'def:dusk') === w.key ? 'on' : ''}" data-act="setwall" data-arg="${w.key}" title="${T(w.name)}"><img src="${walls.wallpaperURL(s, w.key)}" alt="" /></button>`).join('')}
+      </div>
+      <div class="kv"><span class="mono-dim">Dim the wallpaper</span><b>${Math.round((s.settings.wallDim ?? 0.45) * 100)}%</b></div>
+      <div class="row row--wrap">${[0, 0.25, 0.45, 0.7].map((v) => `<button class="btn btn--sm ${Math.abs((s.settings.wallDim ?? 0.45) - v) < 0.01 ? 'btn--primary' : ''}" data-act="walldim" data-num="${v}">${Math.round(v * 100)}%</button>`).join('')}</div>
+      <div class="row row--wrap">
+        <button class="btn btn--sm ${s.settings.homeLayout === 'all' ? '' : 'btn--primary'}" data-act="homelayout" data-arg="tabs">HOME: CATEGORIES</button>
+        <button class="btn btn--sm ${s.settings.homeLayout === 'all' ? 'btn--primary' : ''}" data-act="homelayout" data-arg="all">HOME: EVERY APP</button>
+      </div>
+      <div class="row row--wrap">
+        <button class="btn btn--sm" data-act="phonetoggle" data-arg="clock12">CLOCK: ${s.settings.clock12 ? '12H' : '24H'}</button>
+        <button class="btn btn--sm" data-act="phonetoggle" data-arg="iconLabels">ICON NAMES: ${(s.settings.iconLabels ?? true) ? 'ON' : 'OFF'}</button>
+        <button class="btn btn--sm" data-act="phonetoggle" data-arg="widgets">WIDGETS: ${s.settings.widgets === false ? 'OFF' : 'ON'}</button>
+      </div>
+      <div class="tiny mono-dim">Take photos with Snapz; memories unlock as the run goes on, and both can go behind the home screen.</div>
       <div class="app__h">Interface scale</div>
       <div class="row">
         ${SCALES.map((sc) => `<button class="btn btn--sm ${Math.abs((s.settings.scale ?? 1) - sc.value) < 0.01 ? 'btn--primary' : ''}" data-act="scale" data-num="${sc.value}">${sc.label}</button>`).join('')}
@@ -1632,6 +1700,32 @@ export class Phone {
       notifread() { for (const m of s.messages) m.read = true; },
       setnotif(arg, num, el) { s.settings[el.dataset.key] = arg; },
       setplace() { s.settings.placeToasts = !(s.settings.placeToasts ?? true); },
+      hometab(arg) { s.settings.homeTab = arg; },
+      homelayout(arg) { s.settings.homeLayout = arg; },
+      phonetoggle(arg) { s.settings[arg] = arg === 'clock12' ? !s.settings.clock12 : !(s.settings[arg] ?? true); },
+      setwall(arg) { s.settings.wallpaper = arg; g.toast('Wallpaper set.', 'info'); },
+      walldim(arg, num) { s.settings.wallDim = num; },
+      // Snapz: the phone goes down, the shutter goes, the phone comes back up on the picture
+      snap(arg) {
+        const selfie = arg === 'selfie';
+        this.close();
+        setTimeout(() => {
+          const url = g.world?.snapshot?.(selfie);
+          if (!url) { g.toast('Snapz: the lens is covered in something. Probably pocket.', 'bad'); return; }
+          const ph = walls.addPhoto(s, url, selfie);
+          g.audio?.sfx?.('confirm');
+          const flash = document.createElement('div');
+          flash.className = 'camflash';
+          document.body.appendChild(flash);
+          setTimeout(() => flash.remove(), 380);
+          g.advance(1);
+          this.camShot = `photo:${ph.id}`;
+          this.open('camera');
+        }, 140);
+      },
+      camview(arg) { this.camShot = arg; },
+      camback() { this.camShot = null; },
+      camdelete(arg) { walls.deletePhoto(s, String(arg).split(':')[1]); this.camShot = null; g.toast('Deleted. Nobody has to know.', 'info'); },
       autopay() { setAutopay(g, !s.autopay?.on); g.toast(s.autopay.on ? 'Shale Pay AutoPay is on.' : 'AutoPay is off. Every bill is yours again.', 'info'); },
       casgame(arg) { this.casinoGame = arg; },
       casbet(arg, num) { this.casinoBet = num; },
@@ -1698,6 +1792,7 @@ export class Phone {
       social: this.socialView,
       fellowship: this.fellowshipView,
       system: this.systemView,
+      camera: this.cameraView,
       dealer: this.dealerView,
       rolo: this.roloView,
       dates: this.datesView,

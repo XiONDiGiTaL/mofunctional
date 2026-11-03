@@ -1168,3 +1168,27 @@ button.relrow:hover { color: #ffd24a; }
 .fcomment__face { flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; overflow: hidden; background: #222; cursor: pointer; }
 .fcomment__face img { width: 100%; height: 100%; object-fit: cover; }
 .fcomment__argue { flex: none; border: 1px solid rgba(255,90,90,.5); color: #ff8a8a; background: none; border-radius: 6px; font: 700 8px var(--ui); padding: 3px 5px; cursor: pointer; }
+
+/* ------------------------------------------------------------------ home tabs, the drawer, wallpaper, Snapz */
+.mohome--wall { position: relative; background: linear-gradient(rgba(0,0,0,var(--dim, .45)), rgba(0,0,0,var(--dim, .45))), var(--wall) center / cover no-repeat; border-radius: 0 0 30px 30px; }
+.mohome__tabs { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.mohome__tabs button { border: 0; border-radius: 999px; padding: 4px 9px; font: 700 9px var(--ui); letter-spacing: .08em; color: rgba(255,255,255,.75); background: rgba(0,0,0,.35); cursor: pointer; }
+.mohome__tabs button.on { color: #111; background: rgba(255,255,255,.9); }
+.mohome__drawer { box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.mohome__grid--drawer { grid-template-columns: repeat(5, 1fr); gap: 9px 2px; }
+.mohome .appicon__name { text-shadow: 0 1px 2px rgba(0,0,0,.9); }
+.wallpick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 6px 0; }
+.wallpick__it { padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: #111; cursor: pointer; aspect-ratio: 9 / 16; }
+.wallpick__it.on { border-color: var(--accent, #5bf27c); }
+.wallpick__it img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.snap__shoot { gap: 8px; }
+.snap__shoot .btn { flex: 1; }
+.snapgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.snapgrid button { position: relative; padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: #111; aspect-ratio: 3 / 4; cursor: pointer; }
+.snapgrid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.snapgrid span { position: absolute; left: 0; right: 0; bottom: 0; font: 700 7px var(--ui); color: #fff; background: rgba(0,0,0,.6); padding: 2px; }
+.snapview { border-radius: 14px; overflow: hidden; background: #000; }
+.snapview img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; }
+.snapview__cap { text-align: center; margin: 6px 0; }
+.camflash { position: fixed; inset: 0; background: #fff; z-index: 9999; pointer-events: none; animation: camflash .38s ease-out forwards; }
+@keyframes camflash { from { opacity: .95; } to { opacity: 0; } }

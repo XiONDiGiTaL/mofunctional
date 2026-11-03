@@ -14,6 +14,10 @@ export const APPS = {
     name: 'Phone', tag: 'contacts · keypad · somebody might pick up', a: '#5bf27c', b: '#0e8a3a',
     icon: svg('<path d="M6.5 3.5h3l1.5 4.5-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z"/>'),
   },
+  camera: {
+    name: 'Snapz', tag: 'every photo is evidence', a: '#ffd23a', b: '#d8551e',
+    icon: svg('<path d="M3.5 8.5h3l1.8-2.5h7.4l1.8 2.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.2" r="3.6"/>'),
+  },
   bank: {
     name: 'Shale Pay', tag: 'your money, briefly', a: '#2bd2c4', b: '#0d3550',
     icon: svg('<rect x="2.5" y="5.5" width="19" height="13" rx="2.2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/>'),
@@ -207,8 +211,20 @@ export const APP_SHELVES_OLD = [
  * for them. The shelves had become tabs, and the tabs hid half the phone behind a scroll.
  */
 export const APP_SHELVES = [
-  { id: 'all', name: 'Apps', apps: ['call', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'] },
+  { id: 'all', name: 'Apps', apps: ['call', 'camera', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'] },
 ];
+
+/**
+ * The home screen's categories, one page each, none of them long enough to scroll; the last tab
+ * is the drawer, with every app on the phone in it (the dock's too).
+ */
+export const CATEGORIES = [
+  { id: 'street', name: 'Street', apps: ['call', 'ride', 'jobs', 'block', 'social', 'rolo'] },
+  { id: 'money', name: 'Money', apps: ['bills', 'bidbay', 'shop', 'invest', 'casino'] },
+  { id: 'life', name: 'Life', apps: ['camera', 'inventory', 'calendar', 'clinic', 'fellowship', 'system'] },
+  { id: 'late', name: 'After Dark', apps: ['fans'] },
+];
+export const DRAWER = ['messages', 'call', 'camera', 'bank', 'pantry', 'ride', 'jobs', 'social', 'block', 'bills', 'bidbay', 'shop', 'inventory', 'calendar', 'clinic', 'fellowship', 'rolo', 'invest', 'casino', 'fans', 'system'];
 /** Every app on the home screen, in order (kept for anything that wants a flat list). */
 export const HOME_GRID = APP_SHELVES.flatMap((s) => s.apps);
 

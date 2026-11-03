@@ -393,6 +393,30 @@ export const FACE_SPECS = {
     skin: '#6e4632', hair: '#0e0c0a', hairLight: '#24201c', hairDark: '#060504', style: 'short',
     brow: '#0e0c0a', eye: '#22180f', lips: '#523022', lipsLight: '#6e4434', beard: 'stubble', beardColor: '#0e0c0a', age: 0.25,
   },
+  // the chess table in Kestrel Park: eighties, white beard, reading glasses on a cord
+  chessman: {
+    skin: '#b88a6a', hair: '#d8d8d4', hairLight: '#f0f0ec', hairDark: '#a8a8a4', style: 'receding',
+    brow: '#d0d0cc', eye: '#3a2a1e', lips: '#8a5a48', lipsLight: '#a87262', beard: 'full', beardColor: '#e0e0dc', age: 0.95, glasses: true, browTilt: 0.06,
+  },
+  // a Hasidic man on his way somewhere: young, a full brown beard, wire glasses (the hat and the
+  // sidelocks are built on the body, characters.js)
+  hasid: {
+    skin: '#e6c4a8', hair: '#4a2e1c', hairLight: '#6a4630', hairDark: '#2a1a10', style: 'short',
+    brow: '#4a2e1c', eye: '#4a5a4a', lips: '#b07a6a', lipsLight: '#c89080', beard: 'full', beardColor: '#6a4428', age: 0.3, glasses: true, browTilt: 0.04,
+  },
+  hasid2: {
+    skin: '#dcb898', hair: '#1a1410', hairLight: '#2e2620', hairDark: '#0c0a08', style: 'short',
+    brow: '#1a1410', eye: '#3a2a1e', lips: '#a06a5a', lipsLight: '#b88070', beard: 'full', beardColor: '#2a221a', age: 0.55, browTilt: 0.08,
+  },
+  // the Guardian Angles: red berets, red jackets, a patrol that is mostly a walk
+  angel_m: {
+    skin: '#9a6a48', hair: '#1a1410', hairLight: '#2e2620', hairDark: '#0c0a08', style: 'crop',
+    brow: '#1a1410', eye: '#2a1e16', lips: '#7a4a3a', lipsLight: '#9a6250', beard: 'stubble', beardColor: '#1a1410', age: 0.6, browTilt: 0.16,
+  },
+  angel_f: {
+    skin: '#c89272', hair: '#2a1a10', hairLight: '#4a3020', hairDark: '#140c06', style: 'bun',
+    brow: '#2a1a10', eye: '#3a2618', lips: '#9a4a40', lipsLight: '#c06a5a', age: 0.45, fem: true, jaw: 0.94, browTilt: 0.14,
+  },
   // messages from a number nobody saved: no features to read, on purpose
   unknown: {
     skin: '#6a6f6c', hair: '#2a2e2c', hairLight: '#3e4340', hairDark: '#171a18', style: 'beanie',

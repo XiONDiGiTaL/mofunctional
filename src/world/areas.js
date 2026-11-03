@@ -1605,6 +1605,15 @@ export function buildPark(g) {
   group.add(box(0.9, 0.08, 0.9, retroMaterial('chesstable', { color: 0x4a4a3c }), [-2.4, 0.72, -1.2]));
   group.add(box(0.12, 0.72, 0.12, M.metal, [-2.4, 0.36, -1.2]));
   for (const [cx, cz] of [[-3.1, -1.2], [-1.7, -1.2]]) group.add(box(0.42, 0.42, 0.42, M.wood, [cx, 0.21, cz]));
+  // the board: sixty-four squares painted on the table, mid-game, and the pieces where he left them
+  const sqL = retroMaterial('chessLight', { color: 0xd8ccaa }), sqD = retroMaterial('chessDark', { color: 0x3a2e22 });
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) group.add(box(0.07, 0.006, 0.07, (i + j) % 2 ? sqD : sqL, [-2.4 - 0.245 + i * 0.07, 0.763, -1.2 - 0.245 + j * 0.07]));
+  const pcW = retroMaterial('chessW', { color: 0xf0ece0 }), pcB = retroMaterial('chessB', { color: 0x141210 });
+  const PIECES = [[0, 0, 1, 0.07], [1, 1, 1, 0.045], [2, 1, 1, 0.045], [3, 0, 1, 0.09], [4, 0, 1, 0.1], [4, 2, 1, 0.045], [6, 1, 1, 0.045], [7, 0, 1, 0.07],
+    [0, 7, 0, 0.07], [2, 6, 0, 0.045], [3, 4, 0, 0.045], [4, 7, 0, 0.1], [5, 6, 0, 0.045], [6, 5, 0, 0.065], [7, 6, 0, 0.045], [3, 7, 0, 0.09]];
+  for (const [i, j, w, hgt] of PIECES) group.add(box(0.035, hgt, 0.035, w ? pcW : pcB, [-2.4 - 0.245 + i * 0.07, 0.766 + hgt / 2, -1.2 - 0.245 + j * 0.07]));
+  // the missing knight, as promised: a bottle cap
+  group.add(box(0.035, 0.012, 0.035, retroMaterial('chessBottleCap', { color: 0xc8281e }), [-2.4 - 0.245 + 5 * 0.07, 0.772, -1.2 - 0.245]));
   group.add(box(0.5, 0.3, 0.34, retroMaterial('boombox', { color: 0x2a2c30 }), [1.9, 0.62, 0.9]));
   group.add(box(0.14, 0.14, 0.02, retroMaterial('boomboxspk', { color: 0x111214 }), [1.76, 0.64, 1.07]));
   group.add(box(0.14, 0.14, 0.02, retroMaterial('boomboxspk2', { color: 0x111214 }), [2.04, 0.64, 1.07]));
@@ -1654,7 +1663,10 @@ export function buildPark(g) {
   const parkHour = minuteOfDay(g.state.clock.m) / 60;
   const patrol = (parkHour >= 21 || parkHour < 4) && Math.random() < CONFIG.police.parkChance;
   const npcs = [
-    { kind: 'kev', x: -2.4, z: -0.2, rot: 2.6, talk: 'kev' },
+    // the old man at the chess table, who has been waiting for an opponent since about 1971
+    { kind: 'chessman', x: -3.1, z: -1.2, rot: Math.PI / 2, still: true, pose: 'sit', talk: 'chess' },
+    // and on the bench by the path, a woman who feeds the pigeons whether they deserve it or not
+    { kind: 'hall_f', x: 5.1, z: 3.2, rot: -0.3, still: true, pose: 'sit', talk: 'parkmate' },
     // a two-cop patrol on the paths, some nights
     ...(patrol ? [
       { kind: 'cop', x: -4, z: -0.6, walker: [-6.5, 6.5] },
@@ -1666,9 +1678,9 @@ export function buildPark(g) {
     { id: 'parkbench1', label: 'Sit on the bench', sub: 'watch the park happen', x: -4.4, z: 1.8, radius: 1.5, seat: { x: -4.4, z: 1.8, rot: 0.2 }, action: (gg) => parkSit(gg) },
     { id: 'parkbench2', label: 'Sit on the bench', sub: 'the other one', x: 4.4, z: 3.0, radius: 1.5, seat: { x: 4.4, z: 3.0, rot: -0.3 }, action: (gg) => parkSit(gg) },
     { id: 'hoops', label: 'Shoot around on the half-court', sub: '45 min · the rim is bent', x: 5.2, z: -4.6, radius: 2.0, action: (gg) => parkHoops(gg) },
-    { id: 'chess', label: 'Play chess at the table', sub: 'the knight is a bottle cap', x: -2.4, z: -0.6, radius: 1.5, action: (gg) => parkChess(gg) },
+    { id: 'chess', label: 'Play chess with the old man', sub: 'he has been waiting · the knight is a bottle cap', x: -1.6, z: -1.2, radius: 1.4, action: (gg) => parkChess(gg) },
     { id: 'boombox', label: 'The boombox on the crate', sub: 'somebody left a tape in it', x: 1.9, z: 1.1, radius: 1.5, action: (gg) => parkMusic(gg) },
-    { id: 'parkmate', label: 'Talk to Kev', sub: 'he is losing at chess to himself', x: -2.4, z: 0.2, radius: 1.5, action: (gg) => { gg.advance(8); bump(gg.state, 'morale', 4); gg.openModal({ kicker: 'KEV · KESTREL PARK', title: 'Park Kev', body: `${npcLine('kev')}\n\nHe has set up a chess board with no opponent and is losing anyway.`, choices: [{ label: 'Sit with him for a bit.', effect: () => { bump(gg.state, 'morale', 5); bump(gg.state, 'stress', -4); gg.advance(15); } }, { label: 'Leave him to it.', effect: () => {} }] }); } },
+    { id: 'parkmate', label: 'The pigeon lady', sub: 'a bag of bread and opinions', x: 5.1, z: 2.5, radius: 1.3, action: (gg) => { gg.advance(8); bump(gg.state, 'morale', 3); gg.openModal({ kicker: 'KESTREL PARK · THE BENCH', title: 'The Pigeon Lady', body: `${pick(['"That one is Gerald. That one is also Gerald. They are all Gerald."', '"The city says do not feed them. The city does not feed me either, so."', '"You look like you need bread more than they do. I am joking. Mostly."'])}\n\nThe pigeons look at you like you are the one in their park.`, choices: [{ label: 'Sit with her and throw some bread.', sub: '15 min · +morale -stress', effect: () => { bump(gg.state, 'morale', 5); bump(gg.state, 'stress', -5); gg.advance(15); gg.toast('You throw a crust. Forty pigeons arrive. One of them is definitely Gerald.', 'good'); } }, { label: 'Leave her to it.', effect: () => {} }] }); } },
     { id: 'parkexit', label: 'Back to Kestrel Street', sub: 'out through the open gate', x: 0, z: 7.7, radius: 1.5, action: (gg) => gg.goTo('street', 'park') },
     { id: 'parkeast', label: 'East gate · to the lot', sub: 'out by the clinic end', x: 7.4, z: 1.6, radius: 1.5, action: (gg) => gg.goTo('street', 'eastgate') },
   ];
@@ -1795,14 +1807,13 @@ function parkHoops(g) {
 /** Chess, against whoever is sitting there, with a bottle cap for a knight. */
 function parkChess(g) {
   const s = g.state;
-  const opp = pick(['an old man', 'a teenager on a bike', 'Kev']);
   g.advance(CONFIG.park.chessMinutes);
   const won = chance(0.35);
   bump(s, 'morale', won ? CONFIG.park.chessMorale + 3 : CONFIG.park.chessMorale);
   bump(s, 'stress', -7);
   g.toast(won
-    ? `You beat ${opp}. They take it badly. You take it for the rest of the week.`
-    : `${opp} beats you and explains the whole game afterwards. You are not sure that is allowed.`, won ? 'good' : 'info');
+    ? pick(['You beat the old man. He sets the board up again without a word, which is how you know you are friends now.', 'Checkmate. He looks at the board for a long time and says "1971, I would have seen that." You believe him.'])
+    : pick(['The old man beats you in eleven moves and explains all eleven afterwards. You are not sure that is allowed.', '"Your bishop is a tourist," he says, and takes it. Then everything else.', 'He wins with the bottle cap. The bottle cap. You will think about that for days.']), won ? 'good' : 'info');
 }
 
 /** The boombox: listen, or dance like it is 1999 because it is. */

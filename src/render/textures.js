@@ -149,6 +149,15 @@ export const textures = {
     };
     palm(6, 5); palm(21, 3); palm(13, 18); palm(27, 20); palm(4, 25);
   }),
+  // the Guardian Angles' back patch: white wings, an eye, and the name in white on red
+  angelPatch: () => make('angelPatch', 64, 32, (c, w, h) => {
+    c.fillStyle = '#c01e1a'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#f2f2ec';
+    for (let i = 0; i < 6; i++) { c.fillRect(31 - 4 - i * 3, 4 + i, 3, 6 - i); c.fillRect(33 + 1 + i * 3, 4 + i, 3, 6 - i); }
+    c.fillRect(30, 5, 4, 5); c.fillStyle = '#c01e1a'; c.fillRect(31, 7, 2, 1);
+    c.fillStyle = '#f2f2ec'; c.font = 'bold 8px monospace'; c.textAlign = 'center';
+    c.fillText('GUARDIAN', 32, 20); c.fillText('ANGLES', 32, 29);
+  }, { flat: true }),
   // a knitted tam in the three colours, band over band
   rastaKnit: () => make('rastaKnit', 16, 32, (c, w, h) => {
     const bands = ['#1e7a32', '#e8c41e', '#c8281e', '#141414'];

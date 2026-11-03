@@ -511,6 +511,14 @@ const CAST = {
   shopclerk: { height: 1.8, build: 1.0, shirt: 0x141416, pants: 0x3a3a40 },
   // an unsaved number: no face, just a grey hood and a question mark
   unknown: { height: 1.74, build: 1.0, shirt: 0x3a3d42, pants: 0x2a2c30, longSleeves: true },
+  // Kestrel Park's chess table: a cardigan the colour of weak tea
+  chessman: { height: 1.68, build: 0.94, shirt: 0x8a7a5a, pants: 0x4a4a52, longSleeves: true },
+  // a long black coat over a white shirt, black trousers; the shtreimel is added below
+  hasid: { height: 1.76, build: 0.96, shirt: 0x141416, pants: 0x141416, shoes: 0x0c0c0e, longSleeves: true },
+  hasid2: { height: 1.8, build: 1.04, shirt: 0x141416, pants: 0x141416, shoes: 0x0c0c0e, longSleeves: true },
+  // the Guardian Angles: red satin jacket, black cargo, a radio nobody answers
+  angel_m: { height: 1.8, build: 1.1, shirt: 0xc01e1a, pants: 0x18181c, longSleeves: true },
+  angel_f: { height: 1.66, build: 1.0, shirt: 0xc01e1a, pants: 0x18181c, longSleeves: true },
 };
 // the twenty dating-app women, dressed from their roster entry
 STRANGERS.forEach((w, i) => {
@@ -815,6 +823,50 @@ export function createNPC(kind = 'kev') {
     // a brass badge on the chest and the authority's patch on the shoulder
     rig.torso.add(box(0.05 * k, 0.06 * k, 0.012 * k, retroMaterial('transitBadge', { color: 0xd8b04a, emissive: 0.2 }), [0.07 * k, 0.32 * k, 0.14 * k]));
     rig.torso.add(box(0.06 * k, 0.06 * k, 0.012 * k, retroMaterial('transitPatch', { color: 0x2a6ab8 }), [-0.07 * k, 0.32 * k, 0.14 * k]));
+  }
+  if (kind === 'chessman') {
+    // a flat cap, brown tweed, brim pulled down to the glasses
+    const tweed = retroMaterial('chessCap', { color: 0x5a4a38, ambient: 0.7 });
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13 * k, 0.135 * k, 0.07 * k, 12), tweed);
+    cap.position.set(0, 0.15 * k, -0.01 * k);
+    cap.scale.set(1, 1, 1.1);
+    rig.head.add(cap);
+    rig.head.add(box(0.2 * k, 0.015 * k, 0.08 * k, tweed, [0, 0.125 * k, 0.12 * k], [0.25, 0, 0]));
+    rig.hat = cap;
+  }
+  if (kind === 'hasid' || kind === 'hasid2') {
+    // the shtreimel: a wide, tall round of brown fur on a black skullcap, sitting high; the long
+    // coat hangs past the hips; sidelocks curl down in front of the ears; a white collar shows
+    const fur = retroMaterial('shtreimelFur', { color: 0x3a2618, ambient: 0.75 });
+    const hat = new THREE.Group();
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2 * k, 0.17 * k, 0.17 * k, 14), fur);
+    hat.add(crown);
+    hat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.205 * k, 0.205 * k, 0.03 * k, 14), retroMaterial('shtreimelTop', { color: 0x4a3220, ambient: 0.8 })).translateY(0.085 * k));
+    hat.position.set(0, 0.2 * k, -0.01 * k);
+    rig.head.add(hat);
+    rig.hat = hat;
+    const curl = retroMaterial(`peyos${kind}`, { color: kind === 'hasid' ? 0x4a2e1c : 0x1a1410 });
+    for (const sx of [-1, 1]) {
+      for (let i = 0; i < 4; i++) rig.head.add(box(0.03 * k, 0.05 * k, 0.03 * k, curl, [sx * (0.115 + (i % 2) * 0.012) * k, (0.02 - i * 0.05) * k, 0.03 * k], [0, 0, sx * (i % 2 ? 0.4 : -0.4)]));
+    }
+    const coat = retroMaterial('hasidCoat', { color: 0x0e0e10, ambient: 0.6 });
+    rig.torso.add(loft(R([[0.02, 0.33, 0.2, 0], [-0.32, 0.37, 0.22, 0]], k), coat, 8));
+    rig.torso.add(box(0.1 * k, 0.05 * k, 0.02 * k, retroMaterial('hasidCollar', { color: 0xf2f2ec, ambient: 0.9 }), [0, 0.44 * k, 0.12 * k]));
+  }
+  if (kind === 'angel_m' || kind === 'angel_f') {
+    // the red beret, tilted; and the patch on the back with the wings and the name
+    const red = retroMaterial('angelBeret', { color: 0xb01a18, ambient: 0.75 });
+    const beret = new THREE.Mesh(new THREE.SphereGeometry(0.13 * k, 10, 6), red);
+    beret.scale.set(1.15, 0.38, 1.15);
+    beret.position.set(0.03 * k, 0.15 * k, -0.01 * k);
+    beret.rotation.z = -0.22;
+    rig.head.add(beret);
+    rig.hat = beret;
+    const patch = new THREE.Mesh(new THREE.PlaneGeometry(0.26 * k, 0.14 * k), retroMaterial('angelPatch', { color: 0xffffff, map: tex('angelPatch'), ambient: 0.9 }));
+    patch.position.set(0, 0.3 * k, -0.135 * k);
+    patch.rotation.y = Math.PI;
+    rig.torso.add(patch);
+    rig.torso.add(box(0.035 * k, 0.09 * k, 0.025 * k, retroMaterial('angelRadio', { color: 0x141416 }), [0.12 * k, 0.32 * k, 0.13 * k]));
   }
   if (kind === 'miguel' || kind === 'habib' || kind === 'clerk') {
     // shop apron, hanging from the chest
