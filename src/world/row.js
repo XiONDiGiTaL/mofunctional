@@ -3,6 +3,11 @@
  * and the block turns into it; walk to the far end and it lets out onto the Ave. It is the overhead
  * street the map never drew, and it is where the block eats:
  *
+ * The ends are laid out so that walking through is a walk, not a turn back on yourself: both
+ * neighbours keep their Myrtle Row corner at their own west end, so the Row's Kestrel end is its
+ * east end and its Ashby end is its west end. Come in from Kestrel and you are facing west, down
+ * the Row toward Ashby; come in from the Ave and you are facing east, back toward Kestrel.
+ *
  *   Sal's Famous     a pizzeria with a window onto the sidewalk: slices, whole pies, sodas, ices
  *   Piraguas         Don Cheo pushes his cart up and down the Row; walk up to him to buy
  *   Irie Grill       Desmond's oil-drum grill under an awning strung with flags: patties, coco
@@ -45,23 +50,23 @@ export function buildRow(g) {
   const interactables = [];
   const npcs = [];
 
-  // the ends: Kestrel to the west, the Ave to the east, a street sign at each
-  for (const [x, label] of [[-L / 2 + 1.0, '◀ KESTREL ST'], [L / 2 - 1.0, 'ASHBY AVE ▶']]) {
+  // the ends: the Ave to the west, Kestrel to the east, a street sign at each
+  for (const [x, label] of [[-L / 2 + 1.0, '◀ ASHBY AVE'], [L / 2 - 1.0, 'KESTREL ST ▶']]) {
     group.add(box(0.1, 3.0, 0.1, M('signpole', 0x2a5a3a), [x, 1.5, 0.9]));
     group.add(plane(1.6, 0.34, { name: `row_end${x}`, map: sign(`rowEnd${x}`, [{ text: label, color: '#ffffff', size: 9 }], 96, 20, '#1e6a3a', '#ffffff'), emissive: 0.4, unlit: true }, [x, 2.9, 0.9]));
   }
   interactables.push(
-    { id: 'row_west', label: 'Back to Kestrel St.', sub: 'past the walk-up · home', x: -L / 2 + 1.0, z: -1.6, radius: 1.6, action: (gg) => gg.goTo('street', 'row') },
-    { id: 'row_east', label: 'On to Ashby Avenue', sub: 'the precinct · the laundromat · the pawn shop', x: L / 2 - 1.0, z: -1.6, radius: 1.6, action: (gg) => gg.goTo('avenue', 'row') },
+    { id: 'row_west', label: 'On to Ashby Avenue', sub: 'the precinct · the laundromat · the pawn shop', x: -L / 2 + 1.0, z: -1.6, radius: 1.6, action: (gg) => gg.goTo('avenue', 'row') },
+    { id: 'row_east', label: 'Back to Kestrel St.', sub: 'past the walk-up · home', x: L / 2 - 1.0, z: -1.6, radius: 1.6, action: (gg) => gg.goTo('street', 'row') },
   );
 
   // storefronts that are only for looking at
   // closed for the night: the shutters come down, and the shutters are where the paint lives
   for (const [x, a, b] of [[-21, 9, 21], [-2.5, 10, 19], [6.5, 9, 20]]) if (!open(a, b)) shutter(group, x, -6.26, 1.7, 2.4, Math.round(x * 131 + 7) >>> 0);
   solids.push(utilityBox(group, -8.0, 0.65, 4411), utilityBox(group, 9.4, 0.65, 977));
-  // each end opens onto the next street: Kestrel to the west, the Ave to the east
-  streetMouth(group, { x: -L / 2, dir: -1, look: 'kestrel', title: 'KESTREL ST', sub: 'HOME · THE BODEGA · THE STATION · THE CLINIC', seed: 21 });
-  streetMouth(group, { x: L / 2, dir: 1, look: 'avenue', title: 'ASHBY AVE', sub: "THE PRECINCT · DEE'S WASH · THE PAWN SHOP · LUCIA'S", seed: 31 });
+  // each end opens onto the next street: the Ave to the west, Kestrel to the east
+  streetMouth(group, { x: -L / 2, dir: -1, look: 'avenue', title: 'ASHBY AVE', sub: "THE PRECINCT · DEE'S WASH · THE PAWN SHOP · LUCIA'S", seed: 31 });
+  streetMouth(group, { x: L / 2, dir: 1, look: 'kestrel', title: 'KESTREL ST', sub: 'HOME · THE BODEGA · THE STATION · THE CLINIC', seed: 21 });
   door(-21, '99¢ DREAMS', 'EVERYTHING · SOME THINGS · NOTHING OVER 99¢*', 0x8a2a2a, '#ffe23a', '#2a1a1a');
   door(-2.5, 'BOTANICA LA FE', 'CANDLES · HERBS · SPIRITUAL ADVICE · NOTARY', 0x2a4a3a, '#c8e8a0', '#1a2a1a');
   door(6.5, "JOE'S BARBER", 'NO APPOINTMENT · NO GUARANTEE', 0x2a3a6a, '#ff5a5a', '#14142a');
@@ -227,8 +232,9 @@ export function buildRow(g) {
     bounds: { minX: -L / 2 + 0.4, maxX: L / 2 - 0.4, minZ: -5.6, maxZ: 1.3 },
     camBounds: { minX: -L / 2 - 1, maxX: L / 2 + 1, minZ: -5.6, maxZ: 9 },
     solids,
-    spawn: { x: -L / 2 + 2.2, z: -1.6, rot: Math.PI / 2 },
-    spawnFor: (from) => (from === 'avenue' ? { x: L / 2 - 2.2, z: -1.6, rot: -Math.PI / 2 } : { x: -L / 2 + 2.2, z: -1.6, rot: Math.PI / 2 }),
+    // in from Kestrel (its east end) facing west down the Row; in from the Ave (west end) facing east
+    spawn: { x: L / 2 - 2.2, z: -1.6, rot: -Math.PI / 2 },
+    spawnFor: (from) => (from === 'avenue' ? { x: -L / 2 + 2.2, z: -1.6, rot: Math.PI / 2 } : { x: L / 2 - 2.2, z: -1.6, rot: -Math.PI / 2 }),
     npcs, interactables, tick,
     doors: [[-21, -5.6], [-13.5, -5.6], [-2.5, -5.6], [6.5, -5.6]],
     ambient: 'street',

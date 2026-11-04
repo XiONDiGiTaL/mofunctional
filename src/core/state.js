@@ -95,7 +95,7 @@ export function createState() {
     pendingSummary: null,
     // volume is the music bus (that is what it has always meant); sfxVolume is new and additive,
     // so an older save loads with the game's default effects level rather than silence.
-    settings: { speed: 1, crt: true, ratio43: false, volume: 0.7, sfxVolume: 0.5, muted: false, theme: 'functional', scale: 1, camDist: 1, camHeight: 1 },
+    settings: { speed: 1, crt: true, ratio43: false, volume: 0.7, sfxVolume: 0.5, muted: false, theme: 'functional', scale: 1, camDist: 1, camHeight: 1, run: 'hold' },
     dayStart: { money: CONFIG.economy.startMoney, stats: null, day: 1 },
     deliverySeq: 0,
     idleStrikes: 0,

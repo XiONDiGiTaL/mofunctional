@@ -34,6 +34,7 @@ export const BINDINGS = [
   { id: 'orbitL', label: 'Turn camera left', key: 'KeyQ', extra: [], pad: 'LB / LT / right stick' },
   { id: 'orbitR', label: 'Turn camera right', key: 'KeyE', extra: [], pad: 'RB / RT / right stick' },
   { id: 'camreset', label: 'Reset camera', key: 'KeyV', extra: [], pad: 'R3 (click right stick)' },
+  { id: 'sprint', label: 'Run (hold)', key: 'ShiftLeft', extra: ['ShiftRight'], pad: '—' },
   { id: 'interact', label: 'Interact / confirm', key: 'KeyF', extra: ['Space', 'Enter'], pad: 'A' },
   { id: 'punch', label: 'Throw a punch', key: 'KeyZ', extra: [], pad: 'L3 (click left stick)' },
   { id: 'cycle', label: 'Next thing in reach', key: 'KeyX', extra: [], pad: 'X' },
@@ -211,6 +212,10 @@ export class InputSystem {
     let cam = 0;
     if (held('orbitL')) cam -= 1;
     if (held('orbitR')) cam += 1;
+
+    // the run key: held down, it makes the walk a run (or, with settings.run = 'always', it does
+    // not have to be held at all; 'off' ignores it and Mo only walks)
+    this.sprint = held('sprint');
 
     // ---- gamepad
     const pad = this.gamepad();

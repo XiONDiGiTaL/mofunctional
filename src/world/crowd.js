@@ -157,6 +157,32 @@ const HELLO = [
 export function crowdTick(world, dt) {
   world.crowdT = (world.crowdT || 0) - dt;
   const walkers = world.npcRigs.filter((r) => r.npcDef?.walker && !r.down && !r.gone && r.root.visible);
+  // Nobody walks through anybody. Two people who meet on the sidewalk come out of it beside each
+  // other; a pair that is talking is left alone (they are meant to be close), and neither is pushed
+  // into a wall or out of the street to make room.
+  const bounds = world.area?.bounds;
+  for (let i = 0; i < walkers.length; i++) {
+    for (let j = i + 1; j < walkers.length; j++) {
+      const a = walkers[i], b = walkers[j];
+      if (a.chatWith === b && a.chatT > 0) continue;
+      const dx = b.root.position.x - a.root.position.x;
+      const dz = b.root.position.z - a.root.position.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > 0.36 || d2 < 1e-6) continue; // 60 cm apart or further: not touching
+      const d = Math.sqrt(d2);
+      const push = (0.6 - d) * Math.min(1, dt * 6) * 0.5;
+      const ux = dx / d, uz = dz / d;
+      const step = (rig, sx, sz) => {
+        const nx = rig.root.position.x + sx, nz = rig.root.position.z + sz;
+        if (bounds && (nx < bounds.minX + 0.3 || nx > bounds.maxX - 0.3 || nz < bounds.minZ + 0.3 || nz > bounds.maxZ - 0.3)) return;
+        if (world.blocked?.(nx, nz)) return;
+        rig.root.position.x = nx;
+        rig.root.position.z = nz;
+      };
+      step(a, -ux * push, -uz * push);
+      step(b, ux * push, uz * push);
+    }
+  }
   for (const r of walkers) {
     // something happened: stop, turn, look
     if (r.reactT > 0) {

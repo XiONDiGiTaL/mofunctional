@@ -4,6 +4,7 @@
  * a gamepad. Rebinding is click-then-press; a key another action held swaps over to it.
  */
 import { BINDINGS, FIXED_KEYS, keysFor, keyName, rebind, resetBindings } from '../core/input.js';
+import { CONFIG } from '../core/config.js';
 import { LANGUAGES, getLang } from '../i18n/i18n.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -41,6 +42,15 @@ export function showOptions(g) {
           <button class="btn btn--sm" data-opt="camreset">Reset camera <small>(${esc(keyName(keysFor(s, 'camreset')[0]))} · R3)</small></button>
           <p class="options__note">Indoors the camera stops short of walls and under the ceiling, whatever these say.</p>
         </section>
+        <section>
+          <h3>Movement</h3>
+          <div class="row lang-row">
+            <button class="btn btn--sm ${(s.run ?? 'hold') === 'hold' ? 'btn--primary' : ''}" data-run="hold">Hold ${esc(keyName(keysFor(s, 'sprint')[0]))} to run</button>
+            <button class="btn btn--sm ${s.run === 'always' ? 'btn--primary' : ''}" data-run="always">Always run</button>
+            <button class="btn btn--sm ${s.run === 'off' ? 'btn--primary' : ''}" data-run="off">Always walk</button>
+          </div>
+          <p class="options__note">Running covers ground faster. Below ${CONFIG.move.minEnergy} energy he walks, whatever this says.</p>
+        </section>
         <section class="options__controls">
           <h3>Controls</h3>
           <p class="options__note">Click a key, then press the new one. Esc cancels. ${pad ? `Controller: <b>${esc(pad.id.replace(/\s*\(.*$/, '').slice(0, 40))}</b>` : 'No controller connected.'}</p>
@@ -76,6 +86,8 @@ export function showOptions(g) {
     if (lb) { g.setLanguage(lb.dataset.lang).then(draw); return; }
     const b = e.target.closest('[data-bind]');
     if (b) { waiting = waiting === b.dataset.bind ? null : b.dataset.bind; draw(); return; }
+    const rb = e.target.closest('[data-run]');
+    if (rb) { g.state.settings.run = rb.dataset.run; g.toast?.(rb.dataset.run === 'off' ? 'Mo walks from here.' : rb.dataset.run === 'always' ? 'Mo runs from here.' : 'Hold the run key and he runs.', 'info'); draw(); return; }
     const opt = e.target.closest('button[data-opt]')?.dataset.opt;
     if (opt === 'mute') g.setMuted?.(!g.state.settings.muted);
     if (opt === 'camreset') { g.setCamera('reset'); g.toast?.('Camera reset.', 'info'); }

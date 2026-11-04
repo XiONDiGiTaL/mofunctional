@@ -1920,7 +1920,12 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       dirZ = tz / tl;
     }
 
-    let speed = 2.45;
+    // Walk or run. The sprint key is a hold; settings.run can make it always, or off entirely.
+    // A spent Mo walks whatever the setting says, so a run is never the way out of a collapse.
+    const runMode = s.settings.run || 'hold';
+    const running = free && runMode !== 'off' && s.stats.energy > CONFIG.move.minEnergy
+      && (runMode === 'always' || !!g.input?.sprint);
+    let speed = running ? CONFIG.move.run : CONFIG.move.walk;
     if (g.input?.lastDevice === 'pad') speed *= 1.05;
     if (impairment > 0.5) speed *= 0.78;
     if (s.stats.energy < 15) speed *= 0.72;
@@ -2558,8 +2563,32 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const mo = this.mo.root.position;
       const ahead = (mo.x - rig.root.position.x) * Math.sign(dx);
       if (ahead > 0 && ahead < 1.2 && Math.abs(mo.z - rig.root.position.z) < 0.7) { rig.walking = false; return; }
-      rig.walking = true;
-      rig.root.position.x += Math.sign(dx) * (rig.pace || 1.1) * dt;
+      // A street is not an empty line: carts, boxes and other people are in it. Step round what
+      // is in the way instead of through it (the lane he picks sticks until he is past it), and
+      // turn round rather than stand pressed into a wall for the rest of the night.
+      const b = this.area.bounds;
+      const step = Math.sign(dx) * (rig.pace || 1.1) * dt;
+      const px = rig.root.position.x;
+      const pz = rig.root.position.z;
+      if (rig.walkHomeZ === undefined) rig.walkHomeZ = pz;
+      if (!this.blocked(px + step, pz) && !this.crowded(px + step, pz, rig)) {
+        rig.root.position.x = clamp(px + step, b.minX + 0.3, b.maxX - 0.3);
+        // drift back to his own line once he is past whatever made him step aside, so a detour
+        // is a detour and not a new route down the middle of the road
+        if (Math.abs(pz - rig.walkHomeZ) > 0.05) {
+          const back = clamp(pz + Math.sign(rig.walkHomeZ - pz) * 0.5 * dt, b.minZ + 0.35, b.maxZ - 0.35);
+          if (!this.blocked(px, back)) rig.root.position.z = back;
+        }
+        rig.walkLane = 0;
+        rig.walkStuck = 0;
+      } else {
+        if (!rig.walkLane) rig.walkLane = Math.random() < 0.5 ? -1 : 1;
+        const lane = clamp(pz + rig.walkLane * 1.1 * dt, b.minZ + 0.35, b.maxZ - 0.35);
+        if (!this.blocked(px, lane) && !this.crowded(px, lane, rig)) rig.root.position.z += (lane - pz) * Math.min(1, dt * 4);
+        else if ((rig.walkStuck = (rig.walkStuck || 0) + dt) > 0.8) { rig.walkLane = -rig.walkLane; rig.walkStuck = 0; }
+        if (rig.walkStuck > 3) { rig.walkDir *= -1; rig.walkStuck = 0; rig.walkLane = 0; }
+      }
+      rig.walking = Math.hypot(rig.root.position.x - px, rig.root.position.z - pz) > 0.002;
       rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.sign(dx) > 0 ? Math.PI / 2 : -Math.PI / 2) * Math.min(1, dt * 6);
       return;
     }
@@ -2589,7 +2618,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const nx = rig.root.position.x + (dx / dist) * speed * dt;
       const nz = rig.root.position.z + (dz / dist) * speed * dt;
       const b = this.area.bounds;
-      if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz)) {
+      if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz) && !this.crowded(nx, nz, rig)) {
         rig.root.position.x = nx;
         rig.root.position.z = nz;
       }
@@ -2650,11 +2679,11 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     const nx = rig.root.position.x + (dx / dist) * speed * dt;
     const nz = rig.root.position.z + (dz / dist) * speed * dt;
     const b = this.area.bounds;
-    if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz)) {
+    if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz) && !this.crowded(nx, nz, rig)) {
       rig.root.position.x = nx;
       rig.root.position.z = nz;
     } else {
-      w.timer = 0; // something is in the way; choose another spot
+      w.timer = 0; // something (or somebody) is in the way; choose another spot
     }
     rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
   }
@@ -2681,6 +2710,22 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!this.area?.solids) return false;
     for (const b of this.area.solids) {
       if (Math.abs(x - b.x) < b.w / 2 + 0.22 && Math.abs(z - b.z) < b.d / 2 + 0.22) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Is somebody standing where this one wants to put a foot? Bodies are not scenery: a walker
+   * steps round another walker instead of through them. People who are standing still at a counter
+   * are left out of it — they are where they work, and a queue is not an obstacle course.
+   */
+  crowded(x, z, self, gap = 0.45) {
+    for (const rig of this.npcRigs) {
+      if (rig === self || !rig.root.visible || rig.down || rig.gone) continue;
+      if (rig.npcDef?.still) continue;
+      const dx = rig.root.position.x - x;
+      const dz = rig.root.position.z - z;
+      if (dx * dx + dz * dz < gap * gap) return true;
     }
     return false;
   }

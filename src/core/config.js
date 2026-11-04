@@ -15,6 +15,10 @@ export const CONFIG = {
 
   save: { key: 'mofunctional.save.v2', slots: 3, autosaveMinutes: 60 },
 
+  // how Mo gets about: the walk he always had, the run on the sprint key, and the energy below
+  // which he is too tired to keep it up (the setting is settings.run: 'hold' | 'always' | 'off')
+  move: { walk: 2.45, run: 3.95, minEnergy: 6 },
+
   time: {
     startMinutes: 7 * 60,       // 07:00 on Day 1
     dayMinutes: 1440,
