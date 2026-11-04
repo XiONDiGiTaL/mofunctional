@@ -188,6 +188,9 @@ export class MrPoopie {
 
   dispose() {
     this.clearCustomers();
+    // the kerb is the world's, not the truck's: leaving the area with it open would let a strip of
+    // road be walkable on some other street, at the numbers this one used to have
+    if (this.world.kerb) this.world.kerb.active = false;
     if (this.it) this.world.interactables = this.world.interactables.filter((i) => i !== this.it);
     if (this.lineIt) this.world.interactables = this.world.interactables.filter((i) => i !== this.lineIt);
     if (this.solid) {
@@ -247,8 +250,12 @@ export class MrPoopie {
     this.takeLane();
     const b = this.world.area.bounds;
     this.queueZ = Math.min(b.maxZ - 0.35, this.lane.z - 2.7);
+    // the kerb pass: while the van is at the kerb there is a stretch of road beside the window
+    // that is walkable, so buying a cone means standing at the counter like a person instead of
+    // shouting across the gutter. world/game3d.js closes it when active goes false.
+    this.world.kerb = { minX: this.spotX - 3.4, maxX: this.spotX + 3.4, maxZ: this.lane.z - 1.45, active: true };
     this.it = {
-      id: 'mrp_window', label: 'Buy from Mr. Poopie', sub: `cone · ${money(CONE_PRICE)}`, x: this.spotX, z: b.maxZ - 0.25, radius: 2.0,
+      id: 'mrp_window', label: 'Buy from Mr. Poopie', sub: `cone · ${money(CONE_PRICE)}`, x: this.spotX, z: this.lane.z - 1.55, radius: 1.9,
       action: (gg) => this.menu(gg),
     };
     this.lineIt = {
@@ -267,6 +274,7 @@ export class MrPoopie {
     this.it = null;
     this.lineIt = null;
     this.moWait = 0;
+    if (this.world.kerb) this.world.kerb.active = false;
     this.restoreLane();
     this.state = 'leaving';
     void g;

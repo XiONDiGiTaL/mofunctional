@@ -1972,8 +1972,14 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const beforeX = this.mo.root.position.x;
       const beforeZ = this.mo.root.position.z;
       const b = this.area.bounds;
+      // The kerb: with the ice cream van at the kerb, the road beside its window is walkable, so
+      // buying a cone means standing at the counter. The pass closes when the van leaves, and stays
+      // open until he is back on the pavement, so nobody is teleported out of the road.
+      const kerb = this.kerb;
+      if (kerb && !kerb.active && beforeZ <= b.maxZ + 0.02) this.kerb = null;
       const nx = clamp(beforeX + vx * dt, b.minX, b.maxX);
-      const nz = clamp(beforeZ + vz * dt, b.minZ, b.maxZ);
+      const openKerb = kerb && ((beforeX > kerb.minX && beforeX < kerb.maxX) || (nx > kerb.minX && nx < kerb.maxX));
+      const nz = clamp(beforeZ + vz * dt, b.minZ, openKerb ? Math.max(b.maxZ, kerb.maxZ) : b.maxZ);
       // somebody who wakes up (or is put down) overlapping the furniture is free to walk out of
       // it: with both axes blocked he could not move at all, and the run was stuck on the floor
       const stuck = this.blocked(beforeX, beforeZ);
