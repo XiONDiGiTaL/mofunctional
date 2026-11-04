@@ -1944,8 +1944,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // he is out of breath, and the breath and the stumble say so before the bar does. Still holding
     // the key with nothing left keeps the breathing going, slower, until he gives up on it.
     const wantsRun = runMode !== 'off' && (runMode === 'always' || !!g.input?.sprint);
+    const spent = Math.max(0, Math.min(1, (CONFIG.move.minEnergy - s.stats.energy) / Math.max(1, CONFIG.move.minEnergy)));
     if (wantsRun && free && s.stats.energy <= CONFIG.move.minEnergy) {
-      if (!this.puffed) { this.puffed = true; this.exhausted = 1; g.audio?.sfx?.('pant'); this.pantT = 2.6; }
+      if (!this.puffed) { this.puffed = true; this.exhausted = 1; g.audio?.pant?.(spent); this.pantT = 2.6; }
       this.exhausted = Math.max(this.exhausted, 0.75);
     } else if (!wantsRun || s.stats.energy > CONFIG.move.minEnergy + 8) this.puffed = false;
     // (the second half matters for run-always: he has to be allowed to fail again after he recovers,
@@ -1953,7 +1954,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.exhausted = Math.max(0, (this.exhausted || 0) - dt * 0.22);
     if (this.puffed && this.exhausted > 0.5) {
       this.pantT = (this.pantT ?? 2.6) - dt;
-      if (this.pantT <= 0) { this.pantT = 2.6; g.audio?.sfx?.('pant'); }
+      if (this.pantT <= 0) { this.pantT = 2.6; g.audio?.pant?.(spent); }
     }
 
     if (this.walking) {

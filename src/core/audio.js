@@ -293,6 +293,21 @@ export class Audio {
     }
   }
 
+  /**
+   * Out of breath, as a rate rather than a switch: `spent` 0 is a man who has just dipped under
+   * the gate — one short, quiet pull — and 1 is a man with nothing left, two deep ones. The point
+   * is that the sound tracks the bar: near the gate it is barely there, and it grows as he keeps
+   * asking the body for a run it cannot pay for.
+   */
+  pant(spent = 1) {
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+    const k = Math.max(0, Math.min(1, spent));
+    const dur = 0.09 + 0.11 * k;          // 90 ms near the gate, 200 ms empty
+    const vol = 0.032 + 0.062 * k;        // a third as loud near the gate
+    this.noise(dur, vol, 760 + 120 * k);
+    setTimeout(() => this.noise(dur * 0.8, vol * 0.7, 620), 210 + 60 * k);
+  }
+
   sfx(name) {
     switch (name) {
       case 'ui': return this.blip(720, 0.04, 'square', 0.1);
@@ -302,8 +317,7 @@ export class Audio {
       case 'cash': this.blip(1180, 0.05, 'square', 0.11); setTimeout(() => this.blip(1560, 0.06, 'square', 0.1), 60); return;
       case 'work': this.noise(0.4, 0.07, 500); return;
       case 'step': return this.noise(0.07, 0.045, 320);
-      // out of breath: two pulls of air through the nose, the second one weaker
-      case 'pant': this.noise(0.17, 0.085, 760); setTimeout(() => this.noise(0.14, 0.06, 620), 230); return;
+      case 'pant': return this.pant(1);
       case 'door': this.noise(0.22, 0.1, 220); setTimeout(() => this.blip(160, 0.1, 'sine', 0.08), 120); return;
       case 'dose': return this.sweep(900, 140, 0.9, 'sine', 0.12);
       case 'high': return this.sweep(200, 1200, 0.6, 'triangle', 0.08);
