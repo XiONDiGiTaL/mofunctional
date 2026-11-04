@@ -379,8 +379,9 @@ export class World {
     // a HailMary car that is already waiting here is parked at the curb when he steps out
     if (!this.rideCar) this.rideCar = new RideCar(this);
     this.rideCar.sync(g, true);
-    // indoors, a walkability grid so wanderers go round the furniture (world/pathing.js)
-    this.navGrid = id !== 'street' && id !== 'avenue' && id !== 'park' ? buildGrid(this.area) : null;
+    // every area gets a walkability grid, indoors and out: on the street a cart, a crate or a pole
+    // is as solid as a kitchen table, and the people walking it should go round them
+    this.navGrid = buildGrid(this.area);
     // cars up and down the road, where there is a road
     this.traffic = this.area.traffic ? new Traffic(this, this.area.traffic) : null;
     // smoke, the dog, the things that happen
@@ -1936,6 +1937,9 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!dirX && !dirZ && Math.hypot(this.vel.x, this.vel.z) < 0.06) { this.vel.x = 0; this.vel.z = 0; }
     const speedNow = Math.hypot(this.vel.x, this.vel.z);
     this.walking = speedNow > 0.22;
+    // what the body is doing, for the needs system: running costs more than walking, and it is
+    // only running if he is actually moving (holding shift into a wall is free)
+    s.flags.running = !!(running && this.walking);
 
     if (this.walking) {
       let vx = this.vel.x;
@@ -2558,11 +2562,32 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const [x0, x1] = def.walker;
       const tx = rig.walkDir > 0 ? x1 : x0;
       const dx = tx - rig.root.position.x;
-      if (Math.abs(dx) < 0.3) { rig.walkDir *= -1; return; }
+      if (Math.abs(dx) < 0.3) { rig.walkDir *= -1; rig.walkPath = null; return; }
       // somebody in the way (Mo): stop and wait, like people do
       const mo = this.mo.root.position;
       const ahead = (mo.x - rig.root.position.x) * Math.sign(dx);
       if (ahead > 0 && ahead < 1.2 && Math.abs(mo.z - rig.root.position.z) < 0.7) { rig.walking = false; return; }
+      // a way round whatever stopped him, found by the grid last time: follow it to the end
+      if (rig.walkPath?.length) {
+        const next = rig.walkPath[0];
+        const ndx = next[0] - rig.root.position.x;
+        const ndz = next[1] - rig.root.position.z;
+        const nd = Math.hypot(ndx, ndz);
+        if (nd < 0.12) {
+          rig.walkPath.shift();
+          if (!rig.walkPath.length) rig.walkPath = null;
+          return;
+        }
+        const stride = Math.min(nd, (rig.pace || 1.1) * dt);
+        const mx = rig.root.position.x + (ndx / nd) * stride;
+        const mz = rig.root.position.z + (ndz / nd) * stride;
+        if (this.crowded(mx, mz, rig)) { rig.walkPath = null; rig.walking = false; return; }
+        rig.root.position.x = mx;
+        rig.root.position.z = mz;
+        rig.walking = true;
+        rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(ndx, ndz)) * Math.min(1, dt * 6);
+        return;
+      }
       // A street is not an empty line: carts, boxes and other people are in it. Step round what
       // is in the way instead of through it (the lane he picks sticks until he is past it), and
       // turn round rather than stand pressed into a wall for the rest of the night.
@@ -2581,6 +2606,12 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
         }
         rig.walkLane = 0;
         rig.walkStuck = 0;
+      } else if (this.navGrid && (rig.pathCool = (rig.pathCool || 0) - dt) <= 0) {
+        // blocked: ask the grid for a way round (a cart, a knot of people) before shuffling sideways
+        rig.pathCool = 1.2;
+        rig.walkPath = findPath(this.navGrid, px, pz, tx, rig.walkHomeZ ?? pz);
+        rig.walkLane = 0;
+        rig.walking = false;
       } else {
         if (!rig.walkLane) rig.walkLane = Math.random() < 0.5 ? -1 : 1;
         const lane = clamp(pz + rig.walkLane * 1.1 * dt, b.minZ + 0.35, b.maxZ - 0.35);

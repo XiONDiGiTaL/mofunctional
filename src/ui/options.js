@@ -49,7 +49,7 @@ export function showOptions(g) {
             <button class="btn btn--sm ${s.run === 'always' ? 'btn--primary' : ''}" data-run="always">Always run</button>
             <button class="btn btn--sm ${s.run === 'off' ? 'btn--primary' : ''}" data-run="off">Always walk</button>
           </div>
-          <p class="options__note">Running covers ground faster. Below ${CONFIG.move.minEnergy} energy he walks, whatever this says.</p>
+          <p class="options__note">Running covers ground faster and burns energy while he keeps it up. Below ${CONFIG.move.minEnergy} energy he walks, whatever this says.</p>
         </section>
         <section class="options__controls">
           <h3>Controls</h3>

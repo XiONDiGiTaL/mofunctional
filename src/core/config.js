@@ -30,7 +30,7 @@ export const CONFIG = {
   },
 
   needs: {
-    energy: { awake: 3.4, working: 6.2, sleeping: -13.0 }, // per in-game hour
+    energy: { awake: 3.4, working: 6.2, sleeping: -13.0, running: 6.5 }, // per in-game hour
     hunger: { awake: 3.0, working: 4.2, sleeping: 1.7 },
     hygiene: { awake: 1.3, working: 2.2, sleeping: 0.3 },
     stress: {

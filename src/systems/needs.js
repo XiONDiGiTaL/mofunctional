@@ -103,9 +103,12 @@ function applyRates(g, hours, ctx) {
   const sleeping = !!ctx.sleeping;
 
   // --- energy ---
+  // Running is charged here, with every other need, against the time that actually passed: the
+  // frame loop only reports that he is running, so a sprint costs him hours, not ticks.
+  const pounding = !!s.flags.running && !sleeping && !working;
   if (sleeping) bump(s, 'energy', -N.energy.sleeping * hours); // sleeping rate is negative => recovers
   else if (working) bump(s, 'energy', -N.energy.working * hours);
-  else bump(s, 'energy', -N.energy.awake * hours);
+  else bump(s, 'energy', -(N.energy.awake + (pounding ? N.energy.running : 0)) * hours);
 
   // --- hunger ---
   const hungerRate = sleeping ? N.hunger.sleeping : working ? N.hunger.working : N.hunger.awake;
