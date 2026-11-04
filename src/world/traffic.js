@@ -128,9 +128,19 @@ export class Traffic {
       const ignoresMo = c.fast && (this.world.roadT || 0) > 1.2;
       // a cruiser told to pull over (world/incidents.js) stops level with its mark
       const stopFor = c.stopAt != null ? (c.stopAt - c.x) * d : Infinity;
+      // a man standing in the road buying a cone: not in this lane, but close enough that a driver
+      // would lift off, and then lean on the horn about it
+      let hazAhead = Infinity;
+      const haz = this.world.hazard;
+      if (haz && Math.abs(haz.z - c.lane.z) < 4.6) {
+        const ahead = (haz.x - c.x) * d - c.len / 2;
+        if (ahead > -0.5) hazAhead = ahead;
+      }
       const blockAt = Math.min(gap - 2.0, ignoresMo ? Infinity : moAhead - 1.6, stopFor);
       // ease toward cruise, brake hard for whatever is in front
-      const want = blockAt <= 0 ? 0 : blockAt < 8 ? c.cruise * (blockAt / 8) : c.cruise;
+      let want = blockAt <= 0 ? 0 : blockAt < 8 ? c.cruise * (blockAt / 8) : c.cruise;
+      // and the man at the ice cream window: off the throttle a long way back, then crawl past him
+      if (hazAhead < 9) want = Math.min(want, hazAhead < 2 ? 0.7 : 2.1);
       c.speed += (want - c.speed) * Math.min(1, dt * (want < c.speed ? 6 : 1.5));
       if (c.speed < 0.05) c.speed = 0;
       c.x += d * c.speed * dt;
@@ -155,6 +165,11 @@ export class Traffic {
       } else if (moAhead >= 6) {
         c.stopped = 0;
         c.honked = 0;
+      }
+      if (hazAhead < 9 && c.speed < 3.2 && this.honkCool <= 0) {
+        this.honkCool = 3.4;
+        g.audio?.sfx?.('honk');
+        if (Math.random() < 0.34) g.toast(pickLine(c), 'info');
       }
       if ((d > 0 && c.x > x1 + 8) || (d < 0 && c.x < x0 - 8)) gone.push(c);
     }

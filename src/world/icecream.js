@@ -14,8 +14,8 @@
  * nothing drives through it, and puts the lane back when it leaves.
  */
 import * as THREE from '../../vendor/three.module.js';
-import { box, plane, retroMaterial } from '../render/retro.js';
-import { signTex } from '../render/signs.js';
+import { box, retroMaterial } from '../render/retro.js';
+import { buildIceCreamTruck } from './vehicles.js';
 import { createNPC, animateNPC } from './characters.js';
 import { addItem } from '../core/state.js';
 import { pick, minuteOfDay, money } from '../core/util.js';
@@ -26,50 +26,6 @@ const OPEN = [[11 * 60 + 30, 15 * 60], [16 * 60, 19 * 60 + 30]];
 const isServingTime = (m) => OPEN.some(([a, b]) => m >= a && m < b);
 const CONE_PRICE = 2.5;
 const KINDS = ['kid', 'kid', 'kid', 'passer_m2', 'tenant_f', 'w3', 'w12', 'passer_m', 'kid', 'hall_f'];
-
-/* ---------------------------------------------------------------- the mascot, as a canvas */
-
-let poopTex = null;
-/** The pile from the emoji, drawn in blocks so it sits in the same chunky frame as every sign. */
-function mascot() {
-  if (poopTex) return poopTex;
-  const S = 8;
-  const c = document.createElement('canvas');
-  c.width = 32 * S; c.height = 32 * S;
-  const x = c.getContext('2d');
-  x.imageSmoothingEnabled = false;
-  x.clearRect(0, 0, c.width, c.height);
-  const dark = '#4a2c16';
-  const mid = '#6b3f1d';
-  const light = '#7d4a22';
-  const px = (bx, by, bw, bh, col) => { x.fillStyle = col; x.fillRect(bx * S, by * S, bw * S, bh * S); };
-  // the mound: three steps and a curl on top, lighter where the light would hit it
-  px(5, 22, 22, 6, mid);
-  px(7, 21, 18, 2, light);
-  px(8, 16, 16, 6, mid);
-  px(8, 15, 14, 2, light);
-  px(11, 11, 10, 5, mid);
-  px(11, 10, 8, 2, light);
-  px(14, 7, 4, 4, mid);
-  px(15, 5, 3, 2, mid);
-  px(5, 28, 22, 1, dark);
-  // eyes: whites with pupils, and the smile off the emoji
-  px(11, 17, 4, 4, '#ffffff');
-  px(17, 17, 4, 4, '#ffffff');
-  px(12, 18, 2, 2, '#1a1208');
-  px(18, 18, 2, 2, '#1a1208');
-  px(13, 23, 6, 1, '#ffffff');
-  px(12, 22, 1, 1, '#ffffff');
-  px(19, 22, 1, 1, '#ffffff');
-  px(13, 24, 4, 1, '#ffffff');
-  const t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.generateMipmaps = false;
-  t.colorSpace = THREE.SRGBColorSpace;
-  poopTex = t;
-  return t;
-}
 
 /* ---------------------------------------------------------------- the man in the costume */
 
@@ -100,60 +56,6 @@ function buildVendor() {
   head.position.set(0, 0.62, 0);
   g.add(head);
   g.userData = { head };
-  return g;
-}
-
-/* ---------------------------------------------------------------- the truck */
-
-/** A step van: white with a blue skirt, a service window with an awning, the menu, the mascot. */
-function buildTruck() {
-  const g = new THREE.Group();
-  const white = retroMaterial('mrp_body', { color: 0xf4f4f0 });
-  const blue = retroMaterial('mrp_blue', { color: 0x2a72b8 });
-  const trim = retroMaterial('mrp_trim', { color: 0xb8bcc0, ambient: 0.9 });
-  const glass = retroMaterial('mrp_glass', { color: 0x2a3a4a, emissive: 0.15 });
-  const inner = retroMaterial('mrp_inner', { color: 0x14161a });
-  const lit = retroMaterial('mrp_lit', { color: 0xfff2c8, emissive: 0.9, unlit: true });
-  const L = 5.0, W = 2.1, H = 2.3;
-  // body, the blue skirt, the cab and its glass, the lights, the roof vent
-  g.add(box(L, H, W, white, [0, 1.15, 0]));
-  g.add(box(L + 0.02, 0.5, W + 0.02, blue, [0, 0.62, 0]));
-  g.add(box(1.0, 0.9, W - 0.02, white, [L / 2 - 0.1, 1.75, 0]));
-  g.add(box(0.9, 0.62, W - 0.12, glass, [L / 2 + 0.02, 1.95, 0]));
-  g.add(box(0.9, 0.5, 0.06, glass, [L / 2 - 0.05, 1.9, W / 2 - 0.02]));
-  for (const s of [-1, 1]) g.add(box(0.3, 0.14, 0.1, retroMaterial('mrp_head', { color: 0xfff2c4, emissive: 0.8, unlit: true }), [L / 2 + 0.01, 0.9, s * (W / 2 - 0.3)]));
-  g.add(box(0.7, 0.22, 0.8, trim, [-0.8, 2.36, 0]));
-  // wheels
-  for (const ax of [L / 2 - 1.1, -L / 2 + 1.2]) for (const s of [-1, 1]) {
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.28, 10), retroMaterial('mrp_tyre', { color: 0x1a1a1c }));
-    wheel.rotation.x = Math.PI / 2;
-    wheel.position.set(ax, 0.42, s * (W / 2 - 0.05));
-    g.add(wheel);
-  }
-  // the service window, on the pavement side (-z): dark opening, a lit inside, a counter lip
-  const winZ = -W / 2 - 0.01;
-  g.add(box(2.2, 1.0, 0.04, inner, [0.2, 1.62, winZ]));
-  g.add(box(2.0, 0.85, 0.02, lit, [0.2, 1.6, winZ - 0.01]));
-  g.add(box(2.3, 0.09, 0.42, trim, [0.2, 1.06, winZ - 0.16]));
-  // the awning: a slab out over the window with a striped hem
-  g.add(box(2.6, 0.08, 0.7, retroMaterial('mrp_awn', { color: 0xe8e8e2 }), [0.2, 2.16, winZ - 0.32], [0.2, 0, 0]));
-  for (let i = 0; i < 7; i++) {
-    g.add(box(0.3, 0.16, 0.05, retroMaterial(i % 2 ? 'mrp_awnb' : 'mrp_awn', { color: i % 2 ? 0x2a72b8 : 0xe8e8e2 }), [0.2 - 1.1 + i * 0.36, 2.05, winZ - 0.63]));
-  }
-  // the sides: the name, the mascot, and the words in the reference photo's order
-  for (const s of [-1, 1]) {
-    const rot = s > 0 ? 0 : Math.PI;
-    g.add(plane(2.6, 0.5, { name: 'mrp_name', map: signTex('mrpNameSign', [{ text: 'MR. POOPIE', color: '#c8281e', size: 15 }], { w: 128, h: 24, bg: '#f4f4f0' }), emissive: 0.2, unlit: true }, [-0.1, 2.0, s * (W / 2 + 0.01)], [0, rot, 0]));
-    g.add(plane(1.5, 1.5, { name: 'mrp_mascot', map: mascot(), emissive: 0.15 }, [1.55, 1.45, s * (W / 2 + 0.02)], [0, rot, 0]));
-    g.add(plane(1.9, 0.28, { name: 'mrp_words', map: signTex('mrpWords', [{ text: 'CONES · SHAKES · SUNDAES', color: '#2a72b8', size: 8 }], { w: 160, h: 20, bg: '#f4f4f0' }), emissive: 0.15, unlit: true }, [-0.4, 1.0, s * (W / 2 + 0.01)], [0, rot, 0]));
-  }
-  // the menu board in the window, and the vendor behind the counter
-  g.add(plane(0.9, 0.62, { name: 'mrp_menu', map: signTex('mrpMenu', [{ text: 'CONES', color: '#1a1a1a', size: 8 }, { text: '2.50', color: '#c8281e', size: 11 }], { w: 64, h: 44, bg: '#f2f0e8', border: '#1a1a1a' }), emissive: 0.5, unlit: true }, [-0.75, 1.66, winZ - 0.06], [0, Math.PI, 0]));
-  g.add(box(0.16, 0.16, 0.16, retroMaterial('mrp_bell', { color: 0xc8ccd0, emissive: 0.3 }), [L / 2 - 0.35, 2.45, 0]));
-  const vendor = buildVendor();
-  vendor.position.set(0.25, 0.95, -0.25);
-  g.add(vendor);
-  g.userData = { len: L + 0.4, width: W, vendor };
   return g;
 }
 
@@ -199,6 +101,7 @@ export class MrPoopie {
       if (i >= 0) list.splice(i, 1);
     }
     this.truck?.parent?.remove(this.truck);
+    if (this.world.hazard) this.world.hazard = null;
     this.restoreLane();
     this.truck = null;
     this.solid = null;
@@ -228,11 +131,47 @@ export class MrPoopie {
     this.laneTaken = false;
   }
 
+  /**
+   * Somewhere to park that is not on top of somebody. Anything standing at the kerb is given a
+   * wide berth — the bus stop on both streets, the subway stairs, the newsstand — so the van never
+   * pulls up across the stop it is standing next to.
+   */
+  pickSpot() {
+    const b = this.world.area.bounds;
+    const lo = b.minX + 4.5;
+    const hi = b.maxX - 4.5;
+    const span = Math.max(0.4, hi - lo);
+    const kerbside = (this.world.interactables || [])
+      .filter((i) => typeof i.x === 'number' && Math.abs((i.z ?? 0) - this.lane.z) < 5.5);
+    // a stop is the one thing it must never pull up across; everything else it just gives room to
+    const stops = kerbside.filter((i) => /bus/i.test(i.id));
+    const rest = kerbside.filter((i) => !/bus/i.test(i.id));
+    const half = 2.85; // the van's half length, before there is a van to ask
+    let best = null;
+    for (let n = 0; n < 32; n++) {
+      const x = lo + Math.random() * span;
+      if (stops.some((i) => Math.abs(i.x - x) < half + 1.5)) continue;
+      const gap = rest.length ? Math.min(...rest.map((i) => Math.abs(i.x - x))) : 99;
+      if (gap > half + 0.9) return x;
+      // no room to spare on this block: keep the roomiest of the tries rather than the first
+      const score = Math.min(gap, 9);
+      if (!best || score > best.score) best = { x, score };
+    }
+    if (best) return best.x;
+    const away = stops.length ? stops[0].x + (Math.random() < 0.5 ? -1 : 1) * (half + 2.2) : lo + Math.random() * span;
+    return clamp(away, lo, hi);
+  }
+
   arrive(g) {
     const b = this.world.area.bounds;
-    this.spotX = clamp(-1 + (Math.random() * 8 - 4), b.minX + 4, b.maxX - 4);
-    this.truck = buildTruck();
+    this.spotX = this.pickSpot();
+    this.truck = buildIceCreamTruck();
     this.truck.position.set(b.minX - 9, 0, this.lane.z);
+    // the man in the costume stands inside the window opening
+    const vendor = buildVendor();
+    vendor.position.set(this.truck.userData.mount.x, this.truck.userData.mount.y, this.truck.userData.mount.z);
+    this.truck.add(vendor);
+    this.truck.userData.vendor = vendor;
     this.world.root.add(this.truck);
     this.solid = { x: this.truck.position.x, z: this.lane.z, w: this.truck.userData.len, d: this.truck.userData.width, h: 2.5, moving: true };
     (this.world.area.solids = this.world.area.solids || []).push(this.solid);
@@ -249,11 +188,11 @@ export class MrPoopie {
     this.serveT = 95 + Math.random() * 70;
     this.takeLane();
     const b = this.world.area.bounds;
-    this.queueZ = Math.min(b.maxZ - 0.35, this.lane.z - 2.7);
+    this.queueZ = this.lane.z - 1.9;
     // the kerb pass: while the van is at the kerb there is a stretch of road beside the window
     // that is walkable, so buying a cone means standing at the counter like a person instead of
     // shouting across the gutter. world/game3d.js closes it when active goes false.
-    this.world.kerb = { minX: this.spotX - 3.4, maxX: this.spotX + 3.4, maxZ: this.lane.z - 1.45, active: true };
+    this.world.kerb = { minX: this.spotX - 5.2, maxX: this.spotX + 5.2, maxZ: this.lane.z - 1.45, active: true };
     this.it = {
       id: 'mrp_window', label: 'Buy from Mr. Poopie', sub: `cone · ${money(CONE_PRICE)}`, x: this.spotX, z: this.lane.z - 1.55, radius: 1.9,
       action: (gg) => this.menu(gg),
@@ -275,6 +214,7 @@ export class MrPoopie {
     this.lineIt = null;
     this.moWait = 0;
     if (this.world.kerb) this.world.kerb.active = false;
+    if (this.world.hazard) this.world.hazard = null;
     this.restoreLane();
     this.state = 'leaving';
     void g;
@@ -292,7 +232,7 @@ export class MrPoopie {
     if (this.customers.length >= 5) return;
     const rig = createNPC(pick(KINDS));
     const at = this.slot(this.customers.length + 1);
-    rig.root.position.set(at.x - 1.6, 0, at.z + 1.2);
+    rig.root.position.set(at.x - 1.1, 0, at.z);
     rig.root.rotation.y = Math.PI;
     this.world.root.add(rig.root);
     this.world.npcRigs.push(rig);
@@ -441,6 +381,12 @@ export class MrPoopie {
         this.greeted = true;
         g.toast('The window is up and the head in it is a pile of poop with eyes. "Yeah," it says. "Two fifty."', 'info');
       }
+      // somebody in the road at the window: the traffic is told about him and gives him room
+      const mo = w.mo.root.position;
+      // the kerb is the near edge of the asphalt, a fixed 3.2 m off the lane: bounds.maxZ is the far
+      // side of the road on Kestrel, so on that street it never described the pavement at all
+      const kerbZ = this.lane.z - 3.2;
+      w.hazard = mo.z > kerbZ + 0.05 && mo.z < this.lane.z + 1.4 && Math.abs(mo.x - this.spotX) < 5.4 ? { x: mo.x, z: mo.z } : null;
       if (this.moWait > 0) this.serveMo(dt, g);
       if (this.serveT <= 0) this.leave(g);
       return;
@@ -505,8 +451,10 @@ export class MrPoopie {
         return;
       }
       // walking off with it, eating on the way, like everybody else on this block
+      // off with the cone: along the kerb and up onto the pavement
       p.x += c.dir * 1.25 * dt;
-      p.z = clamp(p.z - dt * 0.12, this.queueZ - 0.6, this.queueZ + 1.4);
+      const paveZ = this.world.area.bounds.maxZ - 0.7;
+      p.z += Math.sign(paveZ - p.z) * Math.min(Math.abs(paveZ - p.z), 0.8 * dt);
       rig.root.rotation.y = c.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
       animateNPC(rig, dt, { walking: true });
       // the arm comes up to the mouth every second and a half: a cone on the way home

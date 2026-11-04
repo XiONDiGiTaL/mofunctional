@@ -13,7 +13,8 @@
  *   convertible  top down
  */
 import * as THREE from '../../vendor/three.module.js';
-import { retroMaterial } from '../render/retro.js';
+import { retroMaterial, plane } from '../render/retro.js';
+import { signTex } from '../render/signs.js';
 
 const geoCache = new Map();
 const matCache = new Map();
@@ -180,6 +181,176 @@ function buildBus() {
     add(g, boxGeo(0.06, 0.16, 0.3), TAIL(), -len / 2 - 0.02, 0.8, z * 0.9);
   }
   g.userData = { len, width: w, type: 'bus' };
+  return g;
+}
+
+
+/** The mascot, drawn in blocks on a canvas, so the decal sits in the same frame as every sign. */
+let mrpMascotTex = null;
+function mrpMascot() {
+  if (mrpMascotTex) return mrpMascotTex;
+  const S = 10;
+  const c = document.createElement('canvas');
+  c.width = 32 * S; c.height = 32 * S;
+  const x = c.getContext('2d');
+  x.clearRect(0, 0, c.width, c.height);
+  const ink = '#2f1c0d', mid = '#6b3f1d', light = '#8a5527', white = '#f6f2e6', black = '#171008', red = '#c8281e';
+  const px = (bx, by, bw, bh, col) => { x.fillStyle = col; x.fillRect(bx * S, by * S, bw * S, bh * S); };
+  // three tiers, lighter along the top of each, so the pile still reads at street distance
+  px(4, 22, 24, 6, mid); px(4, 22, 23, 2, light); px(3, 22, 1, 6, ink); px(28, 22, 1, 6, ink); px(4, 28, 24, 1, ink);
+  px(7, 15, 18, 7, mid); px(7, 15, 17, 2, light); px(6, 15, 1, 7, ink); px(25, 15, 1, 7, ink);
+  px(11, 10, 10, 5, mid); px(11, 10, 9, 2, light); px(10, 10, 1, 5, ink); px(21, 10, 1, 5, ink);
+  // the curl over the top, and the cherry on it
+  px(15, 7, 6, 3, mid); px(15, 7, 6, 1, light); px(21, 7, 1, 3, ink);
+  px(19, 4, 4, 3, mid); px(19, 4, 4, 1, light); px(23, 4, 1, 3, ink); px(19, 3, 4, 1, ink);
+  px(15, 1, 3, 3, red); px(15, 1, 1, 1, '#f2625a');
+  // eyes with a catchlight each, then the grin
+  px(10, 17, 5, 5, white); px(17, 17, 5, 5, white);
+  px(10, 17, 5, 1, ink); px(17, 17, 5, 1, ink);
+  px(12, 18, 2, 3, black); px(18, 18, 2, 3, black);
+  px(12, 18, 1, 1, white); px(18, 18, 1, 1, white);
+  px(13, 24, 7, 2, white); px(12, 24, 1, 1, white); px(20, 24, 1, 1, white);
+  px(14, 26, 5, 1, white);
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.colorSpace = THREE.SRGBColorSpace;
+  mrpMascotTex = t;
+  return t;
+}
+
+/**
+ * The Mr. Poopie van. Built like the rest of the street: one extruded side profile for the body,
+ * a proud blue skirt, eight-sided wheels with hubs, chrome bars, emissive lights — then the things
+ * that make it an ice cream truck: the service window let into the pavement side, the striped
+ * awning on arms, the menu, the name and the mascot on both flanks.
+ *
+ * Returns userData { len, width, mount }, where mount is where the man in the costume stands.
+ */
+export function buildIceCreamTruck() {
+  const g = new THREE.Group();
+  const w = 2.15;
+  const white = mat('mrp_white', { color: 0xf2f2ee, ambient: 0.82 });
+  const blue = mat('mrp_blue', { color: 0x2a72b8, ambient: 0.8 });
+  const dark = mat('mrp_dark', { color: 0x0e1014 });
+  const seam = mat('mrp_seam', { color: 0xcfcfc9 });
+  const lit = mat('mrp_lit', { color: 0xfff2c8, emissive: 0.95, unlit: true });
+  const sugar = mat('mrp_sugar', { color: 0xe0b878, ambient: 0.9 });
+  const cream = mat('mrp_cream', { color: 0xf3c9bd, ambient: 0.9 });
+
+  // the silhouette: a step van — low nose, a raked screen, a tall box behind it
+  const body = [[-2.85, 0.42], [2.60, 0.42], [2.86, 0.62], [2.86, 1.10], [2.64, 1.28], [2.52, 2.60], [2.26, 2.86], [-2.62, 2.88], [-2.85, 2.62]];
+  add(g, profile('mrp-body', body, w), white);
+  add(g, profile('mrp-skirt', [[-2.87, 0.20], [2.84, 0.20], [2.88, 0.44], [-2.87, 0.44]], w + 0.04), blue);
+
+  // the flanks: a rub strip, a chrome beltline, shut lines — so the sides are not one white slab
+  for (const s of [-1, 1]) {
+    const zf = s * (w / 2 + 0.012);
+    add(g, boxGeo(5.5, 0.09, 0.03), blue, -0.1, 0.98, zf);
+    add(g, boxGeo(5.4, 0.04, 0.03), CHROME(), -0.1, 1.28, zf);
+    for (const x of [-1.72, 1.55]) add(g, boxGeo(0.025, 1.5, 0.02), seam, x, 1.95, zf);
+    if (s > 0) for (const x of [-1.05, 0.4]) add(g, boxGeo(0.025, 1.5, 0.02), seam, x, 1.95, zf);
+    // the cab door: a handle, and the glass above it
+    add(g, boxGeo(0.16, 0.05, 0.05), CHROME(), 1.74, 1.44, zf);
+    add(g, boxGeo(0.86, 0.7, 0.04), GLASS(), 2.06, 2.02, zf);
+  }
+
+  // the screen, its wipers, and the mirrors on their stalks
+  const ws = add(g, boxGeo(0.06, 1.3, w * 0.86), GLASS(), 2.6, 1.94, 0);
+  ws.rotation.z = 0.09;
+  for (const s of [-1, 1]) {
+    add(g, boxGeo(0.03, 0.46, 0.03), TRIM(), 2.67, 1.5, s * 0.32);
+    add(g, boxGeo(0.04, 0.24, 0.04), TRIM(), 2.52, 1.98, s * (w / 2 + 0.1));
+    add(g, boxGeo(0.06, 0.2, 0.15), TRIM(), 2.52, 2.14, s * (w / 2 + 0.18));
+  }
+
+  // wheels, hubs, a chunky arch lip over each, and mud flaps behind the back pair
+  for (const ax of [1.72, -1.72]) for (const s of [-1, 1]) {
+    add(g, wheelGeo(0.44, 0.3), TYRE(), ax, 0.44, s * (w / 2 - 0.1));
+    add(g, wheelGeo(0.23, 0.32), HUB(), ax, 0.44, s * (w / 2 - 0.1));
+    const za = s * (w / 2 + 0.006);
+    add(g, boxGeo(0.70, 0.09, 0.06), white, ax, 0.98, za);
+    for (const e of [-1, 1]) {
+      const lip = add(g, boxGeo(0.46, 0.09, 0.06), white, ax + e * 0.32, 0.88, za);
+      lip.rotation.z = -e * 0.6;
+    }
+  }
+  for (const s of [-1, 1]) add(g, boxGeo(0.04, 0.34, 0.34), TRIM(), -2.14, 0.3, s * (w / 2 - 0.18));
+
+  // the nose: bumper, grille, lights, plate
+  add(g, boxGeo(0.16, 0.22, w * 0.98), CHROME(), 2.84, 0.48, 0);
+  for (let i = 0; i < 3; i++) add(g, boxGeo(0.05, 0.05, w * 0.46), CHROME(), 2.87, 0.74 + i * 0.13, 0);
+  for (const s of [-1, 1]) {
+    add(g, boxGeo(0.06, 0.16, 0.34), HEAD(), 2.87, 0.98, s * (w / 2 - 0.32));
+    add(g, boxGeo(0.05, 0.09, 0.16), mat('mrp_amber', { color: 0xffa21e, emissive: 0.7, unlit: true }), 2.87, 0.78, s * (w / 2 - 0.1));
+  }
+  add(g, boxGeo(0.03, 0.16, 0.34), white, 2.88, 0.98, 0);
+
+  // the rear: two doors, their glass, hinges, the handle, the bumper and the plate
+  for (const s of [-1, 1]) {
+    add(g, boxGeo(0.03, 0.86, 0.62), GLASS(), -2.87, 2.18, s * 0.54);
+    for (const h of [0.72, 1.9]) add(g, boxGeo(0.05, 0.1, 0.1), CHROME(), -2.88, h, s * 0.98);
+    add(g, boxGeo(0.05, 0.14, 0.12), CHROME(), -2.88, 1.42, s * 0.12);
+    add(g, boxGeo(0.06, 0.16, 0.3), TAIL(), -2.87, 0.95, s * (w / 2 - 0.3));
+  }
+  add(g, boxGeo(0.04, 2.1, 0.04), seam, -2.89, 1.55, 0);
+  add(g, boxGeo(0.14, 0.2, w * 0.9), TRIM(), -2.88, 0.42, 0);
+  add(g, boxGeo(0.04, 0.16, 0.3), white, -2.9, 1.05, 0);
+
+  // the roof: a cap, two vents, the bell, and the cone it is known by three blocks away
+  add(g, boxGeo(5.0, 0.06, w * 0.94), white, -0.2, 2.89, 0);
+  add(g, boxGeo(0.86, 0.18, 0.86), TRIM(), -1.35, 2.98, 0);
+  add(g, boxGeo(0.5, 0.1, 0.5), TRIM(), -2.3, 2.94, 0);
+  add(g, boxGeo(0.17, 0.17, 0.17), mat('mrp_bell', { color: 0xc8ccd0, ambient: 1 }), 1.9, 2.97, 0);
+  add(g, boxGeo(0.52, 0.07, 0.52), TRIM(), 0.6, 2.94, 0);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.56, 8), sugar);
+  cone.position.set(0.6, 3.18, 0);
+  cone.rotation.x = Math.PI;
+  g.add(cone);
+  const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.27, 8, 6), cream);
+  scoop.position.set(0.6, 3.5, 0);
+  g.add(scoop);
+  const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 4), mat('mrp_cherry', { color: 0xc8281e, emissive: 0.25 }));
+  cherry.position.set(0.6, 3.82, 0);
+  g.add(cherry);
+
+  // the hatch, on the pavement side: the recess, the lit freezer behind it, the counter, the step,
+  // and the shutter rolled up over the top
+  const winZ = -(w / 2 + 0.012);
+  add(g, boxGeo(2.5, 1.16, 0.05), dark, -0.5, 1.95, winZ + 0.02);
+  // the freezer light sits proud of the dark recess, or the recess hides it and the hatch is a hole
+  add(g, boxGeo(2.3, 1.02, 0.03), lit, -0.5, 1.95, winZ - 0.02);
+  add(g, boxGeo(2.62, 0.1, 0.5), CHROME(), -0.5, 1.36, winZ - 0.2);
+  add(g, boxGeo(0.62, 0.06, 0.36), CHROME(), -1.55, 0.34, winZ - 0.18);
+  for (const s of [-1, 1]) add(g, boxGeo(0.05, 0.3, 0.05), TRIM(), -1.55 + s * 0.26, 0.19, winZ - 0.06);
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.32, 8), white);
+  roll.rotation.z = Math.PI / 2;
+  roll.position.set(-0.5, 2.55, winZ - 0.04);
+  g.add(roll);
+
+  // the awning: a slab on two chrome arms, striped at the hem
+  const aw = add(g, boxGeo(2.7, 0.07, 0.8), mat('mrp_awn', { color: 0xececea }), -0.5, 2.44, winZ - 0.4);
+  aw.rotation.x = 0.16;
+  for (let i = 0; i < 7; i++) add(g, boxGeo(0.34, 0.18, 0.05), i % 2 ? blue : mat('mrp_awn2', { color: 0xf2f2ee }), -1.55 + i * 0.37, 2.32, winZ - 0.76);
+  for (const s of [-1, 1]) {
+    const arm = add(g, boxGeo(0.05, 0.5, 0.05), CHROME(), -0.5 + s * 1.22, 2.62, winZ - 0.7);
+    arm.rotation.x = 0.55;
+  }
+
+  // the livery, both flanks: the name over the hatch, the mascot behind it, the words underneath
+  for (const s of [1, -1]) {
+    const rot = s > 0 ? 0 : Math.PI;
+    const zf = s * (w / 2 + 0.025);
+    g.add(plane(2.5, 0.34, { name: 'mrp_name', map: signTex('mrpNameSign', [{ text: 'MR. POOPIE', color: '#c81e1e', size: 16 }], { w: 160, h: 26, bg: '#f2f2ee' }), emissive: 0.18, unlit: true }, [-0.55, 2.71, zf], [0, rot, 0]));
+    g.add(plane(1.1, 1.1, { name: 'mrp_mascot', map: mrpMascot(), emissive: 0.1 }, [-2.32, 1.95, zf], [0, rot, 0]));
+    g.add(plane(2.2, 0.26, { name: 'mrp_words', map: signTex('mrpWords', [{ text: 'CONES · SHAKES · SUNDAES', color: '#2a72b8', size: 8 }], { w: 192, h: 22, bg: '#f2f2ee' }), emissive: 0.14, unlit: true }, [-0.55, 1.08, zf], [0, rot, 0]));
+  }
+
+  // the menu at the hatch
+  g.add(plane(0.85, 0.6, { name: 'mrp_menu', map: signTex('mrpMenu', [{ text: 'CONES', color: '#141414', size: 9 }, { text: '2.50', color: '#c81e1e', size: 12 }], { w: 64, h: 44, bg: '#f2f0e8', border: '#141414' }), emissive: 0.45, unlit: true }, [-1.42, 1.95, winZ - 0.05], [0, Math.PI, 0]));
+
+  g.userData = { len: 5.7, width: w, type: 'icecream', mount: { x: -0.5, y: 1.02, z: -(w / 2 - 0.44) } };
   return g;
 }
 
