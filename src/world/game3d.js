@@ -35,6 +35,7 @@ import * as fights from '../systems/fights.js';
 import { FightMeter } from '../ui/fight.js';
 import { RideCar } from './ridecar.js';
 import { Traffic } from './traffic.js';
+import { MrPoopie } from './icecream.js';
 import { buildGrid, findPath, wanderSpot } from './pathing.js';
 import { StreetLife, applyAct, dogState } from './streetlife.js';
 import { TitleScene } from './title.js';
@@ -384,6 +385,9 @@ export class World {
     this.navGrid = buildGrid(this.area);
     // cars up and down the road, where there is a road
     this.traffic = this.area.traffic ? new Traffic(this, this.area.traffic) : null;
+    // the ice cream truck works the curb lane, on its own schedule, and only where there are lanes
+    this.iceCream?.dispose?.();
+    this.iceCream = this.area.traffic && g ? new MrPoopie(this, g) : null;
     // smoke, the dog, the things that happen
     this.streetLife = new StreetLife(this, g);
   }
@@ -2075,6 +2079,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     this.rideCar?.update(dt, g);
     this.updateEncounter(dt, g);
     this.traffic?.update(dt, g);
+    this.iceCream?.update(dt, g);
     this.streetLife?.update(dt, g);
     this.updateChase(dt, g);
 

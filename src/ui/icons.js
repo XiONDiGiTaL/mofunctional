@@ -108,6 +108,8 @@ const ART = {
   knish: svg(box({ x: 16, y: 24, w: 32, h: 20, d: 10, c: '#d8a050', top: '#e8b86a', side: '#b8823a' }) + `<path d="M22 30h20" stroke="#b8823a" stroke-width="1.4"/>`),
   kebab: svg(`<path d="M8 50L56 14" stroke="#b8b8bc" stroke-width="2.4"/><rect x="16" y="36" width="9" height="9" fill="#a8682a" transform="rotate(-37 20 40)"/><rect x="26" y="29" width="9" height="9" fill="#3a8a3a" transform="rotate(-37 30 33)"/><rect x="34" y="23" width="9" height="9" fill="#a8682a" transform="rotate(-37 38 27)"/><rect x="42" y="17" width="8" height="8" fill="#c83a2a" transform="rotate(-37 46 21)"/>`),
   doner: svg(`<path d="M14 46q18-34 36 0z" fill="#f2e2c0"/><path d="M20 42q12-20 24 0z" fill="#a8682a"/><path d="M22 36h20" stroke="#3a8a3a" stroke-width="3"/><path d="M24 32h14" stroke="#c83a2a" stroke-width="2"/>`),
+  // a soft-serve cone with the mascot's face on the scoop
+  mr_poopie: svg(`<path d="M25 28h14l-7 26z" fill="#e8c07a"/><path d="M25 28h14l-2 5H27z" fill="#c8a05a"/><circle cx="32" cy="22" r="9.5" fill="#f2e2c8"/><path d="M23 19c0-6 4.5-9.5 9-9.5s9 3.5 9 9.5" fill="#f2e2c8"/><circle cx="28.5" cy="21" r="1.7" fill="#1a1208"/><circle cx="35.5" cy="21" r="1.7" fill="#1a1208"/><path d="M29 25q3 2 6 0" fill="none" stroke="#1a1208" stroke-width="1.3"/>`),
   hotdog: svg(`<path d="M8 38q24 14 48 0l-2-6q-22 10-44 0z" fill="#e8c890"/><rect x="6" y="30" width="52" height="7" rx="3.5" fill="#b84a2a"/><path d="M12 32q4-3 8 0t8 0 8 0 8 0 8 0" fill="none" stroke="#f2c81a" stroke-width="1.6"/>`),
   bec: svg(`<path d="M8 40c4-12 14-18 26-18 10 0 18 5 22 12l-6 12H14z" fill="#e8e3d6"/><path d="M14 46l-6-6 4-2z" fill="#c9c4b6"/>`
     + `<path d="M16 34c2-6 9-9 17-9s14 3 16 9z" fill="#d9954a"/><path d="M16 34h33l-1 2H17z" fill="#f2c03a"/>`

@@ -174,6 +174,8 @@ export const CONFIG = {
     kebab:        { id: 'kebab',        name: 'Shish Kebab', kind: 'food', price: 7.0, hunger: 40, energy: 16, morale: 8, hygiene: 0, value: 2.6, hot: true },
     doner:        { id: 'doner',        name: 'Döner in Pita', kind: 'food', price: 8.0, hunger: 50, energy: 20, morale: 10, hygiene: 0, value: 3.0, hot: true },
     hotdog:       { id: 'hotdog',       name: 'Hot Dog (the works)', kind: 'food', price: 2.5, hunger: 22, energy: 8, morale: 5, hygiene: 0, value: 0.9, hot: true },
+    // off the Mr. Poopie truck: soft serve on a sugar cone, the taste of a summer that never happened
+    mr_poopie:    { id: 'mr_poopie',    name: 'Mr. Poopie Cone', kind: 'food', price: 2.5, hunger: 26, energy: 10, morale: 12, stress: -6, hygiene: -1, value: 0.6 },
     soda:         { id: 'soda',         name: 'Can of Soda', kind: 'comfort', price: 1.0, energy: 6, hunger: 2, morale: 3, value: 0.2 },
     water:        { id: 'water',        name: 'Bottle of Water', kind: 'comfort', price: 1.0, energy: 3, stress: -2, hygiene: 1, value: 0.2 },
     chips:        { id: 'chips',        name: 'Bag of Chips', kind: 'food', price: 0.75, hunger: 10, energy: 2, morale: 2, value: 0.2 },

@@ -331,6 +331,12 @@ export class Audio {
       case 'puff': return this.noise(0.5, 0.05, 700);
       // a car horn: two flat, slightly sour tones on top of each other
       case 'honk': this.blip(392, 0.32, 'square', 0.1); this.blip(466, 0.32, 'square', 0.08); return;
+      // the Mr. Poopie bell: six notes, cheerful, a little sour, the last one always a beat late
+      case 'jingle': {
+        const notes = [784, 784, 880, 1047, 988, 880];
+        notes.forEach((f, i) => setTimeout(() => this.blip(f, 0.16, 'square', 0.05), i * 190));
+        return;
+      }
       // a dog's yelp: two high, short cries
       // a rifle: a crack and the echo off the buildings
       case 'gunshot': this.noise(0.12, 0.3, 900); setTimeout(() => this.noise(0.3, 0.1, 400), 90); return;
