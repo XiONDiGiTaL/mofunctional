@@ -302,6 +302,8 @@ export class Audio {
       case 'cash': this.blip(1180, 0.05, 'square', 0.11); setTimeout(() => this.blip(1560, 0.06, 'square', 0.1), 60); return;
       case 'work': this.noise(0.4, 0.07, 500); return;
       case 'step': return this.noise(0.07, 0.045, 320);
+      // out of breath: two pulls of air through the nose, the second one weaker
+      case 'pant': this.noise(0.17, 0.085, 760); setTimeout(() => this.noise(0.14, 0.06, 620), 230); return;
       case 'door': this.noise(0.22, 0.1, 220); setTimeout(() => this.blip(160, 0.1, 'sine', 0.08), 120); return;
       case 'dose': return this.sweep(900, 140, 0.9, 'sine', 0.12);
       case 'high': return this.sweep(200, 1200, 0.6, 'triangle', 0.08);

@@ -1093,7 +1093,7 @@ export function createCat() {
 /* ------------------------------- animation ------------------------------- */
 
 export function animateMo(rig, dt, opts = {}) {
-  const { walking = false, high = 0, withdrawal = 0, sitting = false, sleeping = false } = opts;
+  const { walking = false, high = 0, withdrawal = 0, sitting = false, sleeping = false, exhausted = 0 } = opts;
   rig.t += dt * (walking ? 7.2 : 1.4);
   const t = rig.t;
   const drunk = Math.min(1, (high / 100) * 1.1 + (withdrawal / 380));
@@ -1155,6 +1155,19 @@ export function animateMo(rig, dt, opts = {}) {
   rig.head.rotation.z = sway * 0.8;
   rig.root.rotation.z = sway * 0.34;
   rig.root.position.y = Math.sin(t * 0.6) * drunk * 0.02;
+
+  // Out of breath: the chest goes, the shoulders drop and every few steps a foot catches and he
+  // lurches forward half a step before he gets it back. It has to read at walking-away distance,
+  // so it is a whole-body hitch rather than a wobble.
+  if (walking && exhausted > 0) {
+    const hitch = Math.max(0, Math.sin(t * 0.42)) ** 8;
+    rig.hips.position.y = hipY + bob - hitch * 0.09 + Math.sin(t * 1.9) * 0.02;
+    rig.torso.rotation.x = hitch * 0.3;
+    rig.head.rotation.x = hitch * 0.22;
+    rig.armL.pivot.rotation.x += hitch * 0.5;
+    rig.armR.pivot.rotation.x += hitch * 0.5;
+    rig.root.rotation.z += hitch * 0.12 * (Math.sin(t * 0.21) > 0 ? 1 : -1);
+  }
 
   if (walking && drunk > 0.55) {
     const st = Math.sin(t * 0.41);

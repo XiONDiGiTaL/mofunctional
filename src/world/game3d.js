@@ -1940,6 +1940,21 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     // what the body is doing, for the needs system: running costs more than walking, and it is
     // only running if he is actually moving (holding shift into a wall is free)
     s.flags.running = !!(running && this.walking);
+    // Running on empty: the moment the run is taken off him — he asks for it and the body says no —
+    // he is out of breath, and the breath and the stumble say so before the bar does. Still holding
+    // the key with nothing left keeps the breathing going, slower, until he gives up on it.
+    const wantsRun = runMode !== 'off' && (runMode === 'always' || !!g.input?.sprint);
+    if (wantsRun && free && s.stats.energy <= CONFIG.move.minEnergy) {
+      if (!this.puffed) { this.puffed = true; this.exhausted = 1; g.audio?.sfx?.('pant'); this.pantT = 2.6; }
+      this.exhausted = Math.max(this.exhausted, 0.75);
+    } else if (!wantsRun || s.stats.energy > CONFIG.move.minEnergy + 8) this.puffed = false;
+    // (the second half matters for run-always: he has to be allowed to fail again after he recovers,
+    // otherwise the first time he runs dry is the only time he ever sounds like it)
+    this.exhausted = Math.max(0, (this.exhausted || 0) - dt * 0.22);
+    if (this.puffed && this.exhausted > 0.5) {
+      this.pantT = (this.pantT ?? 2.6) - dt;
+      if (this.pantT <= 0) { this.pantT = 2.6; g.audio?.sfx?.('pant'); }
+    }
 
     if (this.walking) {
       let vx = this.vel.x;
@@ -2037,6 +2052,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       high: s.high.level,
       withdrawal: s.stats.withdrawal,
       speed: 1,
+      exhausted: this.exhausted || 0,
     });
     // high, it shows on his face: bloodshot, lids down, the corner of the mouth up (ROX all the way)
     if (this.mode === 'play') setFaceHigh('mo', Math.min(1, s.high.level / 70) * (s.high.kind === 'rox' ? 1 : 0.6));
@@ -2649,7 +2665,35 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
       const nx = rig.root.position.x + (dx / dist) * speed * dt;
       const nz = rig.root.position.z + (dz / dist) * speed * dt;
       const b = this.area.bounds;
-      if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz) && !this.crowded(nx, nz, rig)) {
+      // a new destination drops the old route (the grid corners only lead to the old one)
+      if (!rig.schedGoal || Math.hypot(target.x - rig.schedGoal.x, target.z - rig.schedGoal.z) > 0.9) {
+        rig.schedGoal = { x: target.x, z: target.z };
+        rig.schedPath = null;
+        rig.schedCool = 0;
+      }
+      const clear = nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ && !this.blocked(nx, nz) && !this.crowded(nx, nz, rig);
+      // the counter, the queue, the wall: walk the grid's way round instead of pressing into it
+      if (this.navGrid && (rig.schedCool = (rig.schedCool ?? 0) - dt) <= 0 && !clear) {
+        rig.schedCool = 1.2;
+        rig.schedPath = findPath(this.navGrid, rig.root.position.x, rig.root.position.z, target.x, target.z);
+      }
+      const step = rig.schedPath?.[0];
+      if (step) {
+        const sdx = step[0] - rig.root.position.x;
+        const sdz = step[1] - rig.root.position.z;
+        const sd = Math.hypot(sdx, sdz);
+        if (sd < 0.14) {
+          rig.schedPath.shift();
+          if (!rig.schedPath.length) rig.schedPath = null;
+          return;
+        }
+        const stride = Math.min(sd, speed * dt);
+        rig.root.position.x += (sdx / sd) * stride;
+        rig.root.position.z += (sdz / sd) * stride;
+        rig.root.rotation.y += angleDelta(rig.root.rotation.y, Math.atan2(sdx, sdz)) * Math.min(1, dt * 5);
+        return;
+      }
+      if (clear) {
         rig.root.position.x = nx;
         rig.root.position.z = nz;
       }

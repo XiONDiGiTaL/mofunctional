@@ -741,7 +741,9 @@ export function buildAvenue(g) {
   // the avenue runs on past the west end; Myrtle Row opens at the east end, so the walk from
   // Kestrel is continuous: out of the Row at Ashby's east corner, facing west down the avenue
   streetMouth(group, { x: -17, dir: -1, look: 'avenue', title: 'ASHBY AVE', sub: 'THE AVENUE CONTINUES', seed: 43 });
-  streetMouth(group, { x: 17.4, dir: 1, look: 'row', title: 'MYRTLE ROW', sub: 'FOOD CARTS · PIZZA · BACK TO KESTREL ST', seed: 41 });
+  // the gate spans the north pavement only: the station's stairwell owns the kerb side of the east
+  // end (solid 15.0–18.9 × -1.9–1.1), and a post standing in it reads as a mistake
+  streetMouth(group, { x: 17.4, dir: 1, look: 'row', title: 'MYRTLE ROW', sub: 'FOOD CARTS · PIZZA · BACK TO KESTREL ST', seed: 41, span: [-5.6, -2.4], signZ: -2.4 });
   // the way down to the trains, east end of the avenue, clear of the bus stop
   group.add(buildStationEntrance(15.3, -0.4, { name: 'ASHBY AV', painted: true, rot: -Math.PI / 2 }));
   return {

@@ -33,7 +33,7 @@ const LOOKS = {
  * Build a street mouth into `group`. `x` is the edge of the walkable street, `dir` the way the
  * view runs (-1 west, +1 east). `title`/`sub` go on the banner.
  */
-export function streetMouth(group, { x, dir = -1, look = 'row', title, sub, seed = 1, frontZ = -7, depth = 30, road = true }) {
+export function streetMouth(group, { x, dir = -1, look = 'row', title, sub, seed = 1, frontZ = -7, depth = 30, road = true, span = [-5.6, 0.9], signZ = 1.2 }) {
   const L = LOOKS[look] || LOOKS.row;
   const r = rng(seed);
   const cx = x + dir * depth / 2;
@@ -110,12 +110,12 @@ export function streetMouth(group, { x, dir = -1, look = 'row', title, sub, seed
   // the gateway: two lamp posts across the walk, a banner strung between, a green street sign
   const gx = x + dir * 0.6;
   const rot = dir < 0 ? Math.PI / 2 : -Math.PI / 2;
-  for (const z of [-5.6, 0.9]) {
+  for (const z of span) {
     group.add(box(0.14, 4.2, 0.14, M('gatepole', 0x1e4a2e), [gx, 2.1, z]));
     group.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), M('gateglobe', 0xfff2c4, { emissive: 1, unlit: true })).translateX(gx).translateY(4.35).translateZ(z));
   }
   group.add(box(0.04, 0.04, 6.5, M('gatewire', 0x1a1a1a), [gx, 3.95, -2.35]));
   group.add(plane(5.6, 0.9, { name: `vista_banner_${seed}`, map: signTex(`vistaBanner${seed}`, [{ text: title, color: '#ffe23a', size: 12 }, { text: sub, color: '#ffffff', size: 5 }], { w: 192, h: 32, bg: '#1e6a3a', border: '#ffe23a' }), emissive: 0.75, unlit: true, doubleSide: true }, [gx, 3.4, -2.35], [0, rot, 0]));
-  group.add(box(0.1, 2.8, 0.1, M('signpole', 0x2a5a3a), [gx, 1.4, 1.2]));
-  group.add(plane(1.6, 0.32, { name: `vista_street_${seed}`, map: signTex(`vistaStreet${seed}`, [{ text: title, color: '#ffffff', size: 9 }], { w: 96, h: 20, bg: '#1e6a3a', border: '#ffffff' }), emissive: 0.5, unlit: true, doubleSide: true }, [gx, 2.75, 1.2], [0, rot, 0]));
+  group.add(box(0.1, 2.8, 0.1, M('signpole', 0x2a5a3a), [gx, 1.4, signZ]));
+  group.add(plane(1.6, 0.32, { name: `vista_street_${seed}`, map: signTex(`vistaStreet${seed}`, [{ text: title, color: '#ffffff', size: 9 }], { w: 96, h: 20, bg: '#1e6a3a', border: '#ffffff' }), emissive: 0.5, unlit: true, doubleSide: true }, [gx, 2.75, signZ], [0, rot, 0]));
 }

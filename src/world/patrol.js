@@ -19,6 +19,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box } from '../render/retro.js';
 import { createNPC, randomCop, animateNPC } from './characters.js';
 import { dayOf, pick } from '../core/util.js';
+import { findPath } from './pathing.js';
 
 const DUTY = 120;          // seconds an officer works the area
 const SEARCH = 6;          // seconds a pat-down takes
@@ -147,7 +148,7 @@ export class Patrol {
       if (c.state === 'arrive' && dist(r.root.position, c.target) < 0.6) c.state = 'beat';
       if (c.state === 'beat' && (!c.target || dist(r.root.position, c.target) < 0.5)) c.target = this.spot(w);
       if (c.state === 'leave' && dist(r.root.position, c.target) < 0.5) { c.gone = true; continue; }
-      walkTo(r, c.target, dt, c.state === 'mugger' || c.state === 'breakup' ? 3.2 : 1.4, w);
+      walkTo(r, c.target, dt, c.state === 'mugger' || c.state === 'breakup' ? 3.2 : 1.4, w, c);
     }
     for (const c of this.cops.filter((x) => x.gone)) this.removeRig(c.rig);
     this.cops = this.cops.filter((x) => !x.gone && !x.rig.gone);
@@ -222,9 +223,37 @@ export const OUTSIDE = new Set(['street', 'avenue', 'park', 'projects', 'parkslo
 function dist(a, b) { return Math.hypot(a.x - b.x, a.z - b.z); }
 function face(rig, p) { rig.root.rotation.y = Math.atan2(p.x - rig.root.position.x, p.z - rig.root.position.z); }
 
-function walkTo(rig, t, dt, speed, w) {
+function walkTo(rig, t, dt, speed, w, c) {
   if (!t) return;
   const p = rig.root.position;
+  // his beat goes round things: the grid gives the corners, refreshed when the target moves or
+  // when the route has been walked to the end of what was worked out
+  if (c && w.navGrid) {
+    c.pathCool = (c.pathCool ?? 0) - dt;
+    const goal = c.pathGoal;
+    if (!c.path || c.pathCool <= 0 || !goal || Math.hypot(t.x - goal.x, t.z - goal.z) > 0.9) {
+      c.pathCool = 1.2;
+      c.pathGoal = { x: t.x, z: t.z };
+      c.path = findPath(w.navGrid, p.x, p.z, t.x, t.z);
+    }
+    const next = c.path?.[0];
+    if (next) {
+      const ndx = next[0] - p.x;
+      const ndz = next[1] - p.z;
+      const nd = Math.hypot(ndx, ndz);
+      if (nd < 0.14) {
+        c.path.shift();
+        if (!c.path.length) c.path = null;
+      } else {
+        const stride = Math.min(nd, speed * dt);
+        p.x += (ndx / nd) * stride;
+        p.z += (ndz / nd) * stride;
+        rig.root.rotation.y = Math.atan2(ndx, ndz);
+        animateNPC(rig, dt * (speed > 2 ? 1.6 : 1), { walking: true });
+        return;
+      }
+    }
+  }
   const dx = t.x - p.x;
   const dz = t.z - p.z;
   const d = Math.hypot(dx, dz);
