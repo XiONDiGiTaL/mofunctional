@@ -167,20 +167,34 @@ export function applyAct(rig, dt, life) {
     return;
   }
   if (act === 'pee') {
-    // facing the alley wall, hands in front, a slow sway, and a thin stream to the ground
-    rig.armL.pivot.rotation.x = -0.45; rig.armL.elbow.rotation.x = -0.7; rig.armL.pivot.rotation.z = 0.25;
-    rig.armR.pivot.rotation.x = -0.45; rig.armR.elbow.rotation.x = -0.7; rig.armR.pivot.rotation.z = -0.25;
-    rig.head.rotation.x = -0.25 + Math.sin(t * 0.7) * 0.06;
-    rig.root.rotation.z = Math.sin(t * 0.9) * 0.025;
-    if (!rig.prop) {
-      const m = retroMaterial('pee', { color: 0xe8d04a, emissive: 0.4, unlit: true, opacity: 0.55, transparent: true });
-      rig.prop = box(0.025, 0.86, 0.025, m, [0, 0.43, 0.32]);
-      rig.prop.rotation.x = 0.35;
-      rig.root.add(rig.prop);
-      rig.puddle = box(0.4, 0.005, 0.3, retroMaterial('puddle', { color: 0x8a7a3a, opacity: 0.45, transparent: true }), [0, 0.006, 0.55]);
+    // facing the alley wall, both hands down at the fly, the head tipped back, a slow sway. The
+    // stream is a run of droplets travelling an arc from his waist out to the wall and down into a
+    // puddle that grows; every few seconds it stops, he shakes off, and it starts again.
+    const cyc = t % 9;
+    const going = cyc < 7;
+    const shake = cyc > 7.2 && cyc < 8 ? Math.sin(cyc * 40) * 0.12 : 0;
+    rig.armL.pivot.rotation.x = -0.3 + shake; rig.armL.elbow.rotation.x = -1.0; rig.armL.pivot.rotation.z = 0.42;
+    rig.armR.pivot.rotation.x = -0.3 + shake; rig.armR.elbow.rotation.x = -1.0; rig.armR.pivot.rotation.z = -0.42;
+    rig.head.rotation.x = -0.35 + Math.sin(t * 0.7) * 0.06;
+    rig.torso.rotation.x = -0.06;
+    rig.root.rotation.z = Math.sin(t * 0.9) * 0.02;
+    if (!rig.drops) {
+      const m = retroMaterial('pee', { color: 0xf2d84a, emissive: 0.5, unlit: true, opacity: 0.75, transparent: true });
+      rig.drops = [];
+      for (let i = 0; i < 14; i++) { const d = box(0.022, 0.03, 0.03, m, [0, 0, 0]); rig.root.add(d); rig.drops.push(d); }
+      rig.puddle = box(0.3, 0.005, 0.22, retroMaterial('puddle', { color: 0x9a8a3a, opacity: 0.5, transparent: true }), [0, 0.006, 0.62]);
       rig.root.add(rig.puddle);
     }
-    rig.prop.scale.x = 0.7 + Math.sin(t * 30) * 0.3;
+    const y0 = (rig.hipY || 0.86) - 0.04, z0 = 0.15, zw = 0.5;
+    rig.drops.forEach((d, i) => {
+      const s = ((t * 1.6 + i / rig.drops.length) % 1);
+      d.visible = going;
+      // out and slightly up, then down the wall into the puddle
+      const z = z0 + (zw - z0) * Math.min(1, s * 1.6);
+      const y = s < 0.62 ? y0 + Math.sin(s / 0.62 * Math.PI * 0.6) * 0.08 - s * 0.35 : Math.max(0.01, (y0 - 0.15) * (1 - (s - 0.62) / 0.38));
+      d.position.set(Math.sin(t * 6 + i) * 0.006, y, z + (s > 0.62 ? 0.04 : 0));
+    });
+    rig.puddle.scale.setScalar(Math.min(1.6, 0.6 + t * 0.02));
     return;
   }
   if (act === 'hookah') {
@@ -276,6 +290,17 @@ export function applyAct(rig, dt, life) {
   }
   if (act === 'smoke') {
     // a drag every few seconds: hand up, hold, hand down, a breath of smoke
+    if (!rig.cig && rig.armR?.elbow) {
+      const k = rig.k || 1;
+      const spliff = !!rig.npcDef?.spliff;
+      const c = new THREE.Group();
+      c.add(box(spliff ? 0.02 : 0.012, spliff ? 0.02 : 0.012, spliff ? 0.1 : 0.075, retroMaterial(spliff ? 'npc_spliff' : 'npc_cig', { color: spliff ? 0x9a6a3e : 0xf4f2ea, ambient: 0.8 }), [0, 0, 0]));
+      c.add(box(0.014, 0.014, 0.012, retroMaterial('npc_ember', { color: 0xff7a2a, emissive: 1, unlit: true }), [0, 0, spliff ? 0.055 : 0.042]));
+      c.position.set(0, -0.33 * k, 0.05 * k);
+      c.rotation.x = -0.3;
+      rig.armR.elbow.add(c);
+      rig.cig = c;
+    }
     const cyc = t % 5.5;
     const up = clamp01(cyc / 0.6) * (1 - clamp01((cyc - 1.8) / 0.6));
     // upper arm forward and in, forearm folded right up: the hand stops at the mouth

@@ -161,7 +161,8 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         three connections on consignment, daily texts, stiffing and
                         collecting, and the fiends who buy it after dark), okafor (HelloNurse69,
                         the clinic deal, the supply room), rae (the landlord on the ground:
-                        rent cuts, repairs, fear that fades)
+                        rent cuts, repairs, fear that fades), early (the first week's
+                        texts pointing at systems the player has not found yet)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
                         schedules, shops, title (the title performance), eating,

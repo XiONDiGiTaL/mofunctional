@@ -10,6 +10,41 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Herb, a real hydrant, and a first week that points the way
+
+- **Herb** (`CONFIG.substances.types.herb`, item `herb`): legal in New York, so police searches
+  skip it (`police.holding()` ignores `legal` items), using it in front of a cop is not a crime,
+  and it is not a relapse or a dose count. High for 150 minutes, almost no addiction or risk,
+  stress down, hunger and energy down (the munchies). It is smoked like a loosie: the eating
+  beat with a brown spliff in the hand (`useAnim: 'spliff'` routes `playSubstance` to `playEat`,
+  which now takes an `onDone`). The icon is a little ziplock of green and a wrinkled paper.
+- Only **Desmond** sells it. From 23:00 to 04:00, with the Irie Grill drum cold, he is on Ashby
+  Ave by the sax player with a spliff going; talking to him offers "Let me get some of that good
+  green.." and a counter (`desmond_herb`) with one thing on it. Some nights Dex smokes on his
+  corner (decided once per night). Stephanie smokes on her couch at home, and actually sits
+  there now: her home NPC has `homeOf`, so the partner schedule no longer stands her up.
+- NPCs who smoke hold something now: a cigarette, or a spliff when the def says `spliff`.
+- Shop cards show a substance's real effects instead of "no effect on Mo", with the right sign
+  on food. The Row vendors' lines no longer show doubled quotes.
+- Rolo's hydrant is a New York hydrant: bolted base flange, barrel and waist ring, two side caps
+  and the pumper cap with pentagon nuts and chains, the bonnet and operating nut, red-orange paint
+  chipped to black.
+- The man in the alley pees properly: hands at the fly, head back, a stream of droplets that arcs
+  to the wall and down into a puddle that grows, stops, a shake, and again.
+- **Map search** lists everything pinned in the room Mo is in under "Here", so "fridge" or "staff
+  door" finds it. Losing the job clears GO TO WORK. The same toast twice inside 8 s shows once.
+  Dex's purchase line says it goes in your pocket.
+- **First-week balance**: odd jobs ask for enough energy to finish standing (moving 40, dish pit 32,
+  flyers 24, sign 22, cat-sitting 10) and their cards say "you finish near N". Fast-forward drops
+  to 1× once a day for the hour before a shift, a happening today or tomorrow, and 02:30 with Mo
+  still out. The Daily Report waits for a dialog or the phone to close, and still shows when a long
+  step jumps past 03:00.
+- **Early hooks** (`systems/early.js`): one text a morning on days 2 to 6 pointing at a system the
+  player has not found yet (Kev on the B44 and the K train to Ashby Ave, the clinic's outpatient
+  course, Addison and Sunday's Fellowship, FeedLove HEARTS, BidBay, and Dex on moving ROX through
+  Benchy and Squeak). Each is skipped if Mo already found it (`flags.seen` records every area).
+- Not in this batch: touch controls, BidBay scams and weather are still on the wish list.
+
 ### Dee's storefront
 
 - The laundromat on Ashby Avenue (`buildAvenue`) is a two-storey red-brick front now: a white

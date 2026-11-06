@@ -125,6 +125,12 @@ const ART = {
   loosies: svg(`<rect x="10" y="40" width="44" height="10" rx="1" fill="#e9e4d8" transform="rotate(-6 32 45)"/>`
     + `<g transform="rotate(-16 32 30)">${roll({ x1: 12, x2: 44, cy: 30, r: 2.8, c: '#f8f6f0' })}${roll({ x1: 44, x2: 52, cy: 30, r: 2.8, c: '#e3a256', end: '#e3a256' })}</g>`
     + `<g transform="rotate(10 32 40)">${roll({ x1: 14, x2: 46, cy: 38, r: 2.8, c: '#f8f6f0' })}${roll({ x1: 46, x2: 54, cy: 38, r: 2.8, c: '#e3a256', end: '#e3a256' })}</g>`, 22),
+  herb: svg(`<rect x="8" y="18" width="30" height="34" rx="2" fill="#e6f0ee" fill-opacity="0.55" stroke="#c8d6d2" stroke-width="1.4"/>`
+    + `<rect x="8" y="18" width="30" height="5" fill="#8fb0c8" fill-opacity="0.8"/><path d="M8 25h30" stroke="#5a7a92" stroke-width="1"/>`
+    + `<path d="M12 50c0-9 4-15 11-17c6 2 11 8 11 17z" fill="#5d8a32"/><circle cx="17" cy="42" r="3.2" fill="#76a63e"/><circle cx="26" cy="39" r="3.6" fill="#4a7428"/><circle cx="29" cy="46" r="3" fill="#86b448"/><circle cx="20" cy="47" r="2.6" fill="#3e6624"/>`
+    + `<path d="M15 38l3 2M24 44l2-3M30 41l-2 2" stroke="#2e4e1a" stroke-width="1.2"/>`
+    + `<g transform="rotate(-28 48 40)"><path d="M40 38l3-2l3 2l3-2l3 2l3-1v8l-3 1l-3-2l-3 2l-3-2l-3 2l-3-1z" fill="#a87448"/>`
+    + `<path d="M43 37v7M49 37v7M55 37v7" stroke="#8a5a34" stroke-width="1"/><path d="M58 39l4 2l-4 2z" fill="#7a5230"/></g>`, 28),
   tallboy: svg(can({ top: 8, h: 44, rx: 11, c: '#b9c0c8', lid: '#dfe3e8' }) + band({ y: 20, h: 18, rx: 11, c: '#c9ced4' })
     + txt(31, 32, 5.6, '#2a4d8f', 'TALL') + `<path d="M28 6h6" stroke-width="2"/>`, 15),
   falafel: svg(`<path d="M20 52L10 22c8-6 26-8 38 0L36 52z" fill="#efe1bb"/><path d="M36 52L48 22c3 2 5 4 6 6L42 52z" fill="${dim('#efe1bb')}"/>`

@@ -78,6 +78,9 @@ New on Kestrel Street? Follow this and Mo makes it to Day 8 with his dignity mos
 - [ ] **Answer your sister.** Be honest with Nia and she starts coming over with dinner, which
       happens to be the best meal in the game.
 - [ ] **Pay the rent.** Day 7 at the latest. If you are flush, you can pay a week early.
+- [ ] **Read your texts.** People on the block will point you at things in the first week: the bus
+      to Ashby Avenue, the clinic, the Fellowship, FeedLove, BidBay. Fast-forward slows down by
+      itself before a shift and when something is about to happen.
 
 ### The long game
 
@@ -372,6 +375,11 @@ ROX is also money. Benchy and Squeak at the Kestrel Houses and Dex on the block 
 consignment and text every morning with how it went, sending Mo's cut to Shale Pay. The market
 moves day to day, and when it moves too well a man can decide the money is his now. A text might
 fix that. Standing very close might. Finding him and putting him on the pavement always does.
+
+**Herb** is the easy one, and legal in New York: a slow high, almost no hook, the cops do not
+care, and it makes Mo hungry and slow. Only Desmond sells it, and only after the Irie Grill closes,
+when he is out on Ashby Avenue by the sax player with a spliff going. Ask him for some of the good
+green. Some nights Dex is smoking on his corner too, and Stephanie smokes on her couch.
 
 After dark, **fiends** turn up on the block, in the park and on the platform, swaying and paying
 well. They vanish at the first sight of a uniform or a red beret. By day the ones with nowhere to

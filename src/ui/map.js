@@ -9,7 +9,7 @@
  */
 import { STREET, BUILDINGS, LANDMARKS, MEET_SPOT, PARK, building } from '../world/plan.js';
 import * as dealer from '../systems/dealer.js';
-import { destinations, destById, accessLabel, isOpen, heading } from './nav.js';
+import { destinations, destById, accessLabel, isOpen, heading, setHere } from './nav.js';
 import { todayItems } from './today.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -296,7 +296,11 @@ export function toggleMap(g) {
 function destList(g, query) {
   const q = String(query || '').toLowerCase();
   const m = g.state.clock.m;
-  const list = destinations().filter((d) => !q || `${d.name} ${d.cat} ${d.blurb}`.toLowerCase().includes(q));
+  // everything pinned in the room he is standing in, so "fridge" or "staff door" finds it
+  const area = g.world?.areaId;
+  const here = (g.world?.interactables || []).filter((it) => !it.hidden && it.label).map((it) => ({ id: `here:${it.id}`, name: it.label, cat: 'Here', map: area, x: it.x, z: it.z, blurb: it.sub || '', here: true }));
+  setHere(here);
+  const list = [...here, ...destinations()].filter((d) => !q || `${d.name} ${d.cat} ${d.blurb}`.toLowerCase().includes(q));
   const cats = [...new Set(list.map((d) => d.cat))];
   return cats.map((c) => `<div class="mapdest__cat">${esc(c)}</div>${list.filter((d) => d.cat === c).map((d) => {
     const acc = accessLabel(d, m);

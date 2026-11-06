@@ -44,7 +44,7 @@ const nightOf = (s) => dayOf(s.clock.m - 6 * 60);
 export const isHigh = (s) => (s.high?.level || 0) > C().highLine;
 
 export function holding(s) {
-  return inventoryList(s).filter((it) => it.def?.kind === 'substance');
+  return inventoryList(s).filter((it) => it.def?.kind === 'substance' && !it.def.legal); // Herb is legal in New York
 }
 
 /** Has a cop already stopped him tonight? */

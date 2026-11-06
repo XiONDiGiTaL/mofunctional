@@ -29,6 +29,7 @@ import { supplyNewDay } from './supply.js';
 import { herNewDay } from '../world/herplace.js';
 import { raeNewDay } from './rae.js';
 import { wallsNewDay } from '../world/walls.js';
+import { earlyNewDay } from './early.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -70,6 +71,7 @@ export function simulate(g, minutes, ctx = {}) {
       herNewDay(g, d);
       raeNewDay(g, d);
       wallsNewDay(g, d);
+      earlyNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);
@@ -81,7 +83,7 @@ export function simulate(g, minutes, ctx = {}) {
     // nothing ends the run any more; a turning point takes the moment and the day goes on
     if (checkTurningPoints(g)) return;
     // Day summary at the configurable hour
-    if (clock(s).mod >= CONFIG.time.summaryAtHour * 60 && clock(s).mod < CONFIG.time.summaryAtHour * 60 + step && s.flags.daySummaryShown !== d) {
+    if (clock(s).mod >= CONFIG.time.summaryAtHour * 60 && clock(s).mod < CONFIG.time.summaryAtHour * 60 + Math.max(step, 4 * 60) && s.flags.daySummaryShown !== d) {
       s.flags.daySummaryShown = d;
       g.onDaySummary?.();
     }
@@ -301,7 +303,7 @@ export function useSubstance(g, itemId) {
   // the phone and any dialog go away first: the whole point is seeing him do it
   if (g.phoneOpen) g.phone?.close?.();
   if (g.modalOpen) g.modal?.close?.();
-  const finish = () => { applySubstance(g, itemId); g.world?.witnessed?.(g); };
+  const finish = () => { applySubstance(g, itemId); if (!type.legal) g.world?.witnessed?.(g); };
   if (g.world?.playSubstance) {
     // put the phone (or the laptop) away first, so the player watches it happen
     if (g.laptop?.isOpen) g.laptop.close();
@@ -335,7 +337,7 @@ function applySubstance(g, itemId) {
   const s = g.state;
   const type = S.types[itemId];
   if (!type) return false;
-  onRelapse(g);
+  if (!type.legal) onRelapse(g);
   // Dex's uncut stock: every so often the batch is wrong, on top of everything else
   if (type.badBatch && Math.random() < type.badBatch) {
     const b = S.badBatch || { risk: 12, stress: 10, morale: -6 };
@@ -354,14 +356,13 @@ function applySubstance(g, itemId) {
   bump(s, 'addiction', type.addiction * 0.9);
   bump(s, 'tolerance', type.tolerance);
   bump(s, 'risk', type.risk * riskMul);
-  s.stats.withdrawal = Math.max(0, s.stats.withdrawal - 38);
+  s.stats.withdrawal = Math.max(0, s.stats.withdrawal - (type.relief ?? 38));
   s.high.lastDose = s.clock.m;
   s.high.until = s.clock.m + S.highDurationMinutes;
   s.high.level = 100;
   s.high.kind = itemId;
-  s.counters.doses++;
-  s.flags.firstDose = true;
-  logLine(g, `Used ${type.name}.`, 'bad');
+  if (!type.legal) { s.counters.doses++; s.flags.firstDose = true; }
+  logLine(g, type.legal ? `Smoked some ${type.name}.` : `Used ${type.name}.`, type.legal ? 'info' : 'bad');
   if (s.life) s.life.lastDoseDay = dayOf(s.clock.m);
   g.toast(`${type.name}. ${type.flavor}`, 'event');
   g.audio.sfx('dose');

@@ -699,8 +699,7 @@ export function buildStreet(g) {
   group.add(box(0.6, 0.9, 0.6, retroMaterial('trash2', { color: 0x39443c }), [-13.5, 0.45, -5.7]));
   // road markings + hydrant
   group.add(box(0.6, 0.02, 44, retroMaterial('line', { color: 0xb0a262 }), [0, 0.02, 5.2]));
-  group.add(box(0.3, 0.6, 0.3, retroMaterial('hydrant', { color: 0x8a3a32 }), [-5.0, 0.3, 0.9]));
-  group.add(box(0.4, 0.1, 0.4, retroMaterial('hydrantTop', { color: 0x6a2a24 }), [-5.0, 0.62, 0.9]));
+  group.add(hydrant(-5.0, 0.9));
 
   // ---- Miguel's bodega, west end, on its own lot: a lit sign, an OPEN light, a framed door
   const bod = building('bodega');
@@ -958,7 +957,7 @@ export function buildStreet(g) {
     { kind: 'rae', x: -11.8, z: -3.6, rot: 0.4, talk: 'rae' },
     { kind: 'dale', x: 3.6, z: -4.4, rot: 2.5, talk: 'dale' },
     { kind: 'kev', x: -1.2, z: -1.2, rot: -1.2, talk: 'kev' },
-    { kind: 'dex', x: -3.4, z: -3.4, rot: 1.4, talk: 'dex', live: true },
+    { kind: 'dex', x: -3.4, z: -3.4, rot: 1.4, talk: 'dex', live: true, ...(dexSmoking(g) ? { act: 'smoke', spliff: true } : {}) },
     // Gus does not walk the block: he is on his cardboard, sitting up by day, down by night,
     // and the schedule that used to march him to the bodega is not his any more
     { kind: 'homeless', x: -9.6, z: 0.4, rot: 1.2, talk: 'homeless', still: true, pose: 'ground' },
@@ -1142,7 +1141,7 @@ function oddJobMenu(g) {
     choices: [
       ...jobs.map((j) => ({
         label: `${j.name} — ${money(j.pay)}`,
-        sub: `${j.hours}h · ${j.blurb} · needs ${j.minEnergy} energy`,
+        sub: `${j.hours}h · ${j.blurb} · needs ${j.minEnergy} energy · you finish near ${Math.max(0, Math.round(g.state.stats.energy - j.energy))}`,
         disabled: g.state.stats.energy < j.minEnergy,
         effect: () => doOddJob(g, j.id),
       })),
@@ -1172,7 +1171,7 @@ function dexMenu(g) {
           if (s.money < types[id].price) return;
           g.spendMoney(types[id].price, `Dex — ${types[id].name}`);
           addItem(s, id, 1);
-          g.toast(`${types[id].name}. It goes in the drawer with the others.`, 'event');
+          g.toast(`${types[id].name}. It goes in your pocket, and your pocket feels heavier than it is.`, 'event');
           g.audio.sfx('cash');
         },
       })),
@@ -2147,6 +2146,56 @@ function parkHoops(g) {
 function stephHome(g) {
   const row = partnerTarget('stephanie', minuteOfDay(g.state.clock.m));
   return row?.area === 'apartment' && row.pose !== 'sleep';
+}
+
+/** Some nights Dex is on his corner with a spliff going: decided once per night, not per visit. */
+function dexSmoking(g) {
+  const m = minuteOfDay(g.state.clock.m);
+  if (!(m >= 21 * 60 || m < 4 * 60)) return false;
+  const night = dayOf(g.state.clock.m - 4 * 60);
+  return ((night * 2654435761) >>> 0) % 100 < 35;
+}
+
+/**
+ * A New York fire hydrant, the one Rolo stands by: a bolted base flange, a fat barrel with a ring
+ * round its waist, two side caps and the big pumper cap on the front (each with its pentagon nut and
+ * a chain), the bonnet with its own flange of bolts and the operating nut on top, painted red-orange
+ * and chipped back to black wherever people have leaned on it.
+ */
+function hydrant(x, z, rot = 0) {
+  const g = new THREE.Group();
+  const red = retroMaterial('hydrantRed', { color: 0xd8461e, ambient: 0.72 });
+  const dark = retroMaterial('hydrantChip', { color: 0x2a1a14 });
+  const steel = retroMaterial('hydrantChain', { color: 0x9a9a9e, ambient: 0.9 });
+  const cyl = (rt, rb, h, y, m = red, seg = 12) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); c.position.y = y; g.add(c); return c; };
+  cyl(0.12, 0.12, 0.1, 0.05, dark);              // the standpipe, black at the ground
+  cyl(0.2, 0.21, 0.08, 0.12);                    // the base flange
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; g.add(box(0.03, 0.025, 0.03, red, [Math.cos(a) * 0.18, 0.17, Math.sin(a) * 0.18])); }
+  cyl(0.13, 0.14, 0.5, 0.41);                    // the barrel
+  cyl(0.145, 0.145, 0.04, 0.4);                  // the ring round the waist
+  cyl(0.17, 0.17, 0.05, 0.68);                   // the bonnet flange
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; g.add(box(0.025, 0.03, 0.025, red, [Math.cos(a) * 0.16, 0.72, Math.sin(a) * 0.16])); }
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.135, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), red);
+  dome.position.y = 0.7; dome.scale.set(1, 0.9, 1); g.add(dome);
+  cyl(0.035, 0.035, 0.08, 0.86, red, 5);         // the operating nut
+  // the nozzles: two small side caps and the big pumper on the front
+  const nozzle = (r, len, ax, az, ang) => {
+    const n = new THREE.Group();
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 10), red); c.rotation.z = Math.PI / 2; c.position.x = len / 2; n.add(c);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.05, r * 1.05, 0.03, 10), red); cap.rotation.z = Math.PI / 2; cap.position.x = len + 0.015; n.add(cap);
+    const nut = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.4, r * 0.4, 0.04, 5), red); nut.rotation.z = Math.PI / 2; nut.position.x = len + 0.05; n.add(nut);
+    n.position.set(ax, 0.5, az); n.rotation.y = ang; g.add(n);
+  };
+  nozzle(0.06, 0.13, 0, 0, Math.PI / 2 + 0.0);    // side, left
+  nozzle(0.06, 0.13, 0, 0, -Math.PI / 2);          // side, right
+  nozzle(0.085, 0.12, 0, 0, Math.PI);              // the pumper, out the front toward the street
+  // the chains: little links hanging from each cap back to the barrel
+  for (const [sx, sz] of [[0.2, 0], [-0.2, 0], [0, 0.22]]) for (let i = 0; i < 4; i++) g.add(box(0.018, 0.018, 0.018, steel, [sx * (1 - i * 0.2), 0.44 - i * 0.03 - Math.sin(i) * 0.02, sz * (1 - i * 0.2)]));
+  // chipped paint: a few black flecks
+  for (const [px, py, pz] of [[0.13, 0.3, 0.03], [-0.1, 0.55, 0.09], [0.05, 0.69, 0.16], [-0.14, 0.2, -0.04], [0.09, 0.62, -0.12]]) g.add(box(0.03, 0.025, 0.01, dark, [px, py, pz], [0, Math.atan2(px, pz), 0]));
+  g.position.set(x, 0, z);
+  g.rotation.y = rot;
+  return g;
 }
 
 /** Yusuf outside Habib's: a seat by the hookah, if he likes your face today. */

@@ -29,6 +29,7 @@ import * as romance from '../systems/romance.js';
 import { partnerTarget } from './schedules.js';
 import * as market from '../systems/market.js';
 import { closedReason } from './hours.js';
+import { openShop } from './shops.js';
 
 import { buildStationEntrance } from './district.js';
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
@@ -687,6 +688,8 @@ export function buildAvenue(g) {
     // the sax player: an older Jamaican man, big, slow, locks under a tam, shades on day and night
     { kind: 'rasta', x: 7.5, z: -4.4, rot: 0, talk: 'av_sax', still: true, sax: true },
     { kind: 'passer_m2', x: -9.5, z: -5.0, rot: 0.2, still: true, act: 'smoke' },
+    // Desmond, after the Irie Grill closes: a spliff by the wall, nodding to the sax
+    ...(desmondOut(g) ? [{ kind: 'jerkman', x: 8.85, z: -4.55, rot: -0.55, still: true, act: 'smoke', spliff: true, talk: 'av_desmond' }] : []),
     { kind: 'cop', x: -13.9, z: -5.0, rot: 0.3, still: true, act: 'talk' },
     { kind: 'cop_f', x: -11.0, z: -5.2, rot: -0.4, still: true },
     // the paper seller: a person behind the counter, not a voice inside a box. `talk` points at
@@ -705,6 +708,7 @@ export function buildAvenue(g) {
       unavailable: (gg) => { const m = minuteOfDay(gg.state.clock.m); return m < 10 * 60 || m > 20 * 60 ? 'closed · grate down till 10:00' : null; },
       action: (gg) => gg.goTo('pawn', 'avenue') },
     { id: 'av_news', label: 'Buy a paper from the man in the box', sub: `papers · scratch-offs · ${money(0.5)}`, x: 3.0, z: -2.95, radius: 1.7, action: (gg) => newsstand(gg) },
+    ...(desmondOut(g) ? [{ id: 'av_desmond', label: 'Desmond', sub: 'off the grill for the night · smoking by the sax', x: 8.85, z: -4.1, radius: 1.1, action: (gg) => desmondMenu(gg) }] : []),
     { id: 'av_sax', label: 'The sax player', sub: 'he takes requests · a dollar in the case', x: 7.5, z: -4.0, radius: 1.3, action: (gg) => saxMenu(gg) },
     { id: 'av_bus', label: 'The bus stop', sub: 'B44 back to Kestrel', x: 12.5, z: 0.0, radius: 1.5, action: (gg) => busMenu(gg, 'avenue') },
     { id: 'av_subway', label: 'Down to the Ashby Ave station', sub: 'east end of the avenue · Kestrel St, Park Slope', x: 14.35, z: -0.4, radius: 1.1, action: (gg) => gg.goTo('subway', 'avenue') },
@@ -807,6 +811,25 @@ function newsstand(g) {
  * book, which is the game's own soundtrack, round and round. Ashby holds that song while he plays.
  */
 const SAX_BOOK = ['ashby', 'city', 'park', 'habib', 'restaurant', 'bodega', 'church', 'laundromat', 'apartment', 'clinic', 'lost', 'menu'];
+/** The drum on Myrtle Row is cold from 23:00 to 11:00; he is out here till about four. */
+function desmondOut(g) {
+  const m = minuteOfDay(g.state.clock.m);
+  return m >= 23 * 60 || m < 4 * 60;
+}
+
+/** Desmond off the clock: a word, or the one thing he sells after dark. */
+function desmondMenu(g) {
+  g.openModal({
+    kicker: 'ASHBY AVE · BY THE SAX',
+    title: 'Desmond',
+    body: '"Ey, the patty man is off duty, you know." He lets a long breath of smoke up toward the streetlight and nods along with the sax. "Grill opens eleven. What you need?"',
+    choices: [
+      { label: 'Let me get some of that good green..', effect: () => openShop(g, 'desmond_herb') },
+      { label: '"Just passing. Good night, Desmond."', effect: () => { bump(g.state, 'morale', 1); g.toast('"Walk good." He means it.', 'info'); } },
+    ],
+  });
+}
+
 function saxMenu(g) {
   const s = g.state;
   if (!s.sax) s.sax = { next: 0 };

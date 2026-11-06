@@ -36,7 +36,10 @@ export function destinations() {
   return out;
 }
 
-export const destById = (id) => destinations().find((d) => d.id === id) || null;
+/** The pins of the room Mo is in (the fridge, the staff door): the map's list puts them under "Here". */
+let HERE = [];
+export function setHere(list) { HERE = list; }
+export const destById = (id) => destinations().find((d) => d.id === id) || HERE.find((d) => d.id === id) || null;
 
 /** "open now" / "closed · opens 06:00" / null for places that never close. */
 export function accessLabel(d, m) {
@@ -58,7 +61,7 @@ export function heading(g) {
   if (!d) return null;
   const area = g.world?.areaId;
   const mo = g.world?.mo?.root?.position;
-  const onMap = (area === 'street' && d.map === 'street') || (area === 'avenue' && d.map === 'avenue');
+  const onMap = (area === 'street' && d.map === 'street') || (area === 'avenue' && d.map === 'avenue') || (d.here && d.map === area);
   if (!onMap) {
     if (d.map === 'avenue' && area === 'street') return { text: `${d.name} · B44 from the bus stop, or HailMary`, dir: null };
     if (d.map === 'street' && area === 'avenue') return { text: `${d.name} · B44 back to Kestrel, or HailMary`, dir: null };

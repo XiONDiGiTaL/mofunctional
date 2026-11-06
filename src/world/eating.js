@@ -33,6 +33,7 @@ const LOOK = {
   tallboy: ['drink', 0x3c7bd6, 0.07, 0.17, 0.07],
   mint_tea: ['drink', 0xc9862c, 0.075, 0.09, 0.075],
   loosies: ['smoke', 0xfbfbf6, 0.012, 0.012, 0.085],
+  herb: ['smoke', 0x9a6a3e, 0.02, 0.02, 0.11, [[0x7a5230, 0.012, 0.012, 0.022, 0, 0, 0.064], [0x8a5e36, 0.024, 0.006, 0.05, 0, 0.008, -0.02]]],
   // [style, colour, w, h, d, details: [colour, w, h, d, x, y, z]]
   pizza_slice: ['bite', 0xf2c84a, 0.12, 0.012, 0.2, [[0xc8823a, 0.13, 0.03, 0.03, 0, 0.004, -0.1], [0xc83a2a, 0.025, 0.006, 0.025, 0.02, 0.008, 0.02], [0xc83a2a, 0.025, 0.006, 0.025, -0.025, 0.008, -0.04]]],
   pizza_pie: ['bite', 0xf2c84a, 0.12, 0.012, 0.2, [[0xc8823a, 0.13, 0.03, 0.03, 0, 0.004, -0.1], [0xc83a2a, 0.025, 0.006, 0.025, 0.0, 0.008, 0.0]]],
@@ -127,8 +128,9 @@ export class EatAnim {
   }
 
   /** Start eating `itemId`; sfx(name) is called on each bite so the sound lands with the motion. */
-  play(itemId, sfx = () => {}, faceYaw = null) {
+  play(itemId, sfx = () => {}, faceYaw = null, onDone = null) {
     this.stop();
+    this.onDone = onDone;
     // the follow camera sits behind him; he turns three-quarters to it so the bite is on screen
     this.faceYaw = faceYaw;
     const [style, color, w, h, d, details = []] = LOOK[itemId] || ['bite', 0xd8c49a, 0.1, 0.06, 0.08];
@@ -265,6 +267,9 @@ export class EatAnim {
       mo.armR.elbow.rotation.z = 0;
       mo.armR.pivot.rotation.z = 0.05;
       this.stop();
+      const done = this.onDone;
+      this.onDone = null;
+      done?.();
     }
   }
 }

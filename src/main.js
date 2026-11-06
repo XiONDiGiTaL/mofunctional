@@ -2,6 +2,7 @@
  * MO: FUNCTIONAL — entry point and game orchestrator.
  * Boots the 3D world, the HUD, the phone, saves, and the main loop.
  */
+import { shiftInfo } from './systems/jobs.js';
 import { homeArea } from './systems/home.js';
 import { startMarquee } from './ui/marquee.js';
 import { installHappenings } from './systems/happenings.js';
@@ -184,6 +185,7 @@ class Game {
     this.handleInputEvents();
 
     if (this.mode === 'play' && !this.paused && !this.debugOpen && !this.phoneOpen && !this.modalOpen) {
+      this.speedGuard();
       const perSecond = CONFIG.time.speeds[this.state.settings.speed] ?? 0;
       this.pendingMinutes += dt * perSecond;
       if (this.pendingMinutes >= 1) {
@@ -545,7 +547,36 @@ class Game {
   /* ------------------------------ helpers used by systems ------------------------------ */
 
   toast(text, kind = 'info') {
+    // the same line twice inside a few seconds (two systems noticing one patrol car) is one line
+    const now = performance.now();
+    if (text === this.lastToast && now - (this.lastToastAt || 0) < 8000) return;
+    this.lastToast = text;
+    this.lastToastAt = now;
     this.hud.toast(text, kind);
+  }
+
+  /**
+   * Fast-forward stops for the things a player has to see: the hour before a shift, a happening
+   * (blackout, heat wave, the trains) starting, and 02:30 with Mo still out (the Daily Report and
+   * the night's trouble are coming). Each once per day, with a line saying why.
+   */
+  speedGuard() {
+    const s = this.state;
+    if ((s.settings.speed || 1) <= 1) return;
+    const mod = ((s.clock.m % 1440) + 1440) % 1440;
+    const day = Math.floor(s.clock.m / 1440);
+    s.flags.slow = s.flags.slow || {};
+    const slow = (key, why) => {
+      if (s.flags.slow[key] === day) return;
+      s.flags.slow[key] = day;
+      this.setSpeed?.(1) ?? (s.settings.speed = 1);
+      this.toast(`Back to 1×: ${why}`, 'info');
+    };
+    const sh = s.job?.employed ? shiftInfo(this) : null;
+    if (sh?.today && !sh.worked && sh.state === 'before' && sh.minutesToStart <= 60) slow('shift', 'your shift starts within the hour.');
+    const h = s.happening;
+    if (h && !h.done && h.day <= day + 1 && h.day >= day) slow(`hap_${h.id}`, 'something is happening on the block.');
+    if (mod >= 150 && mod < 180 && this.world?.areaId !== 'apartment' && this.world?.areaId !== 'brownstone') slow('late', 'it is 02:30 and you are still out.');
   }
 
   /** A line of dialogue from a character, posted into the HUD thread with their face on it. */
@@ -632,6 +663,8 @@ class Game {
   }
 
   onDaySummary() {
+    // a dialog on screen at 03:00 (a mugging, a cop) holds the report until it is gone
+    if (this.modalOpen || this.phoneOpen) { this.deferred.push(() => this.onDaySummary()); return; }
     const s = this.state;
     const prev = s.dayStart || { money: s.money, stats: s.stats, day: dayOf(s.clock.m) };
     const now = dayOf(s.clock.m);

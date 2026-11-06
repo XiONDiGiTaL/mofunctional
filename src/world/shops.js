@@ -128,6 +128,15 @@ Object.assign(SHOPS, {
     ],
     markup: 1, sellsPork: true,
   },
+  // after the drum goes cold, Desmond is on Ashby Ave by the sax man with a spliff, and he has one
+  // thing for sale. Legal in New York; he still sells it out of his jacket.
+  desmond_herb: {
+    id: 'desmond_herb', name: 'Desmond', owner: 'Desmond', ownerKind: 'jerkman',
+    kicker: 'ASHBY AVE · BY THE SAX', blurb: 'The grill is cold and Desmond is off the clock: leaning on the wall by the sax man, smoke curling up past the streetlight, nodding along.',
+    voice: ['"Easy, easy. Good green, grown with love. Not the stuff from the shop with the cartoon leaf."', '"Smoke slow. It is not a race, bredda."', '"You get hungry later, you know where the grill is. Eleven o\'clock."'],
+    stock: [{ id: 'herb', note: 'a little ziplock and a paper · legal, mellow, makes you hungry' }],
+    markup: 1, sellsPork: true,
+  },
   glizzy: {
     id: 'glizzy', name: 'The Last Honest Wiener', owner: 'Gary', ownerKind: 'pretzelman',
     kicker: 'MYRTLE ROW · THE LAST HONEST WIENER', blurb: 'A steel cart with an umbrella that has seen things. Dirty water dogs, salted pretzels, and a sign that says NO CHECKS, NO CREDIT, NO FEELINGS.',
@@ -217,12 +226,14 @@ export function openShop(g, shopId) {
   if (typeof document !== 'undefined') {
     const items = shop.stock.map(({ id, note }) => {
       const def = CONFIG.items[id];
+      // a substance keeps its numbers in the substances table, not on the item
+      const fx = def.kind === 'substance' ? { ...(CONFIG.substances.types[id]?.effects || {}), hot: false } : def;
       const gains = [
-        def.hunger ? [`+${def.hunger} food`, 'good'] : null,
-        def.energy ? [`${def.energy > 0 ? '+' : ''}${def.energy} energy`, def.energy > 0 ? 'good' : 'bad'] : null,
-        def.morale ? [`${def.morale > 0 ? '+' : ''}${def.morale} morale`, def.morale > 0 ? 'good' : 'bad'] : null,
-        def.stress ? [`${def.stress > 0 ? '+' : ''}${def.stress} stress`, def.stress < 0 ? 'good' : 'bad'] : null,
-        def.hot ? ['hot', 'warm'] : null,
+        fx.hunger ? [`${fx.hunger > 0 ? '+' : ''}${fx.hunger} food`, fx.hunger > 0 ? 'good' : 'bad'] : null,
+        fx.energy ? [`${fx.energy > 0 ? '+' : ''}${fx.energy} energy`, fx.energy > 0 ? 'good' : 'bad'] : null,
+        fx.morale ? [`${fx.morale > 0 ? '+' : ''}${fx.morale} morale`, fx.morale > 0 ? 'good' : 'bad'] : null,
+        fx.stress ? [`${fx.stress > 0 ? '+' : ''}${fx.stress} stress`, fx.stress < 0 ? 'good' : 'bad'] : null,
+        fx.hot ? ['hot', 'warm'] : null,
       ].filter(Boolean);
       return { id, def, note, gains, price: shopPrice(shopId, id) };
     });
@@ -253,7 +264,7 @@ export function openShop(g, shopId) {
   g.openModal({
     kicker: shop.kicker,
     title: `${shop.name}`,
-    body: `${shop.blurb}\n\n“${shop.voice[Math.floor(Math.random() * shop.voice.length)].replace(/[“”]/g, '')}”\n\nCASH ${money(s.money)}${shop.sellsPork ? '' : ' · no pork, no loosies, halal only'}`,
+    body: `${shop.blurb}\n\n“${shop.voice[Math.floor(Math.random() * shop.voice.length)].replace(/[“”"]/g, '')}”\n\nCASH ${money(s.money)}${shop.sellsPork ? '' : ' · no pork, no loosies, halal only'}`,
     choices,
   });
 }

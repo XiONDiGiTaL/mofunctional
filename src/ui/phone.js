@@ -423,7 +423,7 @@ export class Phone {
           <div class="listitem">
             <div class="grow">
               <div class="name">${T(j.name)}</div>
-              <div class="meta">${j.hours}h · ${T(j.blurb)} · needs ${j.minEnergy} energy</div>
+              <div class="meta">${j.hours}h · ${T(j.blurb)} · needs ${j.minEnergy} energy · you finish near ${Math.max(0, Math.round(s.stats.energy - j.energy))}</div>
             </div>
             <button class="btn btn--sm" data-act="oddjob" data-arg="${j.id}" ${s.stats.energy < j.minEnergy ? 'disabled' : ''}>+${money(j.pay)}</button>
           </div>`).join('') : '<div class="empty">Board is empty. Even the board has given up.</div>'}

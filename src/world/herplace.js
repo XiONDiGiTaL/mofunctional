@@ -193,7 +193,7 @@ export function buildHerPlace(g, { partnerMenu } = {}) {
   const here = isHome(s, id) || s.visitAwake;
   const awake = here && (s.visitAwake || !asleep(s, id));
   const npcs = here ? [awake
-    ? { kind: id, x: -W / 2 + 0.6, z: 1.6, rot: Math.PI / 2, still: true, pose: 'sit', partner: true, talk: 'hp_her' }
+    ? { kind: id, x: -W / 2 + 0.6, z: 1.6, rot: Math.PI / 2, still: true, pose: 'sit', partner: true, homeOf: true, talk: 'hp_her', ...(id === 'stephanie' ? { act: 'smoke', spliff: true } : {}) }
     : { kind: id, x: -W / 2 + 1.0, z: -D / 2 + 1.3, y: id === 'stephanie' ? 0.28 : 0.52, rot: 0, still: true, pose: 'sleep', partner: true }] : [];
 
   const today = dayOf(s.clock.m);

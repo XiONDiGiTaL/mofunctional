@@ -148,6 +148,7 @@ function fireJob(g) {
   if (s.job.fired) return;
   s.job.fired = true;
   s.job.employed = false;
+  if (s.flags.tutorial === 2) s.flags.tutorial = 3; // no shift to go to any more
   s.job.firedDay = dayOf(s.clock.m);
   if (s.npc) s.npc.dale = Math.max(-10, (s.npc.dale || 0) - 2);
   bump(s, 'stress', 22);
@@ -183,6 +184,7 @@ export function quitJob(g) {
   const s = g.state;
   if (!s.job.employed) return false;
   s.job.employed = false;
+  if (s.flags.tutorial === 2) s.flags.tutorial = 3;
   s.job.quit = true;
   bump(s, 'stress', -12);
   bump(s, 'morale', -6);

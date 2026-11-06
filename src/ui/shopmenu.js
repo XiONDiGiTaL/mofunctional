@@ -23,7 +23,7 @@ const perDollar = (it) => (it.def.hunger && it.price > 0 ? `${(it.def.hunger / i
 export function showShopMenu(g, { shop, items, portrait, buy }) {
   closeShopMenu(g);
   const root = document.getElementById('ui') || document.body;
-  const line = shop.voice[Math.floor(Math.random() * shop.voice.length)].replace(/[“”]/g, '');
+  const line = shop.voice[Math.floor(Math.random() * shop.voice.length)].replace(/[“”"]/g, '');
   const wrap = document.createElement('div');
   wrap.className = `shopmenu shopmenu--${shop.id}`;
   wrap.innerHTML = `

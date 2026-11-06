@@ -226,6 +226,7 @@ export class World {
     this.vel.set(0, 0, 0);
     this.mode = 'play';
     this.areaId = id;
+    if (g?.state?.flags) (g.state.flags.seen = g.state.flags.seen || {})[id] = 1; // where he has been, for the first week's tips
     const builder = BUILDERS[id] || buildApartment;
     this.area = builder(g);
     this.areaGroup = this.area.group;
@@ -416,6 +417,8 @@ export class World {
     this.walking = false;
     this.vel?.set(0, 0, 0);
     this.moveTarget = null;
+    // a spliff is smoked the way a cigarette is: the eating beat, two drags, the exhale
+    if (style === 'spliff') { this.playEat(itemId, (n) => this.game?.audio?.sfx?.(n), onDone); return true; }
     this.substance.play(itemId, style, onDone);
     return true;
   }
@@ -1785,13 +1788,13 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   }
 
   /** Mo eats (or drinks, or smokes) `itemId` on screen; bites call back into the game's sfx. */
-  playEat(itemId, sfx) {
-    if (this.mode !== 'play') return;
+  playEat(itemId, sfx, onDone = null) {
+    if (this.mode !== 'play') { onDone?.(); return; }
     if (!this.eating) this.eating = new EatAnim(this);
     this.walking = false;
     this.vel?.set(0, 0, 0);
     this.moveTarget = null;
-    this.eating.play(itemId, sfx, (this.camYaw || 0) + Math.PI * 0.78);
+    this.eating.play(itemId, sfx, (this.camYaw || 0) + Math.PI * 0.78, onDone);
   }
 
   update(dt, g) {
@@ -2578,7 +2581,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     if (!def) return;
     // somebody with their hands up is not going for a walk
     if (rig.guardT > 0 || rig.swingT > 0 || rig.swingDelay > 0) { rig.walking = false; return; }
-    if (def.partner || def.stranger || def.sister) { this.partnerPresence(rig, dt, g); return; }
+    if ((def.partner && !def.homeOf) || def.stranger || def.sister) { this.partnerPresence(rig, dt, g); return; }
     // somebody who stays where they are (asleep by the stairs, mid-argument, selling from a coat)
     if (def.still) { rig.walking = false; rig.pose = def.pose || null; return; }
     // somebody walking the avenue end to end, on the way to somewhere that is not here

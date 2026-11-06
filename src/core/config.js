@@ -100,6 +100,14 @@ export const CONFIG = {
       },
       // Mo's own product, off the hot plate. Not for sale anywhere: he makes it, he smokes it, or
       // he moves it (systems/supply.js). The strongest thing in the game and the worst idea in it.
+      // Desmond's, and legal in New York: a slow, easy high, almost no hook, no risk to speak of,
+      // and nothing a cop takes off him. It eases the stress and the hard edges of a comedown a
+      // little, makes him hungry and slow, and it does not count as a relapse.
+      herb: {
+        id: 'herb', name: 'Herb', price: 10, addiction: 1.2, risk: 0.6, legal: true, relief: 8,
+        tolerance: 0.6, effects: { energy: -7, hunger: -14, morale: 9, stress: -24 },
+        flavor: 'Sweet smoke, slow shoulders, and suddenly a very serious interest in a beef patty.',
+      },
       rox: {
         id: 'rox', name: 'ROX', price: 40, addiction: 19, risk: 21, homemade: true,
         tolerance: 6, effects: { energy: 36, hunger: -15, morale: 36, stress: -36, hygiene: -8 },
@@ -112,7 +120,7 @@ export const CONFIG = {
     highEnergyBonus: 8,
     // How each invented substance is taken, for the on-screen use animation. Never real
     // instructions: these are the game's own props (a vial, two pills, a pipe, a dropper).
-    useAnim: { bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop', bliss_x: 'vial', static_x: 'pill', mud_x: 'pipe', drip_x: 'drop', rox: 'pipe' },
+    useAnim: { herb: 'spliff', bliss: 'vial', static: 'pill', mud: 'pipe', drip: 'drop', bliss_x: 'vial', static_x: 'pill', mud_x: 'pipe', drip_x: 'drop', rox: 'pipe' },
     useDurationSeconds: { vial: 3.2, pill: 3.6, pipe: 4.2, drop: 3.0 },
     withdrawal: {
       startsAfterMinutes: 10 * 60,
@@ -188,6 +196,7 @@ export const CONFIG = {
     mud_x:   { id: 'mud_x',   name: 'Black Mud',              kind: 'substance', price: 24, value: 8 },
     drip_x:  { id: 'drip_x',  name: 'Drip (pure)',            kind: 'substance', price: 12, value: 4 },
     rox:     { id: 'rox',     name: 'ROX',                    kind: 'substance', price: 40, value: 15 },
+    herb:    { id: 'herb',    name: 'Herb',                   kind: 'substance', price: 10, value: 4, legal: true },
     // off Nurse Okafor, now and then, if somebody knocks her out (please do not): everything back at once
     lockpicks: { id: 'lockpicks', name: 'Lockpick Set', kind: 'tool', price: 24, value: 8 },
     epipen:  { id: 'epipen',  name: 'EpiPen', kind: 'medicine', price: 0, value: 40 },
@@ -239,11 +248,11 @@ export const CONFIG = {
   },
 
   oddJobs: [
-    { id: 'moving', name: 'Moving Gig — Rae\'s Storage', hours: 4, pay: 74, energy: 22, hygiene: 18, stress: 16, morale: -4, minEnergy: 25, blurb: 'Carry a stranger\'s life up three flights.' },
-    { id: 'dishpit', name: 'Dish Pit — The Pit', hours: 3, pay: 47, energy: 16, hygiene: 26, stress: 12, morale: -6, minEnergy: 18, blurb: 'Steam, grease, and a radio stuck on one station.' },
-    { id: 'flyers', name: 'Flyer Run', hours: 2, pay: 26, energy: 12, hygiene: 8, stress: 6, morale: -3, minEnergy: 12, blurb: 'Put 400 pieces of paper on 400 windshields.' },
-    { id: 'sign', name: 'Sign Spinner — Grand Opening', hours: 2, pay: 22, energy: 10, hygiene: 4, stress: 10, morale: -8, minEnergy: 10, blurb: 'Dance for a mattress store. In daylight. Where people can see you.' },
-    { id: 'catsit', name: 'Cat Sitting — Mrs. Vell', hours: 3, pay: 38, energy: 6, hygiene: 2, stress: -8, morale: 8, minEnergy: 5, blurb: 'The cat is named Chairman. He has opinions.' },
+    { id: 'moving', name: 'Moving Gig — Rae\'s Storage', hours: 4, pay: 74, energy: 22, hygiene: 18, stress: 16, morale: -4, minEnergy: 40, blurb: 'Carry a stranger\'s life up three flights.' },
+    { id: 'dishpit', name: 'Dish Pit — The Pit', hours: 3, pay: 47, energy: 16, hygiene: 26, stress: 12, morale: -6, minEnergy: 32, blurb: 'Steam, grease, and a radio stuck on one station.' },
+    { id: 'flyers', name: 'Flyer Run', hours: 2, pay: 26, energy: 12, hygiene: 8, stress: 6, morale: -3, minEnergy: 24, blurb: 'Put 400 pieces of paper on 400 windshields.' },
+    { id: 'sign', name: 'Sign Spinner — Grand Opening', hours: 2, pay: 22, energy: 10, hygiene: 4, stress: 10, morale: -8, minEnergy: 22, blurb: 'Dance for a mattress store. In daylight. Where people can see you.' },
+    { id: 'catsit', name: 'Cat Sitting — Mrs. Vell', hours: 3, pay: 38, energy: 6, hygiene: 2, stress: -8, morale: 8, minEnergy: 10, blurb: 'The cat is named Chairman. He has opinions.' },
   ],
 
   economy: {
