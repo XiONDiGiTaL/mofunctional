@@ -21,7 +21,7 @@ import { buildRow } from './row.js';
 import { buildFlat, pickLock, flatsState } from './flat.js';
 import { buildBrownstone } from './brownstone.js';
 import { WOMEN, housesState } from './houses.js';
-import { dressWalker, carryPose, crowdTick, errand, bark } from './crowd.js';
+import { dressWalker, carryPose, crowdTick, errand, bark, placeBarks } from './crowd.js';
 import { Incidents } from './incidents.js';
 import * as rae from '../systems/rae.js';
 import { ROAD } from './plan.js';
@@ -3270,6 +3270,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
   render() {
     this.cutaway();
     this.renderer.render(this.scene, this.camera);
+    placeBarks(this);
   }
 
   /**

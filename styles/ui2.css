@@ -1236,3 +1236,21 @@ button.relrow:hover { color: #ffd24a; }
 
 /* the scene cut's line in the dark (main.js sceneCut) */
 .fadeout--cap { display: grid; place-items: center; color: #e8e0c8; font: italic 600 18px var(--ui); letter-spacing: .14em; }
+
+/* NPC barks: a short line over a head, drawn at screen resolution (world/crowd.js placeBarks) */
+.barks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.bark {
+  position: absolute; left: 0; top: 0; max-width: min(320px, 70vw);
+  padding: 4px 9px 5px; margin-top: -6px;
+  background: rgba(14, 12, 12, 0.9); color: #f6f2e6;
+  border: 2px solid #e8c83a; border-radius: 3px;
+  font: 700 13px/1.25 var(--mono, ui-monospace, monospace); letter-spacing: 0.01em;
+  text-align: center; white-space: normal; text-wrap: balance;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+  will-change: transform;
+}
+.bark::after {
+  content: ""; position: absolute; left: 50%; bottom: -7px; margin-left: -6px;
+  border: 6px solid transparent; border-top-color: #e8c83a; border-bottom: 0;
+}
+@media (max-width: 600px) { .bark { font-size: 12px; padding: 3px 7px 4px; } }

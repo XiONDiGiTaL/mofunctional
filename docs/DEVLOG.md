@@ -44,6 +44,10 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
   course, Addison and Sunday's Fellowship, FeedLove HEARTS, BidBay, and Dex on moving ROX through
   Benchy and Squeak). Each is skipped if Mo already found it (`flags.seen` records every area).
 - Not in this batch: touch controls, BidBay scams and weather are still on the wish list.
+- **Speech over heads is sharp.** Barks were canvas sprites inside the low-resolution 3D render, so
+  they came out soft. They are HTML labels now (`crowd.js` `bark` / `placeBarks`, `.bark` in
+  `styles/ui2.css`): full screen resolution, wrapped and centred, with a tail pointing at the
+  speaker, pinned over the head every frame, hidden off screen, and stacked when two would overlap.
 
 ### Dee's storefront
 

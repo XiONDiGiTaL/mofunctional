@@ -227,41 +227,62 @@ export function crowdTick(world, dt) {
   }
 }
 
-/** A short line over somebody's head for a few seconds. */
+/**
+ * A short line over somebody's head for a few seconds. The 3D scene renders at a low retro
+ * resolution, so text drawn into it comes out soft: the bubble is an HTML label instead, at full
+ * screen resolution, that placeBarks() pins over the head every frame.
+ */
+const BARKS = new Set();
 export function bark(rig, text, secs = 2.5) {
-  if (!rig?.root) return;
-  if (rig.barkSprite) { rig.root.remove(rig.barkSprite); rig.barkSprite.material.map.dispose(); rig.barkSprite.material.dispose(); }
-  const cv = document.createElement('canvas');
-  const c = cv.getContext('2d');
-  c.font = 'bold 22px monospace';
-  const w = Math.min(512, Math.ceil(c.measureText(text).width) + 28);
-  cv.width = w; cv.height = 40;
-  c.font = 'bold 22px monospace';
-  c.fillStyle = 'rgba(14,12,12,0.86)';
-  c.fillRect(0, 0, w, 40);
-  c.strokeStyle = '#e8c83a';
-  c.lineWidth = 3;
-  c.strokeRect(1.5, 1.5, w - 3, 37);
-  c.fillStyle = '#f4f0e4';
-  c.textBaseline = 'middle';
-  c.fillText(text, 14, 21);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.magFilter = THREE.NearestFilter;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-  sp.scale.set(w / 210, 40 / 210, 1);
-  sp.position.set(0, 2.15, 0);
-  sp.renderOrder = 10;
-  rig.root.add(sp);
-  rig.barkSprite = sp;
-  const mine = sp;
-  setTimeout(() => {
-    if (rig.barkSprite !== mine) return;
-    rig.root.remove(mine);
-    mine.material.map.dispose();
-    mine.material.dispose();
-    rig.barkSprite = null;
-  }, secs * 1000);
+  if (!rig?.root || typeof document === 'undefined') return;
+  if (rig.barkEl) { rig.barkEl.remove(); BARKS.delete(rig); }
+  const el = document.createElement('div');
+  el.className = 'bark';
+  el.textContent = text;
+  el.style.visibility = 'hidden'; // until the first placement puts it over the right head
+  rig.barkEl = el;
+  rig.barkUntil = performance.now() + secs * 1000;
+  BARKS.add(rig);
+}
+
+const _v = new THREE.Vector3();
+/** Every frame, after the render: each live bubble over its speaker's head, or gone. */
+export function placeBarks(world) {
+  if (!BARKS.size) return;
+  const host = world.container;
+  if (!host) return;
+  let layer = host.querySelector(':scope > .barks');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.className = 'barks';
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    host.appendChild(layer);
+  }
+  const now = performance.now();
+  const W = host.clientWidth, H = host.clientHeight;
+  const placed = [];
+  for (const rig of BARKS) {
+    const el = rig.barkEl;
+    const alive = el && now < rig.barkUntil && rig.root.parent && !rig.gone;
+    if (!alive) { el?.remove(); rig.barkEl = null; BARKS.delete(rig); continue; }
+    if (!el.parentNode) layer.appendChild(el);
+    _v.set(0, 2.15, 0);
+    rig.root.localToWorld(_v);
+    _v.project(world.camera);
+    const onScreen = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1 && rig.root.visible;
+    el.style.visibility = onScreen ? 'visible' : 'hidden';
+    if (onScreen) placed.push({ el, x: (_v.x + 1) / 2 * W, y: (1 - _v.y) / 2 * H, w: el.offsetWidth, h: el.offsetHeight });
+  }
+  // two people talking side by side: the lower bubble stays, the one it would cover moves up
+  placed.sort((a, b) => b.y - a.y);
+  for (let i = 0; i < placed.length; i++) {
+    const p = placed[i];
+    for (let j = 0; j < i; j++) {
+      const q = placed[j];
+      if (Math.abs(p.x - q.x) < (p.w + q.w) / 2 + 4 && p.y > q.y - q.h - 4 && p.y - p.h < q.y + 4) p.y = q.y - q.h - 6;
+    }
+    p.el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) translate(-50%, -100%)`;
+  }
 }
 
 /* ------------------------------------------------------------------ errands */
