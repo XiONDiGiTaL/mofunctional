@@ -86,6 +86,24 @@ function record(g) {
   step(0);
 }
 
+/** The brownstone's studio corner: no vacuum, no radiator, no Rae. Two hours, a better take. */
+export function recordAtHome(g) {
+  const s = g.state;
+  const m = musicState(s);
+  if (!m.songs) { g.toast('Nothing to record yet. Write a song first: the notebook, an hour, three verses.', 'info'); return; }
+  if (m.homeTake === dayOf(s.clock.m)) { g.toast('Your voice is done for today. It told you so on the last take.', 'info'); return; }
+  m.homeTake = dayOf(s.clock.m);
+  g.advance(120);
+  bump(s, 'energy', -8);
+  const q = 5 + Math.min(3, m.songs) + (m.gear.mic ? 1 : 0) + Math.floor(Math.random() * 2);
+  const demo = Math.min(10, q);
+  m.demo = Math.max(m.demo, demo);
+  bump(s, 'morale', 8);
+  bump(s, 'stress', -4);
+  logLine(g, `Recorded a demo in the studio corner: ${demo}/10.`, 'good');
+  g.toast(`Two hours, three takes, and nobody upstairs. You play it back on the monitors and it sounds like a record somebody would put on on purpose. Demo: ${m.demo}/10.`, 'good');
+}
+
 /** Thursday at Lucia's: the open mic. */
 export function openMic(g) {
   const s = g.state;

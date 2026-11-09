@@ -16,7 +16,10 @@ import * as THREE from '../../vendor/three.module.js';
 import { retroMaterial, box, plane } from '../render/retro.js';
 import { tex } from '../render/textures.js';
 import { CONFIG } from '../core/config.js';
-import { bump, logLine } from '../core/state.js';
+import { bump, logLine, addItem, removeItem, pushMessage } from '../core/state.js';
+import { model } from '../render/models.js';
+import { openTv } from '../ui/tv.js';
+import * as music from '../systems/music.js';
 import { dayOf, pick, money } from '../core/util.js';
 import { sleep } from '../systems/needs.js';
 import { homeState } from '../systems/home.js';
@@ -33,6 +36,14 @@ export const BS_UPGRADES = [
   { id: 'records', name: 'A record player and a crate of records', price: 180, note: 'on the sideboard · the parlour sounds like 1974' },
   { id: 'art', name: 'A real piece of art', price: 260, note: 'from a gallery on 5th · over the sofa, where the print was' },
   { id: 'hottub', name: 'A hot tub', price: 900, note: 'in the corner of the yard · the neighbours have opinions' },
+  // each of these earns its keep every day: a use, a cost in time, a benefit
+  { id: 'tv', name: 'A flatscreen TV', price: 340, note: 'the nine channels, big · an hour on the sofa, alone or with somebody' },
+  { id: 'stereo', name: 'A real stereo with speakers', price: 420, needs: 'records', note: 'your records, your demo, for a guest · needs the record player' },
+  { id: 'kitchen', name: 'A six-burner stove', price: 650, note: 'a $2 pot of rice and beans that feeds you for two days' },
+  { id: 'washer', name: 'A washer-dryer in the basement', price: 560, note: 'stop paying Dee\'s · an hour, clean clothes, free' },
+  { id: 'spareroom', name: 'Fix up the spare room for a tenant', price: 900, note: '$160 a week from a tenant · who is sometimes late' },
+  { id: 'studio', name: 'A home studio corner', price: 480, note: 'record demos with nobody vacuuming upstairs' },
+  { id: 'safe', name: 'A floor safe', price: 380, note: 'under the stairs · keep the stash and the cash at home, not in your pockets' },
 ];
 
 export function bsState(s) {
@@ -150,6 +161,11 @@ export function buildBrownstone(g) {
   if (hasUp(s, 'hammock')) group.add(box(0.8, 0.1, 2.4, M('hammock', 0xe8d8a8), [4.2, 0.9, 5.2], [0, 0, 0.15]));
   if (hasUp(s, 'records')) { group.add(box(0.5, 0.6, 1.2, M('sideboard', 0x6a4a30), [-0.3, 0.3, -5.5])); group.add(box(0.4, 0.1, 0.4, M('turntable', 0x2a2a2e), [-0.3, 0.65, -5.5])); }
   if (hasUp(s, 'hottub')) { group.add(box(1.8, 0.8, 1.8, M('hottub', 0x8a6a4a), [-3.6, 0.4, 3.4])); group.add(box(1.6, 0.05, 1.6, M('hotwater', 0x5ad8e8, { emissive: 0.3 }), [-3.6, 0.78, 3.4])); }
+  if (hasUp(s, 'tv')) { group.add(box(0.45, 0.5, 1.5, M('tvstand', 0x2a2a2e), [1.6, 0.25, -2.2])); group.add(model('tv', { x: 1.6, y: 0.5, z: -2.2, height: 0.85, rot: -Math.PI / 2 })); }
+  if (hasUp(s, 'stereo')) for (const dx of [-1.0, 0.4]) { group.add(box(0.36, 0.95, 0.34, M('speaker', 0x1a1a1e), [-0.3 + dx, 0.48, -5.6])); group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.02, 12), M('cone', 0x3a3a3e)).rotateX(Math.PI / 2).translateX(-0.3 + dx).translateY(-5.42).translateZ(-0.6)); }
+  if (hasUp(s, 'kitchen')) { group.add(box(0.9, 0.93, 0.64, M('stove', 0x8a8e94, { ambient: 0.9 }), [-4.35, 0.465, -5.6])); for (let i = 0; i < 6; i++) group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 10), M('burner', 0x1a1a1a)).translateX(-4.6 + (i % 3) * 0.25).translateY(0.94).translateZ(-5.75 + Math.floor(i / 3) * 0.3)); }
+  if (hasUp(s, 'studio')) { group.add(box(1.3, 0.75, 0.6, M('studiodesk', 0x2a2a2e), [1.6, 0.38, 1.4])); for (const dx of [-0.45, 0.45]) group.add(box(0.2, 0.3, 0.2, M('monitor', 0x141414), [1.6 + dx, 0.9, 1.5])); group.add(box(0.03, 1.4, 0.03, M('micstand', 0x1a1a1a), [0.7, 0.7, 1.0])); group.add(box(0.07, 0.14, 0.07, M('mic', 0x8a8e94), [0.7, 1.45, 1.0])); group.add(box(0.5, 0.05, 0.3, M('keys', 0xf2f2ec), [1.6, 0.78, 1.25])); }
+  if (hasUp(s, 'safe')) { group.add(box(0.6, 0.6, 0.55, M('safe', 0x2a2e2a), [2.8, 0.3, -3.1])); group.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 12), M('dial', 0xc8ccd0)).rotateX(Math.PI / 2).translateX(2.8).translateY(-2.81).translateZ(-0.36)); }
 
   // somebody over?
   const npcs = [];
@@ -173,6 +189,13 @@ export function buildBrownstone(g) {
     ...(hasUp(s, 'firepit') ? [{ id: 'bs_fire', label: 'Sit by the fire', sub: '1 h · -stress', x: -2.6, z: 5.8, radius: 0.9, action: (gg) => { gg.advance(60); bump(gg.state, 'stress', -18); bump(gg.state, 'morale', 6); gg.toast('The fire pops and settles. You watch it like it is television. It is better than the television.', 'good'); } }] : []),
     ...(hasUp(s, 'hammock') ? [{ id: 'bs_hammock', label: 'The hammock', sub: '1 h nap · +energy', x: 4.0, z: 4.2, radius: 0.9, action: (gg) => { gg.advance(60); bump(gg.state, 'energy', 18); bump(gg.state, 'stress', -8); gg.toast('You wake up with a net pattern on your cheek and no idea what day it is. Perfect.', 'good'); } }] : []),
     ...(hasUp(s, 'records') ? [{ id: 'bs_records', label: 'Put a record on', sub: '+morale', x: -0.3, z: -4.8, radius: 0.8, action: (gg) => { gg.advance(20); bump(gg.state, 'morale', 8); bump(gg.state, 'stress', -6); gg.toast(pick(['A soul record with a scratch in the second song that you start waiting for, fondly.', 'Side B, which is the good side. Everybody knows that.']), 'good'); } }] : []),
+    ...(hasUp(s, 'tv') ? [{ id: 'bs_tv', label: guest ? `Watch TV with ${guestName(guest)}` : 'Watch TV', sub: guest ? '1 h · the sofa · a night in together' : '1 h · nine channels, big', x: 0.6, z: -2.2, radius: 0.9, action: (gg) => watchTv(gg, guest) }] : []),
+    ...(hasUp(s, 'stereo') ? [{ id: 'bs_stereo', label: 'The stereo', sub: 'a record · your demo · for a guest', x: -0.3, z: -4.9, radius: 0.9, action: (gg) => stereo(gg, guest) }] : []),
+    ...(hasUp(s, 'kitchen') ? [{ id: 'bs_stove', label: 'Cook a batch on the stove', sub: usedToday(s, 'stove') ? 'already cooked today' : `1 h · ${money(2)} · rice and beans for two days`, x: -4.35, z: -4.9, radius: 0.8, action: (gg) => cook(gg) }] : []),
+    ...(hasUp(s, 'washer') ? [{ id: 'bs_washer', label: 'Down to the basement: the washer-dryer', sub: usedToday(s, 'washer') ? 'the load is done' : '1 h · free · clean clothes', x: 3.0, z: -1.6, radius: 0.8, action: (gg) => wash(gg) }] : []),
+    ...(hasUp(s, 'spareroom') ? [{ id: 'bs_tenant', label: 'Knock on the spare room', sub: b.tenant ? `${b.tenant.name} · $160 a week` : 'nobody yet · tomorrow', x: 4.4, z: 1.6, radius: 0.8, action: (gg) => tenantMenu(gg) }] : []),
+    ...(hasUp(s, 'studio') ? [{ id: 'bs_studio', label: 'The studio corner', sub: 'record a demo · 2 h · no vacuum upstairs', x: 1.6, z: 0.6, radius: 0.9, action: (gg) => music.recordAtHome(gg) }] : []),
+    ...(hasUp(s, 'safe') ? [{ id: 'bs_safe', label: 'The floor safe', sub: 'the stash · the cash', x: 2.8, z: -2.5, radius: 0.8, action: (gg) => safeMenu(gg) }] : []),
     ...(hasUp(s, 'hottub') ? [{ id: 'bs_tub', label: 'Get in the hot tub', sub: '45 min · -stress', x: -3.6, z: 4.5, radius: 1.0, action: (gg) => { gg.advance(45); bump(gg.state, 'stress', -25); bump(gg.state, 'hygiene', 10); gg.toast('Steam, stars (four of them, it is Brooklyn), and the neighbour\'s window going dark in protest.', 'good'); } }] : []),
   ];
 
@@ -186,6 +209,7 @@ export function buildBrownstone(g) {
       solid(4.4, -0.8, 0.9, 2.8, 1.5), solid(-4.3, 0.2, 0.9, 0.9, 0.7),
       solid(0.6, 5.2, 1.0, 1.0, 0.8), solid(2.8, 8.2, 2.6, 0.8, 0.45),
       ...(hasUp(s, 'hottub') ? [solid(-3.6, 3.4, 1.8, 1.8, 0.8)] : []), ...(hasUp(s, 'firepit') ? [solid(-2.6, 6.6, 1.1, 1.1, 0.3)] : []),
+      ...(hasUp(s, 'tv') ? [solid(1.6, -2.2, 0.45, 1.5, 1.4)] : []), ...(hasUp(s, 'studio') ? [solid(1.6, 1.4, 1.3, 0.6, 0.9)] : []), ...(hasUp(s, 'safe') ? [solid(2.8, -3.1, 0.6, 0.55, 0.6)] : []),
     ],
     spawn: { x: 0.5, z: -4.8, rot: Math.PI },
     spawnFor: () => ({ x: 0.5, z: -4.8, rot: Math.PI }),
@@ -193,6 +217,151 @@ export function buildBrownstone(g) {
     ambient: 'apartment',
     title: '7th Avenue · the brownstone',
   };
+}
+
+/* ---------------------------------------------- the upgrades that earn their keep */
+
+function watchTv(g, guest) {
+  const s = g.state;
+  if (!guest) { openTv(g); return; }
+  if (usedToday(s, 'tvtogether')) { g.toast('You already did the TV night. Twice is just two people not talking.', 'info'); return; }
+  use(s, 'tvtogether');
+  g.advance(60);
+  bump(s, 'stress', -12);
+  bump(s, 'morale', 8);
+  const p = CONFIG.partners?.[guest] ? romance.partnerState(s, guest) : null;
+  if (p) p.affection = Math.min(100, (p.affection || 0) + 6);
+  g.toast(pick({
+    nia: ['Nia takes the remote and does not give it back. A cooking show. She critiques every single dish. You have never been happier to be wrong about food.'],
+    kev: ['Wrestling. Kev stands up for every finisher. At one point he puts you in a headlock "to show you." It is a good night.'],
+  }[guest] || ['Her feet in your lap, a soap opera neither of you admits to following, and an argument about who the landlord really is. A whole date for the price of the electric bill.']), 'good');
+}
+
+function stereo(g, guest) {
+  const s = g.state;
+  const m = music.musicState(s);
+  const recs = (s.inventory || []).filter((i) => i.id.startsWith('rec_') && i.qty > 0);
+  const played = usedToday(s, 'stereo');
+  const line = { soul: 'Brooklyn soul fills the parlour like somebody opened a window in 1971.', salsa: 'The horns hit and your shoulders move before you decide anything. The neighbour bangs on the wall in time.', jazz: 'A live set, the room on the record clapping in the room you are in. You close your eyes for the bass solo.', 'boom bap': 'The break every producer on Kestrel sampled, as loud as the speakers go. The windows hum.' };
+  g.openModal({
+    kicker: '7TH AVENUE · THE STEREO', title: 'The Stereo',
+    body: `Two speakers taller than a hydrant and a turntable on the sideboard.${recs.length ? ` ${recs.length} record${recs.length === 1 ? '' : 's'} of your own from Spin City.` : ' Only the crate that came with the record player. Spin City on Ashby West has more.'}${m.demo ? ` Your demo on a CD: ${m.demo}/10.` : ''}`,
+    choices: [
+      ...recs.map((r) => ({ label: `Play ${(CONFIG.items[r.id]?.name || r.id).replace('Record: ', '')}.`, sub: played ? 'once a day it counts · 20 min' : `20 min · +morale · -stress${guest ? ' · with company' : ''}`, effect: () => {
+        g.advance(20);
+        if (!played) { use(s, 'stereo'); bump(s, 'morale', 9 + Math.min(4, recs.length)); bump(s, 'stress', -8); }
+        if (guest && CONFIG.partners?.[guest]) romance.partnerState(s, guest).affection = Math.min(100, (romance.partnerState(s, guest).affection || 0) + 3);
+        g.toast(line[CONFIG.items[r.id]?.genre] || 'Side B. The good side.', 'good');
+      } })),
+      ...(m.demo ? [{ label: guest ? `Play your demo for ${guestName(guest)}.` : 'Play your demo back, loud.', sub: guest ? 'a real reaction · nervous' : '15 min · hear it like a stranger would', effect: () => {
+        g.advance(15);
+        if (!guest) { bump(s, 'morale', m.demo >= 6 ? 6 : 2); g.toast(m.demo >= 6 ? 'On real speakers it sounds like a record. Like somebody. Like you, if you were somebody.' : 'Real speakers are honest. You hear every place the vacuum was. Next take.', 'info'); return; }
+        const good = m.demo + Math.random() * 4 >= 7;
+        if (good) { m.fans = (m.fans || 0) + 1; bump(s, 'morale', 12); if (CONFIG.partners?.[guest]) romance.partnerState(s, guest).affection = Math.min(100, (romance.partnerState(s, guest).affection || 0) + 6); }
+        else bump(s, 'morale', -2);
+        g.toast(good ? `${guestName(guest)} stops talking at the hook and makes you play it again. "That is you? Mo. That is YOU?"` : `${guestName(guest)} nods along politely. "It is really... long." You will fix the second verse.`, good ? 'good' : 'info');
+      } }] : []),
+      ...(!recs.length ? [{ label: 'Put on the old crate.', sub: played ? '20 min' : '20 min · +morale', effect: () => { g.advance(20); if (!played) { use(s, 'stereo'); bump(s, 'morale', 7); bump(s, 'stress', -6); } g.toast('The crate that came with the turntable: a lot of Christmas records and one perfect Al Green.', 'good'); } }] : []),
+      { label: 'Turn it off.', effect: () => {} },
+    ],
+  });
+}
+
+function cook(g) {
+  const s = g.state;
+  if (usedToday(s, 'stove')) { g.toast('There is already a pot in the fridge. Eat it before you make another.', 'info'); return; }
+  if (!g.spendMoney(2, 'groceries for a batch')) { g.toast('Two dollars for rice, beans, an onion and a can of tomatoes. You do not have two dollars.', 'bad'); return; }
+  use(s, 'stove');
+  g.advance(60);
+  addItem(s, 'batch_meal', 4);
+  bump(s, 'morale', 4);
+  bump(s, 'stress', -3);
+  g.toast('Rice, beans, an onion, sofrito from a jar and an hour. Four portions in containers that do not match. That is two days of eating like somebody who has his life together.', 'good');
+}
+
+function wash(g) {
+  const s = g.state;
+  if (usedToday(s, 'washer')) { g.toast('The load is already folded. Badly, but folded.', 'info'); return; }
+  use(s, 'washer');
+  g.advance(60);
+  bump(s, 'hygiene', 18);
+  bump(s, 'morale', 5);
+  bump(s, 'stress', -4);
+  g.toast(`Your own machines in your own basement. No quarters, no game show, no stranger's sock in your load. You stand there holding warm clothes and think about Dee, a little.`, 'good');
+}
+
+function tenantMenu(g) {
+  const s = g.state;
+  const b = bsState(s);
+  if (!b.tenant) { g.toast('The room is ready: a bed, a dresser, a window onto the yard. The ad went up on the board at the laundromat. Somebody will call.', 'info'); return; }
+  const t = b.tenant;
+  g.openModal({
+    kicker: '7TH AVENUE · THE SPARE ROOM', title: t.name,
+    body: `${t.name} rents the spare room: a nurse on nights, a cat called Gerald, and a schedule that means you mostly see each other in the kitchen at 7 a.m. $160 a week, due every ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][((t.dueDay - 1) % 7 + 7) % 7]}.${t.late ? `
+
+She is ${t.late} day${t.late === 1 ? '' : 's'} late.` : ''}
+
+Paid so far: ${money(t.paid || 0)}.`,
+    choices: [
+      ...(t.late ? [{ label: 'Remind her about the rent.', sub: 'politely', effect: () => { if (Math.random() < 0.6) { payRent(g, t, true); } else g.toast('"Friday. I swear on Gerald." Gerald looks unconvinced.', 'info'); } }] : []),
+      { label: 'Say hi in the kitchen.', sub: '10 min', effect: () => { g.advance(10); bump(s, 'morale', 2); g.toast(pick(['She is eating cereal standing up, still in scrubs. "Twelve hours. A man swallowed a key. Do not ask." You do not ask.', 'Gerald the cat is on your counter. She says he is not allowed. Gerald disagrees.']), 'info'); } },
+      { label: 'Leave her be.', effect: () => {} },
+    ],
+  });
+}
+
+function payRent(g, t, late) {
+  const amt = late ? 170 : 160;
+  t.paid = (t.paid || 0) + amt;
+  t.late = 0;
+  t.dueDay += 7;
+  g.earnMoney(amt, `rent from ${t.name}`);
+  if (late) g.toast(`${t.name} pays, with ten on top "for the stress." ${money(amt)}.`, 'good');
+}
+
+/** Each morning at the brownstone: the tenant moves in, and the rent comes in (or does not). */
+export function brownstoneNewDay(g, d) {
+  const s = g.state;
+  const b = bsState(s);
+  if (!b.owned.includes('spareroom')) return;
+  if (!b.tenant) {
+    b.tenant = { name: 'Lena', since: d, dueDay: d + 7, paid: 0, late: 0 };
+    pushMessage(g, { from: 'LENA (SPARE ROOM)', subject: 'the room', body: 'Hi, this is Lena from the laundromat board. I saw the room and I love the window. I work nights at Kings County, I am quiet, I have one cat who is also quiet (lie). I can move in today. $160 a week works.' });
+    return;
+  }
+  const t = b.tenant;
+  if (d < t.dueDay) return;
+  if (t.late === 0 && Math.random() < 0.22) {
+    t.late = 1;
+    pushMessage(g, { from: 'LENA (SPARE ROOM)', subject: 'rent', body: pick(['rent is coming, payroll messed up AGAIN. two days max. sorry sorry sorry', 'I am so sorry, the cat had a vet thing. Can I pay you Friday? I will add something.']) });
+    return;
+  }
+  if (t.late > 0 && t.late < 3 && Math.random() < 0.4) { t.late += 1; return; }
+  payRent(g, t, t.late > 0);
+  if (t.late === 0) logLine(g, `${t.name} paid the week's rent: ${money(160)}.`, 'good');
+}
+
+/** The floor safe: substances and cash at home, where no cop and no mugger gets to them. */
+function safeMenu(g) {
+  const s = g.state;
+  const b = bsState(s);
+  b.safe = b.safe || { cash: 0, items: {} };
+  const sf = b.safe;
+  const pocket = (s.inventory || []).filter((i) => CONFIG.items[i.id]?.kind === 'substance' && i.qty > 0);
+  const inside = Object.entries(sf.items).filter(([, q]) => q > 0);
+  g.openModal({
+    kicker: '7TH AVENUE · UNDER THE STAIRS', title: 'The Safe',
+    body: `A floor safe bolted under the stairs, a dial that clicks like a cricket. Inside: ${money(sf.cash)}${inside.length ? ` and ${inside.map(([id, q]) => `${q}× ${CONFIG.items[id]?.name || id}`).join(', ')}` : ', and nothing else'}.
+
+What is in here is not in your pockets: no cop takes it and no man in a hood gets to it.`,
+    choices: [
+      ...(pocket.length ? [{ label: 'Put the stash in the safe.', sub: pocket.map((i) => `${i.qty}× ${CONFIG.items[i.id].name}`).join(', '), effect: () => { for (const i of pocket) { sf.items[i.id] = (sf.items[i.id] || 0) + i.qty; removeItem(s, i.id, i.qty); } g.advance(2); g.toast('In the safe. The dial spins. Your pockets feel like somebody else\'s.', 'info'); } }] : []),
+      ...inside.map(([id, q]) => ({ label: `Take out one ${CONFIG.items[id]?.name || id}.`, sub: `${q} in here`, effect: () => { sf.items[id] -= 1; addItem(s, id, 1); g.advance(1); } })),
+      ...(s.money >= 50 ? [{ label: 'Put cash in the safe.', sub: `keep ${money(20)} on you · ${money(Math.floor(s.money - 20))} in`, effect: () => { const k = Math.floor(s.money - 20); s.money = Math.round((s.money - k) * 100) / 100; sf.cash += k; g.toast(`${money(k)} in the safe. ${money(20)} in your pocket, which is what a man walking around Brooklyn should have.`, 'info'); } }] : []),
+      ...(sf.cash > 0 ? [{ label: 'Take the cash out.', sub: money(sf.cash), effect: () => { s.money = Math.round((s.money + sf.cash) * 100) / 100; g.toast(`${money(sf.cash)} back in your pocket.`, 'info'); sf.cash = 0; } }] : []),
+      { label: 'Close it.', effect: () => {} },
+    ],
+  });
 }
 
 const guestName = (id) => CONFIG.partners?.[id]?.name || { nia: 'Nia', kev: 'Kev' }[id] || id;
@@ -243,7 +412,7 @@ function catalogue(g) {
     kicker: 'THE BROWNSTONE · THE CATALOGUE', title: 'For the Yard and the Parlour',
     body: 'A thick catalogue that came with the deed, full of people laughing at fire pits.',
     choices: [
-      ...BS_UPGRADES.map((u) => ({ label: `${u.name} · ${money(u.price)}`, sub: b.owned.includes(u.id) ? 'already have it' : u.note, disabled: b.owned.includes(u.id) || s.money < u.price, effect: () => {
+      ...BS_UPGRADES.map((u) => ({ label: `${u.name} · ${money(u.price)}`, sub: b.owned.includes(u.id) ? 'already have it' : u.needs && !b.owned.includes(u.needs) ? 'needs the record player first' : u.note, disabled: b.owned.includes(u.id) || s.money < u.price || (u.needs && !b.owned.includes(u.needs)), effect: () => {
         g.spendMoney(u.price, `brownstone: ${u.name}`);
         b.owned.push(u.id);
         g.advance(30);

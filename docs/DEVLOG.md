@@ -10,6 +10,18 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### The brownstone earns its keep
+
+- Seven new catalogue upgrades, each with a daily use (`BS_UPGRADES`): a **flatscreen** (the nine
+  channels through `openTv`, or a TV night with a guest: -stress, +morale, +affection), a real
+  **stereo** (needs the record player: Spin City records with a line per genre, your demo played
+  back, or played for a guest who loves it or is polite about it), a **six-burner stove** ($2,
+  1 h: four portions of rice and beans), a **washer-dryer** in the basement (free laundry, once a
+  day), the **spare room** (Lena moves in the next morning: $160 a week, sometimes late, $170 when
+  she is), a **home studio corner** (`music.recordAtHome`: two hours, no building noises, a better
+  demo) and a **floor safe** (the stash and the cash at home, out of reach of a cop or a mugger).
+  `brownstoneNewDay` runs the tenant.
+
 ### Ashby Ave West
 
 - Walk west off Ashby Avenue (`av_west`) onto **Ashby Ave West** (`world/ashbywest.js`, area

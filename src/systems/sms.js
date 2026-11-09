@@ -73,6 +73,7 @@ const BUSINESS = {
   'GLORIA (4B)': { category: 'personal', kind: 'tenant_f', name: 'Gloria (4B)' },
   'ASHBY SOUND': { category: 'personal', kind: 'hall_f', name: 'Renée (Ashby Sound)' },
   'DEE': { category: 'personal', kind: 'tenant_f', name: "Dee (Wash & Fold)" },
+  'LENA (SPARE ROOM)': { category: 'personal', kind: 'tenant_f', name: 'Lena (spare room)' },
   'ASHBY COURTHOUSE': { category: 'service', service: 'ASHBY COURTHOUSE', name: 'Ashby Courthouse' },
   'ASHBY CHECK CASHING': { category: 'bill', service: 'ASHBY CHECK CASHING', name: 'Ashby Check Cashing' },
 };
