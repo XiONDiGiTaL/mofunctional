@@ -2,6 +2,7 @@
  * MO: FUNCTIONAL — entry point and game orchestrator.
  * Boots the 3D world, the HUD, the phone, saves, and the main loop.
  */
+import { preloadModels } from './render/models.js';
 import { shiftInfo } from './systems/jobs.js';
 import { homeArea } from './systems/home.js';
 import { startMarquee } from './ui/marquee.js';
@@ -837,6 +838,7 @@ class Game {
 function boot() {
   if (window.MOF) return; // guard against double boot (module can run pre- or post-DOMContentLoaded)
   window.MOF = new Game();
+  preloadModels(); // the kit street furniture, a few KB each, before the first street loads
 }
 
 if (document.readyState === 'loading') {

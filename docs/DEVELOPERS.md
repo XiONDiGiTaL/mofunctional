@@ -183,7 +183,10 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         (break-ins: the shared one-bedroom, residents, searching, 4D),
                         brownstone (the Park Slope house, its yard, guests, catalogue)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
-                        expressions), faces (HUD portraits)
+                        expressions), faces (HUD portraits), models (Polyfork kit GLBs:
+                        a small GLB reader that bakes each file into one vertex-coloured
+                        geometry, cached; model('hydrant', {x, z, height}) places one)
+assets/models/          the kit GLB files, named by their Polyfork id (CC BY 4.0)
 src/ui/                 hud, feed, phone, apps (parody catalog + icons), icons (item
                         art), shopmenu, fridge, map, threads, modal, menu, themes,
                         debug (the hidden menu), arcade (the three cabinets at Dee's),

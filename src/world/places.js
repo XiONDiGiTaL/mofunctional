@@ -12,6 +12,7 @@
  *   Lucia's       — a red-sauce restaurant with tablecloths: a meal you sit down for, and the
  *                   best date on the list (romance.js activity `lucias`).
  */
+import { model } from '../render/models.js';
 import * as herplace from './herplace.js';
 import { shutter as paintedShutter, utilityBox } from './walls.js';
 import { streetMouth } from './vistas.js';
@@ -669,12 +670,16 @@ export function buildAvenue(g) {
   // the bus stop and its shelter
   group.add(box(0.12, 2.6, 0.12, M.metal, [12.5, 1.3, 0.6]));
   group.add(box(1.2, 0.5, 0.08, retroMaterial('av_bussign', { color: 0x2a4a6a, emissive: 0.15 }), [12.5, 2.5, 0.6]));
-  group.add(box(2.4, 0.1, 1.0, M.metal, [13.6, 2.4, 0.0]));
-  // streetlights
-  for (const x of [-14, -6, 2, 10]) {
-    group.add(box(0.12, 4.0, 0.12, M.metal, [x, 2.0, 1.1]));
-    group.add(box(0.6, 0.1, 0.3, M.lamp, [x, 4.0, 0.9]));
-  }
+  group.add(model('busShelter', { x: 13.8, z: 0.1, height: 2.5, rot: Math.PI }));
+  // streetlights, the kit's cobra-heads, and the curb furniture of a real avenue
+  for (const x of [-14, -6, 2, 10]) group.add(model('streetLamp', { x, z: 1.1, height: 4.4, rot: Math.PI }));
+  for (const x of [-11.5, -3.5, 6.5]) group.add(model('meter', { x, z: 0.9, height: 1.3, rot: Math.PI }));
+  group.add(model('mailbox', { x: -1.2, z: -2.9, height: 1.15 }));
+  group.add(model('trashcan', { x: 0.6, z: 0.8, height: 0.92 }));
+  group.add(model('wirebasket', { x: 9.0, z: 0.8, height: 0.85 }));
+  group.add(model('newsbox', { x: 4.6, z: -2.75, height: 0.98 }));
+  group.add(model('callbox', { x: -8.0, z: 0.85, height: 1.5, rot: Math.PI }));
+  group.add(model('hydrant', { x: -12.8, z: 0.7, height: 0.82, rot: Math.PI }));
   // people going somewhere else
   const npcs = [
     { kind: 'passer_m', x: -10, z: -1.6, walker: [-15, 15] },

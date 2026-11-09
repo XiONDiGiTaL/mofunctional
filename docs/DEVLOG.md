@@ -10,6 +10,19 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Kit models on the street
+
+- `src/render/models.js` reads Polyfork's GLB files (plain glTF: float positions, normals and a
+  colour per vertex, no textures) without three's loader: each node transform is baked into one
+  merged geometry per model, cached, and drawn with `retroMaterial({ vertexColors: true })`, so the
+  kit snaps, dithers and fogs like the rest of the block. The retro shader multiplies by the vertex
+  colour when there is one. `model(key, { x, z, rot, height | scale, tint })` returns a Group at
+  once and the mesh drops in when the file arrives; `preloadModels()` fetches them all at boot.
+- On Kestrel: the hydrant, trash cans, a wire basket, the mailbox, two newspaper boxes, the payphone,
+  a bike rack, parking meters, a fire call box and a manhole cover are kit models now. On Ashby Ave:
+  the bus shelter, cobra-head lamp posts, meters, a mailbox, a trash can, a basket, a newspaper box,
+  a call box and a hydrant. 24 files, 1.7 MB, credited in the README (CC BY 4.0).
+
 ### Herb, a real hydrant, and a first week that points the way
 
 - **Herb** (`CONFIG.substances.types.herb`, item `herb`): legal in New York, so police searches

@@ -538,6 +538,10 @@ Inspired by 90s-era console games, life in New York, and circumstances that peop
 city know all too well. Built with Three.js and plain JavaScript, with an original soundtrack
 written for each place on the block.
 
+Street furniture and a few props (hydrants, mailboxes, payphones, newspaper boxes, meters, the
+bus shelter, lamp posts and more) are low-poly models from **[Polyfork](https://polyfork.dev)**,
+mostly its NYC City kit, used under CC BY 4.0 and drawn through the game's own retro shader.
+
 Want to look under the hood, run it locally or poke at the debug tools? See
 **[docs/DEVELOPERS.md](docs/DEVELOPERS.md)**.
 

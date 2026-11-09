@@ -1,4 +1,5 @@
 /** World geometry + every interactable. Areas: apartment, street, church, menu. */
+import { model } from '../render/models.js';
 import * as supply from '../systems/supply.js';
 import * as okafor from '../systems/okafor.js';
 import * as herplace from './herplace.js';
@@ -695,11 +696,14 @@ export function buildStreet(g) {
   group.add(box(0.1, 0.9, 0.1, M.wood, [4.6, 0.45, -6.2]));
   group.add(box(0.1, 0.9, 0.1, M.wood, [5.4, 0.45, -6.2]));
   // trash cans
-  group.add(box(0.6, 0.9, 0.6, retroMaterial('trash', { color: 0x39443c }), [9.5, 0.45, -5.6]));
-  group.add(box(0.6, 0.9, 0.6, retroMaterial('trash2', { color: 0x39443c }), [-13.5, 0.45, -5.7]));
+  group.add(model('trashcan', { x: 9.5, z: -5.6, height: 0.92, rot: 0.3 }));
+  group.add(model('trashcan', { x: -13.5, z: -5.7, height: 0.92, rot: -0.5 }));
+  group.add(model('wirebasket', { x: 3.4, z: -0.2, height: 0.85 }));
   // road markings + hydrant
   group.add(box(0.6, 0.02, 44, retroMaterial('line', { color: 0xb0a262 }), [0, 0.02, 5.2]));
-  group.add(hydrant(-5.0, 0.9));
+  group.add(model('hydrant', { x: -5.0, z: 0.9, height: 0.82, rot: Math.PI }));
+  group.add(model('manhole', { x: 1.2, z: 3.2, scale: 1 }));
+  group.add(model('callbox', { x: 10.6, z: 0.5, height: 1.5, rot: Math.PI }));
 
   // ---- Miguel's bodega, west end, on its own lot: a lit sign, an OPEN light, a framed door
   const bod = building('bodega');
@@ -878,9 +882,12 @@ export function buildStreet(g) {
     }
   };
   tree(-6.2, -4.7); tree(8.8, -4.7); tree(17.6, -4.7);
-  group.add(box(0.5, 0.9, 0.46, retroMaterial('mailbox', { color: 0x27466e }), [7.2, 0.45, -4.9]));
-  group.add(box(0.44, 0.86, 0.4, retroMaterial('newsbox', { color: 0x8a3a32 }), [-6.6, 0.43, -4.9]));
-  group.add(box(0.34, 0.62, 0.28, retroMaterial('payphone', { color: 0x282d31 }), [12.9, 1.0, -6.1]));
+  group.add(model('mailbox', { x: 7.2, z: -4.9, height: 1.15 }));
+  group.add(model('newsbox', { x: -6.6, z: -4.9, height: 0.98, rot: 0.15 }));
+  group.add(model('newsbox', { x: -7.15, z: -4.95, height: 0.98, rot: -0.1, tint: 0x9ab8e8 }));
+  group.add(model('payphone', { x: 12.9, z: -5.85, height: 2.1 }));
+  group.add(model('bikeRack', { x: 15.2, z: -4.6, height: 0.8 }));
+  for (const mx of [-9.5, -1.0, 13.5]) group.add(model('meter', { x: mx, z: 0.75, height: 1.3, rot: Math.PI }));
 
   // steam vent + the wet patch it makes, and a neon reflection on the walk
   group.add(box(0.92, 0.02, 0.92, retroMaterial('grate', { color: 0x272b2d }), [-2.4, 0.03, 0.6]));
@@ -2154,48 +2161,6 @@ function dexSmoking(g) {
   if (!(m >= 21 * 60 || m < 4 * 60)) return false;
   const night = dayOf(g.state.clock.m - 4 * 60);
   return ((night * 2654435761) >>> 0) % 100 < 35;
-}
-
-/**
- * A New York fire hydrant, the one Rolo stands by: a bolted base flange, a fat barrel with a ring
- * round its waist, two side caps and the big pumper cap on the front (each with its pentagon nut and
- * a chain), the bonnet with its own flange of bolts and the operating nut on top, painted red-orange
- * and chipped back to black wherever people have leaned on it.
- */
-function hydrant(x, z, rot = 0) {
-  const g = new THREE.Group();
-  const red = retroMaterial('hydrantRed', { color: 0xd8461e, ambient: 0.72 });
-  const dark = retroMaterial('hydrantChip', { color: 0x2a1a14 });
-  const steel = retroMaterial('hydrantChain', { color: 0x9a9a9e, ambient: 0.9 });
-  const cyl = (rt, rb, h, y, m = red, seg = 12) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); c.position.y = y; g.add(c); return c; };
-  cyl(0.12, 0.12, 0.1, 0.05, dark);              // the standpipe, black at the ground
-  cyl(0.2, 0.21, 0.08, 0.12);                    // the base flange
-  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; g.add(box(0.03, 0.025, 0.03, red, [Math.cos(a) * 0.18, 0.17, Math.sin(a) * 0.18])); }
-  cyl(0.13, 0.14, 0.5, 0.41);                    // the barrel
-  cyl(0.145, 0.145, 0.04, 0.4);                  // the ring round the waist
-  cyl(0.17, 0.17, 0.05, 0.68);                   // the bonnet flange
-  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; g.add(box(0.025, 0.03, 0.025, red, [Math.cos(a) * 0.16, 0.72, Math.sin(a) * 0.16])); }
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.135, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), red);
-  dome.position.y = 0.7; dome.scale.set(1, 0.9, 1); g.add(dome);
-  cyl(0.035, 0.035, 0.08, 0.86, red, 5);         // the operating nut
-  // the nozzles: two small side caps and the big pumper on the front
-  const nozzle = (r, len, ax, az, ang) => {
-    const n = new THREE.Group();
-    const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 10), red); c.rotation.z = Math.PI / 2; c.position.x = len / 2; n.add(c);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.05, r * 1.05, 0.03, 10), red); cap.rotation.z = Math.PI / 2; cap.position.x = len + 0.015; n.add(cap);
-    const nut = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.4, r * 0.4, 0.04, 5), red); nut.rotation.z = Math.PI / 2; nut.position.x = len + 0.05; n.add(nut);
-    n.position.set(ax, 0.5, az); n.rotation.y = ang; g.add(n);
-  };
-  nozzle(0.06, 0.13, 0, 0, Math.PI / 2 + 0.0);    // side, left
-  nozzle(0.06, 0.13, 0, 0, -Math.PI / 2);          // side, right
-  nozzle(0.085, 0.12, 0, 0, Math.PI);              // the pumper, out the front toward the street
-  // the chains: little links hanging from each cap back to the barrel
-  for (const [sx, sz] of [[0.2, 0], [-0.2, 0], [0, 0.22]]) for (let i = 0; i < 4; i++) g.add(box(0.018, 0.018, 0.018, steel, [sx * (1 - i * 0.2), 0.44 - i * 0.03 - Math.sin(i) * 0.02, sz * (1 - i * 0.2)]));
-  // chipped paint: a few black flecks
-  for (const [px, py, pz] of [[0.13, 0.3, 0.03], [-0.1, 0.55, 0.09], [0.05, 0.69, 0.16], [-0.14, 0.2, -0.04], [0.09, 0.62, -0.12]]) g.add(box(0.03, 0.025, 0.01, dark, [px, py, pz], [0, Math.atan2(px, pz), 0]));
-  g.position.set(x, 0, z);
-  g.rotation.y = rot;
-  return g;
 }
 
 /** Yusuf outside Habib's: a seat by the hookah, if he likes your face today. */
