@@ -30,6 +30,7 @@ import { herNewDay } from '../world/herplace.js';
 import { raeNewDay } from './rae.js';
 import { wallsNewDay } from '../world/walls.js';
 import { earlyNewDay } from './early.js';
+import { ashbyNewDay } from './ashby.js';
 
 const N = CONFIG.needs;
 const S = CONFIG.substances;
@@ -72,6 +73,7 @@ export function simulate(g, minutes, ctx = {}) {
       raeNewDay(g, d);
       wallsNewDay(g, d);
       earlyNewDay(g, d);
+      ashbyNewDay(g, d);
       g.bus.emit('newday', d);
     }
     rollEvent(g, step / 60);

@@ -128,6 +128,28 @@ Object.assign(SHOPS, {
     ],
     markup: 1, sellsPork: true,
   },
+  // Ashby West
+  diner: {
+    id: 'diner', name: 'The Ashby Diner', owner: 'Rita', ownerKind: 'tenant_f',
+    kicker: 'ASHBY WEST · THE DINER', blurb: 'Chrome, red vinyl and a pie case that turns slowly under a light like it is on a game show. Open twenty-four hours, and Rita has worked most of them.',
+    voice: ['"Coffee, hon? That was not a question."', '"The pie is apple. The other pie is also apple."', '"Sit anywhere. Not there. Anywhere else."'],
+    stock: [{ id: 'diner_coffee', note: 'bottomless, which is a promise' }, { id: 'pie_slice', note: 'warm, with a slice of cheese if you ask' }, { id: 'diner_special', note: 'eggs, home fries, toast, a sausage, 24 hours' }],
+    markup: 1, sellsPork: true,
+  },
+  ninetynine: {
+    id: 'ninetynine', name: '99¢ Dreams', owner: 'Mr. Kang', ownerKind: 'hall_m',
+    kicker: 'ASHBY WEST · 99¢ DREAMS', blurb: 'Aisles to the ceiling: mops, plastic flowers, phone chargers that work once, saints in candles and four kinds of instant noodles. Everything is 99 cents except the things that are not.',
+    voice: ['"Ninety-nine. Everything ninety-nine. Not that. That is two ninety-nine."', '"Charger? Works good. Works one time good."'],
+    stock: [{ id: 'cup_noodles', note: 'add hot water, add dignity later' }, { id: 'chips', note: 'the off-brand ones, which are the same' }, { id: 'soda', note: 'a flavour you have never heard of' }, { id: 'water', note: 'a gallon jug, the cheapest wet in Brooklyn' }],
+    markup: 1, sellsPork: true,
+  },
+  records: {
+    id: 'records', name: 'Spin City Records', owner: 'Ozzie', ownerKind: 'rasta',
+    kicker: 'ASHBY WEST · SPIN CITY RECORDS', blurb: 'Milk crates of vinyl on every surface, a listening booth with a curtain, and Ozzie, who will tell you what you actually want before you know it.',
+    voice: ['"You do not buy a record, the record buys you."', '"Salsa dura. No, the other one. Trust me."', '"Bring me your demo on a CD. I put good things by the register."'],
+    stock: [{ id: 'rec_soul', note: 'a comp from a Bed-Stuy label, Sundays in a sleeve' }, { id: 'rec_salsa', note: 'horns like a fire alarm, in the best way' }, { id: 'rec_jazz', note: 'a live set, the room is part of the band' }, { id: 'rec_boom', note: 'the breaks every producer on the block sampled' }],
+    markup: 1, sellsPork: true,
+  },
   // after the drum goes cold, Desmond is on Ashby Ave by the sax man with a spliff, and he has one
   // thing for sale. Legal in New York; he still sells it out of his jacket.
   desmond_herb: {

@@ -1,4 +1,5 @@
 /** Employment, shifts and odd jobs. */
+import * as ashby from './ashby.js';
 import { addOwe } from './owes.js';
 import { latenessForgiven } from './happenings.js';
 import { CONFIG } from '../core/config.js';
@@ -94,6 +95,7 @@ export function workShift(g, play = null) {
   const tithe = s.fellowship?.pledged ? gross * 0.3 : 0;
   const net = Math.max(0, gross - J.transportCost - tithe);
   earn(g, net + tip, `Shift — ${s.job.employer}`);
+  ashby.takeAdvance(g, net + tip); // a payday advance from Ashby Check Cashing comes off the top
   if (tithe > 0) logLine(g, `The Fellowship took ${money(tithe)} of the shift.`, 'info');
   for (const n of notes) g.toast(n, 'bad');
   if (s.job.strikes >= J.maxStrikes) fireJob(g);

@@ -287,6 +287,16 @@ Mendel folds up his table. The two carts never close; a night crew takes over at
 
 ---
 
+### Ashby Ave West
+
+Keep walking west on Ashby Avenue and the city keeps its offices: **Ashby Station Post Office**
+(a PO box so parcels stop vanishing off the stoop, money orders, a card with money in it for Mom),
+the **Ashby Courthouse** (where a booking ends up: pay the ticket, fight it, or work it off in an
+orange vest, and where the third floor finally takes Rae), **St. Agnes**, whose basement holds the
+Tuesday group at seven with Dennis and free coffee, the **Kings Public Library**, the **Ashby
+Diner** (open all night, and a date that costs eleven dollars), **Joe's Barber**, **99¢ Dreams**,
+**Ashby Check Cashing**, **Spin City Records**, and a handball wall the old men own.
+
 ## Getting around
 
 <img src="assets/img/guide/map.jpg" alt="The map with a searchable list of places, open and closed times, and a dotted walking route to Habib's Corner" width="100%">

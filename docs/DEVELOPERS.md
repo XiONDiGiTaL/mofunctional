@@ -161,7 +161,9 @@ src/systems/            needs, economy, jobs, events, street, fellowship, dialog
                         three connections on consignment, daily texts, stiffing and
                         collecting, and the fiends who buy it after dark), okafor (HelloNurse69,
                         the clinic deal, the supply room), rae (the landlord on the ground:
-                        rent cuts, repairs, fear that fades), early (the first week's
+                        rent cuts, repairs, fear that fades), ashby (Ashby West: the post
+                        office, the court and tickets, the Tuesday group, library, diner,
+                        barber, handball, check cashing), early (the first week's
                         texts pointing at systems the player has not found yet)
 src/world/              game3d (renderer, camera, movement), areas (every location),
                         plan (the street as data, shared with the map), characters,
@@ -181,7 +183,8 @@ src/world/              game3d (renderer, camera, movement), areas (every locati
                         duel (a fist fight with Mo's own punches), herplace (the girlfriends'
                         homes, keys, Stephanie's couch, Melanie's rack, Diana's care), flat
                         (break-ins: the shared one-bedroom, residents, searching, 4D),
-                        brownstone (the Park Slope house, its yard, guests, catalogue)
+                        brownstone (the Park Slope house, its yard, guests, catalogue),
+                        ashbywest (Ashby Ave West in kit buildings, and its six rooms)
 src/render/             retro renderer, textures, signs, heads (skull, wrap faces,
                         expressions), faces (HUD portraits), models (Polyfork kit GLBs:
                         a small GLB reader that bakes each file into one vertex-coloured

@@ -15,6 +15,17 @@ const ASHBY = [
   { id: 'precinct', name: '84th Precinct', cat: 'Services', map: 'avenue', x: -12.5, z: -5.2, blurb: 'police' },
   { id: 'pawn', name: 'Ashby Pawn & Gold', cat: 'Money', map: 'avenue', x: 10.5, z: -5.2, blurb: 'sell fast, cheap' },
   { id: 'newsstand', name: 'The newsstand', cat: 'Fun', map: 'avenue', x: 3.0, z: -2.5, blurb: 'papers · scratch-offs' },
+  // Ashby Ave West: walk west off the Ave
+  { id: 'aw_postoffice', name: 'Ashby Station Post Office', cat: 'Services', map: 'ashbywest', x: 12, z: -5.2, blurb: 'PO box · parcels · money orders' },
+  { id: 'aw_court', name: 'Ashby Courthouse', cat: 'Services', map: 'ashbywest', x: -20, z: -5.2, blurb: 'tickets · Housing Court' },
+  { id: 'aw_meetings', name: 'St. Agnes basement', cat: 'Services', map: 'ashbywest', x: -2.75, z: -5.2, blurb: 'the Tuesday group · 7 PM' },
+  { id: 'aw_library', name: 'Kings Public Library', cat: 'Fun', map: 'ashbywest', x: -33, z: -5.2, blurb: 'free · quiet · job listings' },
+  { id: 'aw_diner', name: 'The Ashby Diner', cat: 'Food', map: 'ashbywest', x: 2.5, z: -5.2, blurb: 'coffee · pie · 24 hours' },
+  { id: 'aw_barber', name: "Joe's Barber", cat: 'Services', map: 'ashbywest', x: 28.5, z: -5.2, blurb: 'a cut · a shave' },
+  { id: 'aw_99', name: '99¢ Dreams', cat: 'Food', map: 'ashbywest', x: 32.5, z: -5.2, blurb: 'noodles · cheap' },
+  { id: 'aw_checks', name: 'Ashby Check Cashing', cat: 'Money', map: 'ashbywest', x: 36.5, z: -5.2, blurb: 'advances · bills' },
+  { id: 'aw_records', name: 'Spin City Records', cat: 'Fun', map: 'ashbywest', x: 21, z: -5.2, blurb: 'buy · sell · your demo' },
+  { id: 'aw_handball', name: 'The handball wall', cat: 'Fun', map: 'ashbywest', x: -45, z: -3, blurb: 'free · burn stress' },
 ];
 
 const CAT = {

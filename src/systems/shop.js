@@ -6,6 +6,7 @@
  *
  * Headless; orders in `state.shop.orders`, delivered on the new day.
  */
+import * as ashby from './ashby.js';
 import { CONFIG } from '../core/config.js';
 import { dayOf, money } from '../core/util.js';
 import { addItem, spend, pushMessage, logLine } from '../core/state.js';
@@ -51,8 +52,22 @@ export function shopNewDay(g, day) {
   const due = sh.orders.filter((o) => o.day < day);
   if (!due.length) return;
   sh.orders = sh.orders.filter((o) => o.day >= day);
-  for (const o of due) addItem(s, o.id, o.qty);
   const names = due.map((o) => CONFIG.items[o.id]?.name || o.id).join(', ');
+  // where it goes: the PO box, the post office (the address on file is 3B and he lives on 7th
+  // Avenue now), or the stoop, where somebody sometimes gets to it first (systems/ashby.js)
+  const route = ashby.parcelRoute(s);
+  if (route !== 'door') {
+    for (const o of due) ashby.holdParcel(s, o.id, o.qty);
+    logLine(g, `Amazin' parcel at the post office: ${names}.`, 'info');
+    pushMessage(g, { from: 'AMAZIN\'', subject: 'delivered', body: route === 'box' ? `Delivered to PO Box 1418, Ashby Station: ${names}. Pick it up at the window, Mon–Sat 8 to 5.` : `We could not deliver to the address on file (1120 Kestrel, 3B): ${names}. It is being held at Ashby Station Post Office. Change your address so this stops happening.` });
+    return;
+  }
+  if (Math.random() < CONFIG.ashby.parcelTheft) {
+    logLine(g, `An Amazin' parcel was stolen off the stoop: ${names}.`, 'bad');
+    pushMessage(g, { from: 'AMAZIN\'', subject: 'delivered', body: `Your order was left by the door at 9:12 AM: ${names}. (It is not there. Gloria saw a kid in a red hoodie. Gloria sees everything and stops nothing. A PO box at Ashby Station would have kept it.)` });
+    return;
+  }
+  for (const o of due) addItem(s, o.id, o.qty);
   logLine(g, `Amazin' delivered: ${names}.`, 'good');
   pushMessage(g, { from: 'AMAZIN\'', subject: 'delivered', body: `Your order was left by the door: ${names}. A neighbour signed for it. The neighbour is Gloria. Gloria has opinions about your order.` });
 }

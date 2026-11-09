@@ -40,6 +40,19 @@ export const MODELS = {
   dinerBooth: 'diner-booth-d804ce',
   vending: 'soda-vending-machine-4a5347',
   phoneBooth: 'pay-phone-booth-b8a1db',
+  // whole buildings, for Ashby Ave West
+  church: 'brick-church-322885',
+  civic: 'classical-bank-04954e',
+  diner: 'street-diner-40fc87',
+  shopRow: 'one-storey-shop-row-83c958',
+  cornerShop: 'corner-shop-5aec8c',
+  loft: 'cast-iron-loft-b04b5a',
+  walkup: 'narrow-walk-up-41f10c',
+  tenement: 'brick-tenement-7d2014',
+  awning: 'shop-awning-f47171',
+  projSign: 'projecting-shop-sign-aa1867',
+  streetTree: 'street-tree-0d33f3',
+  wallAd: 'painted-wall-ad-d8f971',
 };
 
 const cache = new Map();   // key → Promise<{ geometry, height }>

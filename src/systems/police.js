@@ -17,6 +17,7 @@
  *
  * Headless; state in `state.police`, created lazily.
  */
+import * as ashby from './ashby.js';
 import { CONFIG } from '../core/config.js';
 import { dayOf, money, pick, hhmm, minuteOfDay } from '../core/util.js';
 import { bump, logLine, inventoryList, removeItem, addItem } from '../core/state.js';
@@ -64,6 +65,8 @@ export function search(g) {
   const p = policeState(s);
   p.searchedNight = nightOf(s);
   const items = holding(s);
+  // a bench warrant: clean pockets or not, he is going in (systems/ashby.js)
+  if (ashby.hasWarrant(s)) { ashby.serveWarrant(g); return book(g, items, { warrant: true }); }
   if (!items.length) {
     p.warned += 1;
     bump(s, 'stress', 8);
@@ -113,21 +116,23 @@ const bribeLines = () => [
 ];
 
 /** Booked: everything confiscated, the fine (or all he has), a night in holding. */
-export function book(g, items = holding(g.state), { extraFine = 0, bribe = 0 } = {}) {
+export function book(g, items = holding(g.state), { extraFine = 0, bribe = 0, warrant = false } = {}) {
   const s = g.state;
   const p = policeState(s);
   const took = [];
   for (const it of items) { took.push(`${it.qty}× ${it.def.name}`); removeItem(s, it.id, it.qty); }
-  const fine = Math.min(s.money, C().fine + extraFine);
-  if (fine > 0) s.money = Math.round((s.money - fine) * 100) / 100;
+  // the fine is a ticket with a court date now: pay it, fight it or work it off on Ashby West.
+  // Picked up on a warrant, the old ticket stands and no new one is written.
+  const fine = warrant ? 0 : C().fine + extraFine;
+  const ticket = warrant ? ashby.openCases(s)[0] : ashby.openTicket(g, fine);
   p.bookings += 1;
   p.fines += fine;
   bump(s, 'stress', 18);
   bump(s, 'morale', -14);
   bump(s, 'risk', -10);
   const note = bribe ? ` Attempted bribery: ${money(bribe)}.` : '';
-  logLine(g, `Booked at the 84th Precinct: ${took.join(', ')} confiscated, fined ${money(fine)}.${note}`, 'bad');
-  return { booked: true, items: took, fine, bribe };
+  logLine(g, `Booked at the 84th Precinct${warrant ? ' on a bench warrant' : ''}: ${took.join(', ') || 'nothing'} confiscated, ${warrant ? 'the old ticket still open' : `a ${money(fine)} ticket`}.${note}`, 'bad');
+  return { booked: true, items: took, fine, bribe, warrant, ticketText: ashby.ticketLine(s, ticket) };
 }
 
 /* ------------------------------------------------------------ the crooked cop */

@@ -10,6 +10,37 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Ashby Ave West
+
+- Walk west off Ashby Avenue (`av_west`) onto **Ashby Ave West** (`world/ashbywest.js`, area
+  `ashbywest`, 90 m): Polyfork kit buildings with the block's own signs. Six rooms open: the post
+  office, the courthouse, St. Agnes' basement, the library, the diner and Joe's Barber; 99¢ Dreams,
+  check cashing and Spin City Records are counters at the door; the handball wall is at the west end.
+  Hours in `CONFIG.ashby.hours` (weekdays too), read by `ashby.awClosed`.
+- **Post office**: a PO box ($12, 28 days) keeps Amazin' parcels safe; without one a parcel on the
+  stoop is stolen 18% of the time; after moving to the brownstone without a change of address,
+  parcels are held at the window. Money orders pay rent, power or the phone in person, or send Mom
+  $40 (she writes back). The change-of-address form is there once he lives on 7th Avenue.
+- **Courthouse**: a booking no longer takes cash on the spot. It writes a ticket for the full fine
+  with a date four days out (`ashby.openTicket`, from `police.book`). At the civil clerk: pay it,
+  pay $25 for another week, contest it (2 h, 12% dismissed, otherwise $75 costs), or work it off in
+  Room 104 at $12.50 an hour in four-hour weekday crews. A missed date is a bench warrant (+$100):
+  the next cop who searches him books him clean or not, and walking into the clerk lifts it. The
+  **Housing Part** is where the tenants' organising goes: after a hall meeting, file against Rae
+  ($45), and on the hearing day a full heat log and three units win ordered repairs and half a
+  week's rent back.
+- **The Tuesday group** in St. Agnes' basement, 19:00 to 20:30 (`ashby.meeting`): free, 90 minutes,
+  listen or share. Withdrawal, addiction and stress come down, it counts as the evening's routine,
+  Dennis gives his number the first time, and there are keytags at 1, 30, 60 and 90 clean days.
+- **Library** (free): the papers, the big chair by the radiator, the computers (the odd-job board).
+  **Diner** (24 h): coffee, pie, the special, a booth by the window, a jukebox, and a new date,
+  coffee and pie ($11). **Joe's**: a cut, a shave, the regulars. **Handball**: free stress off, or a
+  $5 game against an old man. **Check cashing**: an $80 payday advance, $100 off the next shift
+  (`ashby.takeAdvance` in `jobs.workShift`), bills with a fee. **Spin City**: four records (new
+  `kind: 'record'` items) to buy, sell back at half, or just listen. **99¢ Dreams**: cup noodles.
+- Tests: the police check follows the ticket; new checks for the warrant, parcel routing and the
+  advance.
+
 ### Kit models on the street
 
 - `src/render/models.js` reads Polyfork's GLB files (plain glTF: float positions, normals and a

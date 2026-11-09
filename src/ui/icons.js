@@ -14,6 +14,11 @@ function tone(hex, k) {
   return `#${ch.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 const lit = (c) => tone(c, 0.3);
+/** A record half out of its sleeve: the sleeve colour and the label colour tell them apart. */
+const recordIcon = (sleeve, label) => svg(`<circle cx="38" cy="30" r="20" fill="#16161a"/><circle cx="38" cy="30" r="14" fill="none" stroke="#2e2e34" stroke-width="1"/>`
+  + `<circle cx="38" cy="30" r="7" fill="${label}"/><circle cx="38" cy="30" r="1.4" fill="#16161a"/>`
+  + `<rect x="8" y="12" width="30" height="40" rx="1.5" fill="${sleeve}"/><path d="M12 18h22M12 46h14" stroke="${lit(sleeve)}" stroke-width="2"/>`
+  + `<circle cx="23" cy="32" r="7" fill="none" stroke="${lit(sleeve)}" stroke-width="2"/>`);
 const dim = (c) => tone(c, -0.32);
 
 const svg = (body, shadow = 21) => `<svg viewBox="0 0 64 64" aria-hidden="true" stroke="${O}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="32" cy="57" rx="${shadow}" ry="4" fill="#000" fill-opacity=".28" stroke="none"/>${body}</svg>`;
@@ -125,6 +130,23 @@ const ART = {
   loosies: svg(`<rect x="10" y="40" width="44" height="10" rx="1" fill="#e9e4d8" transform="rotate(-6 32 45)"/>`
     + `<g transform="rotate(-16 32 30)">${roll({ x1: 12, x2: 44, cy: 30, r: 2.8, c: '#f8f6f0' })}${roll({ x1: 44, x2: 52, cy: 30, r: 2.8, c: '#e3a256', end: '#e3a256' })}</g>`
     + `<g transform="rotate(10 32 40)">${roll({ x1: 14, x2: 46, cy: 38, r: 2.8, c: '#f8f6f0' })}${roll({ x1: 46, x2: 54, cy: 38, r: 2.8, c: '#e3a256', end: '#e3a256' })}</g>`, 22),
+  // Ashby West: the diner, the 99-cent store, the record store
+  diner_coffee: svg(`<ellipse cx="32" cy="50" rx="20" ry="5" fill="#e8e4dc"/><path d="M18 26h26v16c0 5-5 8-13 8s-13-3-13-8z" fill="#f4f2ec"/>`
+    + `<path d="M44 30c6 0 8 3 8 6s-3 6-8 6" fill="none" stroke-width="3.2"/><ellipse cx="31" cy="26" rx="13" ry="3" fill="#5a3418"/><path d="M18 34h26" stroke="#4a8ac8" stroke-width="2.2"/>`
+    + `<path d="M26 20c-2-3 2-5 0-8M34 20c-2-3 2-5 0-8" fill="none" stroke="#c8c4bc" stroke-width="1.4"/>`),
+  pie_slice: svg(`<path d="M10 46l40-14 4 10L14 54z" fill="#e8c27a"/><path d="M10 46l40-14-4-8L12 38z" fill="#d89a4a"/>`
+    + `<path d="M16 41l30-11M20 44l6-15M30 41l6-14M40 37l5-11" stroke="#b8763a" stroke-width="1.6"/><path d="M10 46l4 8" stroke-width="1.6"/>`
+    + `<path d="M14 47l36-12" stroke="#9a3a2a" stroke-width="2.2"/>`),
+  diner_special: svg(`<ellipse cx="32" cy="42" rx="26" ry="11" fill="#f4f2ec"/><ellipse cx="32" cy="41" rx="20" ry="7.5" fill="#ece8de"/>`
+    + `<ellipse cx="22" cy="40" rx="7" ry="4.5" fill="#fbfbf6"/><circle cx="22" cy="39.5" r="2.4" fill="#f2b62a"/><ellipse cx="34" cy="38" rx="6" ry="4" fill="#fbfbf6"/><circle cx="34" cy="37.5" r="2.2" fill="#f2b62a"/>`
+    + `<rect x="38" y="40" width="12" height="7" rx="2" fill="#d8a050" transform="rotate(-10 44 43)"/><rect x="14" y="43" width="12" height="4" rx="2" fill="#8a4a2a"/>`
+    + `<path d="M28 45l2 2M31 44l2 2M34 45l2 2" stroke="#c87a2a" stroke-width="2.2"/>`),
+  cup_noodles: svg(`<path d="M16 16h32l-4 38H20z" fill="#f4f2ec"/><path d="M17 26h30l-1 10H18z" fill="#d83a3a"/><path d="M14 14h36v4H14z" fill="#e8e2d0"/>`
+    + `<path d="M22 31h20" stroke="#ffe23a" stroke-width="2.4"/><path d="M20 44h24" stroke="#d8d4c8" stroke-width="1.6"/>`),
+  rec_soul: recordIcon('#e8a23a', '#7a2a1a'),
+  rec_salsa: recordIcon('#d83a3a', '#f2c03a'),
+  rec_jazz: recordIcon('#2a4a7a', '#e8e2d0'),
+  rec_boom: recordIcon('#2a2a2e', '#3ac86a'),
   herb: svg(`<rect x="8" y="18" width="30" height="34" rx="2" fill="#e6f0ee" fill-opacity="0.55" stroke="#c8d6d2" stroke-width="1.4"/>`
     + `<rect x="8" y="18" width="30" height="5" fill="#8fb0c8" fill-opacity="0.8"/><path d="M8 25h30" stroke="#5a7a92" stroke-width="1"/>`
     + `<path d="M12 50c0-9 4-15 11-17c6 2 11 8 11 17z" fill="#5d8a32"/><circle cx="17" cy="42" r="3.2" fill="#76a63e"/><circle cx="26" cy="39" r="3.6" fill="#4a7428"/><circle cx="29" cy="46" r="3" fill="#86b448"/><circle cx="20" cy="47" r="2.6" fill="#3e6624"/>`

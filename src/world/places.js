@@ -706,6 +706,7 @@ export function buildAvenue(g) {
     ...(music.musicState(g.state).cds ? [{ id: 'av_cds', label: 'Sell demo CDs by the bus stop', sub: '1 h · $3 each', x: 1.5, z: -0.8, radius: 1.2, action: (gg) => music.sellCDs(gg) }] : []),
     ...(music.musicState(g.state).offer ? [{ id: 'av_studio', label: 'Ashby Sound', sub: music.studioNow(g.state) ? 'your studio time · now' : 'by appointment', x: 8.6, z: -5.2, radius: 1.2, action: (gg) => music.studio(gg) }] : []),
     { id: 'av_lucias', label: "Enter Lucia's", sub: 'tablecloths · red sauce · a waiter in a vest', x: -4.5, z: -5.2, radius: 1.5, unavailable: (gg) => closedReason('restaurant', gg.state.clock.m), action: (gg) => gg.goTo('restaurant', 'avenue') },
+    { id: 'av_west', label: 'Walk west on Ashby', sub: 'the courthouse · the post office · the diner · the library', x: -14.6, z: -1.6, radius: 1.5, action: (gg) => gg.goTo('ashbywest', 'avenue') },
     { id: 'av_row', label: 'Up Myrtle Row', sub: 'the food carts · through to Kestrel St.', x: 14.6, z: -4.2, radius: 1.3, action: (gg) => gg.goTo('row', 'avenue') },
     { id: 'av_precinct', label: 'Enter the 84th Precinct', sub: 'the desk sergeant has seen everything', x: -12.5, z: -5.2, radius: 1.5, action: (gg) => gg.goTo('precinct', 'avenue') },
     { id: 'av_laundry', label: "Enter Dee's Wash & Fold", sub: 'laundry · vending machines · a TV', x: 5.0, z: -5.2, radius: 1.4, unavailable: (gg) => closedReason('laundromat', gg.state.clock.m), action: (gg) => gg.goTo('laundromat', 'avenue') },
@@ -749,7 +750,7 @@ export function buildAvenue(g) {
   const ubox = utilityBox(group, -6.0, 0.6, 6061);
   // the avenue runs on past the west end; Myrtle Row opens at the east end, so the walk from
   // Kestrel is continuous: out of the Row at Ashby's east corner, facing west down the avenue
-  streetMouth(group, { x: -17, dir: -1, look: 'avenue', title: 'ASHBY AVE', sub: 'THE AVENUE CONTINUES', seed: 43 });
+  streetMouth(group, { x: -17, dir: -1, look: 'avenue', title: 'ASHBY AVE WEST', sub: 'COURTHOUSE · POST OFFICE · DINER · LIBRARY', seed: 43 });
   // the gate spans the north pavement only: the station's stairwell owns the kerb side of the east
   // end (solid 15.0–18.9 × -1.9–1.1), and a post standing in it reads as a mistake
   streetMouth(group, { x: 17.4, dir: 1, look: 'row', title: 'MYRTLE ROW', sub: 'FOOD CARTS · PIZZA · BACK TO KESTREL ST', seed: 41, span: [-5.6, -2.4], signZ: -2.4 });
@@ -762,7 +763,7 @@ export function buildAvenue(g) {
     traffic: { lanes: [{ z: 4.4, dir: 1 }, { z: 6.8, dir: -1 }], x0: -19, x1: 19, rate: [2, 6], bus: 0.12 },
     solids: [ubox, solid(6.95, -5.9, 1.2, 0.8, 1.0), solid(2.1, -6.0, 4.5, 0.4, 2.5), solid(3.0, -3.66, 2.36, 1.62), solid(12.5, 0.6, 0.3, 0.3), solid(16.95, -0.4, 3.9, 3.0, 1.1)],
     spawn: { x: 12.0, z: -0.6, rot: Math.PI },
-    spawnFor: (from) => (from === 'row' ? { x: 14.6, z: -3.4, rot: -Math.PI / 2 } : from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'pawn' ? { x: 10.5, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.1, z: -0.4, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
+    spawnFor: (from) => (from === 'ashbywest' ? { x: -14.0, z: -1.6, rot: Math.PI / 2 } : from === 'row' ? { x: 14.6, z: -3.4, rot: -Math.PI / 2 } : from === 'restaurant' ? { x: -4.5, z: -3.6, rot: 0 } : from === 'precinct' ? { x: -12.5, z: -4.0, rot: 0 } : from === 'laundromat' ? { x: 5.0, z: -4.2, rot: 0 } : from === 'pawn' ? { x: 10.5, z: -4.2, rot: 0 } : from === 'subway' ? { x: 14.1, z: -0.4, rot: -Math.PI / 2 } : { x: 12.0, z: -0.6, rot: -Math.PI / 2 }),
     npcs,
     interactables,
     tick,

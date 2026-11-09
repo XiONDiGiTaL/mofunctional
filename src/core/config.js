@@ -196,6 +196,15 @@ export const CONFIG = {
     mud_x:   { id: 'mud_x',   name: 'Black Mud',              kind: 'substance', price: 24, value: 8 },
     drip_x:  { id: 'drip_x',  name: 'Drip (pure)',            kind: 'substance', price: 12, value: 4 },
     rox:     { id: 'rox',     name: 'ROX',                    kind: 'substance', price: 40, value: 15 },
+    // Ashby West: the diner, the 99-cent store, and the record store (the brownstone stereo plays these)
+    diner_coffee: { id: 'diner_coffee', name: 'Diner Coffee (bottomless)', kind: 'comfort', price: 1.5, energy: 9, stress: -2, morale: 1, value: 0.3 },
+    pie_slice:    { id: 'pie_slice',    name: 'Slice of Apple Pie', kind: 'food', price: 3.5, hunger: 22, energy: 6, morale: 7, hygiene: 0, value: 1.4 },
+    diner_special:{ id: 'diner_special',name: 'The Ashby Special', kind: 'food', price: 7.5, hunger: 60, energy: 24, morale: 8, hygiene: 0, value: 3.2, hot: true },
+    cup_noodles:  { id: 'cup_noodles',  name: 'Cup Noodles', kind: 'food', price: 0.99, hunger: 20, energy: 5, morale: 1, hygiene: 0, value: 0.4 },
+    rec_soul:  { id: 'rec_soul',  name: 'Record: Brooklyn Soul, Vol. 2', kind: 'record', price: 9, value: 4, genre: 'soul' },
+    rec_salsa: { id: 'rec_salsa', name: 'Record: Salsa Dura from the Bronx', kind: 'record', price: 9, value: 4, genre: 'salsa' },
+    rec_jazz:  { id: 'rec_jazz',  name: 'Record: Late Set at the Vanguard Room', kind: 'record', price: 11, value: 5, genre: 'jazz' },
+    rec_boom:  { id: 'rec_boom',  name: 'Record: Boom Bap 12" Singles', kind: 'record', price: 8, value: 4, genre: 'boom bap' },
     herb:    { id: 'herb',    name: 'Herb',                   kind: 'substance', price: 10, value: 4, legal: true },
     // off Nurse Okafor, now and then, if somebody knocks her out (please do not): everything back at once
     lockpicks: { id: 'lockpicks', name: 'Lockpick Set', kind: 'tool', price: 24, value: 8 },
@@ -682,7 +691,32 @@ export const CONFIG = {
       walk: { id: 'walk', name: 'A walk down Kestrel Street', where: 'street', cost: 0, minutes: 40, affection: 7, morale: 5, stress: -5, energy: -1 },
       movie: { id: 'movie', name: 'A movie at home', where: 'apartment', cost: 4, minutes: 110, affection: 13, morale: 8, stress: -7, energy: -3 },
       lucias: { id: 'lucias', name: "Dinner at Lucia's on Ashby", where: 'restaurant', cost: 48, minutes: 140, affection: 21, morale: 12, stress: -8, energy: 4 },
+      diner: { id: 'diner', name: 'Coffee and pie at the Ashby Diner', where: 'diner', cost: 11, minutes: 70, affection: 11, morale: 7, stress: -6, energy: 3 },
     },
+  },
+
+  /* --------------------------------------------------------------- Ashby Ave West */
+  // the civic end of the avenue (systems/ashby.js, world/ashbywest.js). Hours: open [from, to)
+  // in hours, `days` the weekdays it opens (0 = Monday).
+  ashby: {
+    hours: {
+      postoffice: { open: [8, 17], days: [0, 1, 2, 3, 4, 5], note: 'Mon–Sat 8 to 5' },
+      court: { open: [9, 17], days: [0, 1, 2, 3, 4], note: 'weekdays 9 to 5' },
+      library: { open: [9, 20], days: [0, 1, 2, 3, 4, 5], note: 'Mon–Sat 9 to 8' },
+      barber: { open: [9, 19], days: [1, 2, 3, 4, 5, 6], note: 'Tue–Sun 9 to 7' },
+      records: { open: [11, 21], note: 'every day 11 to 9' },
+      ninetynine: { open: [7, 22], note: 'every day 7 to 10' },
+      checks: { open: [8, 20], note: 'every day 8 to 8' },
+    },
+    post: { box: 12, boxDays: 28, moFee: 1.25, mom: 40, stamps: 9.8 },
+    court: { daysToDate: 4, partial: 25, costs: 75, dismiss: 0.12, perHour: 12.5, warrantFee: 100, hpFee: 45, hpDays: 4, abatement: 0.5 },
+    barber: {
+      cut: 12, shave: 8,
+      talk: ['Ewing was robbed. I will say it until I die.', 'My nephew is a DJ now. A DJ. What does a DJ do on a Tuesday?', 'They are putting a coffee shop where the shoe repair was. Four dollars for a coffee. I said four.', 'You hear about the man on Garnet who won the scratch-off and bought a boat? Where is he going to put a boat?', 'The B44 was on time today. I am telling you because nobody will believe me.', 'That landlord on Kestrel, Rae, he came in here once. Tipped a quarter. A quarter.'],
+    },
+    handball: { bet: 5, winChance: 0.42 },
+    checks: { advance: 80, payback: 100, billFee: 2.5 },
+    parcelTheft: 0.18,
   },
 
   /* --------------------------------------------------------------- clinic */

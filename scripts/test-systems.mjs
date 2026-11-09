@@ -53,6 +53,7 @@ import * as shopSys from '../src/systems/shop.js';
 import * as rides from '../src/systems/rides.js';
 import { ROAD } from '../src/world/plan.js';
 import * as police from '../src/systems/police.js';
+import * as ashby from '../src/systems/ashby.js';
 import * as fans from '../src/systems/fans.js';
 import { APPS, APP_SHELVES, DOCK } from '../src/ui/apps.js';
 
@@ -982,7 +983,7 @@ check('autopay: pays a due bill and texts; short of money it texts insufficient 
   return true;
 });
 
-check('police: a clean search is a warning; holding gets everything taken and the fine (or all he has)', () => {
+check('police: a clean search is a warning; holding gets everything taken and a ticket with a court date', () => {
   const g = stubGame();
   g.state.clock.m = 23 * 60;
   g.state.money = 400;
@@ -994,9 +995,53 @@ check('police: a clean search is a warning; holding gets everything taken and th
   g2.state.money = 120;
   const r = police.search(g2);
   eq(r.booked, true, 'booked');
-  eq(r.fine, 120, 'all he had');
-  eq(g2.state.money, 0, 'money gone');
+  eq(r.fine, 250, 'the whole fine, as a ticket');
+  eq(g2.state.money, 120, 'nothing taken on the spot');
+  eq(ashby.openCases(g2.state).length, 1, 'a court case');
   eq(g2.state.inventory.some((i) => ['static', 'drip'].includes(i.id) && i.qty > 0), false, 'confiscated');
+  return true;
+});
+
+check('court: a ticket missed is a warrant; the warrant books a clean man; paying closes it', () => {
+  const g = stubGame();
+  g.state.clock.m = 2 * 1440 + 23 * 60;
+  g.state.money = 400;
+  g.state.inventory.push({ id: 'static', qty: 1 });
+  police.search(g);
+  const c = ashby.openCases(g.state)[0];
+  eq(!!c, true, 'ticket');
+  ashby.ashbyNewDay(g, c.day + 1);
+  eq(ashby.hasWarrant(g.state), true, 'missed: warrant');
+  eq(c.owed, 350, 'warrant fee added');
+  g.state.clock.m = (c.day + 2) * 1440 + 23 * 60;
+  const r = police.search(g);
+  eq(r.booked, true, 'clean pockets, booked anyway');
+  eq(ashby.hasWarrant(g.state), false, 'warrant served');
+  eq(ashby.openCases(g.state).length, 1, 'still one case, not two');
+  return true;
+});
+
+check('post office: a PO box keeps parcels; after the move they are held; otherwise the stoop', () => {
+  const g = stubGame();
+  eq(ashby.parcelRoute(g.state), 'door', 'the stoop');
+  ashby.ashbyState(g.state).poBox = 99;
+  eq(ashby.parcelRoute(g.state), 'box', 'the box');
+  ashby.ashbyState(g.state).poBox = 0;
+  g.state.home = { ...(g.state.home || {}), residence: 'brownstone' };
+  eq(ashby.parcelRoute(g.state), 'held', 'held, wrong address');
+  ashby.ashbyState(g.state).coa = true;
+  eq(ashby.parcelRoute(g.state), 'door', 'address changed');
+  return true;
+});
+
+check('check cashing: an advance comes off the top of the next shift', () => {
+  const g = stubGame();
+  g.state.money = 300;
+  ashby.ashbyState(g.state).advance = { owed: 100, day: 1 };
+  eq(ashby.takeAdvance(g, 70), 70, 'as much as the shift');
+  eq(ashby.ashbyState(g.state).advance.owed, 30, 'the rest next time');
+  eq(ashby.takeAdvance(g, 70), 30, 'the rest');
+  eq(ashby.ashbyState(g.state).advance, null, 'paid off');
   return true;
 });
 
@@ -1106,7 +1151,7 @@ check('soundtrack: each place with its own piece is mapped to it, and Lost Time 
   const dedicated = {
     apartment: 'apartment', bodega: 'bodega', quikstop: 'quikstop', habibs: 'habib', church: 'church',
     clinic: 'clinic', laundromat: 'laundromat', laundry_back: 'laundromat', precinct: 'precinct',
-    restaurant: 'restaurant', street: 'city', avenue: 'ashby', park: 'park',
+    restaurant: 'restaurant', street: 'city', avenue: 'ashby', ashbywest: 'ashby', diner: 'restaurant', park: 'park',
   };
   eq(JSON.stringify(AREA_TRACKS), JSON.stringify(dedicated), 'the table is exactly this');
   for (const [area, id] of Object.entries(AREA_TRACKS)) eq(!!TRACKS[id], true, `${area} -> ${id}`);

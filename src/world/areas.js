@@ -1139,7 +1139,7 @@ function storeMenu(g, { staff = false } = {}) {
   });
 }
 
-function oddJobMenu(g) {
+export function oddJobMenu(g) {
   const jobs = oddJobsAvailable(g);
   g.openModal({
     kicker: 'JOB BOARD — CASH TODAY',

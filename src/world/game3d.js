@@ -1,4 +1,5 @@
 /** The 3D world: renderer, camera, areas, movement, interaction, ragdoll, menu scene. */
+import { buildAshbyWest, buildPostOffice, buildCourt, buildMeetings, buildLibrary, buildDiner, buildBarber } from './ashbywest.js';
 import { buildRoof } from './roof.js';
 import { kevDoor } from '../systems/calls.js';
 import { buildHall } from './hall.js';
@@ -61,6 +62,7 @@ const BUILDERS = {
   subway: buildSubway, parkslope: buildParkSlope, downtown: buildDowntown, projects: buildProjects, fightclub: buildFightClub,
   pjtower: buildTower, pjroom: buildHerRoom, bathroom: buildBathroom, restroom: buildRestroom, clinicback: buildClinicBack, row: buildRow, flat: buildFlat, brownstone: buildBrownstone, herplace: (g) => buildHerPlace(g, { partnerMenu }),
   pawn: buildPawnShop, jays: (g) => buildJays(g, clothingMenu), relief: buildReliefOffice,
+  ashbywest: buildAshbyWest, postoffice: buildPostOffice, court: buildCourt, meetings: buildMeetings, library: buildLibrary, diner: buildDiner, barber: buildBarber,
 };
 
 export class World {
@@ -719,7 +721,7 @@ export class World {
     }
     g.openModal({
       kicker: 'POLICE · A FLASHLIGHT IN YOUR FACE', title: 'Booked',
-      body: `${police.copLine('booked')}\n\nConfiscated: ${res.items.join(', ')}.\nFine: $${res.fine.toFixed(2)}.`,
+      body: `${res.warrant ? '"There is a warrant out on you, my friend. Hands where I can see them."' : police.copLine('booked')}\n\nConfiscated: ${res.items.join(', ') || 'nothing'}.\n${res.ticketText || ''}`,
       choices: [{ label: 'Get in the car.', effect: () => this.toHolding(g, res) }],
     });
   }
@@ -750,7 +752,7 @@ export class World {
       g.fadeIn?.();
       g.openModal({
         kicker: '84TH PRECINCT · MORNING', title: 'Released',
-        body: `A bench, a toilet with no seat, a man singing the same line of the same song until four. They give you back your shoelaces and a pink form.\n\nThe fine came out of what you had: $${res.fine.toFixed(2)}. What they took, they keep.`,
+        body: `A bench, a toilet with no seat, a man singing the same line of the same song until four. They give you back your shoelaces and a pink form.\n\n${res.ticketText || ''} What they took, they keep.`,
         choices: [{ label: 'Walk out into Ashby Avenue.', effect: () => {} }],
       });
     };
@@ -1384,7 +1386,7 @@ He is close enough that you can smell the cold on his jacket. Nobody else is aro
     g.openModal({
       kicker: 'POLICE · APPREHENDED',
       title: 'Cuffs',
-      body: `Your arm goes behind your back before you decide to let it. The cuffs are colder than they are on television, and they are not on television.\n\nConfiscated: ${res.items.join(', ') || 'nothing they admit to'}.\nFine: ${money(res.fine)}.`,
+      body: `Your arm goes behind your back before you decide to let it. The cuffs are colder than they are on television, and they are not on television.\n\nConfiscated: ${res.items.join(', ') || 'nothing they admit to'}.\n${res.ticketText || ''}`,
       choices: [{ label: 'Get in the car.', effect: () => this.toHolding(g, res) }],
     });
   }

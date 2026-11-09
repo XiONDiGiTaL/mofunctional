@@ -67,11 +67,13 @@ export const AREA_TRACKS = {
   restaurant: 'restaurant',
   street: 'city',
   avenue: 'ashby',
+  ashbywest: 'ashby',
+  diner: 'restaurant',
   park: 'park',
 };
 
 /** The places that share the city's weather, and lose the melody after ten at night. */
-const OUTDOOR = new Set(['street', 'avenue', 'park']);
+const OUTDOOR = new Set(['street', 'avenue', 'ashbywest', 'park']);
 
 /** Where the Quik-Stop storefront is on the street, and the radius its music carries. */
 const STORE = { x: 1.5, z: -5.6, enter: 3.4, leave: 4.6 };
