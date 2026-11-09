@@ -287,6 +287,23 @@ Mendel folds up his table. The two carts never close; a night crew takes over at
 
 ---
 
+### Music pays
+
+The music route is the one way to earn that is not drugs, selling your furniture or Addison. Write
+songs in the notebook, record a demo (at home with the building interrupting every take, at Ashby
+Sound, or in the brownstone's studio corner), then: **busk** on the K platform (rush hour pays),
+sell CDs by the bus stop or leave them on consignment at **Spin City Records**, and play the
+Thursday open mic at Lucia's. A good night there books a **paid Saturday set**, and playing those
+well keeps the slot.
+
+### The brownstone
+
+Every upgrade in the brownstone's catalogue does something every day. The newer ones: a
+flatscreen (a TV night in with a girlfriend, Nia or Kev is a cheap date), a real stereo for your
+records and your demo, a six-burner stove (two days of rice and beans for two dollars), a
+washer-dryer in the basement, a spare room with a tenant who is sometimes late with the rent, a
+home studio corner, and a floor safe for the things you would rather not carry.
+
 ### Ashby Ave West
 
 Keep walking west on Ashby Avenue and the city keeps its offices: **Ashby Station Post Office**

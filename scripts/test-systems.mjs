@@ -54,6 +54,7 @@ import * as rides from '../src/systems/rides.js';
 import { ROAD } from '../src/world/plan.js';
 import * as police from '../src/systems/police.js';
 import * as ashby from '../src/systems/ashby.js';
+import * as music from '../src/systems/music.js';
 import * as fans from '../src/systems/fans.js';
 import { APPS, APP_SHELVES, DOCK } from '../src/ui/apps.js';
 
@@ -999,6 +1000,26 @@ check('police: a clean search is a warning; holding gets everything taken and a 
   eq(g2.state.money, 120, 'nothing taken on the spot');
   eq(ashby.openCases(g2.state).length, 1, 'a court case');
   eq(g2.state.inventory.some((i) => ['static', 'drip'].includes(i.id) && i.qty > 0), false, 'confiscated');
+  return true;
+});
+
+check('music: busking pays (more at rush hour), Spin City sells on consignment, a missed booking is lost', () => {
+  const g = stubGame();
+  const m = music.musicState(g.state);
+  g.state.clock.m = 2 * 1440 + 8 * 60;
+  g.state.money = 0;
+  music.busk(g);
+  eq(g.state.money, 0, 'no song, no busking');
+  m.songs = 2;
+  music.busk(g);
+  eq(g.state.money > 0, true, 'the hat');
+  m.cds = 12;
+  music.consign(g);
+  eq(m.consign, 10, 'ten by the register');
+  eq(m.cds, 2, 'two left in the shoebox');
+  m.booking = { day: 2, pay: 60 };
+  music.musicNewDay(g, 4);
+  eq(m.booking, null, 'missed, gone');
   return true;
 });
 

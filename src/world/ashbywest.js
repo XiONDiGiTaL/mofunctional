@@ -27,6 +27,7 @@ import { openShop } from './shops.js';
 import { streetMouth } from './vistas.js';
 import { oddJobMenu } from './areas.js';
 import * as ashby from '../systems/ashby.js';
+import * as music from '../systems/music.js';
 
 const solid = (x, z, w, d, h = 2.4) => ({ x, z, w, d, h });
 const M = (n, color, extra = {}) => retroMaterial(`aw_${n}`, { color, ...extra });
@@ -227,6 +228,7 @@ function recordsMenu(g) {
         g.earnMoney(price, 'sold a record');
         g.toast(`He slides it back into a crate like it never left. ${'$'}${price.toFixed(2)}.`, 'info');
       } })),
+      ...(music.musicState(s).cds ? [{ label: 'Leave your demo CDs by the register.', sub: `up to 10 · ${'$'}4 each, Ozzie keeps ${'$'}1`, effect: () => music.consign(g) }] : []),
       { label: 'Just listen for a while.', sub: '20 min · free · Ozzie\'s pick', effect: () => { g.advance(20); bump(s, 'stress', -5); bump(s, 'morale', 3); g.toast(pick(['Ozzie plays you a Fania side you have never heard and watches your face the whole time, like a doctor.', 'A 12" from 1988 with a break so clean three customers stop flipping and nod.']), 'good'); } },
       { label: 'Leave.', effect: () => {} },
     ],

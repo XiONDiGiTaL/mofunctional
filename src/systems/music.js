@@ -86,6 +86,122 @@ function record(g) {
   step(0);
 }
 
+/* ------------------------------------------------------------------ music as income */
+
+/** Saturday, 20:45 to 22:30, when there is a booking for today. */
+export const gigNow = (s) => {
+  const b = musicState(s).booking;
+  const mm = minuteOfDay(s.clock.m);
+  return !!(b && b.day === dayOf(s.clock.m) && mm >= 20.75 * 60 && mm < 22.5 * 60);
+};
+
+/** The paid set at Lucia's: the fee, the jar, the CDs on the table by the door. */
+export function playGig(g) {
+  const s = g.state;
+  const m = musicState(s);
+  const b = m.booking;
+  if (!gigNow(s)) return;
+  g.advance(90);
+  const nerves = s.stats.stress > 75 ? -2 : s.high.level > 30 ? -1 : 0;
+  const score = Math.min(10, Math.max(1, Math.round((m.demo || 3) * 0.5 + Math.min(4, m.songs) + Math.min(3, m.gigs) + nerves + Math.random() * 3)));
+  const tips = Math.round(score * (2 + Math.random() * 2));
+  const sold = Math.min(m.cds, Math.round(score / 2 + Math.random() * 3));
+  m.cds -= sold;
+  m.sold += sold;
+  const fans = Math.round(score * 1.6 + Math.random() * 4);
+  m.fans += fans;
+  m.paidGigs = (m.paidGigs || 0) + 1;
+  m.gigs += 1;
+  g.earnMoney(b.pay + tips + sold * 3, 'paid set at Lucia\'s');
+  bump(s, 'morale', 12 + Math.floor(score / 2));
+  bump(s, 'stress', -8);
+  bump(s, 'energy', -10);
+  logLine(g, `Played a paid set at Lucia's: ${money(b.pay + tips + sold * 3)}.`, 'good');
+  m.booking = null;
+  // play well, keep the slot: every other Saturday, booked by itself
+  if (score >= 6 && m.fans >= 20) {
+    m.booking = { day: dayOf(s.clock.m) + 14, pay: Math.min(140, b.pay + 10) };
+    pushMessage(g, { from: 'ASHBY SOUND', subject: 'again', body: `Sal wants you every other Saturday. ${'$'}${m.booking.pay} now. Do not let it go to your head, it is a restaurant.` });
+  }
+  g.openModal({
+    kicker: "LUCIA'S · SATURDAY LATE SET", title: score >= 7 ? 'A Room That Came For You' : 'Forty Minutes, Paid',
+    body: `${score >= 7 ? 'Half the tables are people who came because of Thursday. They know the hook. They sing the hook. Sal turns the espresso machine off for the slow one, which he has never done for anyone.' : 'A Saturday crowd that came for the veal and stayed for you, mostly. The jar fills slower than the room does, but it fills.'}
+
+The fee: ${money(b.pay)} · the jar: ${money(tips)}${sold ? ` · ${sold} CD${sold === 1 ? '' : 's'}` : ''}. ${fans} more people know your name.`,
+    choices: [{ label: 'Count it twice on the walk home.', effect: () => {} }],
+  });
+}
+
+/** The K platform: busking. Rush hour pays; three in the morning pays in experience. */
+export function busk(g) {
+  const s = g.state;
+  const m = musicState(s);
+  if (!m.songs) { g.toast('You need at least one song of your own to stand there with. Write one: the notebook, at home.', 'info'); return; }
+  const day = dayOf(s.clock.m);
+  m.busked = m.busked?.day === day ? m.busked : { day, n: 0 };
+  if (m.busked.n >= 2) { g.toast('Your voice is a rumour by now. Tomorrow.', 'info'); return; }
+  if (s.stats.energy < 12) { g.toast('Too tired to sing over a train.', 'bad'); return; }
+  m.busked.n += 1;
+  const mm = minuteOfDay(s.clock.m) / 60;
+  const rush = (mm >= 7 && mm < 9.5) || (mm >= 17 && mm < 19.5);
+  const dead = mm >= 23 || mm < 6;
+  const guitar = (s.inventory || []).some((i) => i.id === 'guitar' && i.qty > 0);
+  g.advance(60);
+  bump(s, 'energy', -8);
+  bump(s, 'stress', -4);
+  let take = (2 + Math.min(5, m.songs) * 1.2 + (m.demo || 0) * 0.6 + Math.min(10, m.fans / 5) + (guitar ? 4 : 0)) * (rush ? 1.7 : dead ? 0.35 : 1) * (0.6 + Math.random() * 0.9);
+  const movedOn = Math.random() < 0.15;
+  if (movedOn) take *= 0.4;
+  take = Math.round(take * 100) / 100;
+  const sold = m.cds ? Math.min(m.cds, Math.floor(Math.random() * (rush ? 3 : 2))) : 0;
+  m.cds -= sold;
+  m.sold += sold;
+  m.busks = (m.busks || 0) + 1;
+  if (take + sold * 3 > 0) g.earnMoney(take + sold * 3, 'busking on the K platform');
+  if (Math.random() < 0.4) m.fans += 1;
+  bump(s, 'morale', take > 12 ? 7 : 3);
+  logLine(g, `Busked on the platform: ${money(take + sold * 3)}.`, 'good');
+  g.toast(movedOn
+    ? `Twenty minutes in, a transit cop with a clipboard says you need a permit you have never heard of. ${money(take)} in the hat and you are moved along to the stairs.`
+    : rush
+      ? `Rush hour: a river of people who cannot stop, and some of them throw something in anyway. ${money(take)}${sold ? ` and ${sold} CD${sold === 1 ? '' : 's'}` : ''}. A kid films you. You will never see it.`
+      : dead
+        ? `Three people, two of them asleep. One gives you a dollar and some advice. ${money(take)}.`
+        : `An hour between trains with ${guitar ? 'the guitar' : 'your voice and the tiles'}. ${money(take)}${sold ? ` and ${sold} CD${sold === 1 ? '' : 's'}` : ''}. The tiles sound better than any studio.`, 'good');
+}
+
+/** Spin City: Ozzie keeps a stack by the register and sells them on consignment. */
+export function consign(g) {
+  const s = g.state;
+  const m = musicState(s);
+  const k = Math.min(m.cds, 10 - (m.consign || 0));
+  if (k <= 0) { g.toast(m.cds ? 'Ozzie already has ten of yours by the register. "Let them breathe."' : 'No CDs to leave. Burn some at home.', 'info'); return; }
+  m.cds -= k;
+  m.consign = (m.consign || 0) + k;
+  g.toast(`${k} CDs in a stack by the register with a card in Ozzie's handwriting: LOCAL. GOOD. ${'$'}4. "I keep a dollar. I play one in the store. That is the deal."`, 'good');
+}
+
+/** Each morning: Ozzie's sales, and a booking somebody did not show up for. */
+export function musicNewDay(g, d) {
+  const s = g.state;
+  const m = musicState(s);
+  if (m.consign) {
+    const sold = Math.min(m.consign, Math.floor(Math.random() * (1.5 + Math.min(3, m.fans / 15) + (m.demo || 0) / 5)));
+    if (sold) {
+      m.consign -= sold;
+      m.sold += sold;
+      g.earnMoney(sold * 3, 'CDs at Spin City');
+      logLine(g, `Spin City sold ${sold} of your CDs: ${money(sold * 3)}.`, 'good');
+      if (Math.random() < 0.5) m.fans += 1;
+    }
+  }
+  if (m.booking && m.booking.day < d) {
+    m.booking = null;
+    m.fans = Math.max(0, m.fans - 3);
+    pushMessage(g, { from: 'ASHBY SOUND', subject: 'Saturday', body: 'You did not show. Sal put the ukulele lady on. I am not mad, I am busy. Do another open mic and we will see.' });
+  }
+}
+
 /** The brownstone's studio corner: no vacuum, no radiator, no Rae. Two hours, a better take. */
 export function recordAtHome(g) {
   const s = g.state;
@@ -147,6 +263,13 @@ function perform(g) {
     body: `${score >= 7 ? 'Somebody at the back says "AY" at the second verse and it carries you through. The room goes quiet at the bridge, which is the best kind of loud.' : score >= 4 ? 'Most of the room listens. A couple at the front holds hands for the slow part. A man by the door nods once, which counts.' : 'Your voice cracks on the first line. You finish anyway, which is the bravest thing anybody does in here tonight.'}\n\nTip jar: ${money(tips)}${sold ? ` · ${sold} CD${sold === 1 ? '' : 's'} at $3` : ''}. ${fans} people know your name now.${contact ? '\n\nA woman with a lanyard gives you a card: "Ashby Sound, studio time sometimes. Call me."' : ''}`,
     choices: [{ label: 'Walk home with your hands still shaking.', effect: () => {} }],
   });
+  // a good night gets you paid next time: a Saturday late set at Lucia's
+  if (score >= 6 && !m.booking) {
+    const today = dayOf(s.clock.m);
+    const toSat = (((6 - ((today - 1) % 7)) + 7) % 7) || 7;
+    m.booking = { day: today + toSat, pay: 30 + score * 6 };
+    pushMessage(g, { from: 'ASHBY SOUND', subject: 'a paid set', body: `Renée again. Lucia's wants you for the Saturday late set, ${'$'}${m.booking.pay} flat plus the jar, 9 PM, forty minutes. Sal says do not be late, and Sal has never once been wrong about anything, ask him.` });
+  }
   // a good night brings an offer, and offers come at the wrong time
   if (contact && !m.offer) {
     const day = dayOf(s.clock.m) + 1;

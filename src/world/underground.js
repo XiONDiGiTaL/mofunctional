@@ -30,6 +30,7 @@ import * as wardrobe from '../systems/wardrobe.js';
 import { FightMeter } from '../ui/fight.js';
 import { buildCourt, COURT, housesState, WOMEN, womanMenu } from './houses.js';
 import * as supply from '../systems/supply.js';
+import * as music from '../systems/music.js';
 import * as herplace from './herplace.js';
 
 const meter = (g) => (g.world.fightMeter ||= new FightMeter(document.getElementById('ui') || document.body, g));
@@ -411,6 +412,7 @@ export function buildSubway(g) {
     { id: 'ug_pit', label: 'The door marked AUTHORIZED PERSONNEL', sub: 'there is music under it at night', x: 0, z: PZ0 + 0.9, radius: 1.2,
       unavailable: (gg) => (pitOpen(gg) ? null : 'locked · somebody says "come back after ten"'),
       action: (gg) => gg.goTo('fightclub', 'subway') },
+    { id: 'ug_busk', label: 'Busk on the platform', sub: 'an hour · a hat · rush hour pays best', x: -9, z: -1.0, radius: 1.4, action: (gg) => music.busk(gg) },
     { id: 'ug_booth', label: 'The token booth', sub: 'a woman behind two inches of plexiglass', x: -21, z: PZ0 + 1.85, radius: 1.3, action: (gg) => gg.openModal({
       kicker: 'TOKEN BOOTH', title: 'Behind the Glass',
       body: '"Card or token. Exact change or a line behind you." She has seen everything this station has ever done and she is still here, which says something about one of you.',

@@ -943,6 +943,7 @@ export function buildRestaurant(g) {
   const interactables = [
     { id: 'lu_table', label: 'Sit down and order', sub: 'pasta · chicken parm · espresso', x: 0, z: 0.6, radius: 1.4, seat: { x: 0, z: -0.6, rot: Math.PI }, action: (gg) => luciasMenu(gg) },
     { id: 'lu_openmic', label: 'Open mic', sub: music.openMicNow(g.state) ? 'tonight · the sign-up sheet is on the piano' : 'Thursdays, 20:00', x: -2.6, z: -2.4, radius: 1.2, action: (gg) => music.openMic(gg) },
+    ...(music.gigNow(g.state) ? [{ id: 'lu_gig', label: 'Your paid set', sub: 'Saturday · 9 PM · forty minutes · the fee and the jar', x: -2.6, z: -1.4, radius: 1.2, action: (gg) => music.playGig(gg) }] : []),
     { id: 'lu_waiter', label: 'Talk to the waiter', sub: 'Sal (not that Sal)', x: 1.4, z: -2.6, radius: 1.2, action: (gg) => gg.openModal({ kicker: "LUCIA'S", title: 'Sal', body: '"Forty-one years. Sinatra ate here. He had the veal. He was rude to me and I have told everybody, every day, since." He refills your water without looking.', choices: [{ label: 'Tip him a dollar for the story.', sub: '$1', disabled: gg.state.money < 1, effect: () => { gg.spendMoney(1, 'tip'); bump(gg.state, 'morale', 3); } }, { label: 'Thank him.', effect: () => {} }] }) },
     { id: 'lu_exit', label: 'Back out to Ashby Avenue', sub: '', x: 0, z: D / 2 - 0.8, radius: 1.0, action: (gg) => gg.goTo('avenue', 'restaurant') },
   ];

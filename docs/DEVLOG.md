@@ -10,6 +10,20 @@ developer picking this up, read **Directives**, **Architecture**, then **TODO**.
 
 ## 1. Changelog — what exists right now
 
+### Music pays
+
+- **Busking** on the K platform (`ug_busk` → `music.busk`): needs one song of your own, an hour,
+  twice a day at most. The hat scales with songs, the demo, fans and a guitar if he has one; rush
+  hour (7–9:30, 17–19:30) pays 1.7×, the dead of night a third; a transit cop moves him on 15% of
+  the time. CDs sell from the case.
+- **Paid gigs**: an open mic that scores 6 or better books the Saturday late set at Lucia's
+  (`m.booking`, Renée texts the fee: $30 + $6 a point). On the night, 20:45–22:30, `lu_gig` plays
+  it: the fee, the jar, CDs at the door, fans. Play it well with 20+ fans and it rebooks every other
+  Saturday, $10 more each time up to $140. A no-show loses the slot and three fans.
+- **Spin City consignment**: up to ten demo CDs by Ozzie's register; each morning some sell at $3
+  each to Mo (`musicNewDay`).
+- Translations: the Ashby West, brownstone and music lines in Spanish and German.
+
 ### The brownstone earns its keep
 
 - Seven new catalogue upgrades, each with a daily use (`BS_UPGRADES`): a **flatscreen** (the nine
